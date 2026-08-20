@@ -16,8 +16,7 @@ require_once __DIR__ . '/../../components/navbar.php';
 
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
-        <h2 class="fs-4 fw-bold text-dark mb-1">Merk &amp; Brand Material</h2>
-        <p class="text-muted small mb-0">Database merk suku cadang dan material (Kobe Steel, Nippon Steel, Yanmar, Caterpillar, dll)</p>
+        <h2 class="fs-4 fw-bold text-dark mb-0">Merk &amp; Brand Material</h2>
     </div>
     <div class="d-flex gap-2 align-items-center flex-wrap">
         <div class="input-group input-group-sm" style="width: 260px;">

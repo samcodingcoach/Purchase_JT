@@ -39,15 +39,176 @@ $fullLocation = trim($companyAddress . ($companyCity ? ', ' . $companyCity : '')
 
 <!-- Global Application Script -->
 <script>
-// Sidebar Toggle for Mobile View
+// Mobile Sidebar Toggle
 function toggleSidebar() {
-    const sidebar = document.getElementById('appSidebar');
+    const sidebar = document.getElementById('sidebarWrapper') || document.querySelector('.app-sidebar');
     const backdrop = document.getElementById('sidebarBackdrop');
     if (sidebar && backdrop) {
         sidebar.classList.toggle('show');
         backdrop.classList.toggle('show');
     }
 }
+
+// Desktop Collapsible Sidebar (Expand / Collapse)
+function toggleSidebarCollapse() {
+    const wrapper = document.getElementById('app-wrapper');
+    if (!wrapper) return;
+    wrapper.classList.toggle('sidebar-collapsed');
+    const isCollapsed = wrapper.classList.contains('sidebar-collapsed');
+    localStorage.setItem('jt_sidebar_collapsed', isCollapsed ? '1' : '0');
+}
+
+// Inisialisasi awal status collapsed sidebar
+(function() {
+    if (localStorage.getItem('jt_sidebar_collapsed') === '1') {
+        document.getElementById('app-wrapper')?.classList.add('sidebar-collapsed');
+    }
+})();
+
+// Multi-Tab Workspace Manager (ERP Style)
+const AppTabs = {
+    storageKey: 'jt_workspace_tabs',
+    
+    getKnownTabs() {
+        return [
+            { id: 'dashboard', title: 'Dashboard', url: BASE_URL + '/admin/dashboard.php', icon: 'bi-grid-1x2-fill', closable: false },
+            { id: 'request_order', title: 'Request Order', url: BASE_URL + '/admin/pages/request_order/index.php', icon: 'bi-file-earmark-text-fill', closable: true },
+            { id: 'ro_create', title: 'Buat RO Baru', url: BASE_URL + '/admin/pages/request_order/create.php', icon: 'bi-plus-circle', closable: true },
+            { id: 'profile', title: 'Profil Perusahaan', url: BASE_URL + '/admin/pages/profile/index.php', icon: 'bi-buildings', closable: true },
+            { id: 'divisi', title: 'Master Divisi', url: BASE_URL + '/admin/pages/divisi/index.php', icon: 'bi-diagram-3-fill', closable: true },
+            { id: 'jabatan', title: 'Master Jabatan', url: BASE_URL + '/admin/pages/jabatan/index.php', icon: 'bi-briefcase-fill', closable: true },
+            { id: 'site', title: 'Master Site', url: BASE_URL + '/admin/pages/site/index.php', icon: 'bi-geo-alt-fill', closable: true },
+            { id: 'karyawan', title: 'Master Karyawan', url: BASE_URL + '/admin/pages/user/index.php', icon: 'bi-people-fill', closable: true },
+            { id: 'vendor', title: 'Master Vendor', url: BASE_URL + '/admin/pages/vendor/index.php', icon: 'bi-truck', closable: true },
+            { id: 'kategori', title: 'Kategori Barang', url: BASE_URL + '/admin/pages/kategori/index.php', icon: 'bi-tags', closable: true },
+            { id: 'merk', title: 'Merk Barang', url: BASE_URL + '/admin/pages/merk/index.php', icon: 'bi-bookmark-star', closable: true },
+            { id: 'barang', title: 'Katalog Barang', url: BASE_URL + '/admin/pages/barang/index.php', icon: 'bi-box-seam', closable: true }
+        ];
+    },
+
+    getCurrentTabInfo() {
+        const path = window.location.pathname.replace(/\/+$/, '');
+        const known = this.getKnownTabs();
+        
+        for (const t of known) {
+            const tPath = new URL(t.url, window.location.origin).pathname.replace(/\/+$/, '');
+            if (path === tPath || (t.id === 'karyawan' && path.includes('/user/')) || (t.id === 'barang' && path.includes('/barang/')) || (t.id === 'ro_create' && path.includes('/create.php'))) {
+                return t;
+            }
+        }
+        
+        return {
+            id: 'tab_' + Math.abs(path.split('').reduce((a,b)=>{a=((a<<5)-a)+b.charCodeAt(0);return a&a},0)),
+            title: document.title.split('-')[0].trim() || 'Halaman',
+            url: window.location.href,
+            icon: 'bi-window-sidebar',
+            closable: true
+        };
+    },
+
+    getOpenedTabs() {
+        try {
+            const raw = sessionStorage.getItem(this.storageKey);
+            let tabs = raw ? JSON.parse(raw) : [];
+            if (!Array.isArray(tabs) || tabs.length === 0) {
+                tabs = [{ id: 'dashboard', title: 'Dashboard', url: BASE_URL + '/admin/dashboard.php', icon: 'bi-grid-1x2-fill', closable: false }];
+            }
+            return tabs;
+        } catch (e) {
+            return [{ id: 'dashboard', title: 'Dashboard', url: BASE_URL + '/admin/dashboard.php', icon: 'bi-grid-1x2-fill', closable: false }];
+        }
+    },
+
+    saveOpenedTabs(tabs) {
+        sessionStorage.setItem(this.storageKey, JSON.stringify(tabs));
+    },
+
+    init() {
+        const container = document.getElementById('appTabsContainer');
+        if (!container) return;
+
+        const currentTab = this.getCurrentTabInfo();
+        let openedTabs = this.getOpenedTabs();
+
+        // Dashboard selalu ada di awal
+        if (!openedTabs.some(t => t.id === 'dashboard')) {
+            openedTabs.unshift({ id: 'dashboard', title: 'Dashboard', url: BASE_URL + '/admin/dashboard.php', icon: 'bi-grid-1x2-fill', closable: false });
+        }
+
+        // Tambahkan tab aktif saat ini jika belum terdaftar
+        const existingIdx = openedTabs.findIndex(t => t.id === currentTab.id);
+        if (existingIdx === -1) {
+            openedTabs.push(currentTab);
+        } else {
+            openedTabs[existingIdx].url = currentTab.url;
+        }
+        this.saveOpenedTabs(openedTabs);
+
+        // Render Bar Tabs
+        let html = '';
+        openedTabs.forEach(tab => {
+            const isActive = tab.id === currentTab.id;
+            html += `
+                <a href="${tab.url}" class="app-tab-item ${isActive ? 'active' : ''}" data-tab-id="${tab.id}" title="${tab.title}">
+                    <i class="bi ${tab.icon || 'bi-file-earmark'} tab-icon"></i>
+                    <span class="app-tab-title">${tab.title}</span>
+                    ${tab.closable ? `<span class="app-tab-close" onclick="AppTabs.closeTab('${tab.id}', event)" title="Tutup Tab"><i class="bi bi-x"></i></span>` : ''}
+                </a>
+            `;
+        });
+        container.innerHTML = html;
+
+        // Auto Scroll ke tab aktif
+        const activeEl = container.querySelector('.app-tab-item.active');
+        if (activeEl) {
+            activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+        }
+    },
+
+    closeTab(tabId, event) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        let openedTabs = this.getOpenedTabs();
+        const currentTab = this.getCurrentTabInfo();
+        const targetIdx = openedTabs.findIndex(t => t.id === tabId);
+        
+        if (targetIdx === -1) return;
+
+        const isClosingActive = (tabId === currentTab.id);
+        openedTabs.splice(targetIdx, 1);
+        this.saveOpenedTabs(openedTabs);
+
+        if (isClosingActive) {
+            // Pindah ke tab tetangga atau Dashboard
+            const nextTab = openedTabs[targetIdx] || openedTabs[targetIdx - 1] || openedTabs[0];
+            if (nextTab) {
+                window.location.href = nextTab.url;
+            } else {
+                window.location.href = BASE_URL + '/admin/dashboard.php';
+            }
+        } else {
+            this.init();
+        }
+    },
+
+    closeOtherTabs() {
+        const currentTab = this.getCurrentTabInfo();
+        let openedTabs = [{ id: 'dashboard', title: 'Dashboard', url: BASE_URL + '/admin/dashboard.php', icon: 'bi-grid-1x2-fill', closable: false }];
+        if (currentTab.id !== 'dashboard') {
+            openedTabs.push(currentTab);
+        }
+        this.saveOpenedTabs(openedTabs);
+        this.init();
+    },
+
+    closeAllTabs() {
+        const openedTabs = [{ id: 'dashboard', title: 'Dashboard', url: BASE_URL + '/admin/dashboard.php', icon: 'bi-grid-1x2-fill', closable: false }];
+        this.saveOpenedTabs(openedTabs);
+        window.location.href = BASE_URL + '/admin/dashboard.php';
+    }
+};
 
 // Global Toast Notification Helper
 function showToast(message, type = 'success') {
@@ -131,28 +292,34 @@ async function apiRequest(endpoint, options = {}) {
     }
 }
 
-// Sidebar Scroll Position Memory & Preservation
+// Inisialisasi Event Listener
 document.addEventListener('DOMContentLoaded', () => {
+    // Inisialisasi Workspace Multi-Tab
+    AppTabs.init();
+
+    // Pulihkan posisi scroll sidebar
     const sidebarNav = document.querySelector('.sidebar-nav');
     if (sidebarNav) {
-        // Pulihkan posisi scroll dari sessionStorage
         const savedScrollPos = sessionStorage.getItem('jt_sidebar_scroll_top');
         if (savedScrollPos !== null) {
             sidebarNav.scrollTop = parseInt(savedScrollPos, 10);
         } else {
-            // Jika belum ada riwayat scroll, pastikan menu aktif terlihat
             const activeItem = sidebarNav.querySelector('.sidebar-link.active, .sidebar-sublink.active');
             if (activeItem) {
                 activeItem.scrollIntoView({ block: 'nearest', behavior: 'auto' });
             }
         }
 
-        // Simpan posisi scroll setiap kali pengguna melakukan scroll
+        let scrollTimer;
         sidebarNav.addEventListener('scroll', () => {
+            sidebarNav.classList.add('is-scrolling');
+            clearTimeout(scrollTimer);
+            scrollTimer = setTimeout(() => {
+                sidebarNav.classList.remove('is-scrolling');
+            }, 800);
             sessionStorage.setItem('jt_sidebar_scroll_top', sidebarNav.scrollTop);
         }, { passive: true });
 
-        // Simpan posisi scroll sebelum halaman berpindah
         const sidebarLinks = sidebarNav.querySelectorAll('a');
         sidebarLinks.forEach(link => {
             link.addEventListener('click', () => {

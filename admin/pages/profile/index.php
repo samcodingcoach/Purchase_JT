@@ -14,13 +14,6 @@ require_once __DIR__ . '/../../components/sidebar.php';
 require_once __DIR__ . '/../../components/navbar.php';
 ?>
 
-<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-    <div>
-        <h2 class="fs-4 fw-bold text-dark mb-1">Profil &amp; Legalitas Perusahaan</h2>
-        <p class="text-muted small mb-0">Informasi identitas perusahaan yang digunakan pada kop surat dokumen Purchasing &amp; Request Order</p>
-    </div>
-</div>
-
 <div class="card shadow-sm border-0">
     <div class="card-header bg-white py-3 border-bottom">
         <ul class="nav nav-tabs card-header-tabs" id="profileTabs" role="tablist">

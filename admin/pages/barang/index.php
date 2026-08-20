@@ -17,8 +17,7 @@ require_once __DIR__ . '/../../components/navbar.php';
 
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
-        <h2 class="fs-4 fw-bold text-dark mb-1">Katalog Master Barang &amp; Material</h2>
-        <p class="text-muted small mb-0">Database inventaris suku cadang, plat baja, kawat las, stok site dan harga vendor</p>
+        <h2 class="fs-4 fw-bold text-dark mb-0">Katalog Master Barang &amp; Material</h2>
     </div>
     <!-- Action Controls: Search di kiri, Tombol Tambah di paling kanan -->
     <div class="d-flex gap-2 align-items-center flex-wrap">
