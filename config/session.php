@@ -11,7 +11,6 @@ if (session_status() === PHP_SESSION_NONE) {
     ini_set('session.use_only_cookies', '1');
     ini_set('session.cookie_samesite', 'Lax');
     
-    // Aktifkan secure cookie jika HTTPS
     if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
         ini_set('session.cookie_secure', '1');
     }
@@ -40,8 +39,14 @@ function getCurrentUser(): ?array {
         'email' => $_SESSION['email'] ?? '',
         'role' => $_SESSION['role'] ?? '',
         'id_karyawan' => $_SESSION['id_karyawan'] ?? null,
+        'kode_karyawan' => $_SESSION['kode_karyawan'] ?? '',
+        'id_jabatan' => $_SESSION['id_jabatan'] ?? null,
+        'nama_jabatan' => $_SESSION['nama_jabatan'] ?? '',
+        'level_jabatan' => $_SESSION['level_jabatan'] ?? null,
         'id_divisi' => $_SESSION['id_divisi'] ?? null,
         'nama_divisi' => $_SESSION['nama_divisi'] ?? '',
+        'id_site' => $_SESSION['id_site'] ?? null,
+        'nama_site' => $_SESSION['nama_site'] ?? '',
         'api_token' => $_SESSION['api_token'] ?? ''
     ];
 }

@@ -82,7 +82,8 @@ const AppTabs = {
             { id: 'vendor', title: 'Master Vendor', url: BASE_URL + '/admin/pages/vendor/index.php', icon: 'bi-truck', closable: true },
             { id: 'kategori', title: 'Kategori Barang', url: BASE_URL + '/admin/pages/kategori/index.php', icon: 'bi-tags', closable: true },
             { id: 'merk', title: 'Merk Barang', url: BASE_URL + '/admin/pages/merk/index.php', icon: 'bi-bookmark-star', closable: true },
-            { id: 'barang', title: 'Katalog Barang', url: BASE_URL + '/admin/pages/barang/index.php', icon: 'bi-box-seam', closable: true }
+            { id: 'barang', title: 'Katalog Barang', url: BASE_URL + '/admin/pages/barang/index.php', icon: 'bi-box-seam', closable: true },
+            { id: 'menu', title: 'Manajemen Menu', url: BASE_URL + '/admin/pages/menu/index.php', icon: 'bi-list-check', closable: true }
         ];
     },
 

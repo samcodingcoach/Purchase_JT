@@ -284,19 +284,19 @@ $companyCity = $companyProfile['kota'] ?? 'Surabaya';
                 </div>
                 <div class="d-flex flex-wrap gap-1 justify-content-center">
                     <button type="button" class="role-btn-chip" onclick="setDemoAccount('admin', 'admin123')">
-                        <i class="bi bi-shield-fill text-danger me-1"></i>Admin
+                        <i class="bi bi-shield-fill text-danger me-1"></i>Admin (Super)
                     </button>
-                    <button type="button" class="role-btn-chip" onclick="setDemoAccount('mekanik', 'mekanik123')">
-                        <i class="bi bi-wrench-adjustable text-primary me-1"></i>Mekanik
+                    <button type="button" class="role-btn-chip" onclick="setDemoAccount('mekanik@jayateknis.com', 'admin123')">
+                        <i class="bi bi-wrench-adjustable text-primary me-1"></i>Mekanik (KRY002)
                     </button>
-                    <button type="button" class="role-btn-chip" onclick="setDemoAccount('logistik', 'logistik123')">
-                        <i class="bi bi-box-seam text-info me-1"></i>Logistik
+                    <button type="button" class="role-btn-chip" onclick="setDemoAccount('logistik@jayateknis.com', 'admin123')">
+                        <i class="bi bi-box-seam text-info me-1"></i>Logistik (KRY003)
                     </button>
-                    <button type="button" class="role-btn-chip" onclick="setDemoAccount('purchasing', 'purchasing123')">
-                        <i class="bi bi-cart-check text-success me-1"></i>Purchasing
+                    <button type="button" class="role-btn-chip" onclick="setDemoAccount('purchasing@jayateknis.com', 'admin123')">
+                        <i class="bi bi-cart-check text-success me-1"></i>Purchasing (KRY004)
                     </button>
-                    <button type="button" class="role-btn-chip" onclick="setDemoAccount('manager', 'manager123')">
-                        <i class="bi bi-person-workspace text-dark me-1"></i>Manager
+                    <button type="button" class="role-btn-chip" onclick="setDemoAccount('manager@jayateknis.com', 'admin123')">
+                        <i class="bi bi-person-workspace text-dark me-1"></i>Manager (KRY005)
                     </button>
                 </div>
             </div>

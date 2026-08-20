@@ -1,6 +1,6 @@
 <?php
 /**
- * API Auth: Login Endpoint - PT Jaya Teknis
+ * API Auth: Login Endpoint Berfokus Karyawan & Super Admin - PT Jaya Teknis
  */
 
 header('Content-Type: application/json; charset=utf-8');
@@ -23,14 +23,19 @@ $identity = trim($input['username'] ?? $input['email'] ?? '');
 $password = trim($input['password'] ?? '');
 
 if (empty($identity) || empty($password)) {
-    jsonResponse(false, 'Email/Username dan Password wajib diisi.', null, 422);
+    jsonResponse(false, 'Email/Kode Karyawan/Username dan Password wajib diisi.', null, 422);
 }
 
-// 1. Cek pada tabel users
 $userFound = null;
 $userSource = null;
 
-$stmt = $conn->prepare("SELECT id_users, nama_users, email, password, aktif FROM users WHERE email = ? OR nama_users = ? LIMIT 1");
+// =============================================================
+// 1. PRIORITAS UTAMA ADMIN: Cek Akun Administrator di Tabel USERS
+// =============================================================
+$stmt = $conn->prepare("SELECT id_users, nama_users, email, password, aktif 
+                        FROM users 
+                        WHERE (email = ? OR nama_users = ?) AND (nama_users = 'admin' OR id_users = 1) 
+                        LIMIT 1");
 $stmt->bind_param("ss", $identity, $identity);
 $stmt->execute();
 $res = $stmt->get_result();
@@ -44,31 +49,50 @@ if ($res && $res->num_rows > 0) {
 }
 $stmt->close();
 
-// 2. Jika tidak ditemukan di tabel users, coba cek di tabel karyawan
+// =============================================================
+// 2. PRIORITAS UTAMA KARYAWAN: Cek di Tabel KARYAWAN
+// =============================================================
 if (!$userFound) {
-    $stmt2 = $conn->prepare("SELECT k.id_karyawan, k.kode_karyawan, k.nama_karyawan, k.id_divisi, k.email, k.password, k.aktif, d.nama_divisi 
+    $emailPrefix = $identity . '@%';
+    $stmt2 = $conn->prepare("SELECT k.id_karyawan, k.kode_karyawan, k.nama_karyawan, k.id_jabatan, k.id_divisi, k.id_site,
+                                    k.email, k.no_handphone, k.password, k.aktif, k.login_web, k.status_karyawan,
+                                    j.nama_jabatan, j.level as level_jabatan,
+                                    d.nama_divisi,
+                                    s.nama_site
                              FROM karyawan k 
+                             LEFT JOIN jabatan j ON k.id_jabatan = j.id_jabatan
                              LEFT JOIN divisi d ON k.id_divisi = d.id_divisi 
-                             WHERE k.email = ? OR k.nama_karyawan = ? OR k.kode_karyawan = ? LIMIT 1");
-    $stmt2->bind_param("sss", $identity, $identity, $identity);
+                             LEFT JOIN site s ON k.id_site = s.id_site
+                             WHERE (k.email = ? OR k.email LIKE ? OR k.kode_karyawan = ? OR k.no_handphone = ? OR k.nama_karyawan = ?) LIMIT 1");
+    $stmt2->bind_param("sssss", $identity, $emailPrefix, $identity, $identity, $identity);
     $stmt2->execute();
     $res2 = $stmt2->get_result();
+    
     if ($res2 && $res2->num_rows > 0) {
         $karyawanRow = $res2->fetch_assoc();
-        if ($karyawanRow['aktif'] == 1 || $karyawanRow['aktif'] === null) {
-            $userFound = $karyawanRow;
-            $userSource = 'karyawan';
+        
+        // Validasi Status Keaktifan Karyawan
+        if ((int)$karyawanRow['aktif'] !== 1) {
+            jsonResponse(false, 'Akun karyawan Anda berstatus Non-Aktif. Hubungi administrator.', null, 403);
         }
+
+        // Validasi Izin Akses Login Web
+        if (isset($karyawanRow['login_web']) && (int)$karyawanRow['login_web'] !== 1) {
+            jsonResponse(false, 'Akun karyawan Anda tidak memiliki hak akses untuk login ke aplikasi web.', null, 403);
+        }
+
+        $userFound = $karyawanRow;
+        $userSource = 'karyawan';
     }
     $stmt2->close();
 }
 
-// Jika akun tidak ditemukan
+// Jika akun tidak ditemukan di kedua tabel
 if (!$userFound) {
-    jsonResponse(false, 'Akun dengan email/username tersebut tidak ditemukan.', null, 401);
+    jsonResponse(false, 'Akun dengan email / kode karyawan tersebut tidak ditemukan.', null, 401);
 }
 
-// Verifikasi password (password_verify atau fallback plain match untuk database existing demo)
+// Verifikasi password (password_verify atau fallback plaintext upgrade)
 $storedPassword = $userFound['password'];
 $isPasswordValid = false;
 
@@ -95,69 +119,51 @@ if (!$isPasswordValid) {
     jsonResponse(false, 'Password yang Anda masukkan salah.', null, 401);
 }
 
-// Tentukan Role Berdasarkan User / Divisi / Email
-$role = ROLE_MEKANIK; // Default
+// Tentukan Role & Payload Data Sesi
+$role = ROLE_MEKANIK;
 $namaUser = '';
 $userId = 0;
 $idKaryawan = null;
+$kodeKaryawan = '';
+$idJabatan = null;
+$namaJabatan = '';
+$levelJabatan = null;
 $idDivisi = null;
 $namaDivisi = '';
+$idSite = null;
+$namaSite = '';
 $emailUser = $userFound['email'] ?? '';
 
 if ($userSource === 'users') {
     $userId = (int)$userFound['id_users'];
     $namaUser = $userFound['nama_users'];
-    
-    // Hubungkan dengan karyawan jika ada untuk mendapatkan divisi & id_karyawan
-    $stmtK = $conn->prepare("SELECT k.id_karyawan, k.id_divisi, d.nama_divisi 
-                             FROM karyawan k 
-                             LEFT JOIN divisi d ON k.id_divisi = d.id_divisi 
-                             WHERE k.email = ? OR k.nama_karyawan = ? LIMIT 1");
-    $stmtK->bind_param("ss", $emailUser, $namaUser);
-    $stmtK->execute();
-    $resK = $stmtK->get_result();
-    if ($resK && $rowK = $resK->fetch_assoc()) {
-        $idKaryawan = (int)$rowK['id_karyawan'];
-        $idDivisi = (int)$rowK['id_divisi'];
-        $namaDivisi = $rowK['nama_divisi'] ?? '';
-    }
-    $stmtK->close();
-
-    $emailLower = strtolower($emailUser);
-    $nameLower = strtolower($namaUser);
-    $divisiLower = strtolower($namaDivisi);
-    
-    if (strpos($emailLower, 'admin') !== false || strpos($nameLower, 'admin') !== false || strpos($divisiLower, 'admin') !== false) {
-        $role = ROLE_ADMIN;
-    } elseif (strpos($emailLower, 'logistik') !== false || strpos($nameLower, 'logistik') !== false || strpos($divisiLower, 'logistik') !== false) {
-        $role = ROLE_LOGISTIK;
-    } elseif (strpos($emailLower, 'purchasing') !== false || strpos($nameLower, 'purchasing') !== false || strpos($divisiLower, 'purchasing') !== false) {
-        $role = ROLE_PURCHASING;
-    } elseif (strpos($emailLower, 'manager') !== false || strpos($nameLower, 'manager') !== false || strpos($divisiLower, 'manajemen') !== false) {
-        $role = ROLE_MANAGER;
-    } elseif (strpos($emailLower, 'mekanik') !== false || strpos($nameLower, 'mekanik') !== false || strpos($divisiLower, 'mekanik') !== false || strpos($divisiLower, 'bengkel') !== false) {
-        $role = ROLE_MEKANIK;
-    } else {
-        $role = ROLE_MEKANIK; // Default role
-    }
+    $role = ROLE_ADMIN;
+    $idJabatan = 1; // Default Super Admin
 } else {
     $userId = (int)$userFound['id_karyawan'];
     $idKaryawan = (int)$userFound['id_karyawan'];
+    $kodeKaryawan = $userFound['kode_karyawan'] ?? '';
     $namaUser = $userFound['nama_karyawan'];
-    $idDivisi = (int)$userFound['id_divisi'];
+    $idJabatan = !empty($userFound['id_jabatan']) ? (int)$userFound['id_jabatan'] : null;
+    $namaJabatan = $userFound['nama_jabatan'] ?? '';
+    $levelJabatan = isset($userFound['level_jabatan']) ? (int)$userFound['level_jabatan'] : null;
+    $idDivisi = !empty($userFound['id_divisi']) ? (int)$userFound['id_divisi'] : null;
     $namaDivisi = $userFound['nama_divisi'] ?? '';
-    
+    $idSite = !empty($userFound['id_site']) ? (int)$userFound['id_site'] : null;
+    $namaSite = $userFound['nama_site'] ?? '';
+
+    // Deteksi Role berdasarkan Divisi / Jabatan
     $divisiLower = strtolower($namaDivisi);
+    $jabatanLower = strtolower($namaJabatan);
     $emailLower = strtolower($emailUser);
-    $nameLower = strtolower($namaUser);
-    
-    if (strpos($divisiLower, 'admin') !== false || strpos($emailLower, 'admin') !== false) {
+
+    if (strpos($divisiLower, 'admin') !== false || strpos($divisiLower, 'it') !== false || strpos($jabatanLower, 'admin') !== false) {
         $role = ROLE_ADMIN;
-    } elseif (strpos($divisiLower, 'logistik') !== false || strpos($emailLower, 'logistik') !== false || strpos($nameLower, 'logistik') !== false) {
+    } elseif (strpos($divisiLower, 'logistik') !== false || strpos($jabatanLower, 'logistik') !== false || strpos($emailLower, 'logistik') !== false) {
         $role = ROLE_LOGISTIK;
-    } elseif (strpos($divisiLower, 'purchasing') !== false || strpos($emailLower, 'purchasing') !== false || strpos($nameLower, 'purchasing') !== false) {
+    } elseif (strpos($divisiLower, 'purchasing') !== false || strpos($divisiLower, 'pengadaan') !== false || strpos($jabatanLower, 'purchasing') !== false) {
         $role = ROLE_PURCHASING;
-    } elseif (strpos($divisiLower, 'manager') !== false || strpos($emailLower, 'manager') !== false || strpos($nameLower, 'manager') !== false) {
+    } elseif ($levelJabatan === 1 || strpos($divisiLower, 'manajemen') !== false || strpos($jabatanLower, 'manager') !== false || strpos($jabatanLower, 'direktur') !== false || strpos($jabatanLower, 'kepala') !== false) {
         $role = ROLE_MANAGER;
     } else {
         $role = ROLE_MEKANIK;
@@ -172,24 +178,37 @@ session_regenerate_id(true);
 
 // Set data ke Session
 $_SESSION['user_id'] = $userId;
-$_SESSION['username'] = $namaUser;
+$_SESSION['id_karyawan'] = $idKaryawan;
+$_SESSION['kode_karyawan'] = $kodeKaryawan;
+$_SESSION['username'] = $kodeKaryawan ?: $namaUser;
 $_SESSION['nama'] = $namaUser;
 $_SESSION['email'] = $emailUser;
 $_SESSION['role'] = $role;
-$_SESSION['id_karyawan'] = $idKaryawan;
+$_SESSION['id_jabatan'] = $idJabatan;
+$_SESSION['nama_jabatan'] = $namaJabatan;
+$_SESSION['level_jabatan'] = $levelJabatan;
 $_SESSION['id_divisi'] = $idDivisi;
 $_SESSION['nama_divisi'] = $namaDivisi;
+$_SESSION['id_site'] = $idSite;
+$_SESSION['nama_site'] = $namaSite;
 $_SESSION['api_token'] = $apiToken;
 
 $responseData = [
     'token' => $apiToken,
     'user' => [
         'id' => $userId,
+        'id_karyawan' => $idKaryawan,
+        'kode_karyawan' => $kodeKaryawan,
         'nama' => $namaUser,
         'email' => $emailUser,
         'role' => $role,
-        'id_karyawan' => $idKaryawan,
-        'nama_divisi' => $namaDivisi
+        'id_jabatan' => $idJabatan,
+        'nama_jabatan' => $namaJabatan,
+        'level_jabatan' => $levelJabatan,
+        'id_divisi' => $idDivisi,
+        'nama_divisi' => $namaDivisi,
+        'id_site' => $idSite,
+        'nama_site' => $namaSite
     ],
     'redirect_url' => BASE_URL . '/admin/dashboard.php'
 ];
