@@ -40,6 +40,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                     <th>Kode Site</th>
                     <th>Nama Site / Galangan</th>
                     <th>Jenis Site</th>
+                    <th>Penyimpanan Stok</th>
                     <th>Kepala Site (Head of)</th>
                     <th>No. Telepon / HP</th>
                     <th class="text-center" style="width: 150px;">Aksi</th>
@@ -47,7 +48,7 @@ require_once __DIR__ . '/../../components/navbar.php';
             </thead>
             <tbody id="siteTableBody">
                 <tr>
-                    <td colspan="7" class="text-center py-4 text-muted">
+                    <td colspan="8" class="text-center py-4 text-muted">
                         <div class="spinner-border spinner-border-sm text-primary me-2"></div> Memuat data site...
                     </td>
                 </tr>
@@ -126,6 +127,20 @@ require_once __DIR__ . '/../../components/navbar.php';
                                         <option value="">-- Pilih Penanggung Jawab (Level 1 &amp; 2) --</option>
                                     </select>
                                     <div class="form-text small">Hanya menampilkan personil dengan Jabatan Level 1 &amp; 2.</div>
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label small fw-bold d-block">Penyimpanan Stok Fisik</label>
+                                    <div class="btn-group w-100" role="group">
+                                        <input type="radio" class="btn-check" name="formPenyimpananStokRadio" id="stokSiteYes" value="1" checked>
+                                        <label class="btn btn-outline-success btn-sm" for="stokSiteYes">
+                                            <i class="bi bi-box-seam me-1"></i> Ya (Dapat Menyimpan Stok Material)
+                                        </label>
+                                        
+                                        <input type="radio" class="btn-check" name="formPenyimpananStokRadio" id="stokSiteNo" value="0">
+                                        <label class="btn btn-outline-secondary btn-sm" for="stokSiteNo">
+                                            <i class="bi bi-x-circle me-1"></i> Tidak (Bukan Tempat Stok / Kantor)
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -215,6 +230,10 @@ require_once __DIR__ . '/../../components/navbar.php';
                                 <label class="text-muted small fw-bold text-uppercase d-block mb-1">Kontak Kepala Site</label>
                                 <div id="modalKontakKepalaSite">-</div>
                             </div>
+                            <div class="col-md-12">
+                                <label class="text-muted small fw-bold text-uppercase d-block mb-1">Penyimpanan Stok</label>
+                                <div id="modalPenyimpananStok">-</div>
+                            </div>
                         </div>
                     </div>
 
@@ -288,7 +307,7 @@ async function loadSite() {
     const paginationInfo = document.getElementById('paginationInfo');
     const paginationControls = document.getElementById('paginationControls');
     
-    tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Memuat data...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Memuat data...</td></tr>`;
     
     const url = `/api/master/site.php?page=${currentPage}&limit=${fixedLimit}&q=${encodeURIComponent(q)}`;
     const res = await apiRequest(url);
@@ -298,7 +317,7 @@ async function loadSite() {
         const pag = res.data.pagination;
         
         if (siteDataStore.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">Tidak ada data site ditemukan.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-muted">Tidak ada data site ditemukan.</td></tr>`;
             paginationInfo.textContent = 'Menampilkan 0 dari 0 data';
             paginationControls.innerHTML = '';
             return;
@@ -313,6 +332,12 @@ async function loadSite() {
                     <td><span class="badge bg-light text-dark border font-monospace">${item.kode_site || '-'}</span></td>
                     <td class="fw-bold text-dark">${item.nama_site}</td>
                     <td><span class="badge bg-info-subtle text-info">${item.jenis_site || 'Site'}</span></td>
+                    <td>
+                        <span class="badge ${item.penyimpanan_stok ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary'}">
+                            <i class="bi ${item.penyimpanan_stok ? 'bi-check-circle-fill' : 'bi-dash-circle'} me-1"></i>
+                            ${item.penyimpanan_stok ? 'Penyimpanan Stok' : 'Non-Stok'}
+                        </span>
+                    </td>
                     <td class="fw-semibold text-dark">${item.kepala_site}</td>
                     <td>${item.no_hp || '-'}</td>
                     <td class="text-center">
@@ -335,7 +360,7 @@ async function loadSite() {
         paginationInfo.textContent = `Menampilkan ${pag.from} - ${pag.to} dari ${pag.total_records} data (Total: ${pag.total_pages} Halaman)`;
         renderPagination(pag);
     } else {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger">Gagal memuat data site.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger">Gagal memuat data site.</td></tr>`;
     }
 }
 
@@ -383,6 +408,7 @@ function openTambahSiteModal() {
     document.getElementById('siteForm').reset();
     document.getElementById('formIdSite').value = '';
     document.getElementById('formHeadOf').value = '';
+    document.getElementById('stokSiteYes').checked = true;
     bootstrap.Tab.getOrCreateInstance(document.getElementById('sform-tab-1')).show();
     document.getElementById('siteFormModalTitle').innerHTML = '<i class="bi bi-geo-alt-fill me-2"></i>Tambah Site Baru';
     const modal = new bootstrap.Modal(document.getElementById('siteFormModal'));
@@ -398,6 +424,13 @@ function openEditSiteModal(idx) {
     document.getElementById('formNamaSite').value = item.nama_site;
     document.getElementById('formJenisSite').value = item.jenis_site;
     document.getElementById('formHeadOf').value = item.id_karyawan_headof || '';
+    
+    if (item.penyimpanan_stok === 1) {
+        document.getElementById('stokSiteYes').checked = true;
+    } else {
+        document.getElementById('stokSiteNo').checked = true;
+    }
+
     document.getElementById('formNoHpSite').value = item.no_hp !== '-' ? item.no_hp : '';
     document.getElementById('formGpsSite').value = item.alamat_gps !== '-' ? item.alamat_gps : '';
     document.getElementById('formAlamatSite').value = item.alamat !== '-' ? item.alamat : '';
@@ -414,6 +447,8 @@ async function handleSaveSite(e) {
     const isEdit = id !== '';
     const btnSave = document.getElementById('btnSaveSite');
     
+    const stokVal = document.querySelector('input[name="formPenyimpananStokRadio"]:checked')?.value || '0';
+
     btnSave.disabled = true;
     btnSave.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Menyimpan...';
 
@@ -423,6 +458,7 @@ async function handleSaveSite(e) {
         nama_site: document.getElementById('formNamaSite').value.trim(),
         jenis_site: document.getElementById('formJenisSite').value,
         id_karyawan_headof: document.getElementById('formHeadOf').value || null,
+        penyimpanan_stok: parseInt(stokVal),
         no_hp: document.getElementById('formNoHpSite').value.trim(),
         alamat_gps: document.getElementById('formGpsSite').value.trim(),
         alamat: document.getElementById('formAlamatSite').value.trim(),
@@ -469,6 +505,9 @@ function showSiteDetail(idx) {
     document.getElementById('modalKodeSite').textContent = item.kode_site || '-';
     document.getElementById('modalNamaSite').textContent = item.nama_site;
     document.getElementById('modalJenisSite').innerHTML = `<span class="badge bg-info-subtle text-info">${item.jenis_site}</span>`;
+    document.getElementById('modalPenyimpananStok').innerHTML = item.penyimpanan_stok === 1
+        ? '<span class="badge bg-success-subtle text-success fs-6"><i class="bi bi-check-circle-fill me-1"></i>Ya (Dapat Menyimpan Stok Material)</span>'
+        : '<span class="badge bg-secondary-subtle text-muted fs-6"><i class="bi bi-x-circle me-1"></i>Tidak (Bukan Tempat Stok / Kantor)</span>';
     document.getElementById('modalNoHpSite').textContent = item.no_hp || '-';
     document.getElementById('modalKepalaSite').textContent = item.kepala_site;
     document.getElementById('modalKontakKepalaSite').textContent = `${item.email_kepala_site} / ${item.hp_kepala_site}`;

@@ -1,6 +1,6 @@
 <?php
 /**
- * API Master: Site CRUD Endpoint - PT Jaya Teknis
+ * API Master: Site CRUD Endpoint - PT Jaya Teknik
  */
 
 header('Content-Type: application/json; charset=utf-8');
@@ -22,8 +22,9 @@ if ($method === 'POST') {
 // -------------------------------------------------------------
 if ($method === 'GET') {
     $search = trim($_GET['q'] ?? $_GET['search'] ?? '');
+    $penyimpananStok = isset($_GET['penyimpanan_stok']) && is_numeric($_GET['penyimpanan_stok']) ? (int)$_GET['penyimpanan_stok'] : null;
     $page = isset($_GET['page']) && is_numeric($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
-    $limit = isset($_GET['limit']) && is_numeric($_GET['limit']) ? min(max(1, (int)$_GET['limit']), 100) : 10;
+    $limit = isset($_GET['limit']) && is_numeric($_GET['limit']) ? min(max(1, (int)$_GET['limit']), 100) : 50;
     $offset = ($page - 1) * $limit;
 
     $whereSql = " WHERE 1=1";
@@ -39,6 +40,12 @@ if ($method === 'GET') {
         }
     }
 
+    if ($penyimpananStok !== null) {
+        $whereSql .= " AND s.penyimpanan_stok = ?";
+        $params[] = $penyimpananStok;
+        $types .= "i";
+    }
+
     $countSql = "SELECT COUNT(*) as total FROM site s LEFT JOIN karyawan kry ON s.id_karyawan_headof = kry.id_karyawan" . $whereSql;
     $stmtCount = $conn->prepare($countSql);
     if (!empty($params)) {
@@ -50,7 +57,7 @@ if ($method === 'GET') {
 
     $totalPages = $totalRecords > 0 ? (int)ceil($totalRecords / $limit) : 1;
 
-    $sql = "SELECT s.id_site, s.kode_site, s.nama_site, s.jenis_site, s.alamat, s.alamat_gps, s.no_hp, s.id_karyawan_headof,
+    $sql = "SELECT s.id_site, s.kode_site, s.nama_site, s.jenis_site, s.alamat, s.alamat_gps, s.no_hp, s.id_karyawan_headof, s.penyimpanan_stok,
                    kry.nama_karyawan AS kepala_site, kry.email AS email_kepala_site, kry.no_handphone AS hp_kepala_site
             FROM site s
             LEFT JOIN karyawan kry ON s.id_karyawan_headof = kry.id_karyawan"
@@ -77,6 +84,7 @@ if ($method === 'GET') {
             'alamat_gps' => $row['alamat_gps'] ?? '-',
             'no_hp' => $row['no_hp'] ?? '-',
             'id_karyawan_headof' => $row['id_karyawan_headof'] ? (int)$row['id_karyawan_headof'] : null,
+            'penyimpanan_stok' => (int)($row['penyimpanan_stok'] ?? 0),
             'kepala_site' => $row['kepala_site'] ?? '-',
             'email_kepala_site' => $row['email_kepala_site'] ?? '-',
             'hp_kepala_site' => $row['hp_kepala_site'] ?? '-'
@@ -117,6 +125,7 @@ if ($method === 'POST') {
     $alamatGps = trim($input['alamat_gps'] ?? '');
     $noHp = trim($input['no_hp'] ?? '');
     $idHeadOf = !empty($input['id_karyawan_headof']) ? (int)$input['id_karyawan_headof'] : null;
+    $penyimpananStok = isset($input['penyimpanan_stok']) ? (int)$input['penyimpanan_stok'] : 0;
 
     if (empty($namaSite)) {
         jsonResponse(false, 'Nama site / galangan wajib diisi.', null, 422);
@@ -128,9 +137,9 @@ if ($method === 'POST') {
         $kodeSite = 'SIT' . str_pad($nextId, 2, '0', STR_PAD_LEFT);
     }
 
-    $stmt = $conn->prepare("INSERT INTO site (kode_site, nama_site, jenis_site, alamat, alamat_gps, no_hp, id_karyawan_headof) 
-                            VALUES (?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("ssssssi", $kodeSite, $namaSite, $jenisSite, $alamat, $alamatGps, $noHp, $idHeadOf);
+    $stmt = $conn->prepare("INSERT INTO site (kode_site, nama_site, jenis_site, alamat, alamat_gps, no_hp, id_karyawan_headof, penyimpanan_stok) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("ssssssii", $kodeSite, $namaSite, $jenisSite, $alamat, $alamatGps, $noHp, $idHeadOf, $penyimpananStok);
     
     if ($stmt->execute()) {
         $newId = $conn->insert_id;
@@ -154,14 +163,15 @@ if ($method === 'PUT') {
     $alamatGps = trim($input['alamat_gps'] ?? '');
     $noHp = trim($input['no_hp'] ?? '');
     $idHeadOf = !empty($input['id_karyawan_headof']) ? (int)$input['id_karyawan_headof'] : null;
+    $penyimpananStok = isset($input['penyimpanan_stok']) ? (int)$input['penyimpanan_stok'] : 0;
 
     if ($idSite <= 0 || empty($namaSite)) {
         jsonResponse(false, 'ID site dan nama site wajib diisi.', null, 422);
     }
 
-    $stmt = $conn->prepare("UPDATE site SET kode_site = ?, nama_site = ?, jenis_site = ?, alamat = ?, alamat_gps = ?, no_hp = ?, id_karyawan_headof = ? 
+    $stmt = $conn->prepare("UPDATE site SET kode_site = ?, nama_site = ?, jenis_site = ?, alamat = ?, alamat_gps = ?, no_hp = ?, id_karyawan_headof = ?, penyimpanan_stok = ? 
                             WHERE id_site = ?");
-    $stmt->bind_param("ssssssii", $kodeSite, $namaSite, $jenisSite, $alamat, $alamatGps, $noHp, $idHeadOf, $idSite);
+    $stmt->bind_param("ssssssiii", $kodeSite, $namaSite, $jenisSite, $alamat, $alamatGps, $noHp, $idHeadOf, $penyimpananStok, $idSite);
     
     if ($stmt->execute()) {
         $stmt->close();
@@ -190,7 +200,7 @@ if ($method === 'DELETE') {
         jsonResponse(true, 'Site berhasil dihapus.', null, 200);
     } else {
         $stmt->close();
-        jsonResponse(false, 'Gagal menghapus site. Data mungkin terkait dengan transaksi RO.', null, 500);
+        jsonResponse(false, 'Gagal menghapus site. Data mungkin digunakan oleh referensi lain.', null, 500);
     }
 }
 

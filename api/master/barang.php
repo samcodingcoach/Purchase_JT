@@ -1,6 +1,7 @@
 <?php
 /**
- * API Master: Barang CRUD Endpoint - PT Jaya Teknis
+ * API Master: Barang CRUD Endpoint - PT Jaya Teknik
+ * Terintegrasi dengan Stok per Site (barang_stok) & Harga per Vendor (barang_hargavendor)
  */
 
 header('Content-Type: application/json; charset=utf-8');
@@ -23,9 +24,11 @@ if ($method === 'POST') {
 // -------------------------------------------------------------
 if ($method === 'GET') {
     $search = trim($_GET['q'] ?? $_GET['search'] ?? '');
+    $kategoriId = isset($_GET['kategori_id']) && is_numeric($_GET['kategori_id']) ? (int)$_GET['kategori_id'] : null;
+    $merkId = isset($_GET['merk_id']) && is_numeric($_GET['merk_id']) ? (int)$_GET['merk_id'] : null;
     $vendorId = isset($_GET['vendor_id']) && is_numeric($_GET['vendor_id']) ? (int)$_GET['vendor_id'] : null;
     $page = isset($_GET['page']) && is_numeric($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
-    $limit = isset($_GET['limit']) && is_numeric($_GET['limit']) ? min(max(1, (int)$_GET['limit']), 100) : 10;
+    $limit = isset($_GET['limit']) && is_numeric($_GET['limit']) ? min(max(1, (int)$_GET['limit']), 100) : 50;
     $offset = ($page - 1) * $limit;
 
     $whereSql = " WHERE 1=1";
@@ -33,22 +36,37 @@ if ($method === 'GET') {
     $types = "";
 
     if (!empty($search)) {
-        $whereSql .= " AND (b.nama_barang LIKE ? OR b.kode_barang LIKE ? OR b.deskripsi LIKE ? OR b.serial_number LIKE ?)";
+        $whereSql .= " AND (b.nama_barang LIKE ? OR b.kode_barang LIKE ? OR b.serial_number LIKE ? OR b.deskripsi LIKE ? OR k.nama_kategori LIKE ? OR m.nama_merk LIKE ? OR v.nama_perusahaan LIKE ?)";
         $searchWildcard = "%" . $search . "%";
-        for ($i = 0; $i < 4; $i++) {
+        for ($i = 0; $i < 7; $i++) {
             $params[] = $searchWildcard;
             $types .= "s";
         }
     }
 
+    if ($kategoriId !== null) {
+        $whereSql .= " AND b.id_kategori = ?";
+        $params[] = $kategoriId;
+        $types .= "i";
+    }
+
+    if ($merkId !== null) {
+        $whereSql .= " AND b.id_merk = ?";
+        $params[] = $merkId;
+        $types .= "i";
+    }
+
     if ($vendorId !== null) {
-        $whereSql .= " AND (b.default_id_vendor = ? OR b.default_id_vendor IS NULL)";
+        $whereSql .= " AND b.default_id_vendor = ?";
         $params[] = $vendorId;
         $types .= "i";
     }
 
     // 1. Total records
-    $countSql = "SELECT COUNT(*) as total FROM barang b" . $whereSql;
+    $countSql = "SELECT COUNT(*) as total FROM barang b 
+                 LEFT JOIN vendor v ON b.default_id_vendor = v.id_vendor
+                 LEFT JOIN kategori_barang k ON b.id_kategori = k.id_kategori
+                 LEFT JOIN merk_barang m ON b.id_merk = m.id_merk" . $whereSql;
     $stmtCount = $conn->prepare($countSql);
     if (!empty($params)) {
         $stmtCount->bind_param($types, ...$params);
@@ -59,11 +77,12 @@ if ($method === 'GET') {
 
     $totalPages = $totalRecords > 0 ? (int)ceil($totalRecords / $limit) : 1;
 
-    // 2. Query Data
+    // 2. Query Data dengan total stok kalkulasi (hanya site dengan penyimpanan_stok = 1)
     $sql = "SELECT b.id_barang, b.kode_barang, b.nama_barang, b.id_merk, b.id_kategori, b.default_id_vendor,
                    b.jenis, b.satuan, b.asset, b.serial_number, b.foto1, b.foto2, b.deskripsi, b.created_at, b.id_karyawan, b.aktif,
                    v.nama_perusahaan AS nama_vendor, v.kode_vendor,
-                   k.nama_kategori, m.nama_merk, kry.nama_karyawan AS pembuat_barang
+                   k.nama_kategori, m.nama_merk, kry.nama_karyawan AS pembuat_barang,
+                   COALESCE((SELECT SUM(bs_sub.stok) FROM barang_stok bs_sub JOIN site s_sub ON bs_sub.id_site = s_sub.id_site WHERE bs_sub.id_barang = b.id_barang AND s_sub.penyimpanan_stok = 1), 0) AS total_stok
             FROM barang b
             LEFT JOIN vendor v ON b.default_id_vendor = v.id_vendor
             LEFT JOIN kategori_barang k ON b.id_kategori = k.id_kategori
@@ -82,9 +101,12 @@ if ($method === 'GET') {
     $res = $stmt->get_result();
 
     $items = [];
+    $barangIds = [];
     while ($row = $res->fetch_assoc()) {
-        $items[] = [
-            'id_barang' => (int)$row['id_barang'],
+        $bId = (int)$row['id_barang'];
+        $barangIds[] = $bId;
+        $items[$bId] = [
+            'id_barang' => $bId,
             'kode_barang' => $row['kode_barang'] ?? '',
             'nama_barang' => $row['nama_barang'] ?? '',
             'id_merk' => (int)($row['id_merk'] ?? 1),
@@ -103,6 +125,9 @@ if ($method === 'GET') {
             'foto1' => $row['foto1'] ?? '',
             'foto2' => $row['foto2'] ?? '',
             'deskripsi' => $row['deskripsi'] ?? '',
+            'total_stok' => (int)$row['total_stok'],
+            'stok_per_site' => [],
+            'harga_vendors' => [],
             'created_at' => $row['created_at'] ? date('d-m-Y H:i', strtotime($row['created_at'])) : '-',
             'pembuat_barang' => $row['pembuat_barang'] ?? '-',
             'aktif' => isset($row['aktif']) ? (int)$row['aktif'] : 1,
@@ -111,8 +136,61 @@ if ($method === 'GET') {
     }
     $stmt->close();
 
+    // Query rincian stok per site dan harga vendor jika ada items
+    if (!empty($barangIds)) {
+        $idListStr = implode(',', $barangIds);
+
+        // A. Stok per Site (Hanya site yang diizinkan menyimpan stok)
+        $sqlStok = "SELECT bs.id_stok, bs.id_barang, bs.id_site, bs.stok, s.nama_site, s.kode_site
+                    FROM barang_stok bs
+                    JOIN site s ON bs.id_site = s.id_site
+                    WHERE s.penyimpanan_stok = 1 AND bs.id_barang IN ($idListStr)
+                    ORDER BY s.id_site ASC";
+        $resStok = $conn->query($sqlStok);
+        if ($resStok) {
+            while ($sRow = $resStok->fetch_assoc()) {
+                $bId = (int)$sRow['id_barang'];
+                if (isset($items[$bId])) {
+                    $items[$bId]['stok_per_site'][] = [
+                        'id_stok' => (int)$sRow['id_stok'],
+                        'id_site' => (int)$sRow['id_site'],
+                        'nama_site' => $sRow['nama_site'],
+                        'kode_site' => $sRow['kode_site'],
+                        'stok' => (int)$sRow['stok']
+                    ];
+                }
+            }
+        }
+
+        // B. Harga Vendor
+        $sqlHarga = "SELECT bh.id_harga, bh.id_barang, bh.id_vendor, bh.harga_set, bh.berlaku,
+                            v.nama_perusahaan, v.kode_vendor
+                     FROM barang_hargavendor bh
+                     JOIN vendor v ON bh.id_vendor = v.id_vendor
+                     WHERE bh.id_barang IN ($idListStr)
+                     ORDER BY bh.berlaku DESC";
+        $resHarga = $conn->query($sqlHarga);
+        if ($resHarga) {
+            while ($hRow = $resHarga->fetch_assoc()) {
+                $bId = (int)$hRow['id_barang'];
+                if (isset($items[$bId])) {
+                    $items[$bId]['harga_vendors'][] = [
+                        'id_harga' => (int)$hRow['id_harga'],
+                        'id_vendor' => (int)$hRow['id_vendor'],
+                        'nama_vendor' => $hRow['nama_perusahaan'],
+                        'kode_vendor' => $hRow['kode_vendor'],
+                        'harga_set' => (float)$hRow['harga_set'],
+                        'harga_formatted' => 'Rp ' . number_format((float)$hRow['harga_set'], 0, ',', '.'),
+                        'berlaku' => $hRow['berlaku'],
+                        'berlaku_formatted' => $hRow['berlaku'] ? date('d-m-Y', strtotime($hRow['berlaku'])) : '-'
+                    ];
+                }
+            }
+        }
+    }
+
     jsonResponse(true, 'Data master barang berhasil diambil.', [
-        'items' => $items,
+        'items' => array_values($items),
         'pagination' => [
             'page' => $page,
             'limit' => $limit,
@@ -156,7 +234,6 @@ if ($method === 'POST') {
         jsonResponse(false, 'Nama barang wajib diisi.', null, 422);
     }
 
-    // Auto-generate kode barang jika kosong
     if (empty($kodeBarang)) {
         $resCount = $conn->query("SELECT MAX(id_barang) as max_id FROM barang");
         $nextId = ((int)($resCount->fetch_assoc()['max_id'] ?? 0)) + 1;
@@ -170,6 +247,48 @@ if ($method === 'POST') {
     if ($stmt->execute()) {
         $newId = $conn->insert_id;
         $stmt->close();
+
+        // 1. Simpan Stok per Site (Tetap simpan ke barang_stok meskipun bernilai 0 / null)
+        if (isset($input['stok_sites']) && is_array($input['stok_sites'])) {
+            foreach ($input['stok_sites'] as $sItem) {
+                $siteId = isset($sItem['id_site']) ? (int)$sItem['id_site'] : 0;
+                $stokQty = isset($sItem['stok']) && is_numeric($sItem['stok']) ? max(0, (int)$sItem['stok']) : 0;
+                if ($siteId > 0) {
+                    $insS = $conn->prepare("INSERT INTO barang_stok (id_barang, id_site, stok) VALUES (?, ?, ?)");
+                    $insS->bind_param("iii", $newId, $siteId, $stokQty);
+                    $insS->execute();
+                    $insS->close();
+                }
+            }
+        } else {
+            // Otomatis buat entri stok = 0 untuk seluruh site penyimpanan aktif
+            $resSites = $conn->query("SELECT id_site FROM site WHERE penyimpanan_stok = 1");
+            if ($resSites) {
+                while ($stRow = $resSites->fetch_assoc()) {
+                    $stId = (int)$stRow['id_site'];
+                    $insDef = $conn->prepare("INSERT INTO barang_stok (id_barang, id_site, stok) VALUES (?, ?, 0)");
+                    $insDef->bind_param("ii", $newId, $stId);
+                    $insDef->execute();
+                    $insDef->close();
+                }
+            }
+        }
+
+        // 2. Simpan Harga Vendor jika ada
+        if (isset($input['harga_vendors']) && is_array($input['harga_vendors'])) {
+            foreach ($input['harga_vendors'] as $hItem) {
+                $vId = isset($hItem['id_vendor']) ? (int)$hItem['id_vendor'] : 0;
+                $hPrice = isset($hItem['harga_set']) ? (float)$hItem['harga_set'] : 0;
+                $hDate = !empty($hItem['berlaku']) ? $hItem['berlaku'] : date('Y-m-d');
+                if ($vId > 0 && $hPrice > 0) {
+                    $insH = $conn->prepare("INSERT INTO barang_hargavendor (id_barang, id_vendor, harga_set, berlaku) VALUES (?, ?, ?, ?)");
+                    $insH->bind_param("iids", $newId, $vId, $hPrice, $hDate);
+                    $insH->execute();
+                    $insH->close();
+                }
+            }
+        }
+
         jsonResponse(true, 'Barang berhasil ditambahkan.', ['id_barang' => $newId], 201);
     } else {
         $stmt->close();
@@ -207,6 +326,40 @@ if ($method === 'PUT') {
     
     if ($stmt->execute()) {
         $stmt->close();
+
+        // 1. Simpan / Update Stok per Site (Tetap simpan / update meskipun bernilai 0 / null)
+        if (isset($input['stok_sites']) && is_array($input['stok_sites'])) {
+            foreach ($input['stok_sites'] as $sItem) {
+                $siteId = isset($sItem['id_site']) ? (int)$sItem['id_site'] : 0;
+                $stokQty = isset($sItem['stok']) && is_numeric($sItem['stok']) ? max(0, (int)$sItem['stok']) : 0;
+                if ($siteId > 0) {
+                    $chk = $conn->query("SELECT id_stok FROM barang_stok WHERE id_barang = $idBarang AND id_site = $siteId");
+                    if ($chk && $chk->num_rows > 0) {
+                        $conn->query("UPDATE barang_stok SET stok = $stokQty WHERE id_barang = $idBarang AND id_site = $siteId");
+                    } else {
+                        $conn->query("INSERT INTO barang_stok (id_barang, id_site, stok) VALUES ($idBarang, $siteId, $stokQty)");
+                    }
+                }
+            }
+        }
+
+        // 2. Simpan Harga Vendor jika ada
+        if (isset($input['harga_vendors']) && is_array($input['harga_vendors'])) {
+            // Hapus existing harga untuk replace atau tambah baru
+            $conn->query("DELETE FROM barang_hargavendor WHERE id_barang = $idBarang");
+            foreach ($input['harga_vendors'] as $hItem) {
+                $vId = isset($hItem['id_vendor']) ? (int)$hItem['id_vendor'] : 0;
+                $hPrice = isset($hItem['harga_set']) ? (float)$hItem['harga_set'] : 0;
+                $hDate = !empty($hItem['berlaku']) ? $hItem['berlaku'] : date('Y-m-d');
+                if ($vId > 0 && $hPrice > 0) {
+                    $insH = $conn->prepare("INSERT INTO barang_hargavendor (id_barang, id_vendor, harga_set, berlaku) VALUES (?, ?, ?, ?)");
+                    $insH->bind_param("iids", $idBarang, $vId, $hPrice, $hDate);
+                    $insH->execute();
+                    $insH->close();
+                }
+            }
+        }
+
         jsonResponse(true, 'Data barang berhasil diperbarui.', ['id_barang' => $idBarang], 200);
     } else {
         $stmt->close();
@@ -229,6 +382,10 @@ if ($method === 'DELETE') {
     
     if ($stmt->execute()) {
         $stmt->close();
+        // Hapus relasi stok dan harga
+        $conn->query("DELETE FROM barang_stok WHERE id_barang = $idBarang");
+        $conn->query("DELETE FROM barang_hargavendor WHERE id_barang = $idBarang");
+
         jsonResponse(true, 'Barang berhasil dihapus.', null, 200);
     } else {
         $stmt->close();
