@@ -59,12 +59,12 @@ if ($method === 'GET') {
 
     $totalPages = $totalRecords > 0 ? (int)ceil($totalRecords / $limit) : 1;
 
-    // 2. Query Data
-    $sql = "SELECT j.id_jabatan, j.kode_jabatan, j.nama_jabatan, j.id_divisi,
+    // 2. Query Data (Urutkan dari level 1 tertinggi ke bawah)
+    $sql = "SELECT j.id_jabatan, j.kode_jabatan, j.nama_jabatan, j.id_divisi, j.level,
                    d.nama_divisi, d.kode_divisi
             FROM jabatan j
             LEFT JOIN divisi d ON j.id_divisi = d.id_divisi"
-            . $whereSql . " ORDER BY j.id_jabatan DESC LIMIT ? OFFSET ?";
+            . $whereSql . " ORDER BY j.level ASC, j.id_jabatan ASC LIMIT ? OFFSET ?";
 
     $paramsWithLimit = $params;
     $typesWithLimit = $types . "ii";
@@ -83,8 +83,9 @@ if ($method === 'GET') {
             'kode_jabatan' => $row['kode_jabatan'] ?? '',
             'nama_jabatan' => $row['nama_jabatan'] ?? '',
             'id_divisi' => $row['id_divisi'] ? (int)$row['id_divisi'] : null,
-            'nama_divisi' => $row['nama_divisi'] ?? 'Umum',
-            'kode_divisi' => $row['kode_divisi'] ?? '-'
+            'nama_divisi' => $row['nama_divisi'] ?? 'Semua Divisi / Umum',
+            'kode_divisi' => $row['kode_divisi'] ?? '-',
+            'level' => isset($row['level']) ? (int)$row['level'] : 3
         ];
     }
     $stmt->close();
@@ -118,6 +119,7 @@ if ($method === 'POST') {
     $namaJabatan = trim($input['nama_jabatan'] ?? '');
     $kodeJabatan = trim($input['kode_jabatan'] ?? '');
     $idDivisi = !empty($input['id_divisi']) ? (int)$input['id_divisi'] : null;
+    $level = isset($input['level']) && is_numeric($input['level']) ? (int)$input['level'] : 3;
 
     if (empty($namaJabatan)) {
         jsonResponse(false, 'Nama jabatan wajib diisi.', null, 422);
@@ -130,8 +132,8 @@ if ($method === 'POST') {
         $kodeJabatan = 'JB-' . str_pad($nextId, 3, '0', STR_PAD_LEFT);
     }
 
-    $stmt = $conn->prepare("INSERT INTO jabatan (kode_jabatan, nama_jabatan, id_divisi) VALUES (?, ?, ?)");
-    $stmt->bind_param("ssi", $kodeJabatan, $namaJabatan, $idDivisi);
+    $stmt = $conn->prepare("INSERT INTO jabatan (kode_jabatan, nama_jabatan, id_divisi, level) VALUES (?, ?, ?, ?)");
+    $stmt->bind_param("ssii", $kodeJabatan, $namaJabatan, $idDivisi, $level);
     
     if ($stmt->execute()) {
         $newId = $conn->insert_id;
@@ -151,13 +153,14 @@ if ($method === 'PUT') {
     $namaJabatan = trim($input['nama_jabatan'] ?? '');
     $kodeJabatan = trim($input['kode_jabatan'] ?? '');
     $idDivisi = !empty($input['id_divisi']) ? (int)$input['id_divisi'] : null;
+    $level = isset($input['level']) && is_numeric($input['level']) ? (int)$input['level'] : 3;
 
     if ($idJabatan <= 0 || empty($namaJabatan)) {
         jsonResponse(false, 'ID jabatan dan nama jabatan wajib diisi.', null, 422);
     }
 
-    $stmt = $conn->prepare("UPDATE jabatan SET kode_jabatan = ?, nama_jabatan = ?, id_divisi = ? WHERE id_jabatan = ?");
-    $stmt->bind_param("ssii", $kodeJabatan, $namaJabatan, $idDivisi, $idJabatan);
+    $stmt = $conn->prepare("UPDATE jabatan SET kode_jabatan = ?, nama_jabatan = ?, id_divisi = ?, level = ? WHERE id_jabatan = ?");
+    $stmt->bind_param("ssiii", $kodeJabatan, $namaJabatan, $idDivisi, $level, $idJabatan);
     
     if ($stmt->execute()) {
         $stmt->close();

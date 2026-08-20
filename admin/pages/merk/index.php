@@ -65,7 +65,7 @@ require_once __DIR__ . '/../../components/navbar.php';
 
 <!-- Modal Form Tambah / Edit Merk dengan Tab 2-Kolom -->
 <div class="modal fade" id="merkFormModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 640px;">
         <div class="modal-content border-0 shadow-lg">
             <div class="modal-header bg-primary text-white py-3">
                 <h5 class="modal-title fs-6 fw-bold" id="merkFormModalTitle">

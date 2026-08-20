@@ -1,6 +1,6 @@
 <?php
 /**
- * API Master: Karyawan CRUD Endpoint - PT Jaya Teknis
+ * API Master: Karyawan CRUD Endpoint - PT Jaya Teknik
  */
 
 header('Content-Type: application/json; charset=utf-8');
@@ -22,8 +22,11 @@ if ($method === 'POST') {
 // -------------------------------------------------------------
 if ($method === 'GET') {
     $search = trim($_GET['q'] ?? $_GET['search'] ?? '');
+    $divisiId = isset($_GET['divisi_id']) && is_numeric($_GET['divisi_id']) ? (int)$_GET['divisi_id'] : null;
+    $jabatanId = isset($_GET['jabatan_id']) && is_numeric($_GET['jabatan_id']) ? (int)$_GET['jabatan_id'] : null;
+    $siteId = isset($_GET['site_id']) && is_numeric($_GET['site_id']) ? (int)$_GET['site_id'] : null;
     $page = isset($_GET['page']) && is_numeric($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
-    $limit = isset($_GET['limit']) && is_numeric($_GET['limit']) ? min(max(1, (int)$_GET['limit']), 100) : 10;
+    $limit = isset($_GET['limit']) && is_numeric($_GET['limit']) ? min(max(1, (int)$_GET['limit']), 100) : 50;
     $offset = ($page - 1) * $limit;
 
     $whereSql = " WHERE 1=1";
@@ -31,15 +34,56 @@ if ($method === 'GET') {
     $types = "";
 
     if (!empty($search)) {
-        $whereSql .= " AND (k.nama_karyawan LIKE ? OR k.kode_karyawan LIKE ? OR d.nama_divisi LIKE ? OR k.email LIKE ? OR k.no_handphone LIKE ?)";
+        $whereSql .= " AND (k.nama_karyawan LIKE ? OR k.kode_karyawan LIKE ? OR d.nama_divisi LIKE ? OR j.nama_jabatan LIKE ? OR s.nama_site LIKE ? OR k.email LIKE ? OR k.no_handphone LIKE ?)";
         $searchWildcard = "%" . $search . "%";
-        for ($i = 0; $i < 5; $i++) {
+        for ($i = 0; $i < 7; $i++) {
             $params[] = $searchWildcard;
             $types .= "s";
         }
     }
 
-    $countSql = "SELECT COUNT(*) as total FROM karyawan k LEFT JOIN divisi d ON k.id_divisi = d.id_divisi" . $whereSql;
+    if ($divisiId !== null) {
+        $whereSql .= " AND k.id_divisi = ?";
+        $params[] = $divisiId;
+        $types .= "i";
+    }
+
+    if ($jabatanId !== null) {
+        $whereSql .= " AND k.id_jabatan = ?";
+        $params[] = $jabatanId;
+        $types .= "i";
+    }
+
+    if ($siteId !== null) {
+        $whereSql .= " AND k.id_site = ?";
+        $params[] = $siteId;
+        $types .= "i";
+    }
+
+    $maxLevel = isset($_GET['max_level']) && is_numeric($_GET['max_level']) ? (int)$_GET['max_level'] : null;
+    $levelsParam = trim($_GET['levels'] ?? '');
+
+    if ($maxLevel !== null) {
+        $whereSql .= " AND j.level <= ?";
+        $params[] = $maxLevel;
+        $types .= "i";
+    } elseif (!empty($levelsParam)) {
+        $levelArr = array_filter(array_map('intval', explode(',', $levelsParam)), fn($n) => $n > 0);
+        if (!empty($levelArr)) {
+            $inPlaceholders = implode(',', array_fill(0, count($levelArr), '?'));
+            $whereSql .= " AND j.level IN ($inPlaceholders)";
+            foreach ($levelArr as $lvl) {
+                $params[] = $lvl;
+                $types .= "i";
+            }
+        }
+    }
+
+    $countSql = "SELECT COUNT(*) as total 
+                 FROM karyawan k 
+                 LEFT JOIN divisi d ON k.id_divisi = d.id_divisi 
+                 LEFT JOIN jabatan j ON k.id_jabatan = j.id_jabatan
+                 LEFT JOIN site s ON k.id_site = s.id_site" . $whereSql;
     $stmtCount = $conn->prepare($countSql);
     if (!empty($params)) {
         $stmtCount->bind_param($types, ...$params);
@@ -50,10 +94,16 @@ if ($method === 'GET') {
 
     $totalPages = $totalRecords > 0 ? (int)ceil($totalRecords / $limit) : 1;
 
-    $sql = "SELECT k.id_karyawan, k.kode_karyawan, k.nama_karyawan, k.id_divisi, k.tanggal_bergabung, 
-                   k.aktif, k.email, k.no_handphone, k.status_karyawan, k.login_web, d.nama_divisi, d.kode_divisi
+    $sql = "SELECT k.id_karyawan, k.kode_karyawan, k.nama_karyawan, k.id_divisi, k.id_jabatan, k.id_site,
+                   k.tanggal_lahir, k.tempat_lahir, k.jenis_kelamin,
+                   k.tanggal_bergabung, k.aktif, k.email, k.no_handphone, k.status_karyawan, k.login_web, 
+                   d.nama_divisi, d.kode_divisi,
+                   j.nama_jabatan, j.kode_jabatan,
+                   s.nama_site, s.kode_site
             FROM karyawan k
-            LEFT JOIN divisi d ON k.id_divisi = d.id_divisi"
+            LEFT JOIN divisi d ON k.id_divisi = d.id_divisi
+            LEFT JOIN jabatan j ON k.id_jabatan = j.id_jabatan
+            LEFT JOIN site s ON k.id_site = s.id_site"
             . $whereSql . " ORDER BY k.id_karyawan DESC LIMIT ? OFFSET ?";
 
     $paramsWithLimit = $params;
@@ -80,6 +130,8 @@ if ($method === 'GET') {
     $items = [];
     while ($row = $res->fetch_assoc()) {
         $statusId = (int)($row['status_karyawan'] ?? 3);
+        $jk = isset($row['jenis_kelamin']) ? (int)$row['jenis_kelamin'] : 1;
+        
         $items[] = [
             'id_karyawan' => (int)$row['id_karyawan'],
             'kode_karyawan' => $row['kode_karyawan'] ?? '',
@@ -87,6 +139,17 @@ if ($method === 'GET') {
             'id_divisi' => (int)$row['id_divisi'],
             'nama_divisi' => $row['nama_divisi'] ?? '-',
             'kode_divisi' => $row['kode_divisi'] ?? '-',
+            'id_jabatan' => $row['id_jabatan'] ? (int)$row['id_jabatan'] : null,
+            'nama_jabatan' => $row['nama_jabatan'] ?? '-',
+            'kode_jabatan' => $row['kode_jabatan'] ?? '-',
+            'id_site' => $row['id_site'] ? (int)$row['id_site'] : null,
+            'nama_site' => $row['nama_site'] ?? 'Semua Site / Pusat',
+            'kode_site' => $row['kode_site'] ?? '-',
+            'tempat_lahir' => $row['tempat_lahir'] ?? '',
+            'tanggal_lahir' => $row['tanggal_lahir'] ?? '',
+            'tanggal_lahir_formatted' => $row['tanggal_lahir'] ? date('d-m-Y', strtotime($row['tanggal_lahir'])) : '-',
+            'jenis_kelamin' => $jk,
+            'jenis_kelamin_label' => $jk === 1 ? 'Laki-Laki' : 'Perempuan',
             'tanggal_bergabung' => $row['tanggal_bergabung'] ? date('d-m-Y H:i', strtotime($row['tanggal_bergabung'])) : '-',
             'email' => $row['email'] ?? '-',
             'no_handphone' => $row['no_handphone'] ?? '-',
@@ -127,6 +190,12 @@ if ($method === 'POST') {
     $namaKaryawan = trim($input['nama_karyawan'] ?? '');
     $kodeKaryawan = trim($input['kode_karyawan'] ?? '');
     $idDivisi = isset($input['id_divisi']) ? (int)$input['id_divisi'] : 1;
+    $idJabatan = !empty($input['id_jabatan']) ? (int)$input['id_jabatan'] : null;
+    $idSite = !empty($input['id_site']) ? (int)$input['id_site'] : null;
+    $tempatLahir = trim($input['tempat_lahir'] ?? '');
+    $tanggalLahir = !empty($input['tanggal_lahir']) ? $input['tanggal_lahir'] : null;
+    $jenisKelamin = isset($input['jenis_kelamin']) ? (int)$input['jenis_kelamin'] : 1;
+    
     $email = trim($input['email'] ?? '');
     $noHp = trim($input['no_handphone'] ?? '');
     $password = trim($input['password'] ?? '123456');
@@ -146,15 +215,14 @@ if ($method === 'POST') {
 
     $passHash = password_hash($password, PASSWORD_DEFAULT);
 
-    $stmt = $conn->prepare("INSERT INTO karyawan (kode_karyawan, nama_karyawan, id_divisi, tanggal_bergabung, aktif, email, no_handphone, password, status_karyawan, login_web) 
-                            VALUES (?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("ssiisssii", $kodeKaryawan, $namaKaryawan, $idDivisi, $aktif, $email, $noHp, $passHash, $statusKaryawan, $loginWeb);
+    $stmt = $conn->prepare("INSERT INTO karyawan (kode_karyawan, nama_karyawan, id_divisi, id_jabatan, id_site, tempat_lahir, tanggal_lahir, jenis_kelamin, tanggal_bergabung, aktif, email, no_handphone, password, status_karyawan, login_web) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("ssiiississsii", $kodeKaryawan, $namaKaryawan, $idDivisi, $idJabatan, $idSite, $tempatLahir, $tanggalLahir, $jenisKelamin, $aktif, $email, $noHp, $passHash, $statusKaryawan, $loginWeb);
     
     if ($stmt->execute()) {
         $newId = $conn->insert_id;
         $stmt->close();
 
-        // Buat user login jika email terisi dan login_web aktif
         if (!empty($email) && $loginWeb) {
             $stmtU = $conn->prepare("INSERT IGNORE INTO users (nama_users, email, password, aktif) VALUES (?, ?, ?, ?)");
             $stmtU->bind_param("sssi", $namaKaryawan, $email, $passHash, $aktif);
@@ -177,6 +245,12 @@ if ($method === 'PUT') {
     $namaKaryawan = trim($input['nama_karyawan'] ?? '');
     $kodeKaryawan = trim($input['kode_karyawan'] ?? '');
     $idDivisi = isset($input['id_divisi']) ? (int)$input['id_divisi'] : 1;
+    $idJabatan = !empty($input['id_jabatan']) ? (int)$input['id_jabatan'] : null;
+    $idSite = !empty($input['id_site']) ? (int)$input['id_site'] : null;
+    $tempatLahir = trim($input['tempat_lahir'] ?? '');
+    $tanggalLahir = !empty($input['tanggal_lahir']) ? $input['tanggal_lahir'] : null;
+    $jenisKelamin = isset($input['jenis_kelamin']) ? (int)$input['jenis_kelamin'] : 1;
+
     $email = trim($input['email'] ?? '');
     $noHp = trim($input['no_handphone'] ?? '');
     $statusKaryawan = isset($input['status_karyawan']) ? (int)$input['status_karyawan'] : 3;
@@ -187,15 +261,15 @@ if ($method === 'PUT') {
         jsonResponse(false, 'ID karyawan dan nama karyawan wajib diisi.', null, 422);
     }
 
-    $stmt = $conn->prepare("UPDATE karyawan SET kode_karyawan = ?, nama_karyawan = ?, id_divisi = ?, email = ?, 
+    $stmt = $conn->prepare("UPDATE karyawan SET kode_karyawan = ?, nama_karyawan = ?, id_divisi = ?, id_jabatan = ?, id_site = ?, 
+                            tempat_lahir = ?, tanggal_lahir = ?, jenis_kelamin = ?, email = ?, 
                             no_handphone = ?, status_karyawan = ?, login_web = ?, aktif = ? 
                             WHERE id_karyawan = ?");
-    $stmt->bind_param("ssisssiii", $kodeKaryawan, $namaKaryawan, $idDivisi, $email, $noHp, $statusKaryawan, $loginWeb, $aktif, $idKaryawan);
+    $stmt->bind_param("ssiiississsiii", $kodeKaryawan, $namaKaryawan, $idDivisi, $idJabatan, $idSite, $tempatLahir, $tanggalLahir, $jenisKelamin, $email, $noHp, $statusKaryawan, $loginWeb, $aktif, $idKaryawan);
     
     if ($stmt->execute()) {
         $stmt->close();
         
-        // Update users table jika ada password baru atau status aktif
         if (!empty($input['password'])) {
             $newPassHash = password_hash(trim($input['password']), PASSWORD_DEFAULT);
             $upU = $conn->prepare("UPDATE users SET password = ? WHERE email = ?");

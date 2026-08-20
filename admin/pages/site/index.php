@@ -1,6 +1,6 @@
 <?php
 /**
- * Master Data Site - PT Jaya Teknis
+ * Master Data Site - PT Jaya Teknik
  */
 require_once __DIR__ . '/../../../config/config.php';
 require_once __DIR__ . '/../../../config/session.php';
@@ -17,8 +17,9 @@ require_once __DIR__ . '/../../components/navbar.php';
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
         <h2 class="fs-4 fw-bold text-dark mb-1">Daftar Lokasi Site &amp; Bengkel Workshop</h2>
-        <p class="text-muted small mb-0">Database lokasi galangan kapal, bengkel bubut, gudang logistik &amp; kantor</p>
+        <p class="text-muted small mb-0">Database lokasi galangan kapal, bengkel bubut, gudang logistik dan kantor</p>
     </div>
+    <!-- Search di kiri, Tombol Tambah di paling kanan -->
     <div class="d-flex gap-2 align-items-center flex-wrap">
         <div class="input-group input-group-sm" style="width: 260px;">
             <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
@@ -41,7 +42,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                     <th>Jenis Site</th>
                     <th>Kepala Site (Head of)</th>
                     <th>No. Telepon / HP</th>
-                    <th class="text-center" style="width: 160px;">Aksi</th>
+                    <th class="text-center" style="width: 150px;">Aksi</th>
                 </tr>
             </thead>
             <tbody id="siteTableBody">
@@ -53,7 +54,7 @@ require_once __DIR__ . '/../../components/navbar.php';
             </tbody>
         </table>
     </div>
-    <!-- Pagination Footer -->
+    <!-- Pagination Footer (50 Baku) -->
     <div class="card-footer bg-white py-3 d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 border-top">
         <div class="text-muted small" id="paginationInfo">
             Menampilkan data...
@@ -65,7 +66,7 @@ require_once __DIR__ . '/../../components/navbar.php';
     </div>
 </div>
 
-<!-- Modal Form Tambah / Edit Site dengan Tab 2-Kolom -->
+<!-- Modal Form Tambah / Edit Site dengan Tab Terfokus (2-Kolom) -->
 <div class="modal fade" id="siteFormModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow-lg">
@@ -83,12 +84,12 @@ require_once __DIR__ . '/../../components/navbar.php';
                     <ul class="nav nav-tabs border-bottom-0" id="siteFormTabs" role="tablist">
                         <li class="nav-item" role="presentation">
                             <button class="nav-link active fw-semibold small" id="sform-tab-1" data-bs-toggle="tab" data-bs-target="#sform-pane-1" type="button" role="tab">
-                                <i class="bi bi-building me-1 text-primary"></i> 1. Identitas &amp; Pengawas
+                                <i class="bi bi-building me-1 text-primary"></i> Utama
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link fw-semibold small" id="sform-tab-2" data-bs-toggle="tab" data-bs-target="#sform-pane-2" type="button" role="tab">
-                                <i class="bi bi-geo-alt me-1 text-primary"></i> 2. Lokasi &amp; Peta
+                                <i class="bi bi-geo-alt me-1 text-primary"></i> Lokasi
                             </button>
                         </li>
                     </ul>
@@ -97,12 +98,13 @@ require_once __DIR__ . '/../../components/navbar.php';
                 <div class="modal-body p-4">
                     <div class="tab-content" id="siteFormTabContent">
                         
-                        <!-- TAB 1: IDENTITAS & PENGAWAS (2 KOLOM) -->
+                        <!-- TAB 1: UTAMA (2 KOLOM) -->
                         <div class="tab-pane fade show active" id="sform-pane-1" role="tabpanel">
                             <div class="row g-3">
                                 <div class="col-md-6">
-                                    <label class="form-label small fw-bold">Kode Site (Opsional)</label>
-                                    <input type="text" class="form-control" id="formKodeSite" placeholder="Otomatis digenerate jika kosong">
+                                    <label class="form-label small fw-bold">Kode Site</label>
+                                    <input type="text" class="form-control" id="formKodeSite" placeholder="Otomatis jika kosong">
+                                    <div class="form-text small">Biarkan kosong untuk format otomatis <code>SIT001</code>.</div>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label small fw-bold">Nama Site / Workshop <span class="text-danger">*</span></label>
@@ -111,8 +113,8 @@ require_once __DIR__ . '/../../components/navbar.php';
                                 <div class="col-md-6">
                                     <label class="form-label small fw-bold">Jenis Site <span class="text-danger">*</span></label>
                                     <select class="form-select" id="formJenisSite" required>
-                                        <option value="Bengkel">Bengkel (Workshop Bubut &amp; Las)</option>
-                                        <option value="Logistik">Gudang Logistik &amp; Material</option>
+                                        <option value="Bengkel">Bengkel (Workshop Bubut / Las)</option>
+                                        <option value="Logistik">Gudang Logistik / Material</option>
                                         <option value="Office">Office / Kantor Operasional</option>
                                         <option value="Pusat">Pusat Galangan</option>
                                         <option value="Lain Lain">Lain-Lain</option>
@@ -121,19 +123,20 @@ require_once __DIR__ . '/../../components/navbar.php';
                                 <div class="col-md-6">
                                     <label class="form-label small fw-bold">Kepala Site / Head of (Approval)</label>
                                     <select class="form-select" id="formHeadOf">
-                                        <option value="">-- Pilih Penanggung Jawab --</option>
+                                        <option value="">-- Pilih Penanggung Jawab (Level 1 &amp; 2) --</option>
                                     </select>
-                                </div>
-                                <div class="col-md-12">
-                                    <label class="form-label small fw-bold">No. Telepon / HP Site</label>
-                                    <input type="text" class="form-control" id="formNoHpSite" placeholder="Contoh: 031-889901">
+                                    <div class="form-text small">Hanya menampilkan personil dengan Jabatan Level 1 &amp; 2.</div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- TAB 2: LOKASI & PETA (2 KOLOM) -->
+                        <!-- TAB 2: LOKASI (2 KOLOM) -->
                         <div class="tab-pane fade" id="sform-pane-2" role="tabpanel">
                             <div class="row g-3">
+                                <div class="col-md-12">
+                                    <label class="form-label small fw-bold">Nomor Telepon / HP Site</label>
+                                    <input type="text" class="form-control" id="formNoHpSite" placeholder="Contoh: 031-889901 / 08123456789">
+                                </div>
                                 <div class="col-md-6">
                                     <label class="form-label small fw-bold">Alamat Fisik Lengkap</label>
                                     <textarea class="form-control" id="formAlamatSite" rows="4" placeholder="Jalan, kawasan industri, dermaga pelabuhan"></textarea>
@@ -159,7 +162,7 @@ require_once __DIR__ . '/../../components/navbar.php';
     </div>
 </div>
 
-<!-- Modal Detail Lengkap Site dengan Tab 2-Kolom (Tanpa ID Teknis Database) -->
+<!-- Modal Detail Lengkap Site (2 Tab, 2-Kolom) -->
 <div class="modal fade" id="siteDetailModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow-lg">
@@ -175,12 +178,12 @@ require_once __DIR__ . '/../../components/navbar.php';
                 <ul class="nav nav-tabs border-bottom-0" id="siteDetailTabs" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active fw-semibold small" id="sdetail-tab-1" data-bs-toggle="tab" data-bs-target="#sdetail-pane-1" type="button" role="tab">
-                            <i class="bi bi-info-circle me-1 text-primary"></i> 1. Identitas &amp; Pengawas
+                            <i class="bi bi-building me-1 text-primary"></i> Utama
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link fw-semibold small" id="sdetail-tab-2" data-bs-toggle="tab" data-bs-target="#sdetail-pane-2" type="button" role="tab">
-                            <i class="bi bi-geo-alt me-1 text-primary"></i> 2. Lokasi &amp; Peta
+                            <i class="bi bi-geo-alt me-1 text-primary"></i> Lokasi
                         </button>
                     </li>
                 </ul>
@@ -189,7 +192,7 @@ require_once __DIR__ . '/../../components/navbar.php';
             <div class="modal-body p-4">
                 <div class="tab-content" id="siteDetailTabContent">
                     
-                    <!-- TAB 1: IDENTITAS & PENGAWAS (2 KOLOM) -->
+                    <!-- TAB 1: UTAMA (2 KOLOM) -->
                     <div class="tab-pane fade show active" id="sdetail-pane-1" role="tabpanel">
                         <div class="row g-3">
                             <div class="col-md-6">
@@ -212,23 +215,23 @@ require_once __DIR__ . '/../../components/navbar.php';
                                 <label class="text-muted small fw-bold text-uppercase d-block mb-1">Kontak Kepala Site</label>
                                 <div id="modalKontakKepalaSite">-</div>
                             </div>
-                            <div class="col-md-12">
-                                <label class="text-muted small fw-bold text-uppercase d-block mb-1">No. Telepon / HP Site</label>
-                                <div id="modalNoHpSite">-</div>
-                            </div>
                         </div>
                     </div>
 
-                    <!-- TAB 2: LOKASI & PETA (2 KOLOM) -->
+                    <!-- TAB 2: LOKASI (2 KOLOM) -->
                     <div class="tab-pane fade" id="sdetail-pane-2" role="tabpanel">
                         <div class="row g-3">
+                            <div class="col-md-12">
+                                <label class="text-muted small fw-bold text-uppercase d-block mb-1">No. Telepon / HP Site</label>
+                                <div class="fw-semibold text-dark" id="modalNoHpSite">-</div>
+                            </div>
                             <div class="col-md-6">
                                 <label class="text-muted small fw-bold text-uppercase d-block mb-1">Alamat Fisik Lengkap</label>
-                                <div class="p-2 bg-light rounded border small" id="modalAlamatSite">-</div>
+                                <div class="p-3 bg-light rounded border small" id="modalAlamatSite">-</div>
                             </div>
                             <div class="col-md-6">
                                 <label class="text-muted small fw-bold text-uppercase d-block mb-1">Koordinat GPS / Map</label>
-                                <div class="p-2 bg-light rounded border font-monospace small text-muted" id="modalGpsSite">-</div>
+                                <div class="p-3 bg-light rounded border font-monospace small text-muted" id="modalGpsSite">-</div>
                             </div>
                         </div>
                     </div>
@@ -264,18 +267,21 @@ function goToPage(page) {
 }
 
 async function loadKaryawanOptions() {
-    const res = await apiRequest('/api/master/karyawan.php?limit=100');
+    // Filter HANYA karyawan yang memiliki Jabatan Level 1 & 2
+    const res = await apiRequest('/api/master/karyawan.php?levels=1,2&limit=100');
     if (res && res.success) {
         karyawanListCache = res.data.items || [];
         const select = document.getElementById('formHeadOf');
         if (select) {
-            select.innerHTML = '<option value="">-- Pilih Penanggung Jawab --</option>';
+            select.innerHTML = '<option value="">-- Pilih Penanggung Jawab (Level 1 &amp; 2) --</option>';
             karyawanListCache.forEach(k => {
-                select.innerHTML += `<option value="${k.id_karyawan}">${k.nama_karyawan} (${k.nama_divisi})</option>`;
+                const jabatanInfo = k.nama_jabatan !== '-' ? ` - ${k.nama_jabatan}` : '';
+                select.innerHTML += `<option value="${k.id_karyawan}">${k.nama_karyawan}${jabatanInfo}</option>`;
             });
         }
     }
 }
+
 async function loadSite() {
     const q = document.getElementById('searchInput').value.trim();
     const tbody = document.getElementById('siteTableBody');
@@ -307,7 +313,7 @@ async function loadSite() {
                     <td><span class="badge bg-light text-dark border font-monospace">${item.kode_site || '-'}</span></td>
                     <td class="fw-bold text-dark">${item.nama_site}</td>
                     <td><span class="badge bg-info-subtle text-info">${item.jenis_site || 'Site'}</span></td>
-                    <td>${item.kepala_site}</td>
+                    <td class="fw-semibold text-dark">${item.kepala_site}</td>
                     <td>${item.no_hp || '-'}</td>
                     <td class="text-center">
                         <div class="btn-group btn-group-sm">
@@ -376,6 +382,7 @@ function renderPagination(pag) {
 function openTambahSiteModal() {
     document.getElementById('siteForm').reset();
     document.getElementById('formIdSite').value = '';
+    document.getElementById('formHeadOf').value = '';
     bootstrap.Tab.getOrCreateInstance(document.getElementById('sform-tab-1')).show();
     document.getElementById('siteFormModalTitle').innerHTML = '<i class="bi bi-geo-alt-fill me-2"></i>Tambah Site Baru';
     const modal = new bootstrap.Modal(document.getElementById('siteFormModal'));
@@ -405,13 +412,17 @@ async function handleSaveSite(e) {
     e.preventDefault();
     const id = document.getElementById('formIdSite').value;
     const isEdit = id !== '';
+    const btnSave = document.getElementById('btnSaveSite');
     
+    btnSave.disabled = true;
+    btnSave.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Menyimpan...';
+
     const payload = {
         id_site: id,
         kode_site: document.getElementById('formKodeSite').value.trim(),
         nama_site: document.getElementById('formNamaSite').value.trim(),
         jenis_site: document.getElementById('formJenisSite').value,
-        id_karyawan_headof: document.getElementById('formHeadOf').value,
+        id_karyawan_headof: document.getElementById('formHeadOf').value || null,
         no_hp: document.getElementById('formNoHpSite').value.trim(),
         alamat_gps: document.getElementById('formGpsSite').value.trim(),
         alamat: document.getElementById('formAlamatSite').value.trim(),
@@ -422,6 +433,9 @@ async function handleSaveSite(e) {
         method: 'POST',
         body: JSON.stringify(payload)
     });
+    
+    btnSave.disabled = false;
+    btnSave.innerHTML = '<i class="bi bi-save me-1"></i> Simpan Data Site';
     
     if (res && res.success) {
         showToast(res.message || 'Data site berhasil disimpan!', 'success');

@@ -63,9 +63,9 @@ require_once __DIR__ . '/../../components/navbar.php';
     </div>
 </div>
 
-<!-- Modal Form Tambah / Edit Divisi dengan Layout 2-Kolom -->
+<!-- Modal Form Tambah / Edit Divisi dengan Layout 2-Kolom Lapang -->
 <div class="modal fade" id="divisiFormModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 640px;">
         <div class="modal-content border-0 shadow-lg">
             <div class="modal-header bg-primary text-white py-3">
                 <h5 class="modal-title fs-6 fw-bold" id="divisiFormModalTitle">
@@ -84,9 +84,9 @@ require_once __DIR__ . '/../../components/navbar.php';
                         <div class="col-md-6">
                             <label class="form-label small fw-bold">Level / Tingkatan</label>
                             <select class="form-select" id="formLevel">
-                                <option value="1">Level 1 (Departemen Utama)</option>
-                                <option value="2">Level 2 (Sub-Bagian)</option>
-                                <option value="3">Level 3 (Unit Operasional)</option>
+                                <option value="1">Level 1</option>
+                                <option value="2">Level 2</option>
+                                <option value="3">Level 3</option>
                             </select>
                         </div>
                         <div class="col-md-12">

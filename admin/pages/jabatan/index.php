@@ -16,8 +16,8 @@ require_once __DIR__ . '/../../components/navbar.php';
 
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
-        <h2 class="fs-4 fw-bold text-dark mb-1">Daftar Jabatan &amp; Posisi Karyawan</h2>
-        <p class="text-muted small mb-0">Struktur posisi jabatan per divisi operasional PT Jaya Teknik</p>
+        <h2 class="fs-4 fw-bold text-dark mb-1">Daftar Jabatan &amp; Hirarki Posisi</h2>
+        <p class="text-muted small mb-0">Struktur posisi jabatan dan level hirarki per divisi operasional PT Jaya Teknik</p>
     </div>
     <!-- Search di kiri, Tombol Tambah di paling kanan -->
     <div class="d-flex gap-2 align-items-center flex-wrap">
@@ -40,12 +40,13 @@ require_once __DIR__ . '/../../components/navbar.php';
                     <th>Kode Jabatan</th>
                     <th>Nama Jabatan / Posisi</th>
                     <th>Divisi Terkait</th>
+                    <th style="width: 140px;">Level</th>
                     <th class="text-center" style="width: 150px;">Aksi</th>
                 </tr>
             </thead>
             <tbody id="jabatanTableBody">
                 <tr>
-                    <td colspan="5" class="text-center py-4 text-muted">
+                    <td colspan="6" class="text-center py-4 text-muted">
                         <div class="spinner-border spinner-border-sm text-primary me-2"></div> Memuat data jabatan...
                     </td>
                 </tr>
@@ -64,9 +65,9 @@ require_once __DIR__ . '/../../components/navbar.php';
     </div>
 </div>
 
-<!-- Modal Form Tambah / Edit Jabatan -->
+<!-- Modal Form Tambah / Edit Jabatan (2 Kolom) -->
 <div class="modal fade" id="jabatanFormModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow-lg">
             <div class="modal-header bg-primary text-white py-3">
                 <h5 class="modal-title fs-6 fw-bold" id="jabatanFormModalTitle">
@@ -78,20 +79,32 @@ require_once __DIR__ . '/../../components/navbar.php';
                 <input type="hidden" id="formIdJabatan" name="id_jabatan">
                 
                 <div class="modal-body p-4">
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Kode Jabatan</label>
-                        <input type="text" class="form-control" id="formKodeJabatan" placeholder="Otomatis (contoh: JB-001)">
-                        <div class="form-text small">Biarkan kosong untuk penomoran otomatis format <code>JB-001</code>.</div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Nama Jabatan / Posisi <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="formNamaJabatan" required placeholder="Contoh: Kepala Mekanik, Staff Logistik, dll">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Divisi Terkait</label>
-                        <select class="form-select" id="formDivisi">
-                            <option value="">-- Pilih Divisi (Opsional) --</option>
-                        </select>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Kode Jabatan</label>
+                            <input type="text" class="form-control" id="formKodeJabatan" placeholder="Otomatis jika kosong">
+                            <div class="form-text small">Biarkan kosong untuk format otomatis <code>JB-001</code>.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Nama Jabatan / Posisi <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="formNamaJabatan" required placeholder="Contoh: Manager Operasional, Staff Logistik">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Divisi Terkait</label>
+                            <select class="form-select" id="formDivisi">
+                                <option value="">-- Semua Divisi / Umum --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Level Hirarki <span class="text-danger">*</span></label>
+                            <select class="form-select" id="formLevel" required>
+                                <option value="1">Level 1</option>
+                                <option value="2">Level 2</option>
+                                <option value="3" selected>Level 3</option>
+                                <option value="4">Level 4</option>
+                                <option value="5">Level 5</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
@@ -131,10 +144,26 @@ async function loadDivisiOptions() {
     if (res && res.success) {
         divisiListCache = res.data.items || [];
         const select = document.getElementById('formDivisi');
-        select.innerHTML = '<option value="">-- Pilih Divisi (Opsional) --</option>';
+        select.innerHTML = '<option value="">-- Semua Divisi / Umum --</option>';
         divisiListCache.forEach(d => {
             select.innerHTML += `<option value="${d.id_divisi}">${d.nama_divisi} (${d.kode_divisi})</option>`;
         });
+    }
+}
+
+function getLevelBadge(level) {
+    const lvl = parseInt(level, 10);
+    switch(lvl) {
+        case 1:
+            return '<span class="badge bg-danger text-white fw-bold">Level 1</span>';
+        case 2:
+            return '<span class="badge bg-primary text-white fw-bold">Level 2</span>';
+        case 3:
+            return '<span class="badge bg-info-subtle text-dark fw-semibold">Level 3</span>';
+        case 4:
+            return '<span class="badge bg-secondary-subtle text-secondary">Level 4</span>';
+        default:
+            return `<span class="badge bg-light text-muted border">Level ${lvl}</span>`;
     }
 }
 
@@ -144,7 +173,7 @@ async function loadJabatan() {
     const paginationInfo = document.getElementById('paginationInfo');
     const paginationControls = document.getElementById('paginationControls');
     
-    tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Memuat data...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Memuat data...</td></tr>`;
     
     const url = `/api/master/jabatan.php?page=${currentPage}&limit=${fixedLimit}&q=${encodeURIComponent(q)}`;
     const res = await apiRequest(url);
@@ -154,7 +183,7 @@ async function loadJabatan() {
         const pag = res.data.pagination;
         
         if (jabatanDataStore.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">Tidak ada data jabatan ditemukan.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted">Tidak ada data jabatan ditemukan.</td></tr>`;
             paginationInfo.textContent = 'Menampilkan 0 dari 0 data';
             paginationControls.innerHTML = '';
             return;
@@ -168,7 +197,8 @@ async function loadJabatan() {
                     <td class="text-muted">${rowNumber}</td>
                     <td><span class="badge bg-light text-dark border font-monospace">${item.kode_jabatan || '-'}</span></td>
                     <td class="fw-bold text-dark">${item.nama_jabatan}</td>
-                    <td><span class="badge bg-primary-subtle text-primary">${item.nama_divisi} (${item.kode_divisi})</span></td>
+                    <td><span class="badge bg-primary-subtle text-primary">${item.nama_divisi}</span></td>
+                    <td>${getLevelBadge(item.level)}</td>
                     <td class="text-center">
                         <div class="btn-group btn-group-sm">
                             <button class="btn btn-outline-secondary py-1 px-2" onclick="openEditJabatanModal(${idx})" title="Edit Data">
@@ -186,7 +216,7 @@ async function loadJabatan() {
         paginationInfo.textContent = `Menampilkan ${pag.from} - ${pag.to} dari ${pag.total_records} data (Total: ${pag.total_pages} Halaman)`;
         renderPagination(pag);
     } else {
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-danger">Gagal memuat data jabatan.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger">Gagal memuat data jabatan.</td></tr>`;
     }
 }
 
@@ -234,6 +264,7 @@ function openTambahJabatanModal() {
     document.getElementById('jabatanForm').reset();
     document.getElementById('formIdJabatan').value = '';
     document.getElementById('formDivisi').value = '';
+    document.getElementById('formLevel').value = '3';
     document.getElementById('jabatanFormModalTitle').innerHTML = '<i class="bi bi-briefcase-fill me-2"></i>Tambah Jabatan Baru';
     const modal = new bootstrap.Modal(document.getElementById('jabatanFormModal'));
     modal.show();
@@ -247,6 +278,7 @@ function openEditJabatanModal(idx) {
     document.getElementById('formKodeJabatan').value = item.kode_jabatan;
     document.getElementById('formNamaJabatan').value = item.nama_jabatan;
     document.getElementById('formDivisi').value = item.id_divisi || '';
+    document.getElementById('formLevel').value = item.level || 3;
     
     document.getElementById('jabatanFormModalTitle').innerHTML = '<i class="bi bi-pencil-square me-2"></i>Edit Data Jabatan';
     const modal = new bootstrap.Modal(document.getElementById('jabatanFormModal'));
@@ -273,6 +305,7 @@ async function handleSaveJabatan(e) {
         kode_jabatan: document.getElementById('formKodeJabatan').value.trim(),
         nama_jabatan: namaJabatan,
         id_divisi: document.getElementById('formDivisi').value || null,
+        level: parseInt(document.getElementById('formLevel').value, 10),
         _method: isEdit ? 'PUT' : 'POST'
     };
     
