@@ -24,7 +24,7 @@ require_once __DIR__ . '/../../components/navbar.php';
             <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
             <input type="text" id="searchInput" class="form-control" placeholder="Cari nama / NIK / email..." oninput="debounceSearch()">
         </div>
-        <button class="btn btn-primary btn-sm fw-semibold" onclick="openTambahUserModal()">
+        <button class="btn btn-primary btn-sm fw-semibold" onclick="openTambahKaryawanModal()">
             <i class="bi bi-plus-circle-fill me-1"></i> Tambah Karyawan
         </button>
     </div>
@@ -412,6 +412,10 @@ function openTambahKaryawanModal() {
     document.getElementById('karyawanFormModalTitle').innerHTML = '<i class="bi bi-person-plus-fill me-2"></i>Tambah Karyawan Baru';
     const modal = new bootstrap.Modal(document.getElementById('karyawanFormModal'));
     modal.show();
+}
+
+function openTambahUserModal() {
+    openTambahKaryawanModal();
 }
 
 function openEditKaryawanModal(idx) {

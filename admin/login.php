@@ -1,10 +1,9 @@
 <?php
 /**
- * Halaman Login Modern - PT Jaya Teknis
+ * Halaman Login Modern - PT Jaya Teknik
  */
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/session.php';
-require_once __DIR__ . '/../config/koneksi.php';
 
 // Jika sudah login, langsung arahkan ke Dashboard
 if (isLoggedIn()) {

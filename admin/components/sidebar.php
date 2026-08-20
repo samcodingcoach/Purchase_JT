@@ -71,6 +71,12 @@ $isBarangActive = (strpos($currentUri, 'barang') !== false || strpos($currentUri
             <span>Master Divisi</span>
         </a>
 
+        <!-- 3. Master Jabatan -->
+        <a href="<?= BASE_URL ?>/admin/pages/jabatan/index.php" class="sidebar-link <?= (strpos($currentUri, 'jabatan') !== false) ? 'active' : '' ?>">
+            <i class="bi bi-briefcase-fill"></i>
+            <span>Master Jabatan</span>
+        </a>
+
         <!-- 3. Master Site -->
         <a href="<?= BASE_URL ?>/admin/pages/site/index.php" class="sidebar-link <?= (strpos($currentUri, 'site') !== false) ? 'active' : '' ?>">
             <i class="bi bi-geo-alt-fill"></i>
@@ -115,18 +121,4 @@ $isBarangActive = (strpos($currentUri, 'barang') !== false || strpos($currentUri
         </div>
         <?php endif; ?>
     </nav>
-
-    <!-- User Profile Footer -->
-    <div class="sidebar-footer">
-        <div class="user-avatar">
-            <?= strtoupper(substr($userName, 0, 1)) ?>
-        </div>
-        <div class="user-info">
-            <span class="user-name"><?= htmlspecialchars($userName) ?></span>
-            <span class="badge bg-primary-subtle text-primary" style="font-size: 0.7rem; font-weight: 700;"><?= htmlspecialchars($userRole) ?></span>
-        </div>
-        <a href="javascript:void(0)" onclick="handleLogout()" class="btn-logout-sidebar" title="Keluar">
-            <i class="bi bi-box-arrow-right"></i>
-        </a>
-    </div>
 </aside>
