@@ -166,14 +166,16 @@ if ($userSource === 'users') {
     $jabatanLower = strtolower($namaJabatan);
     $emailLower = strtolower($emailUser);
 
-    if (strpos($divisiLower, 'admin') !== false || strpos($divisiLower, 'it') !== false || strpos($jabatanLower, 'admin') !== false) {
-        $role = ROLE_ADMIN;
-    } elseif (strpos($divisiLower, 'logistik') !== false || strpos($jabatanLower, 'logistik') !== false || strpos($emailLower, 'logistik') !== false) {
+    if ($idJabatan === 3 || strpos($divisiLower, 'mekanik') !== false || strpos($jabatanLower, 'mekanik') !== false || strpos($emailLower, 'mekanik') !== false) {
+        $role = ROLE_MEKANIK;
+    } elseif ($idJabatan === 2 || strpos($divisiLower, 'logistik') !== false || strpos($jabatanLower, 'logistik') !== false || strpos($emailLower, 'logistik') !== false) {
         $role = ROLE_LOGISTIK;
-    } elseif (strpos($divisiLower, 'purchasing') !== false || strpos($divisiLower, 'pengadaan') !== false || strpos($jabatanLower, 'purchasing') !== false) {
+    } elseif ($idJabatan === 1 || strpos($divisiLower, 'purchasing') !== false || strpos($jabatanLower, 'purchasing') !== false || strpos($emailLower, 'purchasing') !== false) {
         $role = ROLE_PURCHASING;
-    } elseif ($levelJabatan === 1 || strpos($divisiLower, 'manajemen') !== false || strpos($jabatanLower, 'manager') !== false || strpos($jabatanLower, 'direktur') !== false || strpos($jabatanLower, 'kepala') !== false) {
+    } elseif ($idJabatan === 4 || $levelJabatan === 1 || strpos($divisiLower, 'manajemen') !== false || strpos($jabatanLower, 'manager') !== false || strpos($jabatanLower, 'direktur') !== false) {
         $role = ROLE_MANAGER;
+    } elseif (strpos($divisiLower, 'admin') !== false || strpos($divisiLower, 'it') !== false) {
+        $role = ROLE_ADMIN;
     } else {
         $role = ROLE_MEKANIK;
     }

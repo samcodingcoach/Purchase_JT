@@ -77,7 +77,18 @@ if ($method === 'GET') {
 
     $totalPages = $totalRecords > 0 ? (int)ceil($totalRecords / $limit) : 1;
 
-    // 2. Query Data dengan total stok kalkulasi (hanya site dengan penyimpanan_stok = 1)
+    $orderSql = " ORDER BY b.id_barang DESC";
+    if (!empty($search)) {
+        $searchEscaped = $conn->real_escape_string($search);
+        $orderSql = " ORDER BY 
+            CASE 
+                WHEN b.nama_barang LIKE '{$searchEscaped}%' THEN 1 
+                WHEN b.kode_barang LIKE '{$searchEscaped}%' THEN 2 
+                WHEN b.nama_barang LIKE '%{$searchEscaped}%' THEN 3 
+                ELSE 4 
+            END, b.nama_barang ASC";
+    }
+
     $sql = "SELECT b.id_barang, b.kode_barang, b.nama_barang, b.id_merk, b.id_kategori, b.default_id_vendor,
                    b.jenis, b.satuan, b.asset, b.serial_number, b.foto1, b.foto2, b.deskripsi, b.created_at, b.id_karyawan, b.aktif,
                    v.nama_perusahaan AS nama_vendor, v.kode_vendor,
@@ -88,7 +99,7 @@ if ($method === 'GET') {
             LEFT JOIN kategori_barang k ON b.id_kategori = k.id_kategori
             LEFT JOIN merk_barang m ON b.id_merk = m.id_merk
             LEFT JOIN karyawan kry ON b.id_karyawan = kry.id_karyawan"
-            . $whereSql . " ORDER BY b.id_barang DESC LIMIT ? OFFSET ?";
+            . $whereSql . $orderSql . " LIMIT ? OFFSET ?";
 
     $paramsWithLimit = $params;
     $typesWithLimit = $types . "ii";
