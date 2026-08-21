@@ -152,7 +152,6 @@ require_once __DIR__ . '/../../components/navbar.php';
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="form-text small" id="selectedKategoriLabel">Belum memilih kategori.</div>
                                 </div>
 
                                 <!-- Searchable Merk -->
@@ -171,7 +170,6 @@ require_once __DIR__ . '/../../components/navbar.php';
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="form-text small" id="selectedMerkLabel">Belum memilih merk.</div>
                                 </div>
 
                                 <div class="col-md-6">
@@ -216,7 +214,6 @@ require_once __DIR__ . '/../../components/navbar.php';
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="form-text small" id="selectedVendorLabel">Belum ada vendor rekanan yang dipilih.</div>
                                 </div>
                             </div>
                         </div>
@@ -795,7 +792,8 @@ function renderPagination(pag) {
 // SEARCHABLE SELECT: KATEGORI
 // -------------------------------------------------------------
 function openKategoriDropdown() {
-    renderKategoriList(kategoriListCache);
+    const query = document.getElementById('kategoriSearchInput').value.trim();
+    renderKategoriList(kategoriListCache, query);
     document.getElementById('kategoriDropdownMenu').classList.remove('d-none');
 }
 
@@ -805,44 +803,87 @@ function debounceKategoriSearch() {
         const query = document.getElementById('kategoriSearchInput').value.trim();
         const res = await apiRequest(`/api/master/kategori.php?limit=100&q=${encodeURIComponent(query)}`);
         if (res && res.success) {
-            renderKategoriList(res.data.items || []);
+            renderKategoriList(res.data.items || [], query);
         }
-    }, 300);
+    }, 250);
 }
 
-function renderKategoriList(items) {
+function renderKategoriList(items, searchQuery = '') {
     const list = document.getElementById('kategoriDropdownList');
-    if (items.length === 0) {
+    const cleanQuery = searchQuery.trim();
+    let html = '';
+
+    const hasExactMatch = items.some(k => k.nama_kategori.toLowerCase() === cleanQuery.toLowerCase());
+
+    if (items.length === 0 && !cleanQuery) {
         list.innerHTML = `<div class="p-2 text-center text-muted small">Tidak ada kategori ditemukan.</div>`;
         return;
     }
-    let html = '';
-    items.forEach(k => {
-        html += `<div class="searchable-select-item" onclick="selectKategori(${k.id_kategori}, '${k.nama_kategori.replace(/'/g, "\\'")}')">
-                    <span class="fw-bold">${k.nama_kategori}</span>
-                 </div>`;
-    });
+
+    if (items.length > 0) {
+        items.forEach(k => {
+            html += `<div class="searchable-select-item" onclick="selectKategori(${k.id_kategori}, '${k.nama_kategori.replace(/'/g, "\\'")}')">
+                        <span class="fw-bold text-dark">${k.nama_kategori}</span>
+                     </div>`;
+        });
+    } else {
+        html += `<div class="p-2 text-center text-muted small">Kategori <em>"${cleanQuery}"</em> belum terdaftar.</div>`;
+    }
+
+    // Tombol Tambah Baru jika tidak ada di list
+    if (cleanQuery && !hasExactMatch) {
+        const escapedQuery = cleanQuery.replace(/'/g, "\\'");
+        html += `
+            <div class="searchable-select-item text-primary bg-primary-subtle border-top border-primary-subtle py-2 d-flex align-items-center justify-content-between" onclick="quickCreateKategori('${escapedQuery}')">
+                <span><i class="bi bi-plus-circle-fill me-1"></i> Tambah Baru: <strong>"${cleanQuery}"</strong></span>
+                <span class="badge bg-primary text-white" style="font-size: 0.7rem;">Simpan Otomatis</span>
+            </div>
+        `;
+    }
+
     list.innerHTML = html;
+}
+
+async function quickCreateKategori(name) {
+    const list = document.getElementById('kategoriDropdownList');
+    list.innerHTML = `<div class="p-2 text-center text-muted small"><span class="spinner-border spinner-border-sm text-primary me-2"></span>Menyimpan kategori baru "${name}"...</div>`;
+
+    const res = await apiRequest('/api/master/kategori.php', {
+        method: 'POST',
+        body: JSON.stringify({ nama_kategori: name, aktif: 1 })
+    });
+
+    if (res && res.success) {
+        const newId = res.data?.id_kategori || (res.data?.id || 0);
+        // Refresh cache
+        const resK = await apiRequest('/api/master/kategori.php?limit=100');
+        if (resK && resK.success) kategoriListCache = resK.data.items || [];
+        
+        selectKategori(newId, name);
+        showToast(`Kategori "${name}" berhasil ditambahkan dan dipilih!`, 'success');
+    } else {
+        showToast(res.message || 'Gagal menambahkan kategori baru', 'error');
+        renderKategoriList(kategoriListCache, name);
+    }
 }
 
 function selectKategori(id, name) {
     document.getElementById('formKategoriIdVal').value = id;
     document.getElementById('kategoriSearchInput').value = name;
-    document.getElementById('selectedKategoriLabel').innerHTML = `<span class="badge bg-primary-subtle text-primary">${name}</span>`;
     document.getElementById('kategoriDropdownMenu').classList.add('d-none');
 }
 
 function clearKategoriSelection() {
     document.getElementById('formKategoriIdVal').value = '';
     document.getElementById('kategoriSearchInput').value = '';
-    document.getElementById('selectedKategoriLabel').textContent = 'Belum memilih kategori.';
 }
 
 // -------------------------------------------------------------
 // SEARCHABLE SELECT: MERK
 // -------------------------------------------------------------
 function openMerkDropdown() {
-    renderMerkList(merkListCache);
+    const query = document.getElementById('merkSearchInput').value.trim();
+    renderMerkList(merkListCache, query);
     document.getElementById('merkDropdownMenu').classList.remove('d-none');
 }
 
@@ -852,37 +893,79 @@ function debounceMerkSearch() {
         const query = document.getElementById('merkSearchInput').value.trim();
         const res = await apiRequest(`/api/master/merk.php?limit=100&q=${encodeURIComponent(query)}`);
         if (res && res.success) {
-            renderMerkList(res.data.items || []);
+            renderMerkList(res.data.items || [], query);
         }
-    }, 300);
+    }, 250);
 }
 
-function renderMerkList(items) {
+function renderMerkList(items, searchQuery = '') {
     const list = document.getElementById('merkDropdownList');
-    if (items.length === 0) {
+    const cleanQuery = searchQuery.trim();
+    let html = '';
+
+    const hasExactMatch = items.some(m => m.nama_merk.toLowerCase() === cleanQuery.toLowerCase());
+
+    if (items.length === 0 && !cleanQuery) {
         list.innerHTML = `<div class="p-2 text-center text-muted small">Tidak ada merk ditemukan.</div>`;
         return;
     }
-    let html = '';
-    items.forEach(m => {
-        html += `<div class="searchable-select-item" onclick="selectMerk(${m.id_merk}, '${m.nama_merk.replace(/'/g, "\\'")}')">
-                    <span class="fw-bold">${m.nama_merk}</span>
-                 </div>`;
-    });
+
+    if (items.length > 0) {
+        items.forEach(m => {
+            html += `<div class="searchable-select-item" onclick="selectMerk(${m.id_merk}, '${m.nama_merk.replace(/'/g, "\\'")}')">
+                        <span class="fw-bold text-dark">${m.nama_merk}</span>
+                     </div>`;
+        });
+    } else {
+        html += `<div class="p-2 text-center text-muted small">Merk <em>"${cleanQuery}"</em> belum terdaftar.</div>`;
+    }
+
+    // Tombol Tambah Baru jika tidak ada di list
+    if (cleanQuery && !hasExactMatch) {
+        const escapedQuery = cleanQuery.replace(/'/g, "\\'");
+        html += `
+            <div class="searchable-select-item text-primary bg-primary-subtle border-top border-primary-subtle py-2 d-flex align-items-center justify-content-between" onclick="quickCreateMerk('${escapedQuery}')">
+                <span><i class="bi bi-plus-circle-fill me-1"></i> Tambah Baru: <strong>"${cleanQuery}"</strong></span>
+                <span class="badge bg-primary text-white" style="font-size: 0.7rem;">Simpan Otomatis</span>
+            </div>
+        `;
+    }
+
     list.innerHTML = html;
+}
+
+async function quickCreateMerk(name) {
+    const list = document.getElementById('merkDropdownList');
+    list.innerHTML = `<div class="p-2 text-center text-muted small"><span class="spinner-border spinner-border-sm text-primary me-2"></span>Menyimpan merk baru "${name}"...</div>`;
+
+    const res = await apiRequest('/api/master/merk.php', {
+        method: 'POST',
+        body: JSON.stringify({ nama_merk: name, aktif: 1 })
+    });
+
+    if (res && res.success) {
+        const newId = res.data?.id_merk || (res.data?.id || 0);
+        // Refresh cache
+        const resM = await apiRequest('/api/master/merk.php?limit=100');
+        if (resM && resM.success) merkListCache = resM.data.items || [];
+        
+        selectMerk(newId, name);
+        showToast(`Merk "${name}" berhasil ditambahkan dan dipilih!`, 'success');
+    } else {
+        showToast(res.message || 'Gagal menambahkan merk baru', 'error');
+        renderMerkList(merkListCache, name);
+    }
 }
 
 function selectMerk(id, name) {
     document.getElementById('formMerkIdVal').value = id;
     document.getElementById('merkSearchInput').value = name;
-    document.getElementById('selectedMerkLabel').innerHTML = `<span class="badge bg-primary-subtle text-primary">${name}</span>`;
     document.getElementById('merkDropdownMenu').classList.add('d-none');
 }
 
 function clearMerkSelection() {
     document.getElementById('formMerkIdVal').value = '';
     document.getElementById('merkSearchInput').value = '';
-    document.getElementById('selectedMerkLabel').textContent = 'Belum memilih merk.';
 }
 
 // -------------------------------------------------------------
@@ -901,7 +984,7 @@ function debounceVendorSearch() {
         if (res && res.success) {
             renderVendorList(res.data.items || []);
         }
-    }, 300);
+    }, 250);
 }
 
 function renderVendorList(items) {
@@ -913,7 +996,7 @@ function renderVendorList(items) {
     let html = '';
     items.forEach(v => {
         html += `<div class="searchable-select-item" onclick="selectVendor(${v.id_vendor}, '${v.nama_perusahaan.replace(/'/g, "\\'")}', '${v.kode_vendor || ''}')">
-                    <div class="fw-bold">${v.nama_perusahaan}</div>
+                    <div class="fw-bold text-dark">${v.nama_perusahaan}</div>
                     <div class="text-muted small" style="font-size: 0.75rem;">${v.kode_vendor || '-'} &bull; ${v.kota || '-'}</div>
                  </div>`;
     });
@@ -923,14 +1006,12 @@ function renderVendorList(items) {
 function selectVendor(id, name, code) {
     document.getElementById('formVendorIdVal').value = id;
     document.getElementById('vendorSearchInput').value = `${name} (${code || 'VND'})`;
-    document.getElementById('selectedVendorLabel').innerHTML = `<span class="badge bg-primary-subtle text-primary">${name}</span>`;
     document.getElementById('vendorDropdownMenu').classList.add('d-none');
 }
 
 function clearVendorSelection() {
     document.getElementById('formVendorIdVal').value = '';
     document.getElementById('vendorSearchInput').value = '';
-    document.getElementById('selectedVendorLabel').textContent = 'Belum ada vendor rekanan yang dipilih.';
 }
 
 // Klik di luar dropdown untuk menutup
@@ -1156,19 +1237,26 @@ async function handleSaveBarang(e) {
     let foto1Final = document.getElementById('formFoto1Val').value;
     if (pendingFile1) {
         const formData1 = new FormData();
+        formData1.append('image', pendingFile1);
         formData1.append('foto', pendingFile1);
-        formData1.append('subfolder', 'barang');
+        formData1.append('type', 'barang');
         try {
             const resUp1 = await fetch(BASE_URL + '/api/master/upload_image.php', {
                 method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Authorization': 'Bearer ' + API_TOKEN
+                },
                 body: formData1
             });
             const dataUp1 = await resUp1.json();
-            if (dataUp1.success) {
-                foto1Final = dataUp1.data.file_path;
+            if (dataUp1 && dataUp1.success && dataUp1.data) {
+                foto1Final = dataUp1.data.url || dataUp1.data.file_path || dataUp1.data.filename;
+            } else {
+                console.error('Upload foto1 gagal:', dataUp1?.message);
             }
         } catch (err) {
-            console.error('Upload foto1 gagal:', err);
+            console.error('Upload foto1 network error:', err);
         }
     }
 
@@ -1176,19 +1264,26 @@ async function handleSaveBarang(e) {
     let foto2Final = document.getElementById('formFoto2Val').value;
     if (pendingFile2) {
         const formData2 = new FormData();
+        formData2.append('image', pendingFile2);
         formData2.append('foto', pendingFile2);
-        formData2.append('subfolder', 'barang');
+        formData2.append('type', 'barang');
         try {
             const resUp2 = await fetch(BASE_URL + '/api/master/upload_image.php', {
                 method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Authorization': 'Bearer ' + API_TOKEN
+                },
                 body: formData2
             });
             const dataUp2 = await resUp2.json();
-            if (dataUp2.success) {
-                foto2Final = dataUp2.data.file_path;
+            if (dataUp2 && dataUp2.success && dataUp2.data) {
+                foto2Final = dataUp2.data.url || dataUp2.data.file_path || dataUp2.data.filename;
+            } else {
+                console.error('Upload foto2 gagal:', dataUp2?.message);
             }
         } catch (err) {
-            console.error('Upload foto2 gagal:', err);
+            console.error('Upload foto2 network error:', err);
         }
     }
 

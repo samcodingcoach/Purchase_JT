@@ -212,6 +212,21 @@ if ($currentUser['role'] !== ROLE_ADMIN) {
 $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
 
 // -------------------------------------------------------------
+/**
+ * Helper: Hapus berkas fisik gambar di images/uploads/ jika ada
+ */
+function deleteImageFile(?string $relativePath): void {
+    if (empty($relativePath)) return;
+    $cleanPath = ltrim(str_replace('\\', '/', $relativePath), '/');
+    if (strpos($cleanPath, 'images/uploads/') === 0) {
+        $fullPath = __DIR__ . '/../../' . $cleanPath;
+        if (file_exists($fullPath) && is_file($fullPath)) {
+            @unlink($fullPath);
+        }
+    }
+}
+
+// -------------------------------------------------------------
 // POST: Tambah Barang Baru
 // -------------------------------------------------------------
 if ($method === 'POST') {
@@ -226,8 +241,8 @@ if ($method === 'POST') {
     $serialNumber = trim($input['serial_number'] ?? '');
     $deskripsi = trim($input['deskripsi'] ?? '');
     $idKaryawan = $currentUser['id_karyawan'] ?? 1;
-    $foto1 = trim($input['foto1'] ?? '');
-    $foto2 = trim($input['foto2'] ?? '');
+    $foto1 = !empty(trim($input['foto1'] ?? '')) ? trim($input['foto1']) : null;
+    $foto2 = !empty(trim($input['foto2'] ?? '')) ? trim($input['foto2']) : null;
     $aktif = isset($input['aktif']) ? (int)$input['aktif'] : 1;
 
     if (empty($namaBarang)) {
@@ -297,7 +312,7 @@ if ($method === 'POST') {
 }
 
 // -------------------------------------------------------------
-// PUT: Update Data Barang
+// PUT: Update Data Barang & Bersihkan Berkas Foto yang Dihapus
 // -------------------------------------------------------------
 if ($method === 'PUT') {
     $idBarang = isset($input['id_barang']) ? (int)$input['id_barang'] : 0;
@@ -311,12 +326,31 @@ if ($method === 'PUT') {
     $idMerk = !empty($input['id_merk']) ? (int)$input['id_merk'] : 1;
     $serialNumber = trim($input['serial_number'] ?? '');
     $deskripsi = trim($input['deskripsi'] ?? '');
-    $foto1 = trim($input['foto1'] ?? '');
-    $foto2 = trim($input['foto2'] ?? '');
+    $foto1 = !empty(trim($input['foto1'] ?? '')) ? trim($input['foto1']) : null;
+    $foto2 = !empty(trim($input['foto2'] ?? '')) ? trim($input['foto2']) : null;
     $aktif = isset($input['aktif']) ? (int)$input['aktif'] : 1;
 
     if ($idBarang <= 0 || empty($namaBarang)) {
         jsonResponse(false, 'ID barang dan nama barang wajib diisi.', null, 422);
+    }
+
+    // Ambil data foto lama dari database untuk mengecek perubahan / penghapusan
+    $oldFoto1 = null;
+    $oldFoto2 = null;
+    $chkOld = $conn->query("SELECT foto1, foto2 FROM barang WHERE id_barang = $idBarang");
+    if ($chkOld && $rowOld = $chkOld->fetch_assoc()) {
+        $oldFoto1 = $rowOld['foto1'];
+        $oldFoto2 = $rowOld['foto2'];
+    }
+
+    // Jika foto1 diubah atau dihapus, hapus file lama dari folder uploads
+    if (!empty($oldFoto1) && $oldFoto1 !== $foto1) {
+        deleteImageFile($oldFoto1);
+    }
+
+    // Jika foto2 diubah atau dihapus, hapus file lama dari folder uploads
+    if (!empty($oldFoto2) && $oldFoto2 !== $foto2) {
+        deleteImageFile($oldFoto2);
     }
 
     $stmt = $conn->prepare("UPDATE barang SET kode_barang = ?, id_merk = ?, id_kategori = ?, default_id_vendor = ?, 
@@ -345,7 +379,6 @@ if ($method === 'PUT') {
 
         // 2. Simpan Harga Vendor jika ada
         if (isset($input['harga_vendors']) && is_array($input['harga_vendors'])) {
-            // Hapus existing harga untuk replace atau tambah baru
             $conn->query("DELETE FROM barang_hargavendor WHERE id_barang = $idBarang");
             foreach ($input['harga_vendors'] as $hItem) {
                 $vId = isset($hItem['id_vendor']) ? (int)$hItem['id_vendor'] : 0;
@@ -368,13 +401,20 @@ if ($method === 'PUT') {
 }
 
 // -------------------------------------------------------------
-// DELETE: Hapus Data Barang
+// DELETE: Hapus Data Barang & Berkas Fisik Gambar
 // -------------------------------------------------------------
 if ($method === 'DELETE') {
     $idBarang = isset($input['id_barang']) ? (int)$input['id_barang'] : (int)($_GET['id'] ?? 0);
 
     if ($idBarang <= 0) {
         jsonResponse(false, 'ID barang tidak valid.', null, 422);
+    }
+
+    // Ambil path foto untuk dihapus dari server
+    $chkOld = $conn->query("SELECT foto1, foto2 FROM barang WHERE id_barang = $idBarang");
+    if ($chkOld && $rowOld = $chkOld->fetch_assoc()) {
+        deleteImageFile($rowOld['foto1']);
+        deleteImageFile($rowOld['foto2']);
     }
 
     $stmt = $conn->prepare("DELETE FROM barang WHERE id_barang = ?");
@@ -386,7 +426,7 @@ if ($method === 'DELETE') {
         $conn->query("DELETE FROM barang_stok WHERE id_barang = $idBarang");
         $conn->query("DELETE FROM barang_hargavendor WHERE id_barang = $idBarang");
 
-        jsonResponse(true, 'Barang berhasil dihapus.', null, 200);
+        jsonResponse(true, 'Barang berhasil dihapus beserta berkas fotonya.', null, 200);
     } else {
         $stmt->close();
         jsonResponse(false, 'Gagal menghapus barang. Data mungkin terkait dengan transaksi lain.', null, 500);

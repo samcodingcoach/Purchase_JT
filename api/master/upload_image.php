@@ -4,24 +4,37 @@
  */
 
 header('Content-Type: application/json; charset=utf-8');
+header('Access-Control-Allow-Origin: ' . ($_SERVER['HTTP_ORIGIN'] ?? '*'));
+header('Access-Control-Allow-Credentials: true');
+header('Access-Control-Allow-Methods: POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
 
 require_once __DIR__ . '/../middleware/auth.php';
 
 $currentUser = apiAuth();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    jsonResponse(false, 'Metode HTTP tidak didukung.', null, 405);
+    jsonResponse(false, 'Metode HTTP tidak didukung. Gunakan POST.', null, 405);
 }
 
-if (!isset($_FILES['image']) || $_FILES['image']['error'] !== UPLOAD_ERR_OK) {
+// Deteksi berkas dari field 'image', 'foto', atau 'file'
+$file = $_FILES['image'] ?? $_FILES['foto'] ?? $_FILES['file'] ?? null;
+
+if (!$file || $file['error'] !== UPLOAD_ERR_OK) {
     jsonResponse(false, 'Tidak ada berkas gambar yang diunggah atau terjadi kesalahan saat upload.', null, 400);
 }
 
-$file = $_FILES['image'];
-$type = trim($_POST['type'] ?? 'barang'); // 'barang' | 'profile'
+$type = trim($_POST['type'] ?? $_POST['subfolder'] ?? 'barang'); // 'barang' | 'profile' | 'company'
 
 // Direktori target
-$baseUploadDir = __DIR__ . '/../../images/uploads/' . ($type === 'profile' ? 'company/' : 'barang/');
+$subDir = ($type === 'profile' || $type === 'company') ? 'company/' : 'barang/';
+$baseUploadDir = __DIR__ . '/../../images/uploads/' . $subDir;
+
 if (!is_dir($baseUploadDir)) {
     mkdir($baseUploadDir, 0777, true);
 }
@@ -33,7 +46,7 @@ if ($file['size'] > $maxSize) {
 }
 
 // Validasi Ekstensi & MIME
-$allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+$allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'];
 $finfo = finfo_open(FILEINFO_MIME_TYPE);
 $mimeType = finfo_file($finfo, $file['tmp_name']);
 finfo_close($finfo);
@@ -43,15 +56,19 @@ if (!in_array($mimeType, $allowedMimes)) {
 }
 
 $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
-$filename = ($type === 'profile' ? 'company_' : 'brg_') . time() . '_' . bin2hex(random_bytes(4)) . '.' . strtolower($ext);
+if (empty($ext)) $ext = 'jpg';
+
+$prefix = ($type === 'profile' || $type === 'company') ? 'company_' : 'brg_';
+$filename = $prefix . time() . '_' . bin2hex(random_bytes(4)) . '.' . strtolower($ext);
 $targetPath = $baseUploadDir . $filename;
 
 if (move_uploaded_file($file['tmp_name'], $targetPath)) {
-    $relativeUrl = 'images/uploads/' . ($type === 'profile' ? 'company/' : 'barang/') . $filename;
+    $relativeUrl = 'images/uploads/' . $subDir . $filename;
     jsonResponse(true, 'Gambar berhasil diunggah.', [
         'filename' => $filename,
-        'url' => $relativeUrl
+        'url' => $relativeUrl,
+        'file_path' => $relativeUrl
     ], 200);
 } else {
-    jsonResponse(false, 'Gagal memindahkan berkas yang diunggah.', null, 500);
+    jsonResponse(false, 'Gagal memindahkan berkas yang diunggah ke folder target.', null, 500);
 }
