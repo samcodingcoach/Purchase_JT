@@ -12,7 +12,7 @@ $fullLocation = trim($companyAddress . ($companyCity ? ', ' . $companyCity : '')
 
     <footer class="py-3 px-4 bg-white border-top text-muted small text-center text-md-start d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
         <div>
-            &copy; <?= date('Y') ?> <strong><?= htmlspecialchars($companyName) ?></strong> &bull; Modul Request Order (Purchasing)
+            &copy; <?= date('Y') ?> <strong><?= htmlspecialchars($companyName) ?></strong> &bull; Purchase Management System
         </div>
         <div class="text-muted">
             <i class="bi bi-geo-alt me-1 text-primary"></i><?= htmlspecialchars($fullLocation ?: 'Sistem Internal Galangan & Bengkel Kapal') ?>
@@ -274,6 +274,7 @@ async function apiRequest(endpoint, options = {}) {
     };
     
     options.headers = Object.assign({}, defaultHeaders, options.headers || {});
+    options.credentials = options.credentials || 'include';
     
     try {
         const response = await fetch(BASE_URL + endpoint, options);

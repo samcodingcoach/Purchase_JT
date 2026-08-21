@@ -25,7 +25,7 @@ require_once __DIR__ . '/components/navbar.php';
                     <div>
                         <span class="badge bg-white text-dark mb-2 px-2 py-1 fw-bold">PORTAL PURCHASING &bull; <?= htmlspecialchars($role) ?></span>
                         <h2 class="fs-4 fw-bold mb-1">Selamat Datang, <?= htmlspecialchars($nama) ?>!</h2>
-                        <p class="mb-0 text-white-50 small">Sistem Permintaan Pengadaan Barang (Request Order) &bull; Bengkel Las &amp; Bubut Kapal</p>
+                        <p class="mb-0 text-white-50 small">Purchase Management System</p>
                     </div>
                     <?php if ($role === ROLE_MEKANIK || $role === ROLE_ADMIN): ?>
                     <a href="<?= BASE_URL ?>/admin/pages/request_order/create.php" class="btn btn-light fw-semibold text-primary px-3 py-2">

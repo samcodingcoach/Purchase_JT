@@ -237,10 +237,8 @@ $companyCity = $companyProfile['kota'] ?? 'Surabaya';
                 <i class="bi bi-shield-check"></i>
             </div>
             <h1 class="fs-4 fw-bold mb-1 tracking-tight"><?= htmlspecialchars($companyName) ?></h1>
-            <p class="text-white-50 small mb-0 fw-medium">Sistem Permintaan Pengadaan Barang (Request Order)</p>
-            <div class="mt-2 text-white-50" style="font-size: 0.75rem;">
-                <i class="bi bi-geo-alt me-1"></i><?= htmlspecialchars($companyAddress) ?>, <?= htmlspecialchars($companyCity) ?>
-            </div>
+            <p class="text-white-50 small mb-0 fw-medium">Purchase Management System</p>
+           
         </div>
 
         <div class="login-form-body">
@@ -280,24 +278,14 @@ $companyCity = $companyProfile['kota'] ?? 'Surabaya';
             <!-- Quick Demo Account Pills for Easy Testing -->
             <div class="demo-roles-container">
                 <div class="text-center text-muted small mb-2 fw-bold" style="font-size: 0.75rem;">
-                    <i class="bi bi-person-badge me-1"></i> UJI COBA ROLE CEPAT:
+                    UJI COBA ROLE CEPAT:
                 </div>
                 <div class="d-flex flex-wrap gap-1 justify-content-center">
-                    <button type="button" class="role-btn-chip" onclick="setDemoAccount('admin', 'admin123')">
-                        <i class="bi bi-shield-fill text-danger me-1"></i>Admin (Super)
-                    </button>
-                    <button type="button" class="role-btn-chip" onclick="setDemoAccount('mekanik@jayateknis.com', 'admin123')">
-                        <i class="bi bi-wrench-adjustable text-primary me-1"></i>Mekanik (KRY002)
-                    </button>
-                    <button type="button" class="role-btn-chip" onclick="setDemoAccount('logistik@jayateknis.com', 'admin123')">
-                        <i class="bi bi-box-seam text-info me-1"></i>Logistik (KRY003)
-                    </button>
-                    <button type="button" class="role-btn-chip" onclick="setDemoAccount('purchasing@jayateknis.com', 'admin123')">
-                        <i class="bi bi-cart-check text-success me-1"></i>Purchasing (KRY004)
-                    </button>
-                    <button type="button" class="role-btn-chip" onclick="setDemoAccount('manager@jayateknis.com', 'admin123')">
-                        <i class="bi bi-person-workspace text-dark me-1"></i>Manager (KRY005)
-                    </button>
+                    <button type="button" class="role-btn-chip" onclick="setDemoAccount('admin', 'admin123')">Admin</button>
+                    <button type="button" class="role-btn-chip" onclick="setDemoAccount('mekanik@jayateknis.com', 'admin123')">Mekanik</button>
+                    <button type="button" class="role-btn-chip" onclick="setDemoAccount('logistik@jayateknis.com', 'admin123')">Logistik</button>
+                    <button type="button" class="role-btn-chip" onclick="setDemoAccount('purchasing@jayateknis.com', 'admin123')">Purchasing</button>
+                    <button type="button" class="role-btn-chip" onclick="setDemoAccount('manager@jayateknis.com', 'admin123')">Manager</button>
                 </div>
             </div>
         </div>
@@ -352,6 +340,7 @@ async function handleLoginSubmit(event) {
     try {
         const response = await fetch(BASE_URL + '/api/auth/login.php', {
             method: 'POST',
+            credentials: 'include',
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'

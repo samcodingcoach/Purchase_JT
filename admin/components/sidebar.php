@@ -57,7 +57,7 @@ if ($menuQuery && $menuQuery->num_rows > 0) {
             </div>
             <div class="brand-text">
                 <span class="brand-title"><?= htmlspecialchars($companyName) ?></span>
-                <span class="brand-subtitle">Purchasing &amp; RO System</span>
+                <span class="brand-subtitle">Web-Based Purchase System</span>
             </div>
         </a>
     </div>
