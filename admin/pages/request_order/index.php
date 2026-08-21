@@ -260,13 +260,39 @@ async function loadMasterSites() {
     }
 }
 
+let currentSearchAbortController = null;
+
 // -------------------------------------------------------------
-// 2. LOAD LIST REQUEST ORDER
+// 2. LOAD LIST REQUEST ORDER (WITH SKELETON LOADING)
 // -------------------------------------------------------------
+function renderTableSkeleton(rowCount = 5) {
+    const tbody = document.getElementById('roTableBody');
+    let skeletonHtml = '';
+    for (let i = 0; i < rowCount; i++) {
+        skeletonHtml += `
+            <tr>
+                <td class="text-center"><div class="skeleton-shimmer" style="width: 20px; height: 16px;"></div></td>
+                <td><div class="skeleton-shimmer" style="width: 120px; height: 16px;"></div></td>
+                <td><div class="skeleton-shimmer" style="width: 75px; height: 16px;"></div></td>
+                <td><div class="skeleton-shimmer" style="width: 60px; height: 16px;"></div></td>
+                <td><div class="skeleton-shimmer" style="width: 130px; height: 16px;"></div></td>
+                <td><div class="skeleton-shimmer" style="width: 90px; height: 20px; border-radius: 10px;"></div></td>
+                <td class="text-center"><div class="skeleton-shimmer" style="width: 110px; height: 22px; border-radius: 12px;"></div></td>
+                <td class="text-center">
+                    <div class="d-flex justify-content-center gap-1">
+                        <div class="skeleton-shimmer" style="width: 28px; height: 26px; border-radius: 4px;"></div>
+                        <div class="skeleton-shimmer" style="width: 28px; height: 26px; border-radius: 4px;"></div>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
+    tbody.innerHTML = skeletonHtml;
+}
+
 async function loadRequestOrders(page = currentPage) {
     currentPage = page;
-    const tbody = document.getElementById('roTableBody');
-    tbody.innerHTML = `<tr><td colspan="9" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div> Memuat data Request Order...</td></tr>`;
+    renderTableSkeleton(5);
 
     const search = document.getElementById('filterSearch').value.trim();
     const siteId = document.getElementById('filterSite').value;
@@ -279,13 +305,26 @@ async function loadRequestOrders(page = currentPage) {
     if (startDate) url += `&start_date=${encodeURIComponent(startDate)}`;
     if (endDate) url += `&end_date=${encodeURIComponent(endDate)}`;
 
-    const res = await apiRequest(url);
+    if (currentSearchAbortController) {
+        currentSearchAbortController.abort();
+    }
+    currentSearchAbortController = new AbortController();
 
-    if (res && res.success) {
-        renderTableRows(res.data.items || [], (currentPage - 1) * currentLimit);
-        renderPagination(res.data.pagination || {});
-    } else {
-        tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-danger"><i class="bi bi-exclamation-triangle me-1"></i> Gagal memuat data. Silakan coba lagi.</td></tr>`;
+    try {
+        const res = await apiRequest(url, { signal: currentSearchAbortController.signal });
+        const tbody = document.getElementById('roTableBody');
+
+        if (res && res.success) {
+            renderTableRows(res.data.items || [], (currentPage - 1) * currentLimit);
+            renderPagination(res.data.pagination || {});
+        } else {
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger"><i class="bi bi-exclamation-triangle me-1"></i> Gagal memuat data. Silakan coba lagi.</td></tr>`;
+        }
+    } catch (e) {
+        if (e.name !== 'AbortError') {
+            const tbody = document.getElementById('roTableBody');
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger"><i class="bi bi-exclamation-triangle me-1"></i> Terjadi kesalahan saat memuat data.</td></tr>`;
+        }
     }
 }
 
