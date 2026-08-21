@@ -93,7 +93,13 @@ const AppTabs = {
         
         for (const t of known) {
             const tPath = new URL(t.url, window.location.origin).pathname.replace(/\/+$/, '');
-            if (path === tPath || (t.id === 'karyawan' && path.includes('/user/')) || (t.id === 'barang' && path.includes('/barang/')) || (t.id === 'ro_create' && path.includes('/create.php'))) {
+            if (
+                path === tPath || 
+                (t.id === 'karyawan' && path.includes('/user/')) || 
+                (t.id === 'barang' && path.includes('/barang/')) || 
+                (t.id === 'request_order' && (path.includes('/request_order/index.php') || path.includes('/request_order/edit.php'))) || 
+                (t.id === 'ro_create' && path.includes('/create.php'))
+            ) {
                 return t;
             }
         }
@@ -267,6 +273,9 @@ async function handleLogout() {
 
 // Centralized Fetch API Wrapper
 async function apiRequest(endpoint, options = {}) {
+    if (typeof options === 'string') {
+        options = { method: options };
+    }
     const defaultHeaders = {
         'Authorization': 'Bearer ' + API_TOKEN,
         'Content-Type': 'application/json',
