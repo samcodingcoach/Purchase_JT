@@ -370,17 +370,34 @@ function renderTableRows(items, offset) {
             }
         }
 
-        // Cek Hak Edit:
-        // - DRAFT: Hanya pembuatnya sendiri (atau Admin)
-        // - TERKIRIM: Pembuatnya sendiri ATAU tim Logistik, Purchasing, Manager, Admin
+        // Cek Hak Akses & Aksi:
         const isOwner = (ro.id_karyawan == CURRENT_USER_ID_KARYAWAN);
-        const isStaffLogistikOrAdmin = ['LOGISTIK', 'PURCHASING', 'MANAGER', 'ADMIN'].includes(CURRENT_USER_ROLE.toUpperCase());
+        const roleUpper = CURRENT_USER_ROLE.toUpperCase();
+        const isPurchasingOrAdmin = ['PURCHASING', 'STAFF PURCHASING', 'MANAGER', 'MANAGER CABANG', 'ADMIN', 'ADMINISTRATOR'].includes(roleUpper);
+        const isStaffLogistikOrAdmin = ['LOGISTIK', 'ADMIN', 'ADMINISTRATOR'].includes(roleUpper);
 
+        // Hak Edit Item/RO: Hanya Pembuat & Logistik/Admin saat status masih DRAFT/TERKIRIM (Purchasing tidak boleh manipulasi item)
         let canEdit = false;
         if (ro.status === 'DRAFT') {
-            canEdit = isOwner || CURRENT_USER_ROLE.toUpperCase() === 'ADMIN';
+            canEdit = isOwner || roleUpper === 'ADMIN' || roleUpper === 'ADMINISTRATOR';
         } else if (ro.status === 'TERKIRIM') {
-            canEdit = isOwner || isStaffLogistikOrAdmin;
+            canEdit = (isOwner || isStaffLogistikOrAdmin) && !['PURCHASING', 'STAFF PURCHASING'].includes(roleUpper);
+        }
+
+        // Tombol Proses PO (Khusus Purchasing, Manager, Admin saat TERKIRIM)
+        let btnProsesPo = '';
+        if (ro.status === 'TERKIRIM' && isPurchasingOrAdmin) {
+            btnProsesPo = `
+                <a href="${BASE_URL}/admin/pages/request_order/proses_po.php?id=${ro.id_request}" class="btn btn-success btn-sm px-2 py-1 text-white shadow-xs" title="Proses ke Purchase Order (PO)">
+                    <i class="bi bi-cart-check-fill"></i>
+                </a>
+            `;
+        } else if (ro.status === 'DISETUJUI' && isPurchasingOrAdmin) {
+            btnProsesPo = `
+                <a href="${BASE_URL}/admin/pages/request_order/proses_po.php?id=${ro.id_request}" class="btn btn-outline-success btn-sm px-2 py-1" title="Lihat Rincian PO">
+                    <i class="bi bi-file-earmark-check"></i>
+                </a>
+            `;
         }
 
         html += `
@@ -403,17 +420,18 @@ function renderTableRows(items, offset) {
                         <button type="button" class="btn btn-outline-primary btn-sm px-2 py-1" onclick="viewDetailRo(${ro.id_request})" title="Lihat Detail Dokumen">
                             <i class="bi bi-eye-fill"></i>
                         </button>
+                        ${btnProsesPo}
                         ${canEdit ? `
                             <a href="${BASE_URL}/admin/pages/request_order/edit.php?id=${ro.id_request}" class="btn btn-outline-warning btn-sm px-2 py-1" title="Edit / Update RO">
                                 <i class="bi bi-pencil-square"></i>
                             </a>
                         ` : ''}
-                        ${(ro.status === 'DRAFT' && (isOwner || CURRENT_USER_ROLE.toUpperCase() === 'ADMIN')) ? `
+                        ${(ro.status === 'DRAFT' && (isOwner || ['ADMIN', 'ADMINISTRATOR'].includes(roleUpper))) ? `
                             <button type="button" class="btn btn-outline-danger btn-sm px-2 py-1" onclick="deleteDraftRo(${ro.id_request}, '${ro.nomor}')" title="Hapus Draft">
                                 <i class="bi bi-trash-fill"></i>
                             </button>
                         ` : ''}
-                        ${(ro.status === 'TERKIRIM' && (isOwner || isStaffLogistikOrAdmin)) ? `
+                        ${(ro.status === 'TERKIRIM' && isOwner) ? `
                             <button type="button" class="btn btn-outline-danger btn-sm px-2 py-1" onclick="cancelRo(${ro.id_request}, '${ro.nomor}')" title="Batalkan RO">
                                 <i class="bi bi-x-circle-fill"></i>
                             </button>

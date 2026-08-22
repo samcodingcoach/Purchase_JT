@@ -27,7 +27,7 @@ if ($method === 'GET') {
         $stmt = $conn->prepare("SELECT ro.id_request, ro.nomor, ro.tanggal_ro, ro.id_karyawan, ro.id_site, 
                                        ro.status, ro.prioritas, ro.id_vendor, ro.tanggal_status, ro.keterangan, ro.id_po,
                                        kry.nama_karyawan, kry.kode_karyawan, j.nama_jabatan, d.nama_divisi,
-                                       s.nama_site, s.kode_site,
+                                       s.nama_site, s.kode_site, s.alamat AS alamat_site,
                                        v.nama_perusahaan AS nama_vendor, v.kode_vendor
                                 FROM request_order ro
                                 LEFT JOIN karyawan kry ON ro.id_karyawan = kry.id_karyawan
@@ -50,7 +50,8 @@ if ($method === 'GET') {
         // Ambil rincian material barang
         $stmtItems = $conn->prepare("SELECT rod.id_request_detail, rod.id_request, rod.id_barang, 
                                             rod.kode_barang, rod.nama_barang, rod.qty, rod.satuan, rod.harga, rod.subtotal,
-                                            b.foto1, b.nama_barang AS master_nama_barang, m.nama_merk, k.nama_kategori
+                                            b.foto1, b.nama_barang AS master_nama_barang, m.nama_merk, k.nama_kategori,
+                                            COALESCE((SELECT SUM(stok) FROM barang_stok bs WHERE bs.id_barang = rod.id_barang), 0) AS total_stok
                                      FROM request_order_detail rod
                                      LEFT JOIN barang b ON rod.id_barang = b.id_barang
                                      LEFT JOIN merk_barang m ON b.id_merk = m.id_merk
@@ -80,6 +81,7 @@ if ($method === 'GET') {
                 'foto1' => $item['foto1'] ?? null,
                 'nama_merk' => $item['nama_merk'] ?? 'Umum',
                 'nama_kategori' => $item['nama_kategori'] ?? 'Material',
+                'total_stok' => (int)($item['total_stok'] ?? 0),
                 'qty' => $qty,
                 'satuan' => $item['satuan'] ?? 'PCS',
                 'harga' => $harga,

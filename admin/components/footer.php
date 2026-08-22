@@ -110,13 +110,12 @@ const AppTabs = {
     getKnownTabs() {
         return [
             { id: 'dashboard', title: 'Dashboard', url: BASE_URL + '/admin/dashboard.php', icon: 'bi-grid-1x2-fill', closable: false },
-            { id: 'request_order', title: 'Request Order', url: BASE_URL + '/admin/pages/request_order/index.php', icon: 'bi-file-earmark-text-fill', closable: true },
-            { id: 'ro_create', title: 'Buat RO Baru', url: BASE_URL + '/admin/pages/request_order/create.php', icon: 'bi-plus-circle', closable: true },
-            { id: 'profile', title: 'Profil Perusahaan', url: BASE_URL + '/admin/pages/profile/index.php', icon: 'bi-buildings', closable: true },
-            { id: 'user_profile', title: 'Edit Profil', url: BASE_URL + '/admin/pages/user/profile.php', icon: 'bi-person-gear', closable: true },
-            { id: 'divisi', title: 'Master Divisi', url: BASE_URL + '/admin/pages/divisi/index.php', icon: 'bi-diagram-3-fill', closable: true },
-            { id: 'jabatan', title: 'Master Jabatan', url: BASE_URL + '/admin/pages/jabatan/index.php', icon: 'bi-briefcase-fill', closable: true },
+            { id: 'request_order', title: 'Daftar Request Order', url: BASE_URL + '/admin/pages/request_order/index.php', icon: 'bi-file-earmark-text', closable: true },
+            { id: 'ro_create', title: 'Buat RO Baru', url: BASE_URL + '/admin/pages/request_order/create.php', icon: 'bi-file-earmark-plus', closable: true },
+            { id: 'proses_po', title: 'Proses PO', url: BASE_URL + '/admin/pages/request_order/proses_po.php', icon: 'bi-cart-check-fill', closable: true },
             { id: 'site', title: 'Master Site', url: BASE_URL + '/admin/pages/site/index.php', icon: 'bi-geo-alt-fill', closable: true },
+            { id: 'jabatan', title: 'Master Jabatan', url: BASE_URL + '/admin/pages/jabatan/index.php', icon: 'bi-person-badge', closable: true },
+            { id: 'divisi', title: 'Master Divisi', url: BASE_URL + '/admin/pages/divisi/index.php', icon: 'bi-diagram-3-fill', closable: true },
             { id: 'karyawan', title: 'Master Karyawan', url: BASE_URL + '/admin/pages/user/index.php', icon: 'bi-people-fill', closable: true },
             { id: 'vendor', title: 'Master Vendor', url: BASE_URL + '/admin/pages/vendor/index.php', icon: 'bi-truck', closable: true },
             { id: 'kategori', title: 'Kategori Barang', url: BASE_URL + '/admin/pages/kategori/index.php', icon: 'bi-tags', closable: true },
@@ -142,6 +141,7 @@ const AppTabs = {
                 (t.id === 'barang' && path.includes('/barang/')) || 
                 (t.id === 'smtp' && path.includes('/smtp/')) || 
                 (t.id === 'info' && path.includes('/info/')) || 
+                (t.id === 'proses_po' && path.includes('/request_order/proses_po.php')) || 
                 (t.id === 'request_order' && (path.includes('/request_order/index.php') || path.includes('/request_order/edit.php'))) || 
                 (t.id === 'ro_create' && path.includes('/create.php'))
             ) {
