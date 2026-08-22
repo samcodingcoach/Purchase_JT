@@ -39,30 +39,31 @@ $userFound = null;
 $userSource = null;
 
 // =============================================================
-// 1. PRIORITAS UTAMA ADMIN: Cek Akun Administrator di Tabel USERS
+// 1. PENGGUNA SISTEM (TABEL USERS - BISA AKSES SEMUA ROLE)
 // =============================================================
 $stmt = $conn->prepare("SELECT id_users, nama_users, email, password, aktif 
                         FROM users 
-                        WHERE (email = ? OR nama_users = ?) AND (nama_users = 'admin' OR id_users = 1) 
+                        WHERE email = ? OR nama_users = ? OR (LOWER(?) IN ('admin', 'administrator') AND id_users = 1) 
                         LIMIT 1");
-$stmt->bind_param("ss", $identity, $identity);
+$stmt->bind_param("sss", $identity, $identity, $identity);
 $stmt->execute();
 $res = $stmt->get_result();
 
 if ($res && $res->num_rows > 0) {
     $userRow = $res->fetch_assoc();
-    if ($userRow['aktif'] == 1 || $userRow['aktif'] === null) {
-        $userFound = $userRow;
-        $userSource = 'users';
+    if ((int)$userRow['aktif'] !== 1 && $userRow['aktif'] !== null) {
+        $stmt->close();
+        jsonResponse(false, 'Akun pengguna sistem Anda berstatus Non-Aktif. Hubungi administrator.', null, 403);
     }
+    $userFound = $userRow;
+    $userSource = 'users';
 }
 $stmt->close();
 
 // =============================================================
-// 2. PRIORITAS UTAMA KARYAWAN: Cek di Tabel KARYAWAN
+// 2. DATA KARYAWAN (TABEL KARYAWAN - MASUK DENGAN ROLE DITENTUKAN)
 // =============================================================
 if (!$userFound) {
-    $emailPrefix = $identity . '@%';
     $stmt2 = $conn->prepare("SELECT k.id_karyawan, k.kode_karyawan, k.nama_karyawan, k.id_jabatan, k.id_divisi, k.id_site,
                                     k.email, k.no_handphone, k.password, k.aktif, k.login_web, k.status_karyawan,
                                     j.nama_jabatan, j.level as level_jabatan,
@@ -72,8 +73,8 @@ if (!$userFound) {
                              LEFT JOIN jabatan j ON k.id_jabatan = j.id_jabatan
                              LEFT JOIN divisi d ON k.id_divisi = d.id_divisi 
                              LEFT JOIN site s ON k.id_site = s.id_site
-                             WHERE (k.email = ? OR k.email LIKE ? OR k.kode_karyawan = ? OR k.no_handphone = ? OR k.nama_karyawan = ?) LIMIT 1");
-    $stmt2->bind_param("sssss", $identity, $emailPrefix, $identity, $identity, $identity);
+                             WHERE k.email = ? OR k.kode_karyawan = ? OR k.no_handphone = ? OR k.nama_karyawan = ? LIMIT 1");
+    $stmt2->bind_param("ssss", $identity, $identity, $identity, $identity);
     $stmt2->execute();
     $res2 = $stmt2->get_result();
     
