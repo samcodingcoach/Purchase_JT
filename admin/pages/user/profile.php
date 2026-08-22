@@ -142,7 +142,7 @@ require_once __DIR__ . '/../../components/navbar.php';
 
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold text-dark">Alamat Email <span class="text-danger">*</span></label>
-                                <input type="email" class="form-control form-control-sm" id="inputEmail" required placeholder="nama@jayateknis.com">
+                                <input type="email" class="form-control form-control-sm" id="inputEmail" required placeholder="nama@jayateknis.com" oninput="updateTargetEmailDisplay()">
                             </div>
 
                             <div class="col-md-6">
@@ -156,19 +156,84 @@ require_once __DIR__ . '/../../components/navbar.php';
                             <i class="bi bi-shield-lock text-primary me-1"></i> Ganti Kata Sandi <span class="text-muted fw-normal text-lowercase">(kosongkan jika tidak ingin mengubah password)</span>
                         </h6>
 
-                        <div class="row g-3 mb-4">
+                        <div class="row g-3 mb-3">
                             <div class="col-md-12">
                                 <label class="form-label small fw-bold text-dark">Password Saat Ini</label>
-                                <input type="password" class="form-control form-control-sm" id="inputPasswordLama" placeholder="Masukkan kata sandi saat ini untuk konfirmasi">
+                                <div class="input-group input-group-sm">
+                                    <input type="password" class="form-control" id="inputPasswordLama" placeholder="Masukkan kata sandi saat ini untuk konfirmasi">
+                                    <button type="button" class="btn btn-outline-secondary" onclick="togglePasswordVisibility('inputPasswordLama')" title="Tampilkan/Sembunyikan Password">
+                                        <i class="bi bi-eye" id="iconToggleinputPasswordLama"></i>
+                                    </button>
+                                </div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold text-dark">Password Baru</label>
-                                <input type="password" class="form-control form-control-sm" id="inputPasswordBaru" placeholder="Minimal 5 karakter">
+                                <div class="input-group input-group-sm">
+                                    <input type="password" class="form-control" id="inputPasswordBaru" placeholder="Minimal 5 karakter" oninput="handlePasswordBaruChange()">
+                                    <button type="button" class="btn btn-outline-secondary" onclick="togglePasswordVisibility('inputPasswordBaru')" title="Tampilkan/Sembunyikan Password">
+                                        <i class="bi bi-eye" id="iconToggleinputPasswordBaru"></i>
+                                    </button>
+                                </div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold text-dark">Ulangi Password Baru</label>
-                                <input type="password" class="form-control form-control-sm" id="inputKonfirmasiPassword" placeholder="Ketik ulang kata sandi baru">
+                                <div class="input-group input-group-sm">
+                                    <input type="password" class="form-control" id="inputKonfirmasiPassword" placeholder="Ketik ulang kata sandi baru" oninput="handlePasswordBaruChange()">
+                                    <button type="button" class="btn btn-outline-secondary" onclick="togglePasswordVisibility('inputKonfirmasiPassword')" title="Tampilkan/Sembunyikan Password">
+                                        <i class="bi bi-eye" id="iconToggleinputKonfirmasiPassword"></i>
+                                    </button>
+                                </div>
                             </div>
+                        </div>
+
+                        <!-- CAPTCHA VERIFIKASI KEAMANAN SEDERHANA -->
+                        <div id="captchaSectionWrapper" class="d-none border rounded-3 p-3 bg-white mb-3 shadow-xs">
+                            <label class="form-label small fw-bold text-dark mb-1">
+                                <i class="bi bi-shield-check text-primary me-1"></i> Verifikasi Keamanan (Captcha Aritmatika) <span class="text-danger">*</span>
+                            </label>
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <div class="d-inline-flex align-items-center bg-light border rounded px-3 py-1 font-monospace fw-bold fs-6 text-primary user-select-none" id="captchaQuestionDisplay">
+                                    ...
+                                </div>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="generateSimpleCaptcha()" title="Ganti Angka Captcha">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </button>
+                                <div style="max-width: 140px;">
+                                    <input type="number" class="form-control form-control-sm font-monospace text-center fw-bold" id="inputCaptchaAnswer" placeholder="Jawaban...">
+                                </div>
+                                <span class="text-muted small">Hitung hasil penjumlahan untuk verifikasi</span>
+                            </div>
+                        </div>
+
+                        <!-- KOTAK VERIFIKASI OTP EMAIL (MUNCUL OTOMATIS JIKA GANTI PASSWORD) -->
+                        <div id="otpSectionWrapper" class="d-none border rounded-3 p-3 bg-light mb-4">
+                            <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+                                <h6 class="fw-bold text-primary mb-0 small">
+                                    <i class="bi bi-shield-check me-1"></i> Verifikasi OTP Email (Wajib untuk Ganti Password)
+                                </h6>
+                                <span class="badge bg-primary-subtle text-primary font-monospace">Berlaku 1 Jam</span>
+                            </div>
+                            <p class="text-muted small mb-3" style="font-size: 0.825rem;">
+                                Untuk keamanan, kode 6 digit OTP akan dikirimkan ke email Anda (<strong id="otpEmailTargetDisplay">...</strong>).
+                                <span class="text-danger d-block mt-1 fw-semibold">
+                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>Batas Kesalahan: Maksimal 10x salah input. Melebihi 10x akan otomatis menonaktifkan akun karyawan.
+                                </span>
+                            </p>
+
+                            <div class="row g-2 align-items-center">
+                                <div class="col-sm-6 col-md-5">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white font-monospace fw-bold text-primary"><i class="bi bi-key-fill"></i></span>
+                                        <input type="text" class="form-control form-control-sm font-monospace text-center fw-bold fs-6" id="inputOtpCode" maxlength="6" placeholder="6 DIGIT OTP" autocomplete="off" style="letter-spacing: 4px;">
+                                    </div>
+                                </div>
+                                <div class="col-sm-6 col-md-7">
+                                    <button type="button" class="btn btn-outline-primary btn-sm fw-semibold w-100" id="btnRequestOtp" onclick="handleRequestOtp()">
+                                        <i class="bi bi-send me-1"></i> <span id="btnRequestOtpText">Kirim Kode OTP ke Email</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="otpAlertBox" class="mt-2 d-none"></div>
                         </div>
 
                         <!-- Tombol Submit -->
@@ -185,7 +250,14 @@ require_once __DIR__ . '/../../components/navbar.php';
 </div>
 
 <script>
+let otpCooldownInterval = null;
+let otpCooldownSeconds = 0;
+let captchaNum1 = 0;
+let captchaNum2 = 0;
+let captchaExpectedAnswer = 0;
+
 document.addEventListener('DOMContentLoaded', async () => {
+    generateSimpleCaptcha();
     await loadUserProfileData();
 });
 
@@ -196,6 +268,61 @@ function formatTglIndo(tglStr) {
     if (isNaN(date.getTime())) return tglStr;
     const bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
     return `${date.getDate()} ${bulan[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+// -------------------------------------------------------------
+// HELPER: CAPTCHA SEDERHANA & HIDE/SHOW PASSWORD
+// -------------------------------------------------------------
+function generateSimpleCaptcha() {
+    captchaNum1 = Math.floor(Math.random() * 9) + 1; // 1-9
+    captchaNum2 = Math.floor(Math.random() * 9) + 1; // 1-9
+    captchaExpectedAnswer = captchaNum1 + captchaNum2;
+    const el = document.getElementById('captchaQuestionDisplay');
+    if (el) {
+        el.textContent = `${captchaNum1} + ${captchaNum2} = ?`;
+    }
+    const input = document.getElementById('inputCaptchaAnswer');
+    if (input) input.value = '';
+}
+
+function togglePasswordVisibility(inputId) {
+    const input = document.getElementById(inputId);
+    const icon = document.getElementById('iconToggle' + inputId);
+    if (!input || !icon) return;
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.replace('bi-eye', 'bi-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.replace('bi-eye-slash', 'bi-eye');
+    }
+}
+
+function updateTargetEmailDisplay() {
+    const email = document.getElementById('inputEmail').value.trim();
+    document.getElementById('otpEmailTargetDisplay').textContent = email || 'email Anda';
+}
+
+function handlePasswordBaruChange() {
+    const passBaru = document.getElementById('inputPasswordBaru').value.trim();
+    const passKonf = document.getElementById('inputKonfirmasiPassword').value.trim();
+    const passLama = document.getElementById('inputPasswordLama').value.trim();
+    const otpSection = document.getElementById('otpSectionWrapper');
+    const captchaSection = document.getElementById('captchaSectionWrapper');
+
+    if (passBaru.length > 0 || passKonf.length > 0 || passLama.length > 0) {
+        otpSection.classList.remove('d-none');
+        captchaSection.classList.remove('d-none');
+        if (captchaExpectedAnswer === 0) {
+            generateSimpleCaptcha();
+        }
+        updateTargetEmailDisplay();
+    } else {
+        otpSection.classList.add('d-none');
+        captchaSection.classList.add('d-none');
+        document.getElementById('inputOtpCode').value = '';
+        document.getElementById('otpAlertBox').classList.add('d-none');
+    }
 }
 
 // -------------------------------------------------------------
@@ -241,6 +368,7 @@ async function loadUserProfileData() {
     document.getElementById('inputJenisKelamin').value = data.jenis_kelamin || '';
     document.getElementById('inputEmail').value = data.email || '';
     document.getElementById('inputNoHp').value = data.no_handphone || '';
+    updateTargetEmailDisplay();
 
     // Sembunyikan Skeleton & Tampilkan Konten
     document.getElementById('profileLoadingSkeleton').classList.add('d-none');
@@ -248,7 +376,80 @@ async function loadUserProfileData() {
 }
 
 // -------------------------------------------------------------
-// 2. SIMPAN PERUBAHAN PROFIL
+// 2. KIRIM KODE OTP (COOLDOWN 90 DETIK DENGAN CAPTCHA)
+// -------------------------------------------------------------
+async function handleRequestOtp() {
+    if (otpCooldownSeconds > 0) return;
+
+    const email = document.getElementById('inputEmail').value.trim();
+    if (!email) {
+        showToast('Isi alamat email Anda terlebih dahulu!', 'warning');
+        return;
+    }
+
+    // Validasi Captcha Sederhana
+    const captchaAns = parseInt(document.getElementById('inputCaptchaAnswer').value);
+    if (isNaN(captchaAns) || captchaAns !== captchaExpectedAnswer) {
+        showToast('Selesaikan perhitungan Captcha verifikasi keamanan terlebih dahulu sebelum meminta OTP!', 'warning');
+        generateSimpleCaptcha();
+        document.getElementById('inputCaptchaAnswer').focus();
+        return;
+    }
+
+    const btn = document.getElementById('btnRequestOtp');
+    const textSpan = document.getElementById('btnRequestOtpText');
+    const originalText = textSpan.textContent;
+
+    btn.disabled = true;
+    textSpan.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Mengirim OTP...';
+
+    const res = await apiRequest('/api/auth/profile.php?action=request_password_otp', {
+        method: 'POST'
+    });
+
+    if (res && res.success) {
+        showToast(res.message, 'success');
+        const alertBox = document.getElementById('otpAlertBox');
+        alertBox.className = 'alert alert-success py-2 px-3 small mt-2';
+        alertBox.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i> ${res.message}`;
+        alertBox.classList.remove('d-none');
+
+        // Mulai Countdown 90 Detik
+        startOtpCooldown(res.data.cooldown_seconds || 90);
+    } else {
+        btn.disabled = false;
+        textSpan.textContent = originalText;
+        showToast(res ? res.message : 'Gagal mengirim kode OTP.', 'danger');
+
+        if (res && res.data && res.data.cooldown_seconds) {
+            startOtpCooldown(res.data.cooldown_seconds);
+        }
+    }
+}
+
+function startOtpCooldown(seconds) {
+    otpCooldownSeconds = seconds;
+    const btn = document.getElementById('btnRequestOtp');
+    const textSpan = document.getElementById('btnRequestOtpText');
+    btn.disabled = true;
+
+    if (otpCooldownInterval) clearInterval(otpCooldownInterval);
+
+    otpCooldownInterval = setInterval(() => {
+        otpCooldownSeconds--;
+        if (otpCooldownSeconds <= 0) {
+            clearInterval(otpCooldownInterval);
+            otpCooldownSeconds = 0;
+            btn.disabled = false;
+            textSpan.innerHTML = '<i class="bi bi-arrow-clockwise me-1"></i> Kirim Ulang OTP';
+        } else {
+            textSpan.textContent = `Kirim Ulang OTP (${otpCooldownSeconds}s)`;
+        }
+    }, 1000);
+}
+
+// -------------------------------------------------------------
+// 3. SIMPAN PERUBAHAN PROFIL & PASSWORD
 // -------------------------------------------------------------
 async function handleSaveProfile(e) {
     e.preventDefault();
@@ -262,6 +463,7 @@ async function handleSaveProfile(e) {
     const passLama = document.getElementById('inputPasswordLama').value;
     const passBaru = document.getElementById('inputPasswordBaru').value;
     const passKonf = document.getElementById('inputKonfirmasiPassword').value;
+    const otpCode = document.getElementById('inputOtpCode').value.trim();
 
     if (!nama) {
         showToast('Nama lengkap tidak boleh kosong!', 'warning');
@@ -281,6 +483,21 @@ async function handleSaveProfile(e) {
             showToast('Konfirmasi kata sandi baru tidak cocok!', 'warning');
             return;
         }
+
+        // Validasi Captcha
+        const captchaAns = parseInt(document.getElementById('inputCaptchaAnswer').value);
+        if (isNaN(captchaAns) || captchaAns !== captchaExpectedAnswer) {
+            showToast('Jawaban Captcha verifikasi keamanan salah! Silakan hitung kembali.', 'warning');
+            generateSimpleCaptcha();
+            document.getElementById('inputCaptchaAnswer').focus();
+            return;
+        }
+
+        if (!otpCode || otpCode.length !== 6) {
+            showToast('Masukkan 6 digit kode OTP yang dikirimkan ke email Anda!', 'warning');
+            document.getElementById('inputOtpCode').focus();
+            return;
+        }
     }
 
     const payload = {
@@ -292,7 +509,8 @@ async function handleSaveProfile(e) {
         no_handphone: noHp,
         password_lama: passLama,
         password_baru: passBaru,
-        konfirmasi_password: passKonf
+        konfirmasi_password: passKonf,
+        otp_code: otpCode
     };
 
     const btnSubmit = document.getElementById('btnSubmitProfile');
@@ -313,6 +531,12 @@ async function handleSaveProfile(e) {
         document.getElementById('inputPasswordLama').value = '';
         document.getElementById('inputPasswordBaru').value = '';
         document.getElementById('inputKonfirmasiPassword').value = '';
+        document.getElementById('inputOtpCode').value = '';
+        document.getElementById('inputCaptchaAnswer').value = '';
+        document.getElementById('otpSectionWrapper').classList.add('d-none');
+        document.getElementById('captchaSectionWrapper').classList.add('d-none');
+        document.getElementById('otpAlertBox').classList.add('d-none');
+        generateSimpleCaptcha();
 
         // Segarkan informasi di kartu identitas kiri
         document.getElementById('displayNamaUser').textContent = nama;
@@ -329,6 +553,26 @@ async function handleSaveProfile(e) {
         document.getElementById('infoTtl').textContent = ttl;
     } else {
         showToast(res ? res.message : 'Gagal memperbarui profil.', 'danger');
+
+        // Jika akun terkunci otomatis karena >10x salah
+        if (res && res.data && res.data.account_locked) {
+            const alertBox = document.getElementById('otpAlertBox');
+            alertBox.className = 'alert alert-danger py-2 px-3 small mt-2';
+            alertBox.innerHTML = `<i class="bi bi-x-octagon-fill me-1"></i> <strong>Akun Dinonaktifkan:</strong> ${res.message}`;
+            alertBox.classList.remove('d-none');
+            setTimeout(() => {
+                window.location.href = `${BASE_URL}/admin/logout.php`;
+            }, 3000);
+            return;
+        }
+
+        // Tampilkan sisa kesempatan
+        if (res && res.data && res.data.remaining_attempts !== undefined) {
+            const alertBox = document.getElementById('otpAlertBox');
+            alertBox.className = 'alert alert-warning py-2 px-3 small mt-2';
+            alertBox.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-1"></i> ${res.message}`;
+            alertBox.classList.remove('d-none');
+        }
     }
 }
 </script>
