@@ -355,6 +355,10 @@ async function handleLoginSubmit(event) {
         
         if (res.success) {
             btnText.textContent = 'Berhasil! Mengalihkan...';
+            // Bersihkan sisa tab workspace dari user sebelumnya
+            sessionStorage.removeItem('jt_workspace_tabs');
+            localStorage.removeItem('jt_workspace_tabs');
+            sessionStorage.removeItem('jt_sidebar_scroll_top');
             window.location.href = res.data.redirect_url || (BASE_URL + '/admin/dashboard.php');
         } else {
             alertText.textContent = res.message || 'Login gagal. Periksa kembali kredensial Anda.';

@@ -34,6 +34,44 @@ $fullLocation = trim($companyAddress . ($companyCity ? ', ' . $companyCity : '')
     </div>
 </div>
 
+<!-- Modal Konfirmasi Logout & Peringatan Tab Workspace Masih Terbuka -->
+<div class="modal fade" id="modalConfirmLogout" tabindex="-1" aria-labelledby="modalConfirmLogoutLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-danger text-white py-3">
+                <h5 class="modal-title fs-6 fw-bold" id="modalConfirmLogoutLabel">
+                    <i class="bi bi-box-arrow-right me-2"></i> Konfirmasi Keluar Sistem
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div id="logoutWarningTabsArea" class="d-none mb-3">
+                    <div class="alert alert-warning border-0 d-flex gap-2 align-items-start py-2 px-3 mb-2">
+                        <i class="bi bi-exclamation-triangle-fill fs-5 text-warning flex-shrink-0 mt-1"></i>
+                        <div>
+                            <strong class="d-block text-dark small">Peringatan: Tab Pekerjaan Masih Terbuka!</strong>
+                            <span class="small text-muted" style="font-size: 0.8rem;">Terdapat tab halaman yang belum Anda tutup di sesi login ini:</span>
+                        </div>
+                    </div>
+                    <div class="border rounded-3 p-2 bg-light mb-2 overflow-auto" id="logoutOpenTabsList" style="max-height: 180px;">
+                        <!-- Open tabs rendered here dynamically -->
+                    </div>
+                </div>
+
+                <p class="text-secondary small mb-0" id="logoutConfirmMessageText">
+                    Apakah Anda yakin ingin mengakhiri sesi dan keluar dari sistem?
+                </p>
+            </div>
+            <div class="modal-footer bg-light py-2 px-3 d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-danger btn-sm px-3 fw-semibold shadow-sm" onclick="executeLogoutNow()" id="btnConfirmLogoutExecute">
+                    <i class="bi bi-box-arrow-right me-1"></i> Tutup Tab &amp; Logout
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Bootstrap 5 JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
@@ -253,10 +291,64 @@ function showToast(message, type = 'success') {
     toast.show();
 }
 
-// Global Logout Handler
-async function handleLogout() {
-    if (!confirm('Apakah Anda yakin ingin keluar dari sistem?')) return;
-    
+// Global Logout Handler dengan Peringatan Tab Masih Terbuka
+let logoutModalInstance = null;
+
+function handleLogout() {
+    const openedTabs = AppTabs.getOpenedTabs ? AppTabs.getOpenedTabs() : [];
+    // Filter tab workspace aktif selain Dashboard
+    const activeWorkspaceTabs = openedTabs.filter(t => t.id !== 'dashboard');
+
+    const modalEl = document.getElementById('modalConfirmLogout');
+    if (!modalEl) {
+        if (!confirm('Apakah Anda yakin ingin keluar dari sistem?')) return;
+        executeLogoutNow();
+        return;
+    }
+
+    if (!logoutModalInstance) {
+        logoutModalInstance = new bootstrap.Modal(modalEl);
+    }
+
+    const warningArea = document.getElementById('logoutWarningTabsArea');
+    const tabsList = document.getElementById('logoutOpenTabsList');
+    const msgText = document.getElementById('logoutConfirmMessageText');
+
+    if (activeWorkspaceTabs.length > 0) {
+        warningArea.classList.remove('d-none');
+        let html = '<div class="d-flex flex-column gap-1">';
+        activeWorkspaceTabs.forEach(t => {
+            const icon = t.icon || 'bi-window-sidebar';
+            html += `
+                <div class="d-flex align-items-center justify-content-between bg-white border rounded px-2 py-1 small shadow-xs">
+                    <span class="text-dark fw-semibold"><i class="bi ${icon} text-primary me-2"></i>${t.title || 'Tab'}</span>
+                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle font-monospace" style="font-size: 0.7rem;">Tab Terbuka</span>
+                </div>
+            `;
+        });
+        html += '</div>';
+        tabsList.innerHTML = html;
+        msgText.innerHTML = `Keluar sekarang akan <strong>menutup otomatis ${activeWorkspaceTabs.length} tab pekerjaan di atas</strong> dan membersihkan sesi Anda.`;
+    } else {
+        warningArea.classList.add('d-none');
+        msgText.textContent = 'Apakah Anda yakin ingin mengakhiri sesi dan keluar dari sistem?';
+    }
+
+    logoutModalInstance.show();
+}
+
+async function executeLogoutNow() {
+    const btn = document.getElementById('btnConfirmLogoutExecute');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Mengeluarkan...';
+    }
+
+    // Bersihkan seluruh tab workspace di sessionStorage & localStorage agar akun berikutnya fresh
+    sessionStorage.removeItem('jt_workspace_tabs');
+    localStorage.removeItem('jt_workspace_tabs');
+    sessionStorage.removeItem('jt_sidebar_scroll_top');
+
     try {
         const res = await fetch(BASE_URL + '/api/auth/logout.php', {
             method: 'POST',
@@ -266,11 +358,7 @@ async function handleLogout() {
             }
         });
         const data = await res.json();
-        if (data.success) {
-            window.location.href = data.data.redirect_url || (BASE_URL + '/admin/login.php');
-        } else {
-            showToast(data.message || 'Gagal logout.', 'error');
-        }
+        window.location.href = (data && data.data && data.data.redirect_url) ? data.data.redirect_url : (BASE_URL + '/admin/login.php');
     } catch (err) {
         window.location.href = BASE_URL + '/admin/login.php';
     }
