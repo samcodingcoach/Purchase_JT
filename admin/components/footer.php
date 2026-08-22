@@ -75,6 +75,7 @@ const AppTabs = {
             { id: 'request_order', title: 'Request Order', url: BASE_URL + '/admin/pages/request_order/index.php', icon: 'bi-file-earmark-text-fill', closable: true },
             { id: 'ro_create', title: 'Buat RO Baru', url: BASE_URL + '/admin/pages/request_order/create.php', icon: 'bi-plus-circle', closable: true },
             { id: 'profile', title: 'Profil Perusahaan', url: BASE_URL + '/admin/pages/profile/index.php', icon: 'bi-buildings', closable: true },
+            { id: 'user_profile', title: 'Edit Profil', url: BASE_URL + '/admin/pages/user/profile.php', icon: 'bi-person-gear', closable: true },
             { id: 'divisi', title: 'Master Divisi', url: BASE_URL + '/admin/pages/divisi/index.php', icon: 'bi-diagram-3-fill', closable: true },
             { id: 'jabatan', title: 'Master Jabatan', url: BASE_URL + '/admin/pages/jabatan/index.php', icon: 'bi-briefcase-fill', closable: true },
             { id: 'site', title: 'Master Site', url: BASE_URL + '/admin/pages/site/index.php', icon: 'bi-geo-alt-fill', closable: true },
@@ -95,7 +96,9 @@ const AppTabs = {
             const tPath = new URL(t.url, window.location.origin).pathname.replace(/\/+$/, '');
             if (
                 path === tPath || 
-                (t.id === 'karyawan' && path.includes('/user/')) || 
+                (t.id === 'user_profile' && path.includes('/user/profile.php')) ||
+                (t.id === 'karyawan' && path.includes('/user/index.php')) || 
+                (t.id === 'profile' && path.includes('/profile/index.php')) ||
                 (t.id === 'barang' && path.includes('/barang/')) || 
                 (t.id === 'request_order' && (path.includes('/request_order/index.php') || path.includes('/request_order/edit.php'))) || 
                 (t.id === 'ro_create' && path.includes('/create.php'))

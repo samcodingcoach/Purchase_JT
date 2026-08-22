@@ -117,19 +117,19 @@ if ($method === 'GET') {
     $res = $stmt->get_result();
 
     $statusKaryawanMap = [
-        1 => 'Magang (Internship)',
-        2 => 'PKWT (Kontrak Waktu Tertentu)',
-        3 => 'PKWTT (Karyawan Tetap)',
-        4 => 'Pekerja Paruh Waktu (Part-time)',
-        5 => 'Harian Lepas (Casual Workers)',
-        6 => 'Freelance / Pekerja Lepas',
-        7 => 'Outsourcing / Alih Daya',
-        8 => 'Volunteer / Sukarelawan'
+        0 => 'Magang (Internship)',
+        1 => 'PKWT (Perjanjian Kerja Waktu Tertentu)',
+        2 => 'PKWTT (Perjanjian Kerja Waktu Tidak Tertentu)',
+        3 => 'Pekerja paruh waktu (Part-time)',
+        4 => 'Harian Lepas (Casual Workers)',
+        5 => 'Freelance / Pekerja Lepas',
+        6 => 'Outsourcing / Alih Daya',
+        7 => 'Volunteer / Sukarelawan'
     ];
 
     $items = [];
     while ($row = $res->fetch_assoc()) {
-        $statusId = (int)($row['status_karyawan'] ?? 3);
+        $statusId = isset($row['status_karyawan']) && $row['status_karyawan'] !== null ? (int)$row['status_karyawan'] : 2;
         $jk = isset($row['jenis_kelamin']) ? (int)$row['jenis_kelamin'] : 1;
         
         $items[] = [
@@ -154,7 +154,7 @@ if ($method === 'GET') {
             'email' => $row['email'] ?? '-',
             'no_handphone' => $row['no_handphone'] ?? '-',
             'status_karyawan_id' => $statusId,
-            'status_karyawan_label' => $statusKaryawanMap[$statusId] ?? 'PKWTT (Tetap)',
+            'status_karyawan_label' => $statusKaryawanMap[$statusId] ?? 'PKWTT (Perjanjian Kerja Waktu Tidak Tertentu)',
             'login_web' => (int)($row['login_web'] ?? 1),
             'aktif' => (int)($row['aktif'] ?? 1)
         ];
@@ -199,7 +199,7 @@ if ($method === 'POST') {
     $email = trim($input['email'] ?? '');
     $noHp = trim($input['no_handphone'] ?? '');
     $password = trim($input['password'] ?? '123456');
-    $statusKaryawan = isset($input['status_karyawan']) ? (int)$input['status_karyawan'] : 3;
+    $statusKaryawan = isset($input['status_karyawan']) && $input['status_karyawan'] !== '' ? (int)$input['status_karyawan'] : 2;
     $loginWeb = isset($input['login_web']) ? (int)$input['login_web'] : 1;
     $aktif = isset($input['aktif']) ? (int)$input['aktif'] : 1;
 
@@ -253,7 +253,7 @@ if ($method === 'PUT') {
 
     $email = trim($input['email'] ?? '');
     $noHp = trim($input['no_handphone'] ?? '');
-    $statusKaryawan = isset($input['status_karyawan']) ? (int)$input['status_karyawan'] : 3;
+    $statusKaryawan = isset($input['status_karyawan']) && $input['status_karyawan'] !== '' ? (int)$input['status_karyawan'] : 2;
     $loginWeb = isset($input['login_web']) ? (int)$input['login_web'] : 1;
     $aktif = isset($input['aktif']) ? (int)$input['aktif'] : 1;
 

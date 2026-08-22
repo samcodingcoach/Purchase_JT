@@ -169,14 +169,14 @@ require_once __DIR__ . '/../../components/navbar.php';
                                 <div class="col-md-6">
                                     <label class="form-label small fw-bold">Status Ikatan Kerja</label>
                                     <select class="form-select" id="formStatusKaryawan">
-                                        <option value="1">Magang (Internship)</option>
-                                        <option value="2">PKWT (Kontrak)</option>
-                                        <option value="3" selected>PKWTT (Tetap)</option>
-                                        <option value="4">Paruh Waktu (Part-time)</option>
-                                        <option value="5">Harian Lepas (Casual)</option>
-                                        <option value="6">Freelance</option>
-                                        <option value="7">Outsourcing</option>
-                                        <option value="8">Volunteer</option>
+                                        <option value="0">Magang (Internship)</option>
+                                        <option value="1">PKWT (Perjanjian Kerja Waktu Tertentu)</option>
+                                        <option value="2" selected>PKWTT (Perjanjian Kerja Waktu Tidak Tertentu)</option>
+                                        <option value="3">Pekerja paruh waktu (Part-time)</option>
+                                        <option value="4">Harian Lepas (Casual Workers)</option>
+                                        <option value="5">Freelance / Pekerja Lepas</option>
+                                        <option value="6">Outsourcing / Alih Daya</option>
+                                        <option value="7">Volunteer / Sukarelawan</option>
                                     </select>
                                 </div>
                             </div>

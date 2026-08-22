@@ -30,13 +30,11 @@ $userRole = $_SESSION['role'] ?? 'MEKANIK';
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end shadow-sm">
                     <li><h6 class="dropdown-header">Login sebagai: <?= htmlspecialchars($userRole) ?></h6></li>
-                    <?php if ($userRole === ROLE_ADMIN): ?>
                     <li>
-                        <a class="dropdown-item d-flex align-items-center gap-2" href="<?= BASE_URL ?>/admin/pages/profile/index.php">
-                            <i class="bi bi-buildings"></i> Profil Perusahaan
+                        <a class="dropdown-item d-flex align-items-center gap-2" href="<?= BASE_URL ?>/admin/pages/user/profile.php">
+                            <i class="bi bi-person-gear text-primary"></i> Edit Profil
                         </a>
                     </li>
-                    <?php endif; ?>
                     <li><hr class="dropdown-divider"></li>
                     <li>
                         <a class="dropdown-item text-danger d-flex align-items-center gap-2" href="javascript:void(0)" onclick="handleLogout()">
