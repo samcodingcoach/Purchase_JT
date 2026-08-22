@@ -33,17 +33,23 @@ require_once __DIR__ . '/../../components/navbar.php';
     </div>
 </div>
 
-<!-- Jabatan Filter Card -->
+<!-- Filter Divisi & Jabatan Card -->
 <div class="card shadow-sm border-0 mb-4">
     <div class="card-body p-3 bg-white rounded">
         <div class="row align-items-center g-3">
-            <div class="col-md-5">
-                <label class="form-label small fw-bold text-muted mb-1"><i class="bi bi-person-badge me-1 text-primary"></i>Pilih Jabatan Target Konfigurasi:</label>
+            <div class="col-md-3">
+                <label class="form-label small fw-bold text-muted mb-1"><i class="bi bi-buildings me-1 text-primary"></i>1. Filter Divisi:</label>
+                <select id="selectDivisiFilter" class="form-select form-select-sm fw-semibold" onchange="onFilterDivisiChange()">
+                    <option value="">Semua Divisi</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small fw-bold text-muted mb-1"><i class="bi bi-person-badge me-1 text-primary"></i>2. Pilih Jabatan Target:</label>
                 <select id="selectJabatanFilter" class="form-select form-select-sm fw-semibold" onchange="loadMenusForJabatan()">
                     <option value="">Memuat daftar jabatan...</option>
                 </select>
             </div>
-            <div class="col-md-7 text-md-end">
+            <div class="col-md-5 text-md-end">
                 <div id="jabatanInfoBadge" class="small text-muted">
                     Memuat informasi struktur jabatan...
                 </div>
@@ -83,7 +89,7 @@ require_once __DIR__ . '/../../components/navbar.php';
 </div>
 
 <!-- =============================================================
-     MODAL TAMBAH / EDIT MENU DINAMIS (DENGAN REFERENSI ICON)
+     MODAL TAMBAH / EDIT MENU DINAMIS (3 TAB TERSTRUKTUR & BERSIH)
      ============================================================= -->
 <div class="modal fade" id="menuFormModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 800px;">
@@ -98,17 +104,22 @@ require_once __DIR__ . '/../../components/navbar.php';
             <form id="menuForm" onsubmit="handleSaveMenu(event)">
                 <input type="hidden" id="formIdMenu" name="id_levelmenu">
 
-                <!-- Nav Tabs Modal Form -->
+                <!-- Nav Tabs Modal Form: 3 Tab Spesifik Berdasarkan Fungsi -->
                 <div class="bg-light px-4 pt-3 border-bottom">
                     <ul class="nav nav-tabs border-bottom-0" role="tablist">
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link active fw-semibold small" id="mtab-config" data-bs-toggle="tab" data-bs-target="#mpane-config" type="button" role="tab">
-                                <i class="bi bi-sliders me-1 text-primary"></i> 1. Struktur &amp; Navigasi
+                            <button class="nav-link active fw-semibold small" id="mtab-target" data-bs-toggle="tab" data-bs-target="#mpane-target" type="button" role="tab">
+                                <i class="bi bi-buildings me-1 text-primary"></i> 1. Target Jabatan &amp; Divisi
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link fw-semibold small" id="mtab-struktur" data-bs-toggle="tab" data-bs-target="#mpane-struktur" type="button" role="tab">
+                                <i class="bi bi-diagram-3 me-1 text-primary"></i> 2. Struktur &amp; Navigasi Menu
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link fw-semibold small" id="mtab-icon" data-bs-toggle="tab" data-bs-target="#mpane-icon" type="button" role="tab">
-                                <i class="bi bi-palette me-1 text-primary"></i> 2. Icon &amp; Izin Akses
+                                <i class="bi bi-palette me-1 text-primary"></i> 3. Icon &amp; Izin Akses
                             </button>
                         </li>
                     </ul>
@@ -117,17 +128,31 @@ require_once __DIR__ . '/../../components/navbar.php';
                 <div class="modal-body p-4">
                     <div class="tab-content">
                         
-                        <!-- TAB 1: STRUKTUR & NAVIGASI -->
-                        <div class="tab-pane fade show active" id="mpane-config" role="tabpanel">
+                        <!-- TAB 1: TARGET JABATAN & DIVISI -->
+                        <div class="tab-pane fade show active" id="mpane-target" role="tabpanel">
                             <div class="row g-3">
                                 <div class="col-md-6">
-                                    <label class="form-label small fw-bold">Jabatan Target <span class="text-danger">*</span></label>
-                                    <select class="form-select form-select-sm" id="formIdJabatan" required>
-                                        <!-- Rendered dynamically -->
+                                    <label class="form-label small fw-bold">1. Pilih Divisi Organisasi <span class="text-danger">*</span></label>
+                                    <select class="form-select form-select-sm" id="formIdDivisi" required onchange="onFormDivisiChange()">
+                                        <option value="">Pilih divisi...</option>
                                     </select>
+                                    <div class="form-text small text-muted">Pilih divisi untuk menyaring jabatan di sampingnya.</div>
                                 </div>
+
                                 <div class="col-md-6">
-                                    <label class="form-label small fw-bold">Kategori Menu <span class="text-danger">*</span></label>
+                                    <label class="form-label small fw-bold">2. Pilih Jabatan Target <span class="text-danger">*</span></label>
+                                    <select class="form-select form-select-sm fw-semibold" id="formIdJabatan" required>
+                                        <option value="">Pilih divisi terlebih dahulu...</option>
+                                    </select>
+                                    <div class="form-text small text-muted">Jabatan yang akan memiliki hak akses menu ini.</div>
+                                </div>
+
+                                <div class="col-12">
+                                    <hr class="my-1 text-muted opacity-25">
+                                </div>
+
+                                <div class="col-md-12">
+                                    <label class="form-label small fw-bold">3. Kategori Header Menu di Sidebar <span class="text-danger">*</span></label>
                                     <select class="form-select form-select-sm" id="formKategoriMenu" required onchange="updateParentMenuOptions()">
                                         <option value="MENU UTAMA">MENU UTAMA</option>
                                         <option value="OPERASIONAL" selected>OPERASIONAL</option>
@@ -135,7 +160,12 @@ require_once __DIR__ . '/../../components/navbar.php';
                                         <option value="LAPORAN">LAPORAN</option>
                                     </select>
                                 </div>
+                            </div>
+                        </div>
 
+                        <!-- TAB 2: STRUKTUR & NAVIGASI -->
+                        <div class="tab-pane fade" id="mpane-struktur" role="tabpanel">
+                            <div class="row g-3">
                                 <div class="col-md-8">
                                     <label class="form-label small fw-bold">Nama Menu <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control form-control-sm" id="formNamaMenu" required placeholder="Contoh: Request Order, Master Barang, dll">
@@ -159,7 +189,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                                     </div>
                                 </div>
 
-                                <div class="col-md-6 d-none" id="parentSelectWrapper">
+                                <div class="col-md-12 d-none" id="parentSelectWrapper">
                                     <label class="form-label small fw-bold">Pilih Induk (Parent Menu) <span class="text-danger">*</span></label>
                                     <select class="form-select form-select-sm" id="formIdParent">
                                         <option value="">Pilih menu induk...</option>
@@ -169,12 +199,12 @@ require_once __DIR__ . '/../../components/navbar.php';
                                 <div class="col-12" id="linkInputWrapper">
                                     <label class="form-label small fw-bold">Link / Target Path URL</label>
                                     <input type="text" class="form-control form-control-sm" id="formLink" placeholder="/admin/pages/.../index.php atau /admin/dashboard.php">
-                                    <div class="form-text small text-muted">Untuk Parent Dropdown, kosongkan atau gunakan tanda pagar (#).</div>
+                                    <div class="form-text small text-muted">Untuk Parent Dropdown, gunakan tanda pagar (#) atau kosongkan.</div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- TAB 2: ICON & IZIN AKSES DENGAN REFERENSI -->
+                        <!-- TAB 3: ICON & IZIN AKSES DENGAN REFERENSI -->
                         <div class="tab-pane fade" id="mpane-icon" role="tabpanel">
                             <div class="row g-3">
                                 
@@ -298,6 +328,7 @@ require_once __DIR__ . '/../../components/navbar.php';
 
 <!-- Client-side Logic Script for Dynamic Menu Management -->
 <script>
+let divisiListCache = [];
 let jabatanListCache = [];
 let menuDataStore = [];
 let currentSelectedJabatanId = 0;
@@ -313,7 +344,7 @@ const popularIcons = [
 
 document.addEventListener('DOMContentLoaded', async () => {
     renderIconPresets();
-    await loadJabatanOptions();
+    await loadDivisiAndJabatanOptions();
     if (jabatanListCache.length > 0) {
         currentSelectedJabatanId = jabatanListCache[0].id_jabatan;
         document.getElementById('selectJabatanFilter').value = currentSelectedJabatanId;
@@ -348,32 +379,100 @@ function updateIconPreview(val) {
 }
 
 // -------------------------------------------------------------
-// LOAD JABATAN OPTIONS
+// LOAD DIVISI & JABATAN OPTIONS (HIERARKIS)
 // -------------------------------------------------------------
-async function loadJabatanOptions() {
-    const res = await apiRequest('/api/master/jabatan.php?limit=100');
-    if (res && res.success) {
-        jabatanListCache = res.data.items || [];
+async function loadDivisiAndJabatanOptions() {
+    // 1. Ambil list Divisi
+    const resDiv = await apiRequest('/api/master/divisi.php?limit=100');
+    if (resDiv && resDiv.success) {
+        divisiListCache = resDiv.data.items || [];
         
-        const filterSelect = document.getElementById('selectJabatanFilter');
-        const formSelect = document.getElementById('formIdJabatan');
-        const copyFromSelect = document.getElementById('copyFromJabatan');
-        const copyTargetSelect = document.getElementById('copyTargetJabatan');
-
-        let filterHtml = '';
-        let formHtml = '';
-
-        jabatanListCache.forEach(j => {
-            const opt = `<option value="${j.id_jabatan}">${j.nama_jabatan} (Level ${j.level || '-'}) &bull; ${j.nama_divisi || 'Divisi'}</option>`;
-            filterHtml += opt;
-            formHtml += opt;
+        let filterDivHtml = '<option value="">Semua Divisi Organisasi</option>';
+        let formDivHtml = '<option value="">Pilih Divisi Organisasi...</option>';
+        
+        divisiListCache.forEach(d => {
+            filterDivHtml += `<option value="${d.id_divisi}">${d.nama_divisi}</option>`;
+            formDivHtml += `<option value="${d.id_divisi}">${d.nama_divisi}</option>`;
         });
-
-        filterSelect.innerHTML = filterHtml;
-        formSelect.innerHTML = formHtml;
-        copyFromSelect.innerHTML = formHtml;
-        copyTargetSelect.innerHTML = formHtml;
+        
+        document.getElementById('selectDivisiFilter').innerHTML = filterDivHtml;
+        document.getElementById('formIdDivisi').innerHTML = formDivHtml;
     }
+
+    // 2. Ambil list Jabatan
+    const resJab = await apiRequest('/api/master/jabatan.php?limit=100');
+    if (resJab && resJab.success) {
+        jabatanListCache = resJab.data.items || [];
+        populateJabatanFilter();
+        populateCopyModalJabatan();
+    }
+}
+
+function populateJabatanFilter(selectedDivisiId = null) {
+    const filterSelect = document.getElementById('selectJabatanFilter');
+    let filtered = jabatanListCache;
+    if (selectedDivisiId) {
+        filtered = jabatanListCache.filter(j => parseInt(j.id_divisi, 10) === parseInt(selectedDivisiId, 10));
+    }
+
+    let html = '';
+    filtered.forEach(j => {
+        html += `<option value="${j.id_jabatan}">${j.nama_jabatan}</option>`;
+    });
+
+    if (filtered.length === 0) {
+        html = '<option value="">(Tidak ada jabatan di divisi ini)</option>';
+    }
+
+    filterSelect.innerHTML = html;
+}
+
+function populateCopyModalJabatan() {
+    const copyFromSelect = document.getElementById('copyFromJabatan');
+    const copyTargetSelect = document.getElementById('copyTargetJabatan');
+
+    let formHtml = '';
+    jabatanListCache.forEach(j => {
+        formHtml += `<option value="${j.id_jabatan}">${j.nama_jabatan}</option>`;
+    });
+
+    copyFromSelect.innerHTML = formHtml;
+    copyTargetSelect.innerHTML = formHtml;
+}
+
+function onFilterDivisiChange() {
+    const divId = document.getElementById('selectDivisiFilter').value;
+    populateJabatanFilter(divId || null);
+    const filterSelect = document.getElementById('selectJabatanFilter');
+    if (filterSelect.value) {
+        loadMenusForJabatan();
+    } else {
+        document.getElementById('menuTableBody').innerHTML = `<tr><td colspan="9" class="text-center py-4 text-muted small">Pilih jabatan untuk melihat konfigurasi menu.</td></tr>`;
+    }
+}
+
+function onFormDivisiChange(selectedJabatanId = null) {
+    const divId = document.getElementById('formIdDivisi').value;
+    const formJabSelect = document.getElementById('formIdJabatan');
+    
+    let filtered = jabatanListCache;
+    if (divId) {
+        filtered = jabatanListCache.filter(j => parseInt(j.id_divisi, 10) === parseInt(divId, 10));
+    }
+
+    let html = '';
+    if (!divId) {
+        html = '<option value="">Pilih divisi terlebih dahulu...</option>';
+    } else if (filtered.length === 0) {
+        html = '<option value="">(Tidak ada jabatan di divisi ini)</option>';
+    } else {
+        filtered.forEach(j => {
+            const isSel = (selectedJabatanId && parseInt(selectedJabatanId, 10) === j.id_jabatan) ? 'selected' : '';
+            html += `<option value="${j.id_jabatan}" ${isSel}>${j.nama_jabatan}</option>`;
+        });
+    }
+
+    formJabSelect.innerHTML = html;
 }
 
 // -------------------------------------------------------------
@@ -381,6 +480,7 @@ async function loadJabatanOptions() {
 // -------------------------------------------------------------
 async function loadMenusForJabatan() {
     const filterSelect = document.getElementById('selectJabatanFilter');
+    if (!filterSelect.value) return;
     currentSelectedJabatanId = parseInt(filterSelect.value, 10);
     const tbody = document.getElementById('menuTableBody');
 
@@ -513,7 +613,7 @@ async function toggleMenuField(idMenu, field, nextVal) {
 }
 
 // -------------------------------------------------------------
-// MODAL CRUD
+// MODAL CRUD (3 TAB STRUKTURAL)
 // -------------------------------------------------------------
 function handleTipeMenuChange() {
     const tipe = document.querySelector('input[name="formTipeMenuRadio"]:checked')?.value || 'single';
@@ -550,7 +650,16 @@ function updateParentMenuOptions(selectedParentId = null) {
 function openTambahMenuModal() {
     document.getElementById('menuForm').reset();
     document.getElementById('formIdMenu').value = '';
-    document.getElementById('formIdJabatan').value = currentSelectedJabatanId;
+    
+    // Set default divisi & jabatan target
+    const activeJ = jabatanListCache.find(j => j.id_jabatan === currentSelectedJabatanId);
+    if (activeJ && activeJ.id_divisi) {
+        document.getElementById('formIdDivisi').value = activeJ.id_divisi;
+        onFormDivisiChange(currentSelectedJabatanId);
+    } else {
+        onFormDivisiChange();
+    }
+
     document.getElementById('tipeSingle').checked = true;
     handleTipeMenuChange();
     updateParentMenuOptions();
@@ -564,7 +673,8 @@ function openTambahMenuModal() {
     const maxUrutan = menuDataStore.reduce((max, m) => Math.max(max, m.urutan), 0);
     document.getElementById('formUrutan').value = maxUrutan + 1;
 
-    bootstrap.Tab.getOrCreateInstance(document.getElementById('mtab-config')).show();
+    // Switch ke Tab 1 (Target & Kategori)
+    bootstrap.Tab.getOrCreateInstance(document.getElementById('mtab-target')).show();
     document.getElementById('menuFormModalTitle').innerHTML = '<i class="bi bi-list-check me-2"></i>Tambah Menu Baru';
     const modal = new bootstrap.Modal(document.getElementById('menuFormModal'));
     modal.show();
@@ -575,7 +685,16 @@ function openEditMenuModal(idx) {
     if (!item) return;
 
     document.getElementById('formIdMenu').value = item.id_levelmenu;
-    document.getElementById('formIdJabatan').value = item.id_jabatan;
+    
+    // Temukan divisi dari jabatan menu ini
+    const jObj = jabatanListCache.find(j => j.id_jabatan === item.id_jabatan);
+    if (jObj && jObj.id_divisi) {
+        document.getElementById('formIdDivisi').value = jObj.id_divisi;
+        onFormDivisiChange(item.id_jabatan);
+    } else {
+        onFormDivisiChange(item.id_jabatan);
+    }
+
     document.getElementById('formKategoriMenu').value = item.kategori_menu;
     document.getElementById('formNamaMenu').value = item.nama_menu;
     document.getElementById('formLink').value = item.link || '';
@@ -600,7 +719,8 @@ function openEditMenuModal(idx) {
     if (item.terlihat === 1) document.getElementById('terlihatYes').checked = true;
     else document.getElementById('terlihatNo').checked = true;
 
-    bootstrap.Tab.getOrCreateInstance(document.getElementById('mtab-config')).show();
+    // Switch ke Tab 1 (Target & Kategori)
+    bootstrap.Tab.getOrCreateInstance(document.getElementById('mtab-target')).show();
     document.getElementById('menuFormModalTitle').innerHTML = '<i class="bi bi-pencil-square me-2"></i>Edit Konfigurasi Menu';
     const modal = new bootstrap.Modal(document.getElementById('menuFormModal'));
     modal.show();
@@ -612,13 +732,20 @@ async function handleSaveMenu(e) {
     const isEdit = id !== '';
     const btnSave = document.getElementById('btnSaveMenu');
 
+    const targetJabatan = document.getElementById('formIdJabatan').value;
+    if (!targetJabatan) {
+        showToast('Harap pilih Jabatan Target terlebih dahulu.', 'warning');
+        bootstrap.Tab.getOrCreateInstance(document.getElementById('mtab-target')).show();
+        return;
+    }
+
     const tipe = document.querySelector('input[name="formTipeMenuRadio"]:checked')?.value || 'single';
     const isParent = tipe === 'parent' ? 1 : 0;
     const idParent = tipe === 'child' ? document.getElementById('formIdParent').value : null;
 
     const payload = {
         id_levelmenu: id,
-        id_jabatan: parseInt(document.getElementById('formIdJabatan').value, 10),
+        id_jabatan: parseInt(targetJabatan, 10),
         kategori_menu: document.getElementById('formKategoriMenu').value,
         nama_menu: document.getElementById('formNamaMenu').value.trim(),
         is_parent: isParent,
