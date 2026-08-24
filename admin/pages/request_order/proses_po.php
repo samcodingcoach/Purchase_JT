@@ -42,6 +42,9 @@ require_once __DIR__ . '/../../components/navbar.php';
     <!-- MAIN FORM WRAPPER (1 KOLOM PENUH DENGAN 3 TAB FUNGSIONAL) -->
     <div id="mainContentWrapper" class="d-none">
         
+        <!-- BANNER DOKUMEN DIKUNCI / SUDAH TERBIT PO -->
+        <div id="roLockedBannerContainer" class="d-none"></div>
+
         <form id="formProsesPo" onsubmit="handleApproveToPo(event)">
             
             <div class="card border-0 shadow-sm rounded-3">
@@ -322,13 +325,13 @@ require_once __DIR__ . '/../../components/navbar.php';
                 </div>
 
                 <!-- FOOTER BAR AKSI KEPUTUSAN PURCHASING -->
-                <div class="card-footer bg-light p-3 border-top d-flex justify-content-end align-items-center flex-wrap gap-2">
+                <div class="card-footer bg-light p-3 border-top d-flex justify-content-end align-items-center flex-wrap gap-2" id="poFooterActions">
                     <!-- Tombol Tolak -->
-                    <button type="button" class="btn btn-outline-danger btn-sm px-3 fw-semibold" onclick="openRejectModal()">
+                    <button type="button" class="btn btn-outline-danger btn-sm px-3 fw-semibold" id="btnRejectPo" onclick="openRejectModal()">
                         <i class="bi bi-x-circle me-1"></i> Tolak (Tidak Disetujui)
                     </button>
                     <!-- Tombol Batal -->
-                    <button type="button" class="btn btn-outline-dark btn-sm px-3 fw-semibold" onclick="openCancelModal()">
+                    <button type="button" class="btn btn-outline-dark btn-sm px-3 fw-semibold" id="btnCancelPo" onclick="openCancelModal()">
                         <i class="bi bi-slash-circle me-1"></i> Batalkan RO
                     </button>
                     <!-- Tombol Simpan sebagai Draft -->
@@ -338,6 +341,10 @@ require_once __DIR__ . '/../../components/navbar.php';
                     <!-- Tombol Setujui & Terbitkan PO -->
                     <button type="submit" id="btnSubmitPo" class="btn btn-success btn-sm px-4 fw-bold shadow-sm">
                         <i class="bi bi-check2-circle me-1"></i> Setujui &amp; Terbitkan Purchase Order
+                    </button>
+                    <!-- Tombol Print Request Order yang Sudah Disetujui (Muncul saat RO sudah terbit PO / selesai) -->
+                    <button type="button" class="btn btn-primary btn-sm px-4 fw-bold shadow-sm d-none" id="btnPrintApprovedRo" onclick="printApprovedRo()">
+                        <i class="bi bi-printer-fill me-1"></i> Print Request Order (Disetujui)
                     </button>
                 </div>
 
@@ -593,12 +600,53 @@ function renderRoData() {
     document.getElementById('loadingWrapper').classList.add('d-none');
     document.getElementById('mainContentWrapper').classList.remove('d-none');
 
-    // Jika status bukan TERKIRIM atau DRAFT, nonaktifkan tombol submit
-    if (ro.status === 'DISETUJUI' || ro.status === 'TIDAK DISETUJUI' || ro.status === 'BATAL') {
-        document.getElementById('btnSubmitPo').disabled = true;
-        document.getElementById('btnSubmitPo').innerHTML = '<i class="bi bi-lock-fill me-1"></i> RO Sudah Selesai Diproses';
+    // Cek apakah RO sudah selesai diproses ke PO atau berstatus akhir
+    const isPoApproved = (ro.status === 'DISETUJUI PURCHASING' || (ro.id_po && parseInt(ro.id_po) > 0));
+    const isLocked = isPoApproved || ['TIDAK DISETUJUI PURCHASING', 'BATAL'].includes(ro.status);
+
+    if (isLocked) {
+        // Nonaktifkan semua input formulir
+        document.querySelectorAll('#formProsesPo input, #formProsesPo textarea, #formProsesPo select, #formProsesPo button').forEach(el => {
+            if (el.id !== 'btnPrintApprovedRo') {
+                el.disabled = true;
+            }
+        });
+
+        // Sembunyikan semua tombol aksi proses PO
+        const btnReject = document.getElementById('btnRejectPo');
+        const btnCancel = document.getElementById('btnCancelPo');
         const btnDraft = document.getElementById('btnSaveDraftPo');
+        const btnSubmit = document.getElementById('btnSubmitPo');
+
+        if (btnReject) btnReject.classList.add('d-none');
+        if (btnCancel) btnCancel.classList.add('d-none');
         if (btnDraft) btnDraft.classList.add('d-none');
+        if (btnSubmit) btnSubmit.classList.add('d-none');
+
+        // Tampilkan tombol Print RO Disetujui
+        const btnPrint = document.getElementById('btnPrintApprovedRo');
+        if (btnPrint) btnPrint.classList.remove('d-none');
+
+        // Tampilkan Banner Terkunci
+        const bannerContainer = document.getElementById('roLockedBannerContainer');
+        if (bannerContainer) {
+            bannerContainer.classList.remove('d-none');
+            if (isPoApproved) {
+                bannerContainer.innerHTML = `
+                    <div class="alert alert-info py-2 px-3 small mb-3 border-0 rounded-3 shadow-xs d-flex align-items-center">
+                        <i class="bi bi-info-circle-fill me-2 text-primary"></i>
+                        <span>PO telah terbit untuk RO <strong>${escapeHtml(ro.nomor || '')}</strong>. Dokumen ini bersifat <em>Read-Only</em>.</span>
+                    </div>
+                `;
+            } else {
+                bannerContainer.innerHTML = `
+                    <div class="alert alert-secondary py-2 px-3 small mb-3 border-0 rounded-3 shadow-xs d-flex align-items-center">
+                        <i class="bi bi-lock-fill me-2 text-secondary"></i>
+                        <span>Status RO: <strong>${escapeHtml(ro.status || '')}</strong>. Dokumen ini bersifat <em>Read-Only</em>.</span>
+                    </div>
+                `;
+            }
+        }
     }
 }
 
@@ -944,5 +992,12 @@ function escapeHtml(text) {
         "'": '&#039;'
     };
     return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+}
+
+// -------------------------------------------------------------
+// PRINT REQUEST ORDER YANG SUDAH DISETUJUI
+// -------------------------------------------------------------
+function printApprovedRo() {
+    // Fungsi print akan diimplementasikan nanti sesuai kebutuhan
 }
 </script>
