@@ -152,7 +152,7 @@ if ($action === 'approve' || $action === 'draft') {
     $keteranganPo = trim($input['keterangan'] ?? '');
 
     // Ambil Data Barang yang diajukan dari RO Detail (Pencegahan manipulasi / penghapusan item oleh Purchasing)
-    $stmtItems = $conn->prepare("SELECT rd.*, b.nama_barang as nama_master, b.harga_jual, b.harga_beli 
+    $stmtItems = $conn->prepare("SELECT rd.*, b.nama_barang as nama_master 
                                  FROM request_order_detail rd
                                  LEFT JOIN barang b ON rd.id_barang = b.id_barang
                                  WHERE rd.id_request = ?");
@@ -193,7 +193,7 @@ if ($action === 'approve' || $action === 'draft') {
         
         $approvedBy = $isDraft ? null : $idKaryawan;
         $stmtPo->bind_param(
-            "ssiisssssssiiiiid",
+            "ssiiissssssiiiid",
             $nomorPo,
             $tanggalPo,
             $idKaryawan,
@@ -230,7 +230,7 @@ if ($action === 'approve' || $action === 'draft') {
             
             // Ambil penyesuaian harga dari form purchasing (jika ada), atau gunakan default
             $overrideItem = $itemsInputMap[$idBarang] ?? null;
-            $harga = $overrideItem && isset($overrideItem['harga']) ? (float)$overrideItem['harga'] : ((float)$roItem['harga'] > 0 ? (float)$roItem['harga'] : (float)$roItem['harga_beli']);
+            $harga = $overrideItem && isset($overrideItem['harga']) ? (float)$overrideItem['harga'] : ((float)$roItem['harga'] > 0 ? (float)$roItem['harga'] : 0.0);
             $diskonItem = $overrideItem && isset($overrideItem['diskon']) ? (float)$overrideItem['diskon'] : 0.0;
             $kenaPajak = $overrideItem && isset($overrideItem['kena_pajak']) ? (float)$overrideItem['kena_pajak'] : 1.0;
             $keteranganItem = $overrideItem && isset($overrideItem['keterangan']) ? trim($overrideItem['keterangan']) : '';
@@ -247,9 +247,9 @@ if ($action === 'approve' || $action === 'draft') {
         $stmtDetail->close();
 
         // 3. Update status Request Order:
-        // Jika Approve: DISETUJUI, id_po, id_vendor
-        // Jika Draft: catat id_po dan id_vendor, status RO tetap TERKIRIM atau DRAFT
-        $newRoStatus = $isDraft ? $ro['status'] : 'DISETUJUI';
+        // Jika Approve: DISETUJUI PURCHASING, id_po, id_vendor
+        // Jika Draft: catat id_po dan id_vendor, status RO tetap status sebelumnya
+        $newRoStatus = $isDraft ? $ro['status'] : 'DISETUJUI PURCHASING';
         $stmtUpRo = $conn->prepare("UPDATE request_order 
             SET status = ?, id_po = ?, id_vendor = ?, tanggal_status = NOW() 
             WHERE id_request = ?");

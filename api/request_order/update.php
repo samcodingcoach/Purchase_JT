@@ -35,14 +35,14 @@ if (!$resCheck || $resCheck->num_rows === 0) {
 $existingRo = $resCheck->fetch_assoc();
 $stmtCheck->close();
 
-// Validasi hanya status DRAFT atau TERKIRIM yang boleh diedit
-if (!in_array($existingRo['status'], ['DRAFT', 'TERKIRIM'])) {
+// Validasi status yang boleh diedit
+if (!in_array($existingRo['status'], ['DRAFT', 'TERKIRIM', 'DISETUJUI LOGISTIK', 'TIDAK DISETUJUI LOGISTIK'])) {
     jsonResponse(false, "Request Order dengan status '{$existingRo['status']}' sudah tidak dapat diubah.", null, 422);
 }
 
 // Validasi Hak Akses Edit:
 // - Status DRAFT: Hanya boleh diedit oleh pembuatnya sendiri (atau Super Admin).
-// - Status TERKIRIM: Boleh diedit oleh pembuatnya sendiri ATAU tim Logistik, Purchasing, Manager, dan Admin.
+// - Status TERKIRIM / DISETUJUI LOGISTIK / TIDAK DISETUJUI LOGISTIK: Boleh diedit oleh tim Logistik, Purchasing, Manager, dan Admin.
 $isOwner = ((int)$existingRo['id_karyawan'] === (int)($currentUser['id_karyawan'] ?? 0));
 $isLogistikManagement = in_array($currentUser['role'], [ROLE_LOGISTIK, ROLE_PURCHASING, ROLE_MANAGER, ROLE_ADMIN]);
 
@@ -50,7 +50,7 @@ if ($existingRo['status'] === 'DRAFT') {
     if (!$isOwner && $currentUser['role'] !== ROLE_ADMIN) {
         jsonResponse(false, 'Dokumen berstatus DRAFT hanya dapat diedit oleh pembuatnya sendiri.', null, 403);
     }
-} elseif ($existingRo['status'] === 'TERKIRIM') {
+} elseif (in_array($existingRo['status'], ['TERKIRIM', 'DISETUJUI LOGISTIK', 'TIDAK DISETUJUI LOGISTIK'])) {
     if (!$isOwner && !$isLogistikManagement) {
         jsonResponse(false, 'Anda tidak memiliki hak akses untuk mengedit Request Order ini.', null, 403);
     }
@@ -61,7 +61,9 @@ $idSite = !empty($input['id_site']) ? (int)$input['id_site'] : 0;
 $idVendor = !empty($input['id_vendor']) ? (int)$input['id_vendor'] : null;
 $idKaryawan = !empty($input['id_karyawan']) ? (int)$input['id_karyawan'] : $existingRo['id_karyawan'];
 $prioritas = in_array(strtoupper($input['prioritas'] ?? ''), ['NORMAL', 'URGENT']) ? strtoupper($input['prioritas']) : 'NORMAL';
-$status = in_array(strtoupper($input['status'] ?? ''), ['DRAFT', 'TERKIRIM']) ? strtoupper($input['status']) : $existingRo['status'];
+
+$allowedTargetStatus = ['DRAFT', 'TERKIRIM', 'DISETUJUI LOGISTIK', 'TIDAK DISETUJUI LOGISTIK', 'BATAL'];
+$status = in_array(strtoupper($input['status'] ?? ''), $allowedTargetStatus) ? strtoupper($input['status']) : $existingRo['status'];
 $keterangan = trim($input['keterangan'] ?? '');
 $items = isset($input['items']) && is_array($input['items']) ? $input['items'] : [];
 
@@ -107,13 +109,20 @@ foreach ($items as $idx => $item) {
 $conn->begin_transaction();
 
 try {
-    $tanggalStatus = ($status === 'TERKIRIM') ? date('Y-m-d H:i:s') : null;
+    $tanggalStatus = ($status !== 'DRAFT') ? date('Y-m-d H:i:s') : null;
+    
+    // Tentukan id_karyawan_approved
+    if (in_array($status, ['DISETUJUI LOGISTIK', 'TIDAK DISETUJUI LOGISTIK']) || ($status === 'TERKIRIM' && $currentUser['role'] !== ROLE_MEKANIK)) {
+        $idKaryawanApproved = !empty($currentUser['id_karyawan']) ? (int)$currentUser['id_karyawan'] : 1;
+    } else {
+        $idKaryawanApproved = $existingRo['id_karyawan_approved'] ?? null;
+    }
 
     // Update Header Request Order
     $stmtHeader = $conn->prepare("UPDATE request_order 
-                                  SET id_karyawan = ?, id_site = ?, status = ?, prioritas = ?, id_vendor = ?, tanggal_status = ?, keterangan = ? 
+                                  SET id_karyawan = ?, id_site = ?, status = ?, prioritas = ?, id_vendor = ?, tanggal_status = ?, keterangan = ?, id_karyawan_approved = ? 
                                   WHERE id_request = ?");
-    $stmtHeader->bind_param("iississi", $idKaryawan, $idSite, $status, $prioritas, $idVendor, $tanggalStatus, $keterangan, $idRequest);
+    $stmtHeader->bind_param("iississii", $idKaryawan, $idSite, $status, $prioritas, $idVendor, $tanggalStatus, $keterangan, $idKaryawanApproved, $idRequest);
     
     if (!$stmtHeader->execute()) {
         throw new Exception("Gagal memperbarui header Request Order: " . $stmtHeader->error);
@@ -204,9 +213,17 @@ try {
 
     $conn->commit();
 
-    $actionMsg = ($status === 'TERKIRIM') 
-        ? "Request Order {$existingRo['nomor']} berhasil diperbarui dan dikirimkan ke Logistik." 
-        : "Perubahan Draft Request Order {$existingRo['nomor']} berhasil disimpan.";
+    if ($status === 'DISETUJUI LOGISTIK') {
+        $actionMsg = "Request Order {$existingRo['nomor']} berhasil disetujui oleh Logistik.";
+    } elseif ($status === 'TIDAK DISETUJUI LOGISTIK') {
+        $actionMsg = "Request Order {$existingRo['nomor']} ditolak (tidak disetujui) oleh Logistik.";
+    } elseif ($status === 'BATAL') {
+        $actionMsg = "Request Order {$existingRo['nomor']} berhasil dibatalkan.";
+    } elseif ($status === 'TERKIRIM') {
+        $actionMsg = "Request Order {$existingRo['nomor']} berhasil diperbarui dan dikirimkan.";
+    } else {
+        $actionMsg = "Perubahan Draft Request Order {$existingRo['nomor']} berhasil disimpan.";
+    }
 
     jsonResponse(true, $actionMsg, [
         'id_request' => $idRequest,

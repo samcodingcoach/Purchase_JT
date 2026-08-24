@@ -543,7 +543,8 @@ function renderRoData() {
 
     let pricingHtml = '';
     items.forEach((item, idx) => {
-        const defaultHarga = parseFloat(item.harga) > 0 ? parseFloat(item.harga) : (parseFloat(item.harga_beli) || 0);
+        // Ambil harga_set dari barang_hargavendor yang berlaku paling akhir (atau fallback ke harga RO)
+        const defaultHarga = parseFloat(item.harga_set) > 0 ? parseFloat(item.harga_set) : (parseFloat(item.harga) || 0);
         const subtotal = item.qty * defaultHarga;
         const totalStok = parseInt(item.total_stok) || 0;
 

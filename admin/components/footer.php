@@ -382,7 +382,16 @@ async function apiRequest(endpoint, options = {}) {
     
     try {
         const response = await fetch(BASE_URL + endpoint, options);
-        const data = await response.json();
+        const text = await response.text();
+        
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            console.error('API Response Non-JSON:', text);
+            showToast('Respon server tidak valid: ' + (text.replace(/<[^>]*>/g, '').trim().substring(0, 80) || 'Format salah'), 'error');
+            return { success: false, message: 'Respon server tidak valid.', raw: text };
+        }
         
         if (response.status === 401) {
             showToast('Sesi Anda telah berakhir. Mengalihkan ke login...', 'warning');

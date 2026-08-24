@@ -172,6 +172,10 @@ require_once __DIR__ . '/../../components/navbar.php';
                                     <span id="detailBadgePrioritas">-</span>
                                 </div>
                             </div>
+                            <div class="mb-2">
+                                <span class="text-muted small d-block">Persetujuan Logistik:</span>
+                                <span id="detailApproverBadge">-</span>
+                            </div>
                             <div>
                                 <span class="text-muted small d-block">Keperluan / Catatan:</span>
                                 <div class="text-dark small fst-italic" id="detailKeterangan">-</div>
@@ -202,7 +206,12 @@ require_once __DIR__ . '/../../components/navbar.php';
                     </table>
                 </div>
             </div>
-            <div class="modal-footer bg-light py-2">
+            <div class="modal-footer bg-light py-2 justify-content-between">
+                <div>
+                    <button type="button" class="btn btn-success btn-sm px-3 fw-semibold" id="btnModalApproveRo" style="display: none;" onclick="approveRequestOrderFromModal()">
+                        <i class="bi bi-check-circle-fill me-1"></i> Setujui RO (Approve)
+                    </button>
+                </div>
                 <button type="button" class="btn btn-secondary btn-sm px-4" data-bs-dismiss="modal">Tutup</button>
             </div>
         </div>
@@ -339,18 +348,36 @@ function renderTableRows(items, offset) {
     items.forEach((ro, idx) => {
         const no = offset + idx + 1;
         
-        // Status Badge
+        // Status Badge Terstandar Berdasarkan Nilai ENUM Baru & Role
+        const roleUpper = (CURRENT_USER_ROLE || '').toUpperCase();
         let statusBadge = '';
+
         if (ro.status === 'DRAFT') {
             statusBadge = `<span class="badge bg-secondary-subtle text-secondary border px-2 py-1"><i class="bi bi-pencil me-1"></i>Draft</span>`;
         } else if (ro.status === 'TERKIRIM') {
-            statusBadge = `<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1"><i class="bi bi-clock-history me-1"></i>Menunggu Logistik</span>`;
-        } else if (ro.status === 'DISETUJUI') {
-            statusBadge = `<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1"><i class="bi bi-check2-circle me-1"></i>Disetujui</span>`;
-        } else if (ro.status === 'TIDAK DISETUJUI') {
-            statusBadge = `<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1"><i class="bi bi-x-circle me-1"></i>Ditolak</span>`;
+            if (roleUpper === 'MEKANIK') {
+                statusBadge = `<span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1"><i class="bi bi-send me-1"></i>Terkirim</span>`;
+            } else {
+                statusBadge = `<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1"><i class="bi bi-clock-history me-1"></i>Menunggu Logistik</span>`;
+            }
+        } else if (ro.status === 'DISETUJUI LOGISTIK') {
+            if (roleUpper === 'MEKANIK') {
+                statusBadge = `<span class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-2 py-1"><i class="bi bi-check-circle me-1"></i>Disetujui Logistik</span>`;
+            } else if (roleUpper === 'LOGISTIK') {
+                statusBadge = `<span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1"><i class="bi bi-send-check me-1"></i>Menunggu Purchasing</span>`;
+            } else {
+                statusBadge = `<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1"><i class="bi bi-cart-plus me-1"></i>Menunggu Purchasing</span>`;
+            }
+        } else if (ro.status === 'TIDAK DISETUJUI LOGISTIK') {
+            statusBadge = `<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1"><i class="bi bi-x-circle me-1"></i>Ditolak Logistik</span>`;
+        } else if (ro.status === 'DISETUJUI PURCHASING') {
+            statusBadge = `<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1"><i class="bi bi-check2-circle me-1"></i>Disetujui Purchasing (PO Terbit)</span>`;
+        } else if (ro.status === 'TIDAK DISETUJUI PURCHASING') {
+            statusBadge = `<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1"><i class="bi bi-x-circle me-1"></i>Ditolak Purchasing</span>`;
         } else if (ro.status === 'BATAL') {
-            statusBadge = `<span class="badge bg-dark-subtle text-dark border px-2 py-1"><i class="bi bi-slash-circle me-1"></i>Batal</span>`;
+            statusBadge = `<span class="badge bg-dark-subtle text-dark border px-2 py-1"><i class="bi bi-slash-circle me-1"></i>Dibatalkan</span>`;
+        } else {
+            statusBadge = `<span class="badge bg-secondary-subtle text-secondary border px-2 py-1">${ro.status}</span>`;
         }
 
         // Format Tanggal & Waktu Terpisah
@@ -372,27 +399,31 @@ function renderTableRows(items, offset) {
 
         // Cek Hak Akses & Aksi:
         const isOwner = (ro.id_karyawan == CURRENT_USER_ID_KARYAWAN);
-        const roleUpper = CURRENT_USER_ROLE.toUpperCase();
         const isPurchasingOrAdmin = ['PURCHASING', 'STAFF PURCHASING', 'MANAGER', 'MANAGER CABANG', 'ADMIN', 'ADMINISTRATOR'].includes(roleUpper);
         const isStaffLogistikOrAdmin = ['LOGISTIK', 'ADMIN', 'ADMINISTRATOR'].includes(roleUpper);
 
-        // Hak Edit Item/RO: Hanya Pembuat & Logistik/Admin saat status masih DRAFT/TERKIRIM (Purchasing tidak boleh manipulasi item)
+        // Hak Edit Item/RO: 
+        // - DRAFT: Hanya Pembuat / Admin
+        // - TERKIRIM: Pembuat (Mekanik) & Logistik / Admin
+        // - DISETUJUI LOGISTIK: Khusus Logistik & Admin (Mekanik dikunci)
         let canEdit = false;
         if (ro.status === 'DRAFT') {
             canEdit = isOwner || roleUpper === 'ADMIN' || roleUpper === 'ADMINISTRATOR';
         } else if (ro.status === 'TERKIRIM') {
             canEdit = (isOwner || isStaffLogistikOrAdmin) && !['PURCHASING', 'STAFF PURCHASING'].includes(roleUpper);
+        } else if (ro.status === 'DISETUJUI LOGISTIK') {
+            canEdit = isStaffLogistikOrAdmin && !['PURCHASING', 'STAFF PURCHASING'].includes(roleUpper);
         }
 
-        // Tombol Proses PO (Khusus Purchasing, Manager, Admin saat TERKIRIM)
+        // Tombol Proses PO (Khusus Purchasing, Manager, Admin saat DISETUJUI LOGISTIK)
         let btnProsesPo = '';
-        if (ro.status === 'TERKIRIM' && isPurchasingOrAdmin) {
+        if (ro.status === 'DISETUJUI LOGISTIK' && isPurchasingOrAdmin) {
             btnProsesPo = `
                 <a href="${BASE_URL}/admin/pages/request_order/proses_po.php?id=${ro.id_request}" class="btn btn-success btn-sm px-2 py-1 text-white shadow-xs" title="Proses ke Purchase Order (PO)">
                     <i class="bi bi-cart-check-fill"></i>
                 </a>
             `;
-        } else if (ro.status === 'DISETUJUI' && isPurchasingOrAdmin) {
+        } else if (ro.status === 'DISETUJUI PURCHASING' && isPurchasingOrAdmin) {
             btnProsesPo = `
                 <a href="${BASE_URL}/admin/pages/request_order/proses_po.php?id=${ro.id_request}" class="btn btn-outline-success btn-sm px-2 py-1" title="Lihat Rincian PO">
                     <i class="bi bi-file-earmark-check"></i>
@@ -409,33 +440,24 @@ function renderTableRows(items, offset) {
                 <td class="small text-dark font-monospace">${tanggalStr}</td>
                 <td class="small text-muted font-monospace">${waktuStr}</td>
                 <td>
-                    <span class="fw-semibold text-dark small">${ro.nama_karyawan}</span>
+                    <div class="fw-semibold text-dark small">${ro.nama_karyawan}</div>
+                    <div class="text-muted" style="font-size: 0.73rem;">${ro.nama_jabatan || '-'}</div>
                 </td>
                 <td>
-                    <span class="badge bg-light text-dark border font-monospace">${ro.nama_site}</span>
+                    <span class="badge bg-light text-dark border font-monospace small">${ro.nama_site || '-'}</span>
                 </td>
                 <td class="text-center">${statusBadge}</td>
                 <td class="text-center">
-                    <div class="d-flex justify-content-center align-items-center gap-1">
-                        <button type="button" class="btn btn-outline-primary btn-sm px-2 py-1" onclick="viewDetailRo(${ro.id_request})" title="Lihat Detail Dokumen">
-                            <i class="bi bi-eye-fill"></i>
+                    <div class="d-flex justify-content-center gap-1">
+                        <button type="button" class="btn btn-outline-secondary btn-sm px-2 py-1" onclick="openDetailModal(${ro.id_request})" title="Lihat Detail RO">
+                            <i class="bi bi-eye"></i>
                         </button>
-                        ${btnProsesPo}
                         ${canEdit ? `
-                            <a href="${BASE_URL}/admin/pages/request_order/edit.php?id=${ro.id_request}" class="btn btn-outline-warning btn-sm px-2 py-1" title="Edit / Update RO">
-                                <i class="bi bi-pencil-square"></i>
+                            <a href="${BASE_URL}/admin/pages/request_order/edit.php?id=${ro.id_request}" class="btn btn-outline-primary btn-sm px-2 py-1" title="Edit / Tinjau Request Order">
+                                <i class="bi bi-pencil"></i>
                             </a>
                         ` : ''}
-                        ${(ro.status === 'DRAFT' && (isOwner || ['ADMIN', 'ADMINISTRATOR'].includes(roleUpper))) ? `
-                            <button type="button" class="btn btn-outline-danger btn-sm px-2 py-1" onclick="deleteDraftRo(${ro.id_request}, '${ro.nomor}')" title="Hapus Draft">
-                                <i class="bi bi-trash-fill"></i>
-                            </button>
-                        ` : ''}
-                        ${(ro.status === 'TERKIRIM' && isOwner) ? `
-                            <button type="button" class="btn btn-outline-danger btn-sm px-2 py-1" onclick="cancelRo(${ro.id_request}, '${ro.nomor}')" title="Batalkan RO">
-                                <i class="bi bi-x-circle-fill"></i>
-                            </button>
-                        ` : ''}
+                        ${btnProsesPo}
                     </div>
                 </td>
             </tr>
@@ -445,31 +467,76 @@ function renderTableRows(items, offset) {
 }
 
 // -------------------------------------------------------------
-// 4. DETAIL REQUEST ORDER MODAL
+// 3. MODAL DETAIL REQUEST ORDER
 // -------------------------------------------------------------
-async function viewDetailRo(idRequest) {
+async function openDetailModal(idRequest) {
     const res = await apiRequest(`/api/request_order/index.php?id=${idRequest}`);
     if (!res || !res.success) {
-        showToast('Gagal memuat detail Request Order.', 'danger');
+        showToast('Gagal memuat detail data Request Order.', 'danger');
         return;
     }
 
     const ro = res.data;
     document.getElementById('detailNomorRo').textContent = ro.nomor;
     document.getElementById('detailTanggalRo').textContent = ro.tanggal_ro;
-    document.getElementById('detailPemohon').textContent = `${ro.nama_karyawan} (${ro.kode_karyawan || 'KRY'})`;
-    document.getElementById('detailJabatanDivisi').textContent = `${ro.nama_jabatan || '-'} &bull; ${ro.nama_divisi || '-'}`;
+    document.getElementById('detailPemohon').textContent = `${ro.nama_karyawan || 'Karyawan'} (${ro.kode_karyawan || 'KRY'})`;
+    document.getElementById('detailJabatanDivisi').innerHTML = `${ro.nama_jabatan || '-'} &bull; ${ro.nama_divisi || '-'}`;
     document.getElementById('detailSite').textContent = `${ro.nama_site} (${ro.kode_site})`;
     document.getElementById('detailVendor').textContent = ro.nama_vendor ? `${ro.nama_vendor} (${ro.kode_vendor || '-'})` : 'Tidak Ada (Umum)';
     document.getElementById('detailKeterangan').textContent = ro.keterangan || 'Tidak ada catatan khusus.';
 
-    // Status Badge
+    currentDetailRo = ro;
+    const isApprovedDetail = (ro.id_karyawan_approved && parseInt(ro.id_karyawan_approved) > 0);
+    const roleUpperModal = (CURRENT_USER_ROLE || '').toUpperCase();
+
+    // Badge Approver Logistik
+    const approverBadgeEl = document.getElementById('detailApproverBadge');
+    if (approverBadgeEl) {
+        if (isApprovedDetail) {
+            approverBadgeEl.innerHTML = `<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1"><i class="bi bi-check-circle-fill me-1"></i>Disetujui oleh ${ro.nama_approver || 'Logistik'}</span>`;
+        } else {
+            approverBadgeEl.innerHTML = `<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1"><i class="bi bi-hourglass-split me-1"></i>Belum Disetujui Logistik</span>`;
+        }
+    }
+
+    // Tombol Approve di Modal Footer (Khusus Logistik/Admin saat status TERKIRIM)
+    const btnModalApprove = document.getElementById('btnModalApproveRo');
+    if (btnModalApprove) {
+        if (ro.status === 'TERKIRIM' && ['LOGISTIK', 'ADMIN', 'ADMINISTRATOR', 'MANAGER'].includes(roleUpperModal)) {
+            btnModalApprove.style.display = 'inline-block';
+        } else {
+            btnModalApprove.style.display = 'none';
+        }
+    }
+
     let statusBadge = '';
-    if (ro.status === 'DRAFT') statusBadge = `<span class="badge bg-secondary">Draft</span>`;
-    else if (ro.status === 'TERKIRIM') statusBadge = `<span class="badge bg-warning text-dark">Menunggu Logistik</span>`;
-    else if (ro.status === 'DISETUJUI') statusBadge = `<span class="badge bg-success">Disetujui</span>`;
-    else if (ro.status === 'TIDAK DISETUJUI') statusBadge = `<span class="badge bg-danger">Ditolak</span>`;
-    else if (ro.status === 'BATAL') statusBadge = `<span class="badge bg-dark">Batal</span>`;
+    if (ro.status === 'DRAFT') {
+        statusBadge = `<span class="badge bg-secondary">Draft</span>`;
+    } else if (ro.status === 'TERKIRIM') {
+        if (roleUpperModal === 'MEKANIK') {
+            statusBadge = `<span class="badge bg-primary">Terkirim</span>`;
+        } else {
+            statusBadge = `<span class="badge bg-warning text-dark">Menunggu Logistik</span>`;
+        }
+    } else if (ro.status === 'DISETUJUI LOGISTIK') {
+        if (roleUpperModal === 'MEKANIK') {
+            statusBadge = `<span class="badge bg-info text-dark">Disetujui Logistik</span>`;
+        } else if (roleUpperModal === 'LOGISTIK') {
+            statusBadge = `<span class="badge bg-primary">Menunggu Purchasing</span>`;
+        } else {
+            statusBadge = `<span class="badge bg-warning text-dark">Menunggu Purchasing</span>`;
+        }
+    } else if (ro.status === 'TIDAK DISETUJUI LOGISTIK') {
+        statusBadge = `<span class="badge bg-danger">Ditolak Logistik</span>`;
+    } else if (ro.status === 'DISETUJUI PURCHASING') {
+        statusBadge = `<span class="badge bg-success">Disetujui Purchasing (PO Terbit)</span>`;
+    } else if (ro.status === 'TIDAK DISETUJUI PURCHASING') {
+        statusBadge = `<span class="badge bg-danger">Ditolak Purchasing</span>`;
+    } else if (ro.status === 'BATAL') {
+        statusBadge = `<span class="badge bg-dark">Dibatalkan</span>`;
+    } else {
+        statusBadge = `<span class="badge bg-secondary">${ro.status}</span>`;
+    }
     document.getElementById('detailBadgeStatus').innerHTML = statusBadge;
 
     // Prioritas Badge
@@ -518,6 +585,44 @@ async function viewDetailRo(idRequest) {
 
     const modal = new bootstrap.Modal(document.getElementById('modalDetailRo'));
     modal.show();
+}
+
+// -------------------------------------------------------------
+// 4. APPROVE REQUEST ORDER (LOGISTIK)
+// -------------------------------------------------------------
+let currentDetailRo = null;
+
+async function approveRequestOrder(idRequest, nomorRo) {
+    if (!confirm(`Apakah Anda yakin ingin menyetujui (Approve) Request Order "${nomorRo}"?\n\nSetelah disetujui, dokumen ini akan diverifikasi dan dapat diproses oleh divisi Purchasing.`)) {
+        return;
+    }
+
+    try {
+        const res = await apiRequest('/api/request_order/approve.php', {
+            method: 'POST',
+            body: JSON.stringify({ id_request: idRequest })
+        });
+
+        if (res && res.success) {
+            showToast(res.message || 'Request Order berhasil disetujui.', 'success');
+            loadRequestOrders(currentPage);
+        } else {
+            showToast(res ? res.message : 'Gagal menyetujui Request Order.', 'danger');
+        }
+    } catch (err) {
+        console.error('Approve RO Error:', err);
+        showToast('Terjadi kesalahan koneksi jaringan saat menyetujui RO.', 'danger');
+    }
+}
+
+async function approveRequestOrderFromModal() {
+    if (!currentDetailRo) return;
+    const idRequest = currentDetailRo.id_request;
+    const nomorRo = currentDetailRo.nomor;
+    const modalEl = document.getElementById('modalDetailRo');
+    const modalInstance = bootstrap.Modal.getInstance(modalEl);
+    if (modalInstance) modalInstance.hide();
+    await approveRequestOrder(idRequest, nomorRo);
 }
 
 // -------------------------------------------------------------

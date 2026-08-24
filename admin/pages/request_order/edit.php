@@ -11,6 +11,10 @@ require_once __DIR__ . '/../../../config/session.php';
 // Auth Protection
 $user = requireAuth([ROLE_ADMIN, ROLE_MEKANIK, ROLE_LOGISTIK, ROLE_PURCHASING, ROLE_MANAGER]);
 $isMekanik = ($user['role'] === ROLE_MEKANIK);
+$isLogistik = in_array($user['role'], [ROLE_LOGISTIK, ROLE_ADMIN, ROLE_MANAGER]);
+$targetRoleName = $isMekanik ? 'Logistik' : 'Purchasing';
+$btnSubmitLabel = $isMekanik ? 'Perbarui & Kirim ke Logistik' : 'Perbarui & Kirim ke Purchasing';
+
 $pageTitle = 'Edit Request Order';
 $pageHeading = 'Edit Formulir Request Order (RO)';
 
@@ -40,7 +44,7 @@ require_once __DIR__ . '/../../components/navbar.php';
     </div>
 
     <!-- FORMULIR REQUEST ORDER DALAM TABS -->
-    <form id="formEditRequestOrder" onsubmit="return false;" class="d-none">
+    <form id="formEditRequestOrder" onsubmit="return false;" class="d-none" novalidate>
         <input type="hidden" id="roIdRequest" value="<?= $idRequest ?>">
 
         <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
@@ -77,24 +81,24 @@ require_once __DIR__ . '/../../components/navbar.php';
                                     </h6>
 
                                     <div class="mb-3">
-                                        <label class="form-label small fw-bold text-dark">Nomor RO</label>
-                                        <input type="text" class="form-control form-control-sm font-monospace fw-bold bg-white" id="roNomor" readonly>
+                                        <label class="form-label small fw-bold text-dark">Nomor Request Order</label>
+                                        <input type="text" class="form-control form-control-sm bg-white font-monospace fw-bold" id="roNomor" readonly>
                                     </div>
 
                                     <div class="mb-3">
                                         <label class="form-label small fw-bold text-dark">Tanggal Pengajuan <span class="text-danger">*</span></label>
-                                        <input type="date" class="form-control form-control-sm" id="roTanggal" required>
+                                        <input type="date" class="form-control form-control-sm bg-white" id="roTanggal">
                                     </div>
 
-                                    <div class="mb-2">
-                                        <label class="form-label small fw-bold text-dark">Dibuat Oleh / Pemohon <span class="text-danger">*</span></label>
+                                    <div class="mb-0">
+                                        <label class="form-label small fw-bold text-dark">Pemohon / Pengaju <span class="text-danger">*</span></label>
                                         <?php if ($user['role'] === ROLE_ADMIN): ?>
-                                            <select class="form-select form-select-sm" id="roIdKaryawan" required>
-                                                <option value="">Memuat data karyawan...</option>
+                                            <select class="form-select form-select-sm" id="roIdKaryawan">
+                                                <option value="">Pilih Karyawan Pemohon...</option>
                                             </select>
                                         <?php else: ?>
-                                            <input type="hidden" id="roIdKaryawan" value="<?= $user['id_karyawan'] ?>">
-                                            <input type="text" class="form-control form-control-sm bg-white" value="<?= htmlspecialchars($user['nama']) ?> (<?= htmlspecialchars($user['role']) ?>)" readonly>
+                                            <input type="hidden" id="roIdKaryawan" value="">
+                                            <input type="text" class="form-control form-control-sm bg-white fw-semibold" id="roNamaKaryawanDisplay" readonly>
                                         <?php endif; ?>
                                     </div>
                                 </div>
@@ -109,7 +113,7 @@ require_once __DIR__ . '/../../components/navbar.php';
 
                                     <div class="mb-3">
                                         <label class="form-label small fw-bold text-dark">Site / Workshop Tujuan <span class="text-danger">*</span></label>
-                                        <select class="form-select form-select-sm" id="roIdSite" required>
+                                        <select class="form-select form-select-sm" id="roIdSite">
                                             <option value="">Memuat data site...</option>
                                         </select>
                                     </div>
@@ -156,16 +160,6 @@ require_once __DIR__ . '/../../components/navbar.php';
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Tombol Navigasi Bawah Tab 1 -->
-                        <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
-                            <a href="<?= BASE_URL ?>/admin/pages/request_order/index.php" class="btn btn-outline-secondary btn-sm px-3">
-                                <i class="bi bi-arrow-left me-1"></i> Kembali ke Daftar RO
-                            </a>
-                            <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold" onclick="goToTab('tab-material')">
-                                Lanjut ke Daftar Material <i class="bi bi-arrow-right ms-1"></i>
-                            </button>
-                        </div>
                     </div>
 
                     <!-- ======================================================== -->
@@ -210,24 +204,22 @@ require_once __DIR__ . '/../../components/navbar.php';
                             </div>
                         </div>
 
-                        <!-- Tombol Navigasi Bawah Tab 2 -->
-                        <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top flex-wrap gap-2">
-                            <div class="d-flex gap-2">
-                                <a href="<?= BASE_URL ?>/admin/pages/request_order/index.php" class="btn btn-outline-secondary btn-sm px-3">
-                                    <i class="bi bi-arrow-left me-1"></i> Kembali ke Daftar RO
-                                </a>
-                                <button type="button" class="btn btn-outline-secondary btn-sm px-3" onclick="goToTab('tab-info-utama')">
-                                    <i class="bi bi-chevron-left me-1"></i> Info Dokumen
-                                </button>
-                            </div>
-                            <div class="d-flex gap-2">
-                                <button type="button" class="btn btn-secondary btn-sm px-3 fw-semibold" onclick="submitEditRequestOrder('DRAFT')" id="btnSaveDraftBottom">
-                                    <i class="bi bi-save me-1"></i> Simpan Draft
-                                </button>
-                                <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold" onclick="submitEditRequestOrder('TERKIRIM')" id="btnSubmitRoBottom">
-                                    <i class="bi bi-send-fill me-1"></i> Perbarui & Kirim ke Logistik
-                                </button>
-                            </div>
+                        <!-- Tombol Aksi Bawah Form -->
+                        <div class="d-flex justify-content-end align-items-center mt-4 pt-3 border-top flex-wrap gap-2">
+                            <button type="button" class="btn btn-secondary btn-sm px-3 fw-semibold" onclick="submitEditRequestOrder('DRAFT')" id="btnSaveDraftBottom">
+                                <i class="bi bi-save me-1"></i> Simpan Draft
+                            </button>
+                            <?php if ($isLogistik): ?>
+                            <button type="button" class="btn btn-danger btn-sm px-3 fw-semibold shadow-xs" onclick="submitEditRequestOrder('TIDAK DISETUJUI LOGISTIK')" id="btnRejectRoBottom" style="display: none;">
+                                <i class="bi bi-x-circle-fill me-1"></i> Tidak Disetujui
+                            </button>
+                            <button type="button" class="btn btn-success btn-sm px-4 fw-semibold shadow-xs" onclick="submitEditRequestOrder('DISETUJUI LOGISTIK')" id="btnApproveRoBottom" style="display: none;">
+                                <i class="bi bi-check-circle-fill me-1"></i> Setujui (Approve)
+                            </button>
+                            <?php endif; ?>
+                            <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold shadow-xs" onclick="submitEditRequestOrder('DISETUJUI LOGISTIK')" id="btnSubmitRoBottom" style="display: none;">
+                                <i class="bi bi-send-fill me-1"></i> <?= $btnSubmitLabel ?>
+                            </button>
                         </div>
                     </div>
 
@@ -344,30 +336,27 @@ async function loadExistingRoData() {
     }
 
     const ro = res.data;
-
-    // Cek apakah status boleh diedit
-    if (!['DRAFT', 'TERKIRIM'].includes(ro.status)) {
-        document.getElementById('roLoadingNotice').className = 'alert alert-warning border-0';
-        document.getElementById('roLoadingNotice').innerHTML = `<i class="bi bi-exclamation-triangle-fill me-1"></i> Dokumen RO ${ro.nomor} berstatus <strong>${ro.status}</strong> dan sudah tidak dapat diedit lagi. <a href="${BASE_URL}/admin/pages/request_order/index.php" class="alert-link ms-2">Kembali ke Daftar RO</a>`;
-        return;
-    }
+    const roleUpper = (CURRENT_USER_ROLE || '').toUpperCase();
+    const isOwner = (ro.id_karyawan == CURRENT_USER_ID_KARYAWAN);
+    const isStaffLogistikOrAdmin = ['LOGISTIK', 'PURCHASING', 'MANAGER', 'ADMIN', 'ADMINISTRATOR'].includes(roleUpper);
 
     // Cek Hak Akses Edit:
     // - DRAFT: Hanya pembuatnya sendiri (atau Admin)
-    // - TERKIRIM: Pembuatnya sendiri ATAU tim Logistik, Purchasing, Manager, Admin
-    const isOwner = (ro.id_karyawan == CURRENT_USER_ID_KARYAWAN);
-    const isStaffLogistikOrAdmin = ['LOGISTIK', 'PURCHASING', 'MANAGER', 'ADMIN'].includes(CURRENT_USER_ROLE.toUpperCase());
-
+    // - TERKIRIM: Pembuat (Mekanik) ATAU Logistik / Admin
+    // - DISETUJUI LOGISTIK: Pembuat (Mekanik) TERKUNCI, tapi LOGISTIK / ADMIN masih bisa melakukan perubahan
+    // - Status lain (DISETUJUI PURCHASING, BATAL, TOLAK): Terkunci
     let canEdit = false;
     if (ro.status === 'DRAFT') {
-        canEdit = isOwner || CURRENT_USER_ROLE.toUpperCase() === 'ADMIN';
+        canEdit = isOwner || roleUpper === 'ADMIN' || roleUpper === 'ADMINISTRATOR';
     } else if (ro.status === 'TERKIRIM') {
         canEdit = isOwner || isStaffLogistikOrAdmin;
+    } else if (ro.status === 'DISETUJUI LOGISTIK') {
+        canEdit = isStaffLogistikOrAdmin;
     }
 
     if (!canEdit) {
-        document.getElementById('roLoadingNotice').className = 'alert alert-danger border-0';
-        document.getElementById('roLoadingNotice').innerHTML = `<i class="bi bi-shield-lock-fill me-1"></i> Anda tidak memiliki hak akses untuk mengedit dokumen Request Order ini. <a href="${BASE_URL}/admin/pages/request_order/index.php" class="alert-link ms-2">Kembali ke Daftar RO</a>`;
+        document.getElementById('roLoadingNotice').className = 'alert alert-warning border-0';
+        document.getElementById('roLoadingNotice').innerHTML = `<i class="bi bi-exclamation-triangle-fill me-1"></i> Dokumen RO ${ro.nomor} berstatus <strong>${ro.status}</strong> dan sudah tidak dapat diubah oleh pemohon. <a href="${BASE_URL}/admin/pages/request_order/index.php" class="alert-link ms-2">Kembali ke Daftar RO</a>`;
         return;
     }
 
@@ -383,6 +372,9 @@ async function loadExistingRoData() {
     // Site & Karyawan
     if (document.getElementById('roIdKaryawan')) {
         document.getElementById('roIdKaryawan').value = ro.id_karyawan;
+    }
+    if (document.getElementById('roNamaKaryawanDisplay')) {
+        document.getElementById('roNamaKaryawanDisplay').value = `${ro.nama_karyawan || 'Pemohon'} (${ro.nama_jabatan || ro.kode_karyawan || 'Karyawan'})`;
     }
     document.getElementById('roIdSite').value = ro.id_site;
 
@@ -411,6 +403,52 @@ async function loadExistingRoData() {
         });
     } else {
         addNewItemRow();
+    }
+
+    // Atur visibilitas tombol aksi berdasarkan status RO
+    const isLogistikUser = <?= json_encode($isLogistik) ?>;
+    const btnApprove = document.getElementById('btnApproveRoBottom');
+    const btnReject = document.getElementById('btnRejectRoBottom');
+    const btnSubmit = document.getElementById('btnSubmitRoBottom');
+    const btnSaveDraft = document.getElementById('btnSaveDraftBottom');
+
+    if (isLogistikUser) {
+        if (ro.status === 'TERKIRIM') {
+            // Sesuai alur Logistik: Simpan Draft, Tidak Disetujui, Setujui (Perbarui disembunyikan diawal)
+            if (btnSaveDraft) btnSaveDraft.style.display = 'inline-block';
+            if (btnReject) btnReject.style.display = 'inline-block';
+            if (btnApprove) btnApprove.style.display = 'inline-block';
+            if (btnSubmit) btnSubmit.style.display = 'none';
+        } else if (ro.status === 'DISETUJUI LOGISTIK') {
+            // Setelah di-Setujui: tombol Setujui hilang, tombol Tidak Disetujui tetap ada, tombol Perbarui/Kirim tampil
+            if (btnSaveDraft) btnSaveDraft.style.display = 'none';
+            if (btnReject) btnReject.style.display = 'inline-block';
+            if (btnApprove) btnApprove.style.display = 'none';
+            if (btnSubmit) {
+                btnSubmit.style.display = 'inline-block';
+                btnSubmit.innerHTML = '<i class="bi bi-send-fill me-1"></i> Perbarui & Kirim ke Purchasing';
+            }
+        } else if (ro.status === 'TIDAK DISETUJUI LOGISTIK') {
+            if (btnSaveDraft) btnSaveDraft.style.display = 'inline-block';
+            if (btnReject) btnReject.style.display = 'none';
+            if (btnApprove) btnApprove.style.display = 'inline-block';
+            if (btnSubmit) btnSubmit.style.display = 'none';
+        } else if (ro.status === 'DRAFT') {
+            if (btnSaveDraft) btnSaveDraft.style.display = 'inline-block';
+            if (btnReject) btnReject.style.display = 'none';
+            if (btnApprove) btnApprove.style.display = 'none';
+            if (btnSubmit) {
+                btnSubmit.style.display = 'inline-block';
+                btnSubmit.innerHTML = '<i class="bi bi-send-fill me-1"></i> Ajukan ke Logistik';
+            }
+        }
+    } else {
+        // Mekanik
+        if (btnSaveDraft) btnSaveDraft.style.display = (ro.status === 'DRAFT') ? 'inline-block' : 'none';
+        if (btnSubmit) {
+            btnSubmit.style.display = 'inline-block';
+            btnSubmit.innerHTML = '<i class="bi bi-send-fill me-1"></i> Perbarui & Kirim ke Logistik';
+        }
     }
 
     // Tampilkan form
@@ -514,7 +552,7 @@ function addNewItemRow(data = {}) {
         </td>
         <td>
             <input type="number" class="form-control form-control-sm item-qty text-center fw-bold" 
-                   value="${data.qty || 1}" min="0.1" step="any" required oninput="calculateGrandTotal()">
+                   value="${data.qty || 1}" min="0.1" step="any" oninput="recalculateTotals()">
         </td>
         <td>
             <select class="form-select form-select-sm item-satuan">
@@ -531,7 +569,7 @@ function addNewItemRow(data = {}) {
 
     tbody.appendChild(tr);
     reindexRows();
-    calculateGrandTotal();
+    recalculateTotals();
 }
 
 function removeItemRow(rowId) {
@@ -543,7 +581,7 @@ function removeItemRow(rowId) {
     const tr = document.getElementById(rowId);
     if (tr) tr.remove();
     reindexRows();
-    calculateGrandTotal();
+    recalculateTotals();
 }
 
 function reindexRows() {
@@ -659,18 +697,7 @@ function selectMasterBarang(rowId, idBarang, kode, nama, satuan) {
     row.querySelector('.item-harga').value = 0;
 
     document.getElementById(`dropdown_${rowId}`)?.classList.add('d-none');
-    calculateGrandTotal();
-}
-
-function useCustomItemName(rowId, customName) {
-    const row = document.getElementById(rowId);
-    if (!row) return;
-
-    row.querySelector('.item-id-barang').value = '';
-    row.querySelector('.item-nama-barang').value = customName;
-    row.querySelector('.item-harga').value = 0;
-    document.getElementById(`dropdown_${rowId}`)?.classList.add('d-none');
-    calculateGrandTotal();
+    recalculateTotals();
 }
 
 // Tutup dropdown jika klik di luar
@@ -683,41 +710,50 @@ document.addEventListener('click', (e) => {
     }
 });
 
-function calculateGrandTotal() {
+function recalculateTotals() {
     const rows = document.querySelectorAll('.ro-item-row');
-    let totalItems = rows.length;
     let totalQty = 0;
-
-    rows.forEach(row => {
-        const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
-        totalQty += qty;
+    rows.forEach(r => {
+        const q = parseFloat(r.querySelector('.item-qty').value) || 0;
+        totalQty += q;
     });
+    document.getElementById('summaryTotalItems').textContent = `${rows.length} Jenis`;
+    document.getElementById('summaryTotalQty').textContent = totalQty;
+}
 
-    document.getElementById('summaryTotalItems').textContent = `${totalItems} Jenis`;
-    document.getElementById('summaryTotalQty').textContent = totalQty.toLocaleString('id-ID');
+function removeItemRow(rowId) {
+    const tbody = document.getElementById('roItemsTableBody');
+    const rows = tbody.querySelectorAll('.ro-item-row');
+    if (rows.length <= 1) {
+        showToast('Minimal harus ada 1 baris kebutuhan material!', 'warning');
+        return;
+    }
+    const target = document.getElementById(rowId);
+    if (target) {
+        target.remove();
+        updateRowNumbers();
+        recalculateTotals();
+    }
 }
 
 // -------------------------------------------------------------
-// 6. SUBMIT EDIT REQUEST ORDER
+// 4. SUBMIT FORM UPDATE REQUEST ORDER
 // -------------------------------------------------------------
 async function submitEditRequestOrder(targetStatus = 'DRAFT') {
-    const form = document.getElementById('formEditRequestOrder');
-    if (!form.checkValidity()) {
-        form.reportValidity();
-        return;
-    }
-
     const idKaryawan = document.getElementById('roIdKaryawan')?.value;
-    const idSite = document.getElementById('roIdSite').value;
+    const idSite = parseInt(document.getElementById('roIdSite').value || '0');
     const tanggalRo = document.getElementById('roTanggal').value;
     const prioritas = document.querySelector('input[name="roPrioritas"]:checked')?.value || 'NORMAL';
     const idVendor = document.getElementById('roIdVendor').value || null;
     const keterangan = document.getElementById('roKeterangan').value.trim();
 
-    if (!idSite) {
+    if (!idSite || idSite <= 0) {
         showToast('Site / lokasi pengadaan wajib dipilih!', 'warning');
         goToTab('tab-info-utama');
-        document.getElementById('roIdSite').focus();
+        setTimeout(() => {
+            const siteEl = document.getElementById('roIdSite');
+            if (siteEl) siteEl.focus();
+        }, 150);
         return;
     }
 
@@ -765,6 +801,12 @@ async function submitEditRequestOrder(targetStatus = 'DRAFT') {
         return;
     }
 
+    if (targetStatus === 'TIDAK DISETUJUI LOGISTIK') {
+        if (!confirm('Apakah Anda yakin TIDAK MENYETUJUI (menolak) Request Order ini?\n\nStatus dokumen akan diperbarui menjadi TIDAK DISETUJUI LOGISTIK.')) {
+            return;
+        }
+    }
+
     const payload = {
         id_request: ID_REQUEST,
         id_karyawan: idKaryawan,
@@ -779,14 +821,26 @@ async function submitEditRequestOrder(targetStatus = 'DRAFT') {
 
     // Tombol loading state
     const btnSubmit = document.getElementById('btnSubmitRoBottom');
+    const btnApprove = document.getElementById('btnApproveRoBottom');
+    const btnReject = document.getElementById('btnRejectRoBottom');
     const btnSaveDraft = document.getElementById('btnSaveDraftBottom');
+
     const originalTextSubmit = btnSubmit ? btnSubmit.innerHTML : '';
+    const originalTextApprove = btnApprove ? btnApprove.innerHTML : '';
+    const originalTextReject = btnReject ? btnReject.innerHTML : '';
     const originalTextDraft = btnSaveDraft ? btnSaveDraft.innerHTML : '';
 
     if (btnSubmit) btnSubmit.disabled = true;
+    if (btnApprove) btnApprove.disabled = true;
+    if (btnReject) btnReject.disabled = true;
     if (btnSaveDraft) btnSaveDraft.disabled = true;
-    if (targetStatus === 'TERKIRIM' && btnSubmit) {
-        btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Mengirim ke Logistik...';
+
+    if (targetStatus === 'DISETUJUI LOGISTIK' && btnApprove) {
+        btnApprove.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyetujui...';
+    } else if (targetStatus === 'TIDAK DISETUJUI LOGISTIK' && btnReject) {
+        btnReject.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menolak...';
+    } else if (targetStatus === 'TERKIRIM' && btnSubmit) {
+        btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Mengirim ke <?= $targetRoleName ?>...';
     } else if (btnSaveDraft) {
         btnSaveDraft.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan Draft...';
     }
@@ -799,6 +853,14 @@ async function submitEditRequestOrder(targetStatus = 'DRAFT') {
     if (btnSubmit) {
         btnSubmit.disabled = false;
         btnSubmit.innerHTML = originalTextSubmit;
+    }
+    if (btnApprove) {
+        btnApprove.disabled = false;
+        btnApprove.innerHTML = originalTextApprove;
+    }
+    if (btnReject) {
+        btnReject.disabled = false;
+        btnReject.innerHTML = originalTextReject;
     }
     if (btnSaveDraft) {
         btnSaveDraft.disabled = false;

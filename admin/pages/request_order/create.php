@@ -9,6 +9,9 @@ require_once __DIR__ . '/../../../config/session.php';
 
 $user = requireAuth([ROLE_ADMIN, ROLE_MEKANIK, ROLE_LOGISTIK, ROLE_PURCHASING, ROLE_MANAGER]);
 $isMekanik = ($user['role'] === ROLE_MEKANIK);
+$targetRoleName = $isMekanik ? 'Logistik' : 'Purchasing';
+$btnSubmitLabel = $isMekanik ? 'Kirim ke Logistik' : 'Kirim ke Purchasing';
+
 $pageTitle = 'Buat Request Order';
 $pageHeading = 'Formulir Pembuatan Request Order (RO)';
 
@@ -18,21 +21,11 @@ require_once __DIR__ . '/../../components/navbar.php';
 ?>
 
 <div class="container-fluid px-0">
-    <!-- Header Title & Action Buttons -->
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <div>
-            <h2 class="fs-4 fw-bold text-dark mb-0">
-                <i class="bi bi-file-earmark-plus-fill text-primary me-2"></i>Buat Request Order (RO) Baru
-            </h2>
-        </div>
-        <div class="d-flex gap-2 align-items-center">
-            <button type="button" class="btn btn-secondary btn-sm px-3 fw-semibold" onclick="submitRequestOrder('DRAFT')" id="btnSaveDraftTop">
-                <i class="bi bi-save me-1"></i> Simpan Draft
-            </button>
-            <button type="button" class="btn btn-primary btn-sm px-3 fw-semibold" onclick="submitRequestOrder('TERKIRIM')" id="btnSubmitRoTop">
-                <i class="bi bi-send-fill me-1"></i> Kirim ke Logistik
-            </button>
-        </div>
+    <!-- Header Title -->
+    <div class="mb-4">
+        <h2 class="fs-4 fw-bold text-dark mb-0">
+            <i class="bi bi-file-earmark-plus-fill text-primary me-2"></i>Buat Request Order (RO) Baru
+        </h2>
     </div>
 
     <!-- FORM DENGAN TAB NAVIGASI (INFORMASI UTAMA & DAFTAR KEBUTUHAN) -->
@@ -165,13 +158,6 @@ require_once __DIR__ . '/../../components/navbar.php';
                             </div>
 
                         </div>
-
-                        <!-- Tombol Navigasi ke Tab 2 -->
-                        <div class="d-flex justify-content-end mt-4 pt-3 border-top">
-                            <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold" onclick="goToTab('tab-daftar-kebutuhan')">
-                                Lanjut ke Daftar Kebutuhan Material <i class="bi bi-arrow-right ms-1"></i>
-                            </button>
-                        </div>
                     </div>
 
                     <!-- TAB 2: DAFTAR KEBUTUHAN MATERIAL (DYNAMIC ITEMS) -->
@@ -214,19 +200,14 @@ require_once __DIR__ . '/../../components/navbar.php';
                             </div>
                         </div>
 
-                        <!-- Tombol Navigasi Bawah Tab 2 -->
-                        <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
-                            <button type="button" class="btn btn-outline-secondary btn-sm px-3" onclick="goToTab('tab-info-utama')">
-                                <i class="bi bi-arrow-left me-1"></i> Kembali ke Informasi Utama
+                        <!-- Tombol Aksi Bawah Form -->
+                        <div class="d-flex justify-content-end align-items-center mt-4 pt-3 border-top gap-2">
+                            <button type="button" class="btn btn-secondary btn-sm px-3 fw-semibold" onclick="submitRequestOrder('DRAFT')" id="btnSaveDraftBottom">
+                                <i class="bi bi-save me-1"></i> Simpan Draft
                             </button>
-                            <div class="d-flex gap-2">
-                                <button type="button" class="btn btn-secondary btn-sm px-3 fw-semibold" onclick="submitRequestOrder('DRAFT')" id="btnSaveDraftBottom">
-                                    <i class="bi bi-save me-1"></i> Simpan Draft
-                                </button>
-                                <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold" onclick="submitRequestOrder('TERKIRIM')" id="btnSubmitRoBottom">
-                                    <i class="bi bi-send-fill me-1"></i> Kirim ke Logistik
-                                </button>
-                            </div>
+                            <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold" onclick="submitRequestOrder('TERKIRIM')" id="btnSubmitRoBottom">
+                                <i class="bi bi-send-fill me-1"></i> <?= $btnSubmitLabel ?>
+                            </button>
                         </div>
                     </div>
 
@@ -725,12 +706,18 @@ async function submitRequestOrder(targetStatus) {
         items: items
     };
 
-    const btnDraftTop = document.getElementById('btnSaveDraftTop');
-    const btnSubmitTop = document.getElementById('btnSubmitRoTop');
     const btnDraftBtm = document.getElementById('btnSaveDraftBottom');
     const btnSubmitBtm = document.getElementById('btnSubmitRoBottom');
+    const originalSubmitText = btnSubmitBtm ? btnSubmitBtm.innerHTML : '';
+    const originalDraftText = btnDraftBtm ? btnDraftBtm.innerHTML : '';
 
-    [btnDraftTop, btnSubmitTop, btnDraftBtm, btnSubmitBtm].forEach(b => { if (b) b.disabled = true; });
+    if (btnDraftBtm) btnDraftBtm.disabled = true;
+    if (btnSubmitBtm) btnSubmitBtm.disabled = true;
+    if (targetStatus === 'TERKIRIM' && btnSubmitBtm) {
+        btnSubmitBtm.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Mengirim ke <?= $targetRoleName ?>...';
+    } else if (btnDraftBtm) {
+        btnDraftBtm.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan Draft...';
+    }
 
     try {
         const res = await apiRequest('/api/request_order/create.php', {
@@ -738,19 +725,34 @@ async function submitRequestOrder(targetStatus) {
             body: JSON.stringify(payload)
         });
 
+        if (btnDraftBtm) {
+            btnDraftBtm.disabled = false;
+            btnDraftBtm.innerHTML = originalDraftText;
+        }
+        if (btnSubmitBtm) {
+            btnSubmitBtm.disabled = false;
+            btnSubmitBtm.innerHTML = originalSubmitText;
+        }
+
         if (res && res.success) {
             showToast(res.message || 'Request Order berhasil disimpan!', 'success');
             setTimeout(() => {
-                window.location.href = '<?= BASE_URL ?>/admin/dashboard.php';
-            }, 1200);
+                window.location.href = '<?= BASE_URL ?>/admin/pages/request_order/index.php';
+            }, 1000);
         } else {
-            showToast(res.message || 'Gagal memproses Request Order.', 'error');
-            [btnDraftTop, btnSubmitTop, btnDraftBtm, btnSubmitBtm].forEach(b => { if (b) b.disabled = false; });
+            showToast(res ? res.message : 'Gagal memproses Request Order.', 'error');
         }
     } catch (err) {
         console.error('Submit RO Error:', err);
         showToast('Terjadi kesalahan koneksi jaringan.', 'error');
-        [btnDraftTop, btnSubmitTop, btnDraftBtm, btnSubmitBtm].forEach(b => { if (b) b.disabled = false; });
+        if (btnDraftBtm) {
+            btnDraftBtm.disabled = false;
+            btnDraftBtm.innerHTML = originalDraftText;
+        }
+        if (btnSubmitBtm) {
+            btnSubmitBtm.disabled = false;
+            btnSubmitBtm.innerHTML = originalSubmitText;
+        }
     }
 }
 </script>

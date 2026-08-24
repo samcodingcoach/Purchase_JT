@@ -123,10 +123,11 @@ $conn->begin_transaction();
 
 try {
     $tanggalStatus = ($status === 'TERKIRIM') ? date('Y-m-d H:i:s') : null;
+    $idKaryawanApproved = ($status === 'TERKIRIM' && $currentUser['role'] !== ROLE_MEKANIK) ? ($currentUser['id_karyawan'] ?? null) : null;
 
-    $stmtHeader = $conn->prepare("INSERT INTO request_order (nomor, tanggal_ro, id_karyawan, id_site, status, prioritas, id_vendor, tanggal_status, keterangan) 
-                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmtHeader->bind_param("ssiississ", $nomorRo, $tanggalRo, $idKaryawan, $idSite, $status, $prioritas, $idVendor, $tanggalStatus, $keterangan);
+    $stmtHeader = $conn->prepare("INSERT INTO request_order (nomor, tanggal_ro, id_karyawan, id_site, status, prioritas, id_vendor, tanggal_status, keterangan, id_karyawan_approved) 
+                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmtHeader->bind_param("ssiississi", $nomorRo, $tanggalRo, $idKaryawan, $idSite, $status, $prioritas, $idVendor, $tanggalStatus, $keterangan, $idKaryawanApproved);
     
     if (!$stmtHeader->execute()) {
         throw new Exception("Gagal menyimpan header Request Order: " . $stmtHeader->error);

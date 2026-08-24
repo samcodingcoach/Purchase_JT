@@ -25,12 +25,19 @@ if ($method === 'GET') {
     // A. DETAIL RO TUNGGAL
     if ($id && $id > 0) {
         $stmt = $conn->prepare("SELECT ro.id_request, ro.nomor, ro.tanggal_ro, ro.id_karyawan, ro.id_site, 
-                                       ro.status, ro.prioritas, ro.id_vendor, ro.tanggal_status, ro.keterangan, ro.id_po,
-                                       kry.nama_karyawan, kry.kode_karyawan, j.nama_jabatan, d.nama_divisi,
+                                       ro.status, ro.prioritas, ro.id_vendor, ro.id_karyawan_approved, ro.tanggal_status, ro.keterangan, ro.id_po,
+                                       COALESCE(kry.nama_karyawan, u.nama_users, 'Karyawan') AS nama_karyawan,
+                                       COALESCE(kry.kode_karyawan, 'KRY') AS kode_karyawan,
+                                       COALESCE(j.nama_jabatan, 'Mekanik / Staf') AS nama_jabatan,
+                                       COALESCE(d.nama_divisi, '-') AS nama_divisi,
+                                       COALESCE(appr.nama_karyawan, u_appr.nama_users) AS nama_approver,
                                        s.nama_site, s.kode_site, s.alamat AS alamat_site,
                                        v.nama_perusahaan AS nama_vendor, v.kode_vendor
                                 FROM request_order ro
                                 LEFT JOIN karyawan kry ON ro.id_karyawan = kry.id_karyawan
+                                LEFT JOIN users u ON ro.id_karyawan = u.id_users
+                                LEFT JOIN karyawan appr ON ro.id_karyawan_approved = appr.id_karyawan
+                                LEFT JOIN users u_appr ON ro.id_karyawan_approved = u_appr.id_users
                                 LEFT JOIN jabatan j ON kry.id_jabatan = j.id_jabatan
                                 LEFT JOIN divisi d ON kry.id_divisi = d.id_divisi
                                 LEFT JOIN site s ON ro.id_site = s.id_site
@@ -47,18 +54,25 @@ if ($method === 'GET') {
         $header = $res->fetch_assoc();
         $stmt->close();
 
-        // Ambil rincian material barang
+        $idVendorRo = $header['id_vendor'] ? (int)$header['id_vendor'] : 0;
+
+        // Ambil rincian material barang lengkap dengan stok dan harga set vendor terakhir
         $stmtItems = $conn->prepare("SELECT rod.id_request_detail, rod.id_request, rod.id_barang, 
                                             rod.kode_barang, rod.nama_barang, rod.qty, rod.satuan, rod.harga, rod.subtotal,
                                             b.foto1, b.nama_barang AS master_nama_barang, m.nama_merk, k.nama_kategori,
-                                            COALESCE((SELECT SUM(stok) FROM barang_stok bs WHERE bs.id_barang = rod.id_barang), 0) AS total_stok
+                                            COALESCE((SELECT SUM(stok) FROM barang_stok bs WHERE bs.id_barang = rod.id_barang), 0) AS total_stok,
+                                            COALESCE(
+                                                (SELECT bhv.harga_set FROM barang_hargavendor bhv WHERE bhv.id_barang = rod.id_barang AND bhv.id_vendor = ? ORDER BY bhv.berlaku DESC, bhv.id_harga DESC LIMIT 1),
+                                                (SELECT bhv.harga_set FROM barang_hargavendor bhv WHERE bhv.id_barang = rod.id_barang ORDER BY bhv.berlaku DESC, bhv.id_harga DESC LIMIT 1),
+                                                0
+                                            ) AS harga_set_terakhir
                                      FROM request_order_detail rod
                                      LEFT JOIN barang b ON rod.id_barang = b.id_barang
                                      LEFT JOIN merk_barang m ON b.id_merk = m.id_merk
                                      LEFT JOIN kategori_barang k ON b.id_kategori = k.id_kategori
                                      WHERE rod.id_request = ?
                                      ORDER BY rod.id_request_detail ASC");
-        $stmtItems->bind_param("i", $id);
+        $stmtItems->bind_param("ii", $idVendorRo, $id);
         $stmtItems->execute();
         $resItems = $stmtItems->get_result();
 
@@ -69,6 +83,7 @@ if ($method === 'GET') {
         while ($item = $resItems->fetch_assoc()) {
             $qty = (float)$item['qty'];
             $harga = (float)$item['harga'];
+            $hargaSet = (float)($item['harga_set_terakhir'] ?? 0);
             $subtotal = (float)$item['subtotal'];
             $totalQty += $qty;
             $grandTotal += $subtotal;
@@ -85,6 +100,7 @@ if ($method === 'GET') {
                 'qty' => $qty,
                 'satuan' => $item['satuan'] ?? 'PCS',
                 'harga' => $harga,
+                'harga_set' => $hargaSet,
                 'subtotal' => $subtotal
             ];
         }
@@ -113,9 +129,9 @@ if ($method === 'GET') {
     $params = [];
     $types = "";
 
-    // Role filtering: Jika user adalah Mekanik biasa, hanya tampilkan RO yang dibuat oleh site miliknya atau dirinya (kecuali admin/manager/logistik)
+    // Role filtering: 
+    // 1. Mekanik: hanya melihat pengajuan dari site-nya atau yang dibuat olehnya
     if ($currentUser['role'] === ROLE_MEKANIK && !empty($currentUser['id_karyawan'])) {
-        // Mekanik melihat semua pengajuan di site-nya atau yang dibuat olehnya
         if (!empty($currentUser['id_site'])) {
             $whereSql .= " AND (ro.id_karyawan = ? OR ro.id_site = ?)";
             $params[] = (int)$currentUser['id_karyawan'];
@@ -126,6 +142,12 @@ if ($method === 'GET') {
             $params[] = (int)$currentUser['id_karyawan'];
             $types .= "i";
         }
+    }
+
+    // 2. Purchasing: HANYA boleh melihat RO yang SUDAH di-approve oleh Logistik (status 'DISETUJUI LOGISTIK') atau status selesai
+    // Purchasing TIDAK boleh melihat RO yang belum di-approve oleh Logistik ('DRAFT', 'TERKIRIM', 'TIDAK DISETUJUI LOGISTIK')
+    if ($currentUser['role'] === ROLE_PURCHASING) {
+        $whereSql .= " AND ro.status IN ('DISETUJUI LOGISTIK', 'DISETUJUI PURCHASING', 'TIDAK DISETUJUI PURCHASING', 'BATAL')";
     }
 
     if (!empty($search)) {
@@ -152,7 +174,8 @@ if ($method === 'GET') {
         }
     }
 
-    if (!empty($status) && in_array(strtoupper($status), ['DRAFT', 'TERKIRIM', 'DISETUJUI', 'TIDAK DISETUJUI', 'BATAL'])) {
+    $validStatuses = ['DRAFT', 'TERKIRIM', 'DISETUJUI LOGISTIK', 'TIDAK DISETUJUI LOGISTIK', 'DISETUJUI PURCHASING', 'TIDAK DISETUJUI PURCHASING', 'BATAL'];
+    if (!empty($status) && in_array(strtoupper($status), $validStatuses)) {
         $whereSql .= " AND ro.status = ?";
         $params[] = strtoupper($status);
         $types .= "s";
@@ -200,38 +223,48 @@ if ($method === 'GET') {
         COUNT(*) as total_ro,
         SUM(CASE WHEN status = 'DRAFT' THEN 1 ELSE 0 END) as total_draft,
         SUM(CASE WHEN status = 'TERKIRIM' THEN 1 ELSE 0 END) as total_terkirim,
-        SUM(CASE WHEN status = 'DISETUJUI' THEN 1 ELSE 0 END) as total_disetujui,
-        SUM(CASE WHEN status = 'TIDAK DISETUJUI' THEN 1 ELSE 0 END) as total_ditolak,
+        SUM(CASE WHEN status = 'DISETUJUI LOGISTIK' THEN 1 ELSE 0 END) as total_disetujui_logistik,
+        SUM(CASE WHEN status = 'DISETUJUI PURCHASING' THEN 1 ELSE 0 END) as total_disetujui_purchasing,
+        SUM(CASE WHEN status IN ('TIDAK DISETUJUI LOGISTIK', 'TIDAK DISETUJUI PURCHASING') THEN 1 ELSE 0 END) as total_ditolak,
         SUM(CASE WHEN status = 'BATAL' THEN 1 ELSE 0 END) as total_batal,
-        SUM(CASE WHEN prioritas = 'URGENT' AND status IN ('DRAFT', 'TERKIRIM') THEN 1 ELSE 0 END) as total_urgent
+        SUM(CASE WHEN prioritas = 'URGENT' AND status IN ('DRAFT', 'TERKIRIM', 'DISETUJUI LOGISTIK') THEN 1 ELSE 0 END) as total_urgent
     FROM request_order ro";
     
-    // Sesuaikan filter role untuk metrik jika mekanik
+    // Sesuaikan filter role untuk metrik jika mekanik atau purchasing
     if ($currentUser['role'] === ROLE_MEKANIK && !empty($currentUser['id_karyawan'])) {
         if (!empty($currentUser['id_site'])) {
             $metricsSql .= " WHERE (ro.id_karyawan = " . (int)$currentUser['id_karyawan'] . " OR ro.id_site = " . (int)$currentUser['id_site'] . ")";
         } else {
             $metricsSql .= " WHERE ro.id_karyawan = " . (int)$currentUser['id_karyawan'];
         }
+    } else if ($currentUser['role'] === ROLE_PURCHASING) {
+        $metricsSql .= " WHERE ro.status IN ('DISETUJUI LOGISTIK', 'DISETUJUI PURCHASING', 'TIDAK DISETUJUI PURCHASING', 'BATAL')";
     }
     
     $resMetrics = $conn->query($metricsSql);
     $metrics = $resMetrics ? $resMetrics->fetch_assoc() : [
         'total_ro' => 0, 'total_draft' => 0, 'total_terkirim' => 0, 
-        'total_disetujui' => 0, 'total_ditolak' => 0, 'total_batal' => 0, 'total_urgent' => 0
+        'total_disetujui_logistik' => 0, 'total_disetujui_purchasing' => 0, 'total_ditolak' => 0, 'total_batal' => 0, 'total_urgent' => 0
     ];
 
     // 3. Query List Data RO dengan agregasi item
     $sql = "SELECT ro.id_request, ro.nomor, ro.tanggal_ro, ro.id_karyawan, ro.id_site, 
-                   ro.status, ro.prioritas, ro.id_vendor, ro.tanggal_status, ro.keterangan, ro.id_po,
-                   kry.nama_karyawan, kry.kode_karyawan, j.nama_jabatan, d.nama_divisi,
+                   ro.status, ro.prioritas, ro.id_vendor, ro.id_karyawan_approved, ro.tanggal_status, ro.keterangan, ro.id_po,
+                   COALESCE(kry.nama_karyawan, u.nama_users, 'Karyawan') AS nama_karyawan,
+                   COALESCE(kry.kode_karyawan, 'KRY') AS kode_karyawan,
+                   COALESCE(j.nama_jabatan, 'Mekanik / Staf') AS nama_jabatan,
+                   COALESCE(d.nama_divisi, '-') AS nama_divisi,
                    s.nama_site, s.kode_site,
                    v.nama_perusahaan AS nama_vendor,
+                   COALESCE(appr.nama_karyawan, u_appr.nama_users) AS nama_approver,
                    COUNT(rod.id_request_detail) AS total_items,
                    COALESCE(SUM(rod.qty), 0) AS total_qty,
                    COALESCE(SUM(rod.subtotal), 0) AS grand_total
             FROM request_order ro
             LEFT JOIN karyawan kry ON ro.id_karyawan = kry.id_karyawan
+            LEFT JOIN users u ON ro.id_karyawan = u.id_users
+            LEFT JOIN karyawan appr ON ro.id_karyawan_approved = appr.id_karyawan
+            LEFT JOIN users u_appr ON ro.id_karyawan_approved = u_appr.id_users
             LEFT JOIN jabatan j ON kry.id_jabatan = j.id_jabatan
             LEFT JOIN divisi d ON kry.id_divisi = d.id_divisi
             LEFT JOIN site s ON ro.id_site = s.id_site
@@ -261,6 +294,9 @@ if ($method === 'GET') {
             'nomor' => $row['nomor'],
             'tanggal_ro' => $row['tanggal_ro'],
             'status' => $row['status'],
+            'id_vendor' => $row['id_vendor'] ? (int)$row['id_vendor'] : null,
+            'id_karyawan_approved' => $row['id_karyawan_approved'] ? (int)$row['id_karyawan_approved'] : null,
+            'nama_approver' => $row['nama_approver'] ?? null,
             'prioritas' => $row['prioritas'] ?? 'NORMAL',
             'id_karyawan' => (int)$row['id_karyawan'],
             'nama_karyawan' => $row['nama_karyawan'] ?? 'Karyawan',
@@ -359,7 +395,7 @@ if ($method === 'POST') {
             jsonResponse(false, 'Data Request Order tidak ditemukan.', null, 404);
         }
 
-        if (in_array($ro['status'], ['DISETUJUI', 'BATAL'])) {
+        if (in_array($ro['status'], ['DISETUJUI PURCHASING', 'BATAL'])) {
             jsonResponse(false, "Request Order dengan status {$ro['status']} tidak dapat dibatalkan.", null, 422);
         }
 
