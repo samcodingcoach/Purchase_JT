@@ -36,6 +36,13 @@ $companyName = $companyProfile['nama'] ?? 'PT Jaya Teknis';
         const API_TOKEN = '<?= $_SESSION['api_token'] ?? '' ?>';
         const CURRENT_USER = <?= json_encode($currentUser) ?>;
     </script>
-</head>
 <body>
 <div id="app-wrapper">
+<script>
+    // Terapkan status sidebar-collapsed seketika secara sinkron sebelum render sidebar agar tidak ada flicker/animasi jump
+    try {
+        if (localStorage.getItem('jt_sidebar_collapsed') === '1') {
+            document.getElementById('app-wrapper').className = 'sidebar-collapsed';
+        }
+    } catch (e) {}
+</script>
