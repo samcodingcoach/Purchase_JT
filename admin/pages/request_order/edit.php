@@ -238,6 +238,26 @@ require_once __DIR__ . '/../../components/navbar.php';
     </form>
 </div>
 
+<!-- DATALIST OPSIONAL REKOMENDASI SATUAN (SEARCHABLE + BISA INPUT MANUAL APAPUN) -->
+<datalist id="satuanListOptions">
+    <option value="PCS">
+    <option value="UNIT">
+    <option value="BOX">
+    <option value="SET">
+    <option value="ROLL">
+    <option value="MTR">
+    <option value="LTR">
+    <option value="KG">
+    <option value="BATANG">
+    <option value="LEMBAR">
+    <option value="PAIL">
+    <option value="CAN">
+    <option value="DRUM">
+    <option value="PACK">
+    <option value="ZAK">
+    <option value="DUS">
+</datalist>
+
 <!-- STYLING AUTOCOMPLETE & SEARCHABLE SELECT LAYER ATAS -->
 <style>
 #roItemsTable {
@@ -299,9 +319,103 @@ require_once __DIR__ . '/../../components/navbar.php';
 .ro-item-dropdown-item:hover, .ro-item-dropdown-item.active {
     background-color: #f0f7ff;
 }
+
+/* Select2 Style Searchable Dropdown for Satuan */
+.ro-satuan-select-wrapper {
+    position: relative;
+    width: 100%;
+}
+#roItemsTable .form-control,
+#roItemsTable .form-control-sm,
+#roItemsTable .ro-satuan-btn,
+#roItemsTable .btn-sm {
+    height: 33px !important;
+    min-height: 33px !important;
+    max-height: 33px !important;
+    font-size: 0.85rem !important;
+    box-sizing: border-box !important;
+}
+#roItemsTable .btn-outline-danger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 33px;
+    height: 33px !important;
+    padding: 0 !important;
+}
+.ro-satuan-btn {
+    cursor: pointer;
+    background-color: #ffffff;
+    border-color: #dee2e6;
+    height: 33px !important;
+    padding: 0 22px 0 8px !important;
+    font-size: 0.85rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.45rem center;
+    background-size: 10px 8px;
+}
+.ro-satuan-btn:focus, .ro-satuan-btn:hover {
+    border-color: #86b7fe;
+    outline: 0;
+}
+.ro-satuan-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 165px;
+    background: #ffffff;
+    border: 1px solid #b6d4fe;
+    border-radius: 0.5rem;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.18);
+    z-index: 9999 !important;
+}
+.ro-satuan-list {
+    max-height: 180px;
+    overflow-y: auto;
+}
+.ro-satuan-item {
+    cursor: pointer;
+    font-size: 0.82rem;
+    padding: 6px 10px;
+    border-radius: 4px;
+    margin-bottom: 2px;
+    transition: background 0.12s ease-in-out;
+}
+.ro-satuan-item:hover:not(.active) {
+    background-color: #f1f5f9;
+}
+.ro-satuan-item.active {
+    background-color: #0d6efd;
+    color: #ffffff;
+    font-weight: 600;
+}
+.ro-satuan-custom-new {
+    background-color: #f0f7ff;
+    border: 1px dashed #93c5fd;
+}
+.ro-satuan-custom-new:hover {
+    background-color: #dbeafe !important;
+}
 </style>
 
 <script>
+function escapeHtml(text) {
+    if (text === null || text === undefined) return '';
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return String(text).replace(/[&<>"']/g, m => map[m]);
+}
+
 const CURRENT_USER_ROLE = <?= json_encode($user['role']) ?>;
 const CURRENT_USER_ID_KARYAWAN = <?= json_encode($user['id_karyawan'] ?? 0) ?>;
 const ID_REQUEST = <?= json_encode($idRequest) ?>;
@@ -590,12 +704,27 @@ function addNewItemRow(data = {}) {
         <td>
             <input type="number" class="form-control form-control-sm item-qty text-center fw-bold" 
                    value="${data.qty || 1}" min="0.1" step="any" oninput="recalculateTotals()">
-        </td>
-        <td>
-            <select class="form-select form-select-sm item-satuan">
-                <option value="PCS" ${(!data.satuan || data.satuan === 'PCS') ? 'selected' : ''}>PCS</option>
-                <option value="UNIT" ${(data.satuan === 'UNIT') ? 'selected' : ''}>UNIT</option>
-            </select>
+        <td style="width: 125px; min-width: 115px;">
+            <div class="ro-satuan-select-wrapper position-relative" id="satuanWrapper_${rowId}">
+                <input type="hidden" class="item-satuan" value="${escapeHtml(data.satuan || 'PCS')}">
+                <button type="button" class="form-select form-select-sm text-uppercase fw-bold text-center ro-satuan-btn" 
+                        id="satuanBtn_${rowId}" 
+                        onclick="toggleSatuanDropdown('${rowId}')">
+                    ${escapeHtml(data.satuan || 'PCS')}
+                </button>
+                <div class="ro-satuan-dropdown d-none shadow-lg border rounded-3 bg-white position-absolute p-2" id="satuanDropdown_${rowId}">
+                    <div class="input-group input-group-sm mb-2">
+                        <span class="input-group-text bg-white py-1 px-2 border-end-0"><i class="bi bi-search text-muted" style="font-size: 0.75rem;"></i></span>
+                        <input type="text" class="form-control form-control-sm border-start-0 ps-1 font-monospace text-uppercase" 
+                               id="satuanSearch_${rowId}" 
+                               placeholder="Cari / baru..." 
+                               autocomplete="off" 
+                               oninput="filterSatuanList('${rowId}')" 
+                               onkeydown="handleSatuanKeydown(event, '${rowId}')">
+                    </div>
+                    <div class="ro-satuan-list" id="satuanList_${rowId}"></div>
+                </div>
+            </div>
         </td>
         <td class="text-center">
             <button type="button" class="btn btn-outline-danger btn-sm p-1" onclick="removeItemRow('${rowId}')" title="Hapus Baris">
@@ -756,7 +885,12 @@ function selectMasterBarang(rowId, idBarang, kode, nama, satuan) {
     row.querySelector('.item-id-barang').value = idBarang;
     row.querySelector('.item-nama-barang').value = nama;
     row.querySelector('.item-kode-barang').value = kode;
-    row.querySelector('.item-satuan').value = (satuan === 'UNIT') ? 'UNIT' : 'PCS';
+    
+    const chosenSatuan = satuan ? satuan.toUpperCase() : 'PCS';
+    row.querySelector('.item-satuan').value = chosenSatuan;
+    const btn = document.getElementById(`satuanBtn_${rowId}`);
+    if (btn) btn.textContent = chosenSatuan;
+    
     row.querySelector('.item-harga').value = 0;
 
     document.getElementById(`dropdown_${rowId}`)?.classList.add('d-none');
@@ -782,6 +916,121 @@ function useCustomItemName(rowId, customName) {
     document.getElementById(`dropdown_${rowId}`)?.classList.add('d-none');
     recalculateTotals();
 }
+
+// -------------------------------------------------------------
+// 5. LOGIKA SELECT2 SEARCHABLE DROPDOWN SATUAN & CUSTOM TAGGING
+// -------------------------------------------------------------
+const STANDARD_SATUAN_LIST = ['PCS', 'UNIT', 'BOX', 'SET', 'ROLL', 'MTR', 'LTR', 'KG', 'BATANG', 'LEMBAR', 'PAIL', 'CAN', 'DRUM', 'PACK', 'ZAK', 'DUS'];
+
+function toggleSatuanDropdown(rowId) {
+    const dropdown = document.getElementById(`satuanDropdown_${rowId}`);
+    if (!dropdown) return;
+    
+    const isHidden = dropdown.classList.contains('d-none');
+    
+    // Tutup dropdown lain
+    document.querySelectorAll('.ro-satuan-dropdown').forEach(d => d.classList.add('d-none'));
+    document.querySelectorAll('.ro-item-dropdown').forEach(d => d.classList.add('d-none'));
+    document.querySelectorAll('.ro-vendor-dropdown').forEach(d => d.classList.add('d-none'));
+
+    if (isHidden) {
+        dropdown.classList.remove('d-none');
+        const searchInput = document.getElementById(`satuanSearch_${rowId}`);
+        if (searchInput) {
+            searchInput.value = '';
+            setTimeout(() => searchInput.focus(), 50);
+        }
+        renderSatuanList(rowId, '');
+    }
+}
+
+function filterSatuanList(rowId) {
+    const searchInput = document.getElementById(`satuanSearch_${rowId}`);
+    const query = searchInput ? searchInput.value.trim().toUpperCase() : '';
+    renderSatuanList(rowId, query);
+}
+
+function renderSatuanList(rowId, query) {
+    const listContainer = document.getElementById(`satuanList_${rowId}`);
+    const row = document.getElementById(rowId);
+    if (!listContainer || !row) return;
+
+    const currentVal = (row.querySelector('.item-satuan')?.value || 'PCS').toUpperCase();
+    const filtered = STANDARD_SATUAN_LIST.filter(s => s.includes(query));
+
+    let html = '';
+    
+    // Jika user mengetik kata baru yang tidak persis sama dengan salah satu list standar
+    if (query && !STANDARD_SATUAN_LIST.includes(query)) {
+        html += `
+            <div class="ro-satuan-item ro-satuan-custom-new p-2 rounded d-flex align-items-center justify-content-between mb-1" 
+                 onclick="selectSatuanOption('${rowId}', '${escapeHtml(query)}')">
+                <span class="small fw-bold text-primary"><i class="bi bi-plus-circle me-1"></i>Gunakan "${escapeHtml(query)}"</span>
+                <span class="badge bg-primary-subtle text-primary border" style="font-size: 0.7rem;">Kustom</span>
+            </div>
+        `;
+    }
+
+    if (filtered.length > 0) {
+        filtered.forEach(item => {
+            const isSelected = (item === currentVal);
+            html += `
+                <div class="ro-satuan-item p-2 rounded d-flex align-items-center justify-content-between ${isSelected ? 'active' : ''}" 
+                     onclick="selectSatuanOption('${rowId}', '${escapeHtml(item)}')">
+                    <span class="small font-monospace">${escapeHtml(item)}</span>
+                    ${isSelected ? '<i class="bi bi-check2"></i>' : ''}
+                </div>
+            `;
+        });
+    } else if (!query) {
+        html += `<div class="p-2 text-center text-muted small">Pilih satuan...</div>`;
+    }
+
+    listContainer.innerHTML = html;
+}
+
+function selectSatuanOption(rowId, val) {
+    const row = document.getElementById(rowId);
+    if (!row) return;
+
+    const cleanVal = (val || 'PCS').toUpperCase().trim();
+    const hiddenInput = row.querySelector('.item-satuan');
+    const btn = document.getElementById(`satuanBtn_${rowId}`);
+    const dropdown = document.getElementById(`satuanDropdown_${rowId}`);
+
+    if (hiddenInput) hiddenInput.value = cleanVal;
+    if (btn) btn.textContent = cleanVal;
+    if (dropdown) dropdown.classList.add('d-none');
+}
+
+function handleSatuanKeydown(e, rowId) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        const searchInput = document.getElementById(`satuanSearch_${rowId}`);
+        const query = searchInput ? searchInput.value.trim().toUpperCase() : '';
+        if (query) {
+            selectSatuanOption(rowId, query);
+        } else {
+            const firstItem = document.querySelector(`#satuanList_${rowId} .ro-satuan-item`);
+            if (firstItem) firstItem.click();
+        }
+    } else if (e.key === 'Escape') {
+        document.getElementById(`satuanDropdown_${rowId}`)?.classList.add('d-none');
+    }
+}
+
+// Tutup dropdown jika klik di luar
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.ro-item-search-wrapper')) {
+        document.querySelectorAll('.ro-item-search-wrapper .ro-item-dropdown').forEach(d => d.classList.add('d-none'));
+    }
+    if (!e.target.closest('#roVendorSearchWrapper')) {
+        document.getElementById('roVendorDropdown')?.classList.add('d-none');
+    }
+    if (!e.target.closest('.ro-satuan-select-wrapper')) {
+        document.querySelectorAll('.ro-satuan-dropdown').forEach(d => d.classList.add('d-none'));
+    }
+});
 
 // Tutup dropdown jika klik di luar
 document.addEventListener('click', (e) => {

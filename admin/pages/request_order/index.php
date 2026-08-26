@@ -23,9 +23,7 @@ require_once __DIR__ . '/../../components/navbar.php';
 <div class="container-fluid px-0">
     <!-- HEADER HALAMAN -->
     <div class="mb-4">
-        <h4 class="fw-bold text-dark mb-0">
-            <i class="bi bi-file-earmark-text text-primary me-2"></i>Daftar Request Order (RO)
-        </h4>
+        <h4 class="fw-bold text-dark mb-0">Daftar Request Order (RO)</h4>
     </div>
 
     <!-- FILTER & PENCARIAN -->
@@ -40,26 +38,26 @@ require_once __DIR__ . '/../../components/navbar.php';
                     </div>
                 </div>
 
-                <!-- Site Filter (Lebar ditambah) -->
+                <!-- Site Filter -->
                 <div class="col-md-3 col-lg-3" style="min-width: 210px;">
                     <select class="form-select form-select-sm" id="filterSite">
                         <option value="">Semua Site / Lokasi</option>
                     </select>
                 </div>
 
-                <!-- Range Tanggal: Dari Tanggal (Lebar ditambah) -->
-                <div class="col-6 col-md-2" style="min-width: 200px;">
+                <!-- Range Tanggal: Dari Tanggal (Lebar 220px, Ikon) -->
+                <div class="col-6 col-md-2" style="min-width: 220px;">
                     <div class="input-group input-group-sm">
-                        <span class="input-group-text bg-light text-muted small" style="width: 58px; justify-content: center;">Dari</span>
-                        <input type="date" class="form-control form-control-sm" id="filterStartDate" title="Dari Tanggal">
+                        <span class="input-group-text bg-white text-muted cursor-pointer" title="Dari Tanggal" onclick="document.getElementById('filterStartDate')?.showPicker?.()"><i class="bi bi-calendar-event"></i></span>
+                        <input type="date" class="form-control form-control-sm" id="filterStartDate" title="Dari Tanggal" onclick="this.showPicker && this.showPicker()">
                     </div>
                 </div>
 
-                <!-- Range Tanggal: Sampai Tanggal (Lebar ditambah) -->
-                <div class="col-6 col-md-2" style="min-width: 200px;">
+                <!-- Range Tanggal: Sampai Tanggal (Lebar 220px, Ikon) -->
+                <div class="col-6 col-md-2" style="min-width: 220px;">
                     <div class="input-group input-group-sm">
-                        <span class="input-group-text bg-light text-muted small" style="width: 58px; justify-content: center;">Sampai</span>
-                        <input type="date" class="form-control form-control-sm" id="filterEndDate" title="Sampai Tanggal">
+                        <span class="input-group-text bg-white text-muted cursor-pointer" title="Sampai Tanggal" onclick="document.getElementById('filterEndDate')?.showPicker?.()"><i class="bi bi-calendar-check"></i></span>
+                        <input type="date" class="form-control form-control-sm" id="filterEndDate" title="Sampai Tanggal" onclick="this.showPicker && this.showPicker()">
                     </div>
                 </div>
 
@@ -81,9 +79,31 @@ require_once __DIR__ . '/../../components/navbar.php';
         height: 36px;
         font-size: 0.85rem;
     }
+    .ro-filter-bar .input-group-text {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+    .ro-filter-bar .form-select {
+        padding-top: 0.35rem;
+        padding-bottom: 0.35rem;
+    }
+    .ro-filter-bar input[type="date"] {
+        padding-top: 0.3rem;
+        padding-bottom: 0.3rem;
+    }
+    .ro-filter-bar input[type="date"]::-webkit-calendar-picker-indicator {
+        display: none !important;
+        -webkit-appearance: none !important;
+    }
     .table-container {
         overflow: visible !important;
         position: relative;
+    }
+    .cursor-pointer {
+        cursor: pointer;
     }
     </style>
 

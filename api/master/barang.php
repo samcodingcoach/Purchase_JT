@@ -243,7 +243,8 @@ function deleteImageFile(?string $relativePath): void {
 if ($method === 'POST') {
     $namaBarang = trim($input['nama_barang'] ?? '');
     $kodeBarang = trim($input['kode_barang'] ?? '');
-    $satuan = in_array(strtoupper($input['satuan'] ?? ''), ['UNIT', 'PCS']) ? strtoupper($input['satuan']) : 'PCS';
+    $satuan = !empty($input['satuan']) ? strtoupper(trim((string)$input['satuan'])) : 'PCS';
+    if (strlen($satuan) > 20) { $satuan = substr($satuan, 0, 20); }
     $jenis = isset($input['jenis']) ? (int)$input['jenis'] : 1;
     $asset = isset($input['asset']) ? (int)$input['asset'] : 0;
     $idVendor = !empty($input['default_id_vendor']) ? (int)$input['default_id_vendor'] : null;
@@ -329,7 +330,8 @@ if ($method === 'PUT') {
     $idBarang = isset($input['id_barang']) ? (int)$input['id_barang'] : 0;
     $namaBarang = trim($input['nama_barang'] ?? '');
     $kodeBarang = trim($input['kode_barang'] ?? '');
-    $satuan = in_array(strtoupper($input['satuan'] ?? ''), ['UNIT', 'PCS']) ? strtoupper($input['satuan']) : 'PCS';
+    $satuan = !empty($input['satuan']) ? strtoupper(trim((string)$input['satuan'])) : 'PCS';
+    if (strlen($satuan) > 20) { $satuan = substr($satuan, 0, 20); }
     $jenis = isset($input['jenis']) ? (int)$input['jenis'] : 1;
     $asset = isset($input['asset']) ? (int)$input['asset'] : 0;
     $idVendor = !empty($input['default_id_vendor']) ? (int)$input['default_id_vendor'] : null;

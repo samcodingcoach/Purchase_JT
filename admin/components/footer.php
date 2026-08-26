@@ -77,6 +77,19 @@ $fullLocation = trim($companyAddress . ($companyCity ? ', ' . $companyCity : '')
 
 <!-- Global Application Script -->
 <script>
+// Global Utility: Escape HTML Safe
+function escapeHtml(text) {
+    if (text === null || text === undefined) return '';
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return String(text).replace(/[&<>"']/g, m => map[m]);
+}
+
 // Mobile Sidebar Toggle
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebarWrapper') || document.querySelector('.app-sidebar');
