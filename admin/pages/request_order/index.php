@@ -374,6 +374,10 @@ function renderTableRows(items, offset) {
             statusBadge = `<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1"><i class="bi bi-check2-circle me-1"></i>Disetujui Purchasing (PO Terbit)</span>`;
         } else if (ro.status === 'TIDAK DISETUJUI PURCHASING') {
             statusBadge = `<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1"><i class="bi bi-x-circle me-1"></i>Ditolak Purchasing</span>`;
+        } else if (ro.status === 'DITERIMA FULL') {
+            statusBadge = `<span class="badge bg-success text-white border border-success px-2 py-1"><i class="bi bi-box-seam-fill me-1"></i>Diterima Full</span>`;
+        } else if (ro.status === 'DITERIMA SEBAGIAN') {
+            statusBadge = `<span class="badge bg-warning text-dark border border-warning px-2 py-1"><i class="bi bi-box-seam me-1"></i>Diterima Sebagian</span>`;
         } else if (ro.status === 'BATAL') {
             statusBadge = `<span class="badge bg-dark-subtle text-dark border px-2 py-1"><i class="bi bi-slash-circle me-1"></i>Dibatalkan</span>`;
         } else {

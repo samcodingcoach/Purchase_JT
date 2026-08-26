@@ -113,102 +113,126 @@ require_once __DIR__ . '/../../components/navbar.php';
 <div class="modal fade" id="modalDetailReceiving" tabindex="-1" aria-labelledby="modalDetailReceivingLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg rounded-3">
-            <!-- MODAL HEADER -->
-            <div class="modal-header bg-light py-3 px-4 border-bottom">
-                <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="modalDetailReceivingLabel">
-                    <i class="bi bi-file-earmark-check text-primary"></i>
-                    <span>Rincian Penerimaan Barang</span>
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <!-- MODAL HEADER DENGAN NAV TABS -->
+            <div class="modal-header bg-white pt-3 pb-0 px-4 border-bottom flex-column align-items-stretch">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="modal-title fw-bold text-dark mb-0" id="modalDetailReceivingLabel">
+                        Rincian Penerimaan Barang
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                
+                <!-- Nav Tabs Modal Sesuai Fungsi -->
+                <ul class="nav nav-tabs border-bottom-0" id="modalDetailTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active fw-bold text-dark small py-2 px-3" id="modal-tab-dokumen" data-bs-toggle="tab" data-bs-target="#modal-pane-dokumen" type="button" role="tab">
+                            <i class="bi bi-file-earmark-text me-1 text-primary"></i> 1. Dokumen &amp; Vendor
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold text-dark small py-2 px-3" id="modal-tab-rincian" data-bs-toggle="tab" data-bs-target="#modal-pane-rincian" type="button" role="tab">
+                            <i class="bi bi-boxes me-1 text-primary"></i> 2. Rincian Barang (QC)
+                            <span class="badge bg-primary text-white ms-1" id="modalItemCountBadge">0</span>
+                        </button>
+                    </li>
+                </ul>
             </div>
 
-            <!-- MODAL BODY -->
+            <!-- MODAL BODY DENGAN TAB CONTENT -->
             <div class="modal-body p-4">
-                <!-- Info Header Penerimaan -->
-                <div class="row g-3 mb-4">
-                    <div class="col-md-6">
-                        <div class="card bg-light border-0 rounded-3 p-3 h-100">
-                            <h6 class="fw-bold text-dark mb-3"><i class="bi bi-card-heading me-1 text-primary"></i> Identitas Penerimaan</h6>
-                            
-                            <div class="mb-2">
-                                <span class="text-muted small d-block">Nomor Receiving (RCV):</span>
-                                <strong class="text-primary font-monospace fs-6" id="detailNomorReceiving">-</strong>
-                            </div>
-                            <div class="mb-2">
-                                <span class="text-muted small d-block">No. SPB / Surat Jalan Vendor:</span>
-                                <strong class="text-dark font-monospace fs-6" id="detailNomorSpb">-</strong>
-                                <div id="detailFileSjContainer" class="mt-1 d-none">
-                                    <a href="#" id="detailFileSjLink" target="_blank" class="btn btn-outline-primary btn-sm py-0 px-2" style="font-size: 0.75rem;">
-                                        <i class="bi bi-file-earmark-pdf me-1 text-danger"></i> Buka Dokumen Surat Jalan
-                                    </a>
+                <div class="tab-content" id="modalDetailTabContent">
+                    
+                    <!-- TAB 1: DOKUMEN & VENDOR -->
+                    <div class="tab-pane fade show active" id="modal-pane-dokumen" role="tabpanel">
+                        <div class="row g-3">
+                            <!-- Kolom Kiri: Identitas Dokumen & PO -->
+                            <div class="col-md-6">
+                                <div class="card bg-light border-0 rounded-3 p-3 h-100">
+                                    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-card-heading me-2 text-primary"></i>Identitas Penerimaan</h6>
+                                    
+                                    <div class="mb-2">
+                                        <span class="text-muted small d-block">Nomor Receiving (RCV):</span>
+                                        <strong class="text-primary font-monospace fs-6" id="detailNomorReceiving">-</strong>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="text-muted small d-block">No. SPB / Surat Jalan Vendor:</span>
+                                        <strong class="text-dark font-monospace fs-6" id="detailNomorSpb">-</strong>
+                                        <div id="detailFileSjContainer" class="mt-1 d-none">
+                                            <a href="#" id="detailFileSjLink" target="_blank" class="btn btn-outline-primary btn-sm py-0 px-2" style="font-size: 0.75rem;">
+                                                <i class="bi bi-file-earmark-pdf me-1 text-danger"></i> Buka Dokumen Surat Jalan
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="text-muted small d-block">Referensi Purchase Order (PO):</span>
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace" id="detailNomorPo">-</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="text-muted small d-block">Tanggal Diterima:</span>
+                                        <span class="text-dark font-monospace" id="detailTanggalReceiving">-</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-muted small d-block">Petugas Logistik Penerima:</span>
+                                        <strong class="text-dark" id="detailPetugas">-</strong>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="mb-2">
-                                <span class="text-muted small d-block">Referensi Purchase Order (PO):</span>
-                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace" id="detailNomorPo">-</span>
+
+                            <!-- Kolom Kanan: Pengirim & Lokasi Penerimaan -->
+                            <div class="col-md-6">
+                                <div class="card bg-light border-0 rounded-3 p-3 h-100">
+                                    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-geo-alt me-2 text-primary"></i>Pengirim &amp; Lokasi Penerimaan</h6>
+                                    
+                                    <div class="mb-2">
+                                        <span class="text-muted small d-block">Vendor Pengirim:</span>
+                                        <strong class="text-dark fs-6" id="detailVendor">-</strong>
+                                        <div class="text-muted small" id="detailTeleponVendor">-</div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="text-muted small d-block">Site / Gudang Tujuan:</span>
+                                        <strong class="text-dark" id="detailSite">-</strong>
+                                    </div>
+                                    <div>
+                                        <span class="text-muted small d-block">Alamat Site:</span>
+                                        <span class="text-secondary small" id="detailAlamatSite">-</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="mb-2">
-                                <span class="text-muted small d-block">Tanggal Diterima:</span>
-                                <span class="text-dark font-monospace" id="detailTanggalReceiving">-</span>
-                            </div>
-                            <div>
-                                <span class="text-muted small d-block">Petugas Logistik Penerima:</span>
-                                <strong class="text-dark" id="detailPetugas">-</strong>
+
+                            <!-- Catatan Penerimaan -->
+                            <div class="col-12">
+                                <div class="bg-light p-3 rounded-3 border-0">
+                                    <span class="text-muted small d-block mb-1 fw-bold"><i class="bi bi-chat-left-text me-1 text-primary"></i> Catatan Penerimaan:</span>
+                                    <p class="mb-0 small text-dark" id="detailCatatan">-</p>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="col-md-6">
-                        <div class="card bg-light border-0 rounded-3 p-3 h-100">
-                            <h6 class="fw-bold text-dark mb-3"><i class="bi bi-geo-alt me-1 text-primary"></i> Pengirim &amp; Lokasi Penerimaan</h6>
-                            
-                            <div class="mb-2">
-                                <span class="text-muted small d-block">Vendor Pengirim:</span>
-                                <strong class="text-dark fs-6" id="detailVendor">-</strong>
-                                <div class="text-muted small" id="detailTeleponVendor">-</div>
-                            </div>
-                            <div class="mb-2">
-                                <span class="text-muted small d-block">Site / Gudang Tujuan:</span>
-                                <strong class="text-dark" id="detailSite">-</strong>
-                            </div>
-                            <div>
-                                <span class="text-muted small d-block">Alamat Site:</span>
-                                <span class="text-secondary small" id="detailAlamatSite">-</span>
-                            </div>
+                    <!-- TAB 2: RINCIAN BARANG & QC -->
+                    <div class="tab-pane fade" id="modal-pane-rincian" role="tabpanel">
+                        <div class="table-responsive border rounded-3">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light small text-muted text-uppercase align-middle">
+                                    <tr class="align-middle">
+                                        <th style="width: 40px;" class="text-center align-middle">No</th>
+                                        <th class="align-middle">Nama Barang &amp; Kode</th>
+                                        <th style="width: 90px;" class="text-center align-middle">Qty PO</th>
+                                        <th style="width: 110px;" class="text-center align-middle text-success">Qty Diterima</th>
+                                        <th style="width: 80px;" class="text-center align-middle">Satuan</th>
+                                        <th style="width: 110px;" class="text-center align-middle">Kondisi QC</th>
+                                        <th class="align-middle">Keterangan</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="detailReceivingItemsBody">
+                                    <tr>
+                                        <td colspan="7" class="text-center py-4 text-muted">Memuat rincian barang...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
 
-                    <div class="col-12">
-                        <div class="bg-light p-3 rounded-3 border-0">
-                            <span class="text-muted small d-block mb-1 fw-bold"><i class="bi bi-chat-left-text me-1 text-primary"></i> Catatan Penerimaan:</span>
-                            <p class="mb-0 small text-dark" id="detailCatatan">-</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tabel Rincian Barang Fisik (TANPA HARGA/BIAYA) -->
-                <h6 class="fw-bold text-dark mb-2">
-                    <i class="bi bi-boxes text-primary me-1"></i> Rincian Barang Fisik yang Masuk ke Stok Gudang
-                </h6>
-                <div class="table-responsive border rounded-3">
-                    <table class="table table-sm table-striped align-middle mb-0">
-                        <thead class="table-light small text-muted">
-                            <tr>
-                                <th style="width: 40px;" class="text-center">No</th>
-                                <th>Nama Barang &amp; Kode</th>
-                                <th style="width: 90px;" class="text-center">Qty PO</th>
-                                <th style="width: 110px;" class="text-center">Qty Diterima</th>
-                                <th style="width: 90px;" class="text-center">Satuan</th>
-                                <th style="width: 110px;" class="text-center">Kondisi QC</th>
-                                <th>Keterangan</th>
-                            </tr>
-                        </thead>
-                        <tbody id="detailReceivingItemsBody">
-                            <tr>
-                                <td colspan="7" class="text-center py-3 text-muted">Memuat rincian barang...</td>
-                            </tr>
-                        </tbody>
-                    </table>
                 </div>
             </div>
 
@@ -441,6 +465,13 @@ function renderPagination(pagination) {
 async function openDetailModal(idRcv) {
     modalDetailInstance.show();
 
+    // Reset ke tab pertama (Dokumen & Vendor)
+    const tabTrigger = document.querySelector('#modal-tab-dokumen');
+    if (tabTrigger) {
+        const tab = bootstrap.Tab.getInstance(tabTrigger) || new bootstrap.Tab(tabTrigger);
+        tab.show();
+    }
+
     document.getElementById('detailNomorReceiving').textContent = 'Memuat...';
     document.getElementById('detailNomorSpb').textContent = '-';
     document.getElementById('detailNomorPo').textContent = '-';
@@ -451,11 +482,12 @@ async function openDetailModal(idRcv) {
     document.getElementById('detailSite').textContent = '-';
     document.getElementById('detailAlamatSite').textContent = '-';
     document.getElementById('detailCatatan').textContent = '-';
+    document.getElementById('modalItemCountBadge').textContent = '0';
     document.getElementById('modalBtnPrint').href = `<?= BASE_URL ?>/admin/pages/receiving/print.php?id=${idRcv}`;
 
     document.getElementById('detailReceivingItemsBody').innerHTML = `
         <tr>
-            <td colspan="7" class="text-center py-3 text-muted">
+            <td colspan="7" class="text-center py-4 text-muted">
                 <div class="spinner-border spinner-border-sm text-primary me-2"></div> Memuat rincian barang...
             </td>
         </tr>
@@ -495,6 +527,7 @@ async function openDetailModal(idRcv) {
     document.getElementById('detailCatatan').textContent = rcv.catatan_rcv ? rcv.catatan_rcv : 'Tidak ada catatan khusus.';
 
     const items = rcv.items || [];
+    document.getElementById('modalItemCountBadge').textContent = items.length;
     if (items.length === 0) {
         document.getElementById('detailReceivingItemsBody').innerHTML = `
             <tr>

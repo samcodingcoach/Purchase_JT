@@ -1,9 +1,13 @@
 <?php
 /**
- * API Receiving: Mark Document as Printed & Migrasikan Stok ke Gudang
+ * API Receiving: Mark Document as Printed, Migrasikan Stok ke Gudang, & Update Status RO
  * Path: api/receiving/mark_print.php
  * Khusus Role: LOGISTIK, ADMIN, MANAGER
- * Aturan: Penambahan stok fisik dan penguncian permanen terjadi saat SPB dicetak (print)
+ * Aturan:
+ * - Penambahan stok fisik dan penguncian permanen terjadi saat SPB dicetak (print)
+ * - Status request_order yang terhubung ke PO otomatis diupdate menjadi:
+ *   - 'DITERIMA FULL' (jika receiving_order.status = 1)
+ *   - 'DITERIMA SEBAGIAN' (jika receiving_order.status = 0)
  */
 
 header('Content-Type: application/json; charset=utf-8');
@@ -33,7 +37,7 @@ if ($idRcv <= 0) {
 }
 
 // 1. Ambil detail dokumen receiving & PO
-$stmt = $conn->prepare("SELECT ro.id_rcv, ro.nomor_rcv, ro.id_po, ro.print, po.id_site, po.nomor_po 
+$stmt = $conn->prepare("SELECT ro.id_rcv, ro.nomor_rcv, ro.id_po, ro.status as status_rcv, ro.print, po.id_site, po.nomor_po 
                         FROM receiving_order ro 
                         LEFT JOIN purchase_order po ON ro.id_po = po.id_po 
                         WHERE ro.id_rcv = ? LIMIT 1");
@@ -108,14 +112,22 @@ try {
     $stmtPo->execute();
     $stmtPo->close();
 
+    // 5. Update status Request Order yang terhubung ke PO ini menjadi DITERIMA FULL / DITERIMA SEBAGIAN
+    $roStatus = ((int)$rcv['status_rcv'] === 1) ? 'DITERIMA FULL' : 'DITERIMA SEBAGIAN';
+    $stmtUpRo = $conn->prepare("UPDATE request_order SET status = ?, tanggal_status = NOW() WHERE id_po = ?");
+    $stmtUpRo->bind_param("si", $roStatus, $idPo);
+    $stmtUpRo->execute();
+    $stmtUpRo->close();
+
     $conn->commit();
 
-    jsonResponse(true, 'Surat Penerimaan Barang berhasil dicetak. Stok barang resmi dimigrasikan ke gudang dan dokumen terkunci.', [
+    jsonResponse(true, "Surat Penerimaan Barang berhasil dicetak. Stok barang resmi dimigrasikan ke gudang, status PO menjadi DITERIMA, dan status RO menjadi {$roStatus}.", [
         'id_rcv' => $idRcv,
         'nomor_rcv' => $rcv['nomor_rcv'],
         'print' => 1,
         'print_date' => date('Y-m-d H:i:s'),
-        'stok_migrated' => true
+        'stok_migrated' => true,
+        'ro_status' => $roStatus
     ]);
 
 } catch (Exception $e) {
