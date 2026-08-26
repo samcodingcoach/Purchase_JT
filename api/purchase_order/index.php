@@ -25,15 +25,21 @@ if ($method === 'GET') {
 
     // 1. Single PO Detail
     if ($id) {
-        $stmt = $conn->prepare("SELECT p.*, v.nama_vendor, v.telepon as telepon_vendor, v.email as email_vendor,
-                                       s.nama_site, s.alamat as alamat_site,
-                                       k.nama_karyawan as nama_pembuat,
+        $stmt = $conn->prepare("SELECT p.*, 
+                                       COALESCE(v.nama_perusahaan, '') as nama_vendor,
+                                       v.kode_vendor,
+                                       COALESCE(v.no_telepon, '') as telepon_vendor,
+                                       v.email as email_vendor,
+                                       v.alamat as alamat_vendor,
+                                       s.nama_site, s.kode_site, s.alamat as alamat_site,
+                                       COALESCE(k.nama_karyawan, u.nama_users, 'Staff Purchasing') as nama_pembuat,
                                        ka.nama_karyawan as nama_approver,
                                        ro.id_request, ro.nomor as nomor_ro
                                 FROM purchase_order p
                                 LEFT JOIN vendor v ON p.id_vendor = v.id_vendor
                                 LEFT JOIN site s ON p.id_site = s.id_site
                                 LEFT JOIN karyawan k ON p.id_karyawan = k.id_karyawan
+                                LEFT JOIN users u ON p.id_karyawan = u.id_users
                                 LEFT JOIN karyawan ka ON p.id_karyawan_approved = ka.id_karyawan
                                 LEFT JOIN request_order ro ON ro.id_po = p.id_po
                                 WHERE p.id_po = ? LIMIT 1");
@@ -47,30 +53,56 @@ if ($method === 'GET') {
         }
 
         // Ambil detail item
-        $stmtItems = $conn->prepare("SELECT pd.*, b.kode_barang, b.nama_barang, b.satuan, b.id_kategori, b.id_merk 
+        $stmtItems = $conn->prepare("SELECT pd.*, b.kode_barang, b.nama_barang, b.satuan,
+                                            kat.nama_kategori, mrk.nama_merk
                                      FROM purchase_order_detail pd
                                      LEFT JOIN barang b ON pd.id_barang = b.id_barang
-                                     WHERE pd.id_po = ?");
+                                     LEFT JOIN kategori_barang kat ON b.id_kategori = kat.id_kategori
+                                     LEFT JOIN merk_barang mrk ON b.id_merk = mrk.id_merk
+                                     WHERE pd.id_po = ?
+                                     ORDER BY pd.id_po_detail ASC");
         $stmtItems->bind_param("i", $id);
         $stmtItems->execute();
         $itemsRes = $stmtItems->get_result();
         
         $items = [];
-        $grandTotal = 0;
+        $subtotalBarang = 0;
         while ($item = $itemsRes->fetch_assoc()) {
-            $grandTotal += (float)$item['subtotal'];
+            $subtotalBarang += (float)$item['subtotal'];
             $items[] = $item;
         }
         $stmtItems->close();
 
+        $diskonPo = (float)($po['diskon'] ?? 0);
+        $dpp = max(0, $subtotalBarang - $diskonPo);
+        $ratePajak = (float)($po['pajak'] ?? 0);
+        $isInclusive = ((int)($po['total_termasuk_pajak'] ?? 0) === 1);
+        
+        $nominalPajak = 0;
+        $grandTotal = $dpp;
+        if ($ratePajak > 0) {
+            if ($isInclusive) {
+                $dppReal = $dpp / (1 + ($ratePajak / 100));
+                $nominalPajak = $dpp - $dppReal;
+                $grandTotal = $dpp;
+            } else {
+                $nominalPajak = $dpp * ($ratePajak / 100);
+                $grandTotal = $dpp + $nominalPajak;
+            }
+        }
+
         $po['items'] = $items;
         $po['total_item'] = count($items);
+        $po['subtotal_barang'] = $subtotalBarang;
+        $po['nominal_diskon'] = $diskonPo;
+        $po['rate_pajak'] = $ratePajak;
+        $po['nominal_pajak'] = $nominalPajak;
         $po['grand_total'] = $grandTotal;
 
         jsonResponse(true, 'Detail Purchase Order berhasil diambil.', $po);
     }
 
-    // 2. List PO
+    // 2. List PO & Global Metrics
     $search = trim($_GET['q'] ?? $_GET['search'] ?? '');
     $siteId = isset($_GET['site_id']) && is_numeric($_GET['site_id']) ? (int)$_GET['site_id'] : null;
     $vendorId = isset($_GET['vendor_id']) && is_numeric($_GET['vendor_id']) ? (int)$_GET['vendor_id'] : null;
@@ -87,12 +119,13 @@ if ($method === 'GET') {
     $types = "";
 
     if (!empty($search)) {
-        $whereSql .= " AND (p.nomor_po LIKE ? OR v.nama_vendor LIKE ? OR k.nama_karyawan LIKE ?)";
+        $whereSql .= " AND (p.nomor_po LIKE ? OR v.nama_perusahaan LIKE ? OR k.nama_karyawan LIKE ? OR p.keterangan LIKE ?)";
         $wildcard = "%" . $search . "%";
         $params[] = $wildcard;
         $params[] = $wildcard;
         $params[] = $wildcard;
-        $types .= "sss";
+        $params[] = $wildcard;
+        $types .= "ssss";
     }
 
     if ($siteId) {
@@ -120,8 +153,10 @@ if ($method === 'GET') {
         $types .= "ss";
     }
 
-    // Count Total
-    $countSql = "SELECT COUNT(*) as total FROM purchase_order p LEFT JOIN vendor v ON p.id_vendor = v.id_vendor LEFT JOIN karyawan k ON p.id_karyawan = k.id_karyawan" . $whereSql;
+    // Count Total Filtered
+    $countSql = "SELECT COUNT(*) as total FROM purchase_order p 
+                 LEFT JOIN vendor v ON p.id_vendor = v.id_vendor 
+                 LEFT JOIN karyawan k ON p.id_karyawan = k.id_karyawan" . $whereSql;
     $stmtCount = $conn->prepare($countSql);
     if (!empty($params)) {
         $stmtCount->bind_param($types, ...$params);
@@ -132,15 +167,56 @@ if ($method === 'GET') {
 
     $totalPages = $totalRecords > 0 ? (int)ceil($totalRecords / $limit) : 1;
 
+    // Global Metrics (Unfiltered summary)
+    $metrics = [
+        'total_po' => 0,
+        'total_draft' => 0,
+        'total_review_internal' => 0,
+        'total_disetujui_internal' => 0,
+        'total_diproses_vendor' => 0,
+        'total_diterima' => 0,
+        'total_batal' => 0,
+        'total_nominal' => 0
+    ];
+
+    $metricRes = $conn->query("SELECT 
+        COUNT(*) as total_po,
+        SUM(CASE WHEN status = 'DRAFT' THEN 1 ELSE 0 END) as total_draft,
+        SUM(CASE WHEN status = 'REVIEW INTERNAL' THEN 1 ELSE 0 END) as total_review_internal,
+        SUM(CASE WHEN status = 'DISETUJUI INTERNAL' THEN 1 ELSE 0 END) as total_disetujui_internal,
+        SUM(CASE WHEN status = 'DIPROSES VENDOR' THEN 1 ELSE 0 END) as total_diproses_vendor,
+        SUM(CASE WHEN status = 'DITERIMA' THEN 1 ELSE 0 END) as total_diterima,
+        SUM(CASE WHEN status = 'BATAL' THEN 1 ELSE 0 END) as total_batal
+    FROM purchase_order");
+    if ($metricRes && $mRow = $metricRes->fetch_assoc()) {
+        $metrics['total_po'] = (int)($mRow['total_po'] ?? 0);
+        $metrics['total_draft'] = (int)($mRow['total_draft'] ?? 0);
+        $metrics['total_review_internal'] = (int)($mRow['total_review_internal'] ?? 0);
+        $metrics['total_disetujui_internal'] = (int)($mRow['total_disetujui_internal'] ?? 0);
+        $metrics['total_diproses_vendor'] = (int)($mRow['total_diproses_vendor'] ?? 0);
+        $metrics['total_diterima'] = (int)($mRow['total_diterima'] ?? 0);
+        $metrics['total_batal'] = (int)($mRow['total_batal'] ?? 0);
+    }
+
+    $sumNominalRes = $conn->query("SELECT COALESCE(SUM(subtotal), 0) as total_nominal FROM purchase_order_detail");
+    if ($sumNominalRes && $snRow = $sumNominalRes->fetch_assoc()) {
+        $metrics['total_nominal'] = (float)($snRow['total_nominal'] ?? 0);
+    }
+
     // Fetch Data
-    $sql = "SELECT p.*, v.nama_vendor, s.nama_site, k.nama_karyawan as nama_pembuat,
-                   ro.nomor as nomor_ro,
+    $sql = "SELECT p.*, 
+                   COALESCE(v.nama_perusahaan, '') as nama_vendor,
+                   v.kode_vendor,
+                   s.nama_site, s.kode_site,
+                   COALESCE(k.nama_karyawan, u.nama_users, 'Staff Purchasing') as nama_pembuat,
+                   ro.id_request, ro.nomor as nomor_ro,
                    (SELECT COUNT(*) FROM purchase_order_detail pd WHERE pd.id_po = p.id_po) as total_item,
-                   (SELECT COALESCE(SUM(pd.subtotal), 0) FROM purchase_order_detail pd WHERE pd.id_po = p.id_po) as total_nilai
+                   (SELECT COALESCE(SUM(pd.subtotal), 0) FROM purchase_order_detail pd WHERE pd.id_po = p.id_po) as subtotal_barang
             FROM purchase_order p
             LEFT JOIN vendor v ON p.id_vendor = v.id_vendor
             LEFT JOIN site s ON p.id_site = s.id_site
             LEFT JOIN karyawan k ON p.id_karyawan = k.id_karyawan
+            LEFT JOIN users u ON p.id_karyawan = u.id_users
             LEFT JOIN request_order ro ON ro.id_po = p.id_po
             $whereSql
             ORDER BY p.tanggal_po DESC, p.id_po DESC
@@ -152,19 +228,36 @@ if ($method === 'GET') {
     $paramsWithLimit[] = $offset;
 
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param($typesWithLimit, ...$paramsWithLimit);
+    if (!empty($paramsWithLimit)) {
+        $stmt->bind_param($typesWithLimit, ...$paramsWithLimit);
+    }
     $stmt->execute();
     $res = $stmt->get_result();
 
     $items = [];
     while ($row = $res->fetch_assoc()) {
-        $row['total_nilai_formatted'] = 'Rp ' . number_format((float)$row['total_nilai'], 0, ',', '.');
+        $subtotal = (float)($row['subtotal_barang'] ?? 0);
+        $diskon = (float)($row['diskon'] ?? 0);
+        $dpp = max(0, $subtotal - $diskon);
+        $pajakRate = (float)($row['pajak'] ?? 0);
+        $isInc = ((int)($row['total_termasuk_pajak'] ?? 0) === 1);
+        
+        $grandTotal = $dpp;
+        if ($pajakRate > 0) {
+            if (!$isInc) {
+                $grandTotal += ($dpp * ($pajakRate / 100));
+            }
+        }
+
+        $row['grand_total'] = $grandTotal;
+        $row['grand_total_formatted'] = 'Rp ' . number_format($grandTotal, 0, ',', '.');
         $items[] = $row;
     }
     $stmt->close();
 
     jsonResponse(true, 'Daftar Purchase Order berhasil dimuat.', [
         'items' => $items,
+        'metrics' => $metrics,
         'pagination' => [
             'total_records' => $totalRecords,
             'total_pages' => $totalPages,
@@ -173,3 +266,4 @@ if ($method === 'GET') {
         ]
     ]);
 }
+

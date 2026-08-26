@@ -111,6 +111,10 @@ const AppTabs = {
         return [
             { id: 'dashboard', title: 'Dashboard', url: BASE_URL + '/admin/dashboard.php', icon: 'bi-grid-1x2-fill', closable: false },
             { id: 'request_order', title: 'Daftar Request Order', url: BASE_URL + '/admin/pages/request_order/index.php', icon: 'bi-file-earmark-text', closable: true },
+            { id: 'purchase_order', title: 'Purchase Order (PO)', url: BASE_URL + '/admin/pages/purchase_order/index.php', icon: 'bi-cart-check', closable: true },
+            { id: 'receiving', title: 'Penerimaan Barang (Receiving)', url: BASE_URL + '/admin/pages/receiving/index.php', icon: 'bi-box-seam', closable: true },
+            { id: 'receiving_create', title: 'Terima Barang Baru', url: BASE_URL + '/admin/pages/receiving/create.php', icon: 'bi-box-arrow-in-down', closable: true },
+            { id: 'receiving_edit', title: 'Edit Penerimaan', url: BASE_URL + '/admin/pages/receiving/edit.php', icon: 'bi-pencil-square', closable: true },
             { id: 'ro_create', title: 'Buat RO Baru', url: BASE_URL + '/admin/pages/request_order/create.php', icon: 'bi-file-earmark-plus', closable: true },
             { id: 'proses_po', title: 'Proses PO', url: BASE_URL + '/admin/pages/request_order/proses_po.php', icon: 'bi-cart-check-fill', closable: true },
             { id: 'site', title: 'Master Site', url: BASE_URL + '/admin/pages/site/index.php', icon: 'bi-geo-alt-fill', closable: true },
@@ -142,6 +146,9 @@ const AppTabs = {
                 (t.id === 'smtp' && path.includes('/smtp/')) || 
                 (t.id === 'info' && path.includes('/info/')) || 
                 (t.id === 'proses_po' && path.includes('/request_order/proses_po.php')) || 
+                (t.id === 'receiving_create' && path.includes('/receiving/create.php')) ||
+                (t.id === 'receiving' && path.includes('/receiving/')) ||
+                (t.id === 'purchase_order' && (path.includes('/purchase_order/index.php') || path.includes('/purchase_order/edit.php'))) || 
                 (t.id === 'request_order' && (path.includes('/request_order/index.php') || path.includes('/request_order/edit.php'))) || 
                 (t.id === 'ro_create' && path.includes('/create.php'))
             ) {
@@ -373,11 +380,18 @@ async function apiRequest(endpoint, options = {}) {
     }
     const defaultHeaders = {
         'Authorization': 'Bearer ' + API_TOKEN,
-        'Content-Type': 'application/json',
         'Accept': 'application/json'
     };
     
+    // Jangan set Content-Type jika body adalah FormData agar browser otomatis menyertakan boundary multipart
+    if (!(options.body instanceof FormData)) {
+        defaultHeaders['Content-Type'] = 'application/json';
+    }
+    
     options.headers = Object.assign({}, defaultHeaders, options.headers || {});
+    if (options.body instanceof FormData && options.headers['Content-Type']) {
+        delete options.headers['Content-Type'];
+    }
     options.credentials = options.credentials || 'include';
     
     try {
