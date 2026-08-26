@@ -33,7 +33,7 @@ require_once __DIR__ . '/../../components/navbar.php';
     <!-- Header Title -->
     <div class="mb-4">
         <h2 class="fs-4 fw-bold text-dark mb-0">
-            <i class="bi bi-pencil-square text-primary me-2"></i>Edit Request Order (RO) #<span id="headerNomorRoDisplay">...</span>
+            Edit Request Order (RO) #<span id="headerNomorRoDisplay">...</span>
         </h2>
     </div>
 
@@ -199,7 +199,6 @@ require_once __DIR__ . '/../../components/navbar.php';
                         <!-- REAKTIF TOTALS RINGKASAN -->
                         <div class="card-footer bg-light p-3 border rounded-3 mt-3">
                             <div class="d-flex gap-4 text-muted small">
-                                <div><i class="bi bi-list-check me-1 text-primary"></i>Total Item: <strong class="text-dark" id="summaryTotalItems">0 Jenis</strong></div>
                                 <div><i class="bi bi-boxes me-1 text-primary"></i>Total Kuantitas: <strong class="text-dark" id="summaryTotalQty">0</strong></div>
                             </div>
                         </div>
@@ -686,9 +685,35 @@ function renderItemDropdown(rowId, items, query = '') {
     dropdown.classList.remove('d-none');
 }
 
+function isBarangAlreadySelected(idBarang, namaBarang, currentRowId) {
+    const allRows = document.querySelectorAll('.ro-item-row');
+    for (let r of allRows) {
+        if (r.id === currentRowId) continue;
+        const existId = r.querySelector('.item-id-barang')?.value;
+        const existNama = r.querySelector('.item-nama-barang')?.value.trim().toLowerCase();
+        if (idBarang && existId && parseInt(existId, 10) === parseInt(idBarang, 10)) {
+            return true;
+        }
+        if (!idBarang && namaBarang && existNama && existNama === namaBarang.trim().toLowerCase()) {
+            return true;
+        }
+    }
+    return false;
+}
+
 function selectMasterBarang(rowId, idBarang, kode, nama, satuan) {
     const row = document.getElementById(rowId);
     if (!row) return;
+
+    // CEK VALIDASI GANDA
+    if (isBarangAlreadySelected(idBarang, nama, rowId)) {
+        showToast(`Material "${nama}" sudah dipilih pada baris lain. Silakan ubah kuantitas pada baris yang sudah ada.`, 'warning');
+        row.querySelector('.item-id-barang').value = '';
+        row.querySelector('.item-nama-barang').value = '';
+        row.querySelector('.item-kode-barang').value = '';
+        document.getElementById(`dropdown_${rowId}`)?.classList.add('d-none');
+        return;
+    }
 
     row.querySelector('.item-id-barang').value = idBarang;
     row.querySelector('.item-nama-barang').value = nama;
@@ -696,6 +721,26 @@ function selectMasterBarang(rowId, idBarang, kode, nama, satuan) {
     row.querySelector('.item-satuan').value = (satuan === 'UNIT') ? 'UNIT' : 'PCS';
     row.querySelector('.item-harga').value = 0;
 
+    document.getElementById(`dropdown_${rowId}`)?.classList.add('d-none');
+    recalculateTotals();
+}
+
+function useCustomItemName(rowId, customName) {
+    const row = document.getElementById(rowId);
+    if (!row) return;
+
+    if (isBarangAlreadySelected(null, customName, rowId)) {
+        showToast(`Material "${customName}" sudah ada pada baris lain. Silakan ubah kuantitas pada baris yang sudah ada.`, 'warning');
+        row.querySelector('.item-id-barang').value = '';
+        row.querySelector('.item-nama-barang').value = '';
+        row.querySelector('.item-kode-barang').value = '';
+        document.getElementById(`dropdown_${rowId}`)?.classList.add('d-none');
+        return;
+    }
+
+    row.querySelector('.item-id-barang').value = '';
+    row.querySelector('.item-nama-barang').value = customName;
+    row.querySelector('.item-harga').value = 0;
     document.getElementById(`dropdown_${rowId}`)?.classList.add('d-none');
     recalculateTotals();
 }
@@ -714,11 +759,11 @@ function recalculateTotals() {
     const rows = document.querySelectorAll('.ro-item-row');
     let totalQty = 0;
     rows.forEach(r => {
-        const q = parseFloat(r.querySelector('.item-qty').value) || 0;
+        const q = parseFloat(r.querySelector('.item-qty')?.value) || 0;
         totalQty += q;
     });
-    document.getElementById('summaryTotalItems').textContent = `${rows.length} Jenis`;
-    document.getElementById('summaryTotalQty').textContent = totalQty;
+    const elTotalQty = document.getElementById('summaryTotalQty');
+    if (elTotalQty) elTotalQty.textContent = totalQty.toLocaleString('id-ID');
 }
 
 function removeItemRow(rowId) {
@@ -768,7 +813,8 @@ async function submitEditRequestOrder(targetStatus = 'DRAFT') {
     const items = [];
     let hasError = false;
 
-    itemRows.forEach((row, idx) => {
+    for (let idx = 0; idx < itemRows.length; idx++) {
+        const row = itemRows[idx];
         const nama = row.querySelector('.item-nama-barang').value.trim();
         const idBarang = row.querySelector('.item-id-barang').value || null;
         const kode = row.querySelector('.item-kode-barang').value.trim();
@@ -778,12 +824,27 @@ async function submitEditRequestOrder(targetStatus = 'DRAFT') {
         if (!nama) {
             showToast(`Nama barang pada baris ke-${idx + 1} tidak boleh kosong!`, 'warning');
             hasError = true;
-            return;
+            break;
         }
         if (qty <= 0) {
             showToast(`Qty barang pada baris ke-${idx + 1} harus lebih dari 0!`, 'warning');
             hasError = true;
-            return;
+            break;
+        }
+
+        // Validasi Duplikasi pada payload
+        if (idBarang) {
+            if (items.some(it => it.id_barang && parseInt(it.id_barang, 10) === parseInt(idBarang, 10))) {
+                showToast(`Material "${nama}" dipilih ganda. Harap satukan kuantitasnya dalam satu baris.`, 'warning');
+                hasError = true;
+                break;
+            }
+        } else {
+            if (items.some(it => it.nama_barang.toLowerCase() === nama.toLowerCase())) {
+                showToast(`Material "${nama}" diinput ganda. Harap satukan kuantitasnya dalam satu baris.`, 'warning');
+                hasError = true;
+                break;
+            }
         }
 
         items.push({
@@ -794,7 +855,7 @@ async function submitEditRequestOrder(targetStatus = 'DRAFT') {
             satuan: satuan,
             harga: 0
         });
-    });
+    }
 
     if (hasError) {
         goToTab('tab-material');
