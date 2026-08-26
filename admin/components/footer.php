@@ -111,6 +111,7 @@ const AppTabs = {
         return [
             { id: 'dashboard', title: 'Dashboard', url: BASE_URL + '/admin/dashboard.php', icon: 'bi-grid-1x2-fill', closable: false },
             { id: 'request_order', title: 'Daftar Request Order', url: BASE_URL + '/admin/pages/request_order/index.php', icon: 'bi-file-earmark-text', closable: true },
+            { id: 'ro_edit', title: 'Detail RO', url: BASE_URL + '/admin/pages/request_order/edit.php', icon: 'bi-file-earmark-text-fill', closable: true },
             { id: 'purchase_order', title: 'Purchase Order (PO)', url: BASE_URL + '/admin/pages/purchase_order/index.php', icon: 'bi-cart-check', closable: true },
             { id: 'receiving', title: 'Penerimaan Barang (Receiving)', url: BASE_URL + '/admin/pages/receiving/index.php', icon: 'bi-box-seam', closable: true },
             { id: 'receiving_create', title: 'Terima Barang Baru', url: BASE_URL + '/admin/pages/receiving/create.php', icon: 'bi-box-arrow-in-down', closable: true },
@@ -134,6 +135,28 @@ const AppTabs = {
     getCurrentTabInfo() {
         const path = window.location.pathname.replace(/\/+$/, '');
         const known = this.getKnownTabs();
+
+        if (path.includes('/request_order/edit.php')) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const roId = urlParams.get('id');
+            let roTitle = (typeof CURRENT_RO_NOMOR !== 'undefined' && CURRENT_RO_NOMOR) ? CURRENT_RO_NOMOR : '';
+            if (!roTitle) {
+                const docTitle = document.title.split('-')[0].trim();
+                if (docTitle && !docTitle.toLowerCase().includes('edit request') && !docTitle.toLowerCase().includes('request order:')) {
+                    roTitle = docTitle;
+                }
+            }
+            if (!roTitle) {
+                roTitle = roId ? 'RO #' + roId : 'Detail RO';
+            }
+            return {
+                id: 'ro_edit' + (roId ? '_' + roId : ''),
+                title: roTitle,
+                url: window.location.href,
+                icon: 'bi-file-earmark-text-fill',
+                closable: true
+            };
+        }
         
         for (const t of known) {
             const tPath = new URL(t.url, window.location.origin).pathname.replace(/\/+$/, '');
@@ -147,12 +170,16 @@ const AppTabs = {
                 (t.id === 'info' && path.includes('/info/')) || 
                 (t.id === 'proses_po' && path.includes('/request_order/proses_po.php')) || 
                 (t.id === 'receiving_create' && path.includes('/receiving/create.php')) ||
+                (t.id === 'receiving_edit' && path.includes('/receiving/edit.php')) ||
                 (t.id === 'receiving' && path.includes('/receiving/')) ||
                 (t.id === 'purchase_order' && (path.includes('/purchase_order/index.php') || path.includes('/purchase_order/edit.php'))) || 
-                (t.id === 'request_order' && (path.includes('/request_order/index.php') || path.includes('/request_order/edit.php'))) || 
+                (t.id === 'request_order' && path.includes('/request_order/index.php')) || 
                 (t.id === 'ro_create' && path.includes('/create.php'))
             ) {
-                return t;
+                return {
+                    ...t,
+                    url: window.location.href
+                };
             }
         }
         
@@ -249,6 +276,21 @@ const AppTabs = {
             }
         } else {
             this.init();
+        }
+    },
+
+    updateCurrentTabTitle(newTitle) {
+        if (!newTitle) return;
+        const currentTab = this.getCurrentTabInfo();
+        let openedTabs = this.getOpenedTabs();
+        const existingIdx = openedTabs.findIndex(t => t.id === currentTab.id);
+        if (existingIdx !== -1) {
+            openedTabs[existingIdx].title = newTitle;
+            this.saveOpenedTabs(openedTabs);
+            const el = document.querySelector(`.app-tab-item[data-tab-id="${currentTab.id}"] .app-tab-title`);
+            if (el) el.textContent = newTitle;
+            const itemEl = document.querySelector(`.app-tab-item[data-tab-id="${currentTab.id}"]`);
+            if (itemEl) itemEl.setAttribute('title', newTitle);
         }
     },
 

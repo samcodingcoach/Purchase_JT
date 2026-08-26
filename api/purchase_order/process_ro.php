@@ -120,6 +120,43 @@ if ($action === 'cancel') {
 if ($action === 'approve' || $action === 'draft') {
     $isDraft = ($action === 'draft');
 
+    // Validasi Password Konfirmasi Khusus Penerbitan PO Resmi (Approve)
+    if (!$isDraft) {
+        $confirmPassword = trim($input['confirm_password'] ?? $input['password'] ?? '');
+        if (empty($confirmPassword)) {
+            jsonResponse(false, 'Password konfirmasi wajib diisi untuk otorisasi penerbitan Purchase Order.', null, 422);
+        }
+
+        $storedPassword = '';
+        if (!empty($currentUser['id_karyawan'])) {
+            $stmtPw = $conn->prepare("SELECT password FROM karyawan WHERE id_karyawan = ? LIMIT 1");
+            $stmtPw->bind_param("i", $currentUser['id_karyawan']);
+            $stmtPw->execute();
+            $resPw = $stmtPw->get_result()->fetch_assoc();
+            $storedPassword = $resPw['password'] ?? '';
+            $stmtPw->close();
+        } elseif (!empty($currentUser['id_users']) || !empty($currentUser['user_id'])) {
+            $uId = (int)($currentUser['id_users'] ?? $currentUser['user_id']);
+            $stmtPw = $conn->prepare("SELECT password FROM users WHERE id_users = ? LIMIT 1");
+            $stmtPw->bind_param("i", $uId);
+            $stmtPw->execute();
+            $resPw = $stmtPw->get_result()->fetch_assoc();
+            $storedPassword = $resPw['password'] ?? '';
+            $stmtPw->close();
+        }
+
+        $isPwValid = false;
+        if (!empty($storedPassword)) {
+            if (password_verify($confirmPassword, $storedPassword) || $confirmPassword === $storedPassword) {
+                $isPwValid = true;
+            }
+        }
+
+        if (!$isPwValid) {
+            jsonResponse(false, 'Password konfirmasi salah. Otorisasi penerbitan Purchase Order ditolak.', null, 401);
+        }
+    }
+
     $idVendor = isset($input['id_vendor']) && is_numeric($input['id_vendor']) ? (int)$input['id_vendor'] : null;
     if (!$idVendor) {
         jsonResponse(false, 'Vendor Rekanan belum ditentukan pada Request Order.', null, 422);

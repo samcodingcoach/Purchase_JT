@@ -11,7 +11,7 @@ require_once __DIR__ . '/../../../config/session.php';
 // Auth Protection
 $user = requireAuth([ROLE_ADMIN, ROLE_PURCHASING, ROLE_MANAGER]);
 $pageTitle = 'Proses ke Purchase Order';
-$pageHeading = 'Verifikasi & Proses PO';
+$pageHeading = 'Verifikasi & Proses Purchase Order';
 
 $idRequest = isset($_GET['id']) && is_numeric($_GET['id']) ? (int)$_GET['id'] : 0;
 if (!$idRequest) {
@@ -28,9 +28,7 @@ require_once __DIR__ . '/../../components/navbar.php';
     
     <!-- HEADER HALAMAN BERSIH -->
     <div class="mb-4">
-        <h4 class="fw-bold text-dark mb-0">
-            <i class="bi bi-cart-check-fill text-primary me-2"></i>Proses ke Purchase Order (PO)
-        </h4>
+        <h4 class="fw-bold text-dark mb-0">Proses ke Purchase Order (PO)</h4>
     </div>
 
     <!-- SKELETON LOADING -->
@@ -202,12 +200,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                             
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <div>
-                                    <h6 class="fw-bold mb-0 text-dark">
-                                        <i class="bi bi-boxes text-primary me-2"></i>Rincian Barang &amp; Penetapan Harga Satuan
-                                    </h6>
-                                    <span class="text-muted small">
-                                        Daftar barang diambil otomatis dari permohonan. Lengkapi harga satuan &amp; diskon vendor.
-                                    </span>
+                                    <h6 class="fw-bold mb-0 text-dark">Rincian Barang &amp; Penetapan Harga Satuan</h6>
                                 </div>
                                 <span class="badge bg-secondary-subtle text-secondary font-monospace" id="roTotalItemsBadge">0 Item</span>
                             </div>
@@ -330,10 +323,6 @@ require_once __DIR__ . '/../../components/navbar.php';
                     <button type="button" class="btn btn-outline-danger btn-sm px-3 fw-semibold" id="btnRejectPo" onclick="openRejectModal()">
                         <i class="bi bi-x-circle me-1"></i> Tolak (Tidak Disetujui)
                     </button>
-                    <!-- Tombol Batal -->
-                    <button type="button" class="btn btn-outline-dark btn-sm px-3 fw-semibold" id="btnCancelPo" onclick="openCancelModal()">
-                        <i class="bi bi-slash-circle me-1"></i> Batalkan RO
-                    </button>
                     <!-- Tombol Simpan sebagai Draft -->
                     <button type="button" class="btn btn-warning btn-sm px-3 fw-semibold text-dark shadow-sm" id="btnSaveDraftPo" onclick="handleSaveDraftPo()">
                         <i class="bi bi-file-earmark-diff me-1"></i> Simpan sebagai Draft
@@ -388,30 +377,167 @@ require_once __DIR__ . '/../../components/navbar.php';
 </div>
 
 <!-- =============================================================
-     MODAL KONFIRMASI BATALKAN RO
+     MODAL VERIFIKASI & OTORISASI PENERBITAN PURCHASE ORDER
      ============================================================= -->
-<div class="modal fade" id="modalCancelRo" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-dark text-white py-3">
-                <h5 class="modal-title fs-6 fw-bold">
-                    <i class="bi bi-slash-circle me-2"></i>Batalkan Request Order
-                </h5>
+<div class="modal fade" id="modalVerifyPo" tabindex="-1" aria-labelledby="modalVerifyPoLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-3 overflow-hidden">
+            <!-- Modal Header -->
+            <div class="modal-header bg-primary text-white py-3 px-4">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-shield-check fs-4"></i>
+                    <div>
+                        <h5 class="modal-title fs-6 fw-bold mb-0" id="modalVerifyPoLabel">
+                            Verifikasi &amp; Konfirmasi Penerbitan Purchase Order
+                        </h5>
+                        <div class="small opacity-75">Periksa dan centang 6 poin parameter transaksi sebelum menerbitkan PO resmi</div>
+                    </div>
+                </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-4">
-                <p class="small text-muted mb-3">
-                    Apakah Anda yakin ingin membatalkan dokumen Request Order ini?
-                </p>
-                <div class="mb-3">
-                    <label class="form-label small fw-bold">Alasan Pembatalan <span class="text-danger">*</span></label>
-                    <textarea class="form-control" id="cancelAlasanText" rows="4" required placeholder="Tuliskan alasan pembatalan..."></textarea>
+
+            <!-- Modal Body -->
+            <div class="modal-body p-4 bg-light">
+                
+                <!-- Ringkasan Dokumen & Nilai Transaksi -->
+                <div class="card border-0 shadow-xs rounded-3 p-3 bg-white mb-3">
+                    <div class="row g-2 align-items-center">
+                        <div class="col-sm-6">
+                            <span class="text-muted small d-block">Nomor Purchase Order (PO):</span>
+                            <strong class="text-dark font-monospace fs-6" id="verifyPoNumberDisplay">PO-XXXX-XXXX</strong>
+                            <div class="text-muted small mt-1">Vendor: <span class="fw-semibold text-dark" id="verifyVendorNameDisplay">-</span></div>
+                        </div>
+                        <div class="col-sm-6 text-sm-end">
+                            <span class="text-muted small d-block">Grand Total Transaksi:</span>
+                            <strong class="text-success font-monospace fs-5" id="verifyGrandTotalDisplay">Rp 0</strong>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- 6 CHECKLIST VERIFIKASI PARAMETER -->
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="fw-bold text-dark small mb-0">
+                        <i class="bi bi-card-checklist text-primary me-1"></i> Checklist Verifikasi Wajib (6 Poin) <span class="text-danger">*</span>
+                    </h6>
+                    <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2 small" style="font-size: 0.75rem;" onclick="toggleCheckAllVerify(true)">Centang Semua</button>
+                </div>
+
+                <div class="d-flex flex-column gap-2 mb-3">
+                    
+                    <!-- 1. T.O.P (Term of Payment) -->
+                    <div class="card border p-2 bg-white shadow-xs">
+                        <div class="form-check m-0 d-flex align-items-start gap-2">
+                            <input class="form-check-input verify-check-item mt-1" type="checkbox" id="checkVerifyTop" onchange="checkVerifyCompleteness()">
+                            <label class="form-check-label w-100 cursor-pointer" for="checkVerifyTop">
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-1">
+                                    <strong class="text-dark small">1. Term of Payment (T.O.P)</strong>
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace" id="verifyValTop">0 Hari</span>
+                                </div>
+                                <div class="text-muted" style="font-size: 0.78rem;">Jangka waktu dan termin pembayaran ke vendor sudah tepat sesuai kesepakatan.</div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 2. Metode Pengiriman -->
+                    <div class="card border p-2 bg-white shadow-xs">
+                        <div class="form-check m-0 d-flex align-items-start gap-2">
+                            <input class="form-check-input verify-check-item mt-1" type="checkbox" id="checkVerifyPengiriman" onchange="checkVerifyCompleteness()">
+                            <label class="form-check-label w-100 cursor-pointer" for="checkVerifyPengiriman">
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-1">
+                                    <strong class="text-dark small">2. Metode Pengiriman</strong>
+                                    <span class="badge bg-secondary-subtle text-secondary border font-monospace" id="verifyValPengiriman">Vendor</span>
+                                </div>
+                                <div class="text-muted" style="font-size: 0.78rem;">Metode logistik pengiriman barang (Vendor/Expedisi/Internal) dan alamat site tujuan sudah benar.</div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 3. Estimasi Tanggal Pengiriman -->
+                    <div class="card border p-2 bg-white shadow-xs">
+                        <div class="form-check m-0 d-flex align-items-start gap-2">
+                            <input class="form-check-input verify-check-item mt-1" type="checkbox" id="checkVerifyTanggalPengiriman" onchange="checkVerifyCompleteness()">
+                            <label class="form-check-label w-100 cursor-pointer" for="checkVerifyTanggalPengiriman">
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-1">
+                                    <strong class="text-dark small">3. Estimasi Tanggal Pengiriman oleh Vendor</strong>
+                                    <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle font-monospace" id="verifyValTanggalPengiriman">-</span>
+                                </div>
+                                <div class="text-muted" style="font-size: 0.78rem;">Estimasi kesanggupan tanggal pengiriman oleh vendor telah dikonfirmasi dan sesuai jadwal operasional.</div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 4. Total QTY -->
+                    <div class="card border p-2 bg-white shadow-xs">
+                        <div class="form-check m-0 d-flex align-items-start gap-2">
+                            <input class="form-check-input verify-check-item mt-1" type="checkbox" id="checkVerifyTotalQty" onchange="checkVerifyCompleteness()">
+                            <label class="form-check-label w-100 cursor-pointer" for="checkVerifyTotalQty">
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-1">
+                                    <strong class="text-dark small">4. Total QTY (Kuantitas &amp; Rincian Barang)</strong>
+                                    <span class="badge bg-dark-subtle text-dark border font-monospace" id="verifyValTotalQty">0 Qty (0 Item)</span>
+                                </div>
+                                <div class="text-muted" style="font-size: 0.78rem;">Kuantitas seluruh baris barang, satuan (PCS/UNIT), serta harga satuan dan diskon telah dihitung akurat.</div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 5. Kena Pajak (PPN) -->
+                    <div class="card border p-2 bg-white shadow-xs">
+                        <div class="form-check m-0 d-flex align-items-start gap-2">
+                            <input class="form-check-input verify-check-item mt-1" type="checkbox" id="checkVerifyKenaPajak" onchange="checkVerifyCompleteness()">
+                            <label class="form-check-label w-100 cursor-pointer" for="checkVerifyKenaPajak">
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-1">
+                                    <strong class="text-dark small">5. Status Kena Pajak (PPN)</strong>
+                                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle font-monospace" id="verifyValKenaPajak">PPN (12%)</span>
+                                </div>
+                                <div class="text-muted" style="font-size: 0.78rem;">Status pengenaan Pajak Pertambahan Nilai (PPN) dan tarif pajak per item telah diverifikasi.</div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 6. Total Termasuk Pajak -->
+                    <div class="card border p-2 bg-white shadow-xs">
+                        <div class="form-check m-0 d-flex align-items-start gap-2">
+                            <input class="form-check-input verify-check-item mt-1" type="checkbox" id="checkVerifyTermasukPajak" onchange="checkVerifyCompleteness()">
+                            <label class="form-check-label w-100 cursor-pointer" for="checkVerifyTermasukPajak">
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-1">
+                                    <strong class="text-dark small">6. Total Termasuk Pajak (Include / Exclude)</strong>
+                                    <span class="badge bg-light text-dark border font-monospace" id="verifyValTermasukPajak">Belum Termasuk Pajak</span>
+                                </div>
+                                <div class="text-muted" style="font-size: 0.78rem;">Skema perhitungan DPP, Pajak, dan Grand Total (apakah harga include atau exclude pajak) sudah tepat.</div>
+                            </label>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- INPUT PASSWORD KONFIRMASI OTORISASI -->
+                <div class="card border-0 shadow-xs rounded-3 p-3 bg-white">
+                    <label class="form-label small fw-bold text-dark mb-1">
+                        <i class="bi bi-key-fill text-warning me-1"></i> Input Password Akun Anda untuk Otorisasi <span class="text-danger">*</span>
+                    </label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light"><i class="bi bi-lock-fill text-muted"></i></span>
+                        <input type="password" class="form-control" id="inputVerifyPassword" 
+                               placeholder="Masukkan password login Anda untuk konfirmasi penerbitan..." 
+                               autocomplete="current-password" oninput="checkVerifyCompleteness()" required>
+                        <button class="btn btn-outline-secondary" type="button" onclick="toggleVerifyPasswordVisibility()" title="Lihat/Sembunyikan Password">
+                            <i class="bi bi-eye" id="toggleVerifyEyeIcon"></i>
+                        </button>
+                    </div>
+                    <div class="form-text text-muted" style="font-size: 0.78rem;">
+                        Penerbitan PO adalah dokumen legal sah. Masukkan password akun login Anda sebagai verifikasi identitas resmi.
+                    </div>
+                </div>
+
             </div>
-            <div class="modal-footer bg-light py-2 px-3">
-                <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">Tutup</button>
-                <button type="button" class="btn btn-dark btn-sm px-4 fw-semibold" id="btnConfirmCancel" onclick="submitCancelRo()">
-                    <i class="bi bi-slash-circle me-1"></i> Konfirmasi Pembatalan
+
+            <!-- Modal Footer -->
+            <div class="modal-footer bg-white py-3 px-4 border-top d-flex justify-content-between align-items-center">
+                <button type="button" class="btn btn-outline-secondary btn-sm px-3" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i> Batal
+                </button>
+                <button type="button" class="btn btn-success btn-sm px-4 fw-bold shadow-sm" id="btnFinalSubmitPo" onclick="submitFinalApprovedPo()" disabled>
+                    <i class="bi bi-check2-circle me-1"></i> Konfirmasi &amp; Terbitkan PO Sekarang
                 </button>
             </div>
         </div>
@@ -425,12 +551,12 @@ require_once __DIR__ . '/../../components/navbar.php';
 const ID_REQUEST = <?= $idRequest ?>;
 let roDataCache = null;
 let modalRejectInstance = null;
-let modalCancelInstance = null;
+let modalVerifyPoInstance = null;
 let calculatedDiskonNominal = 0;
 
 document.addEventListener('DOMContentLoaded', async () => {
     modalRejectInstance = new bootstrap.Modal(document.getElementById('modalRejectRo'));
-    modalCancelInstance = new bootstrap.Modal(document.getElementById('modalCancelRo'));
+    modalVerifyPoInstance = new bootstrap.Modal(document.getElementById('modalVerifyPo'));
 
     await Promise.all([
         fetchNextPoNumber(),
@@ -742,10 +868,10 @@ function calculateAllTotals() {
 }
 
 // -------------------------------------------------------------
-// SUBMIT: APPROVE & TERBITKAN PURCHASE ORDER
+// 1. POPUP VERIFIKASI SEBELUM TERBIT PO (6 CHECKLIST + PASSWORD)
 // -------------------------------------------------------------
-async function handleApproveToPo(e) {
-    e.preventDefault();
+function handleApproveToPo(e) {
+    if (e) e.preventDefault();
 
     const idVendor = document.getElementById('inputVendorId').value;
     if (!idVendor) {
@@ -753,13 +879,119 @@ async function handleApproveToPo(e) {
         return;
     }
 
-    if (!confirm('Apakah Anda yakin ingin menyetujui Request Order ini dan menerbitkan Purchase Order resmi?')) {
+    const nomorPo = document.getElementById('inputNomorPo').value.trim();
+    if (!nomorPo) {
+        showToast('Nomor Purchase Order wajib diisi.', 'warning');
         return;
     }
 
-    const btn = document.getElementById('btnSubmitPo');
+    // Kumpulkan item barang dari tab pricing untuk verifikasi kuantitas
+    let totalQtyCount = 0;
+    let itemCount = 0;
+    document.querySelectorAll('#tablePricingItemsBody tr').forEach(row => {
+        const qty = parseFloat(row.querySelector('.item-qty')?.value) || 0;
+        totalQtyCount += qty;
+        itemCount++;
+    });
+
+    if (itemCount === 0) {
+        showToast('Rincian barang permohonan tidak ditemukan.', 'warning');
+        return;
+    }
+
+    // 1. Ekstrak Nilai untuk 6 Poin Checklist
+    const topVal = parseInt(document.getElementById('inputTop')?.value) || 0;
+    const pengirimanVal = document.getElementById('selectPengiriman')?.value || 'Vendor';
+    const tanggalKirimVal = document.getElementById('inputTanggalPengiriman')?.value || '';
+    const isKenaPajak = document.getElementById('checkEnablePajak')?.checked || false;
+    const pajakRate = parseInt(document.getElementById('inputPajakPpn')?.value) || 0;
+    const isTermasukPajak = document.getElementById('checkTermasukPajak')?.checked || false;
+
+    // 2. Isi Ringkasan Modal
+    if (document.getElementById('verifyPoNumberDisplay')) document.getElementById('verifyPoNumberDisplay').textContent = nomorPo;
+    if (document.getElementById('verifyVendorNameDisplay')) {
+        document.getElementById('verifyVendorNameDisplay').textContent = document.getElementById('displayVendorName')?.value || 'Vendor Rekanan';
+    }
+    if (document.getElementById('verifyGrandTotalDisplay')) {
+        document.getElementById('verifyGrandTotalDisplay').textContent = document.getElementById('summaryGrandTotal')?.textContent || 'Rp 0';
+    }
+
+    // 3. Isi Nilai 6 Poin Checklist
+    if (document.getElementById('verifyValTop')) document.getElementById('verifyValTop').textContent = topVal === 0 ? '0 Hari (C.O.D / Tunai)' : `${topVal} Hari`;
+    if (document.getElementById('verifyValPengiriman')) document.getElementById('verifyValPengiriman').textContent = pengirimanVal;
+    if (document.getElementById('verifyValTanggalPengiriman')) document.getElementById('verifyValTanggalPengiriman').textContent = tanggalKirimVal ? tanggalKirimVal : 'Sesuai Jadwal Standar';
+    if (document.getElementById('verifyValTotalQty')) document.getElementById('verifyValTotalQty').textContent = `${totalQtyCount} Qty (${itemCount} Item Barang)`;
+    if (document.getElementById('verifyValKenaPajak')) document.getElementById('verifyValKenaPajak').textContent = isKenaPajak ? `Kena Pajak PPN (${pajakRate}%)` : 'Bebas Pajak (Non-PPN)';
+    if (document.getElementById('verifyValTermasukPajak')) document.getElementById('verifyValTermasukPajak').textContent = isTermasukPajak ? 'Sudah Termasuk Pajak (Inklusif)' : 'Belum Termasuk Pajak (Eksklusif)';
+
+    // 4. Reset Checkbox & Input Password
+    document.querySelectorAll('.verify-check-item').forEach(cb => cb.checked = false);
+    document.getElementById('inputVerifyPassword').value = '';
+    document.getElementById('btnFinalSubmitPo').disabled = true;
+
+    // 5. Buka Modal Verifikasi
+    modalVerifyPoInstance.show();
+}
+
+function checkVerifyCompleteness() {
+    const checkboxes = document.querySelectorAll('.verify-check-item');
+    let allChecked = true;
+    checkboxes.forEach(cb => {
+        if (!cb.checked) allChecked = false;
+    });
+
+    const passwordVal = document.getElementById('inputVerifyPassword').value.trim();
+    const hasPassword = passwordVal.length > 0;
+
+    const btn = document.getElementById('btnFinalSubmitPo');
+    if (btn) {
+        btn.disabled = !(allChecked && hasPassword);
+    }
+}
+
+function toggleCheckAllVerify(checkAll) {
+    document.querySelectorAll('.verify-check-item').forEach(cb => {
+        cb.checked = checkAll;
+    });
+    checkVerifyCompleteness();
+}
+
+function toggleVerifyPasswordVisibility() {
+    const input = document.getElementById('inputVerifyPassword');
+    const icon = document.getElementById('toggleVerifyEyeIcon');
+    if (!input || !icon) return;
+
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'bi bi-eye-slash';
+    } else {
+        input.type = 'password';
+        icon.className = 'bi bi-eye';
+    }
+}
+
+// -------------------------------------------------------------
+// 2. SUBMIT FINAL PO SETELAH OTORISASI PASSWORD
+// -------------------------------------------------------------
+async function submitFinalApprovedPo() {
+    const passwordVal = document.getElementById('inputVerifyPassword').value.trim();
+    if (!passwordVal) {
+        showToast('Password otorisasi wajib dimasukkan.', 'warning');
+        document.getElementById('inputVerifyPassword').focus();
+        return;
+    }
+
+    const checkboxes = document.querySelectorAll('.verify-check-item');
+    for (let cb of checkboxes) {
+        if (!cb.checked) {
+            showToast('Semua 6 poin parameter checklist wajib diverifikasi dan dicentang.', 'warning');
+            return;
+        }
+    }
+
+    const btn = document.getElementById('btnFinalSubmitPo');
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Memproses PO...';
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Memverifikasi &amp; Menerbitkan PO...';
 
     // Kumpulkan item barang dari tab pricing
     const items = [];
@@ -780,10 +1012,11 @@ async function handleApproveToPo(e) {
     const payload = {
         action: 'approve',
         id_request: ID_REQUEST,
+        confirm_password: passwordVal,
         nomor_po: document.getElementById('inputNomorPo').value.trim(),
         tanggal_po: document.getElementById('inputTanggalPo').value,
         prioritas: document.getElementById('inputPrioritas').value,
-        id_vendor: parseInt(idVendor),
+        id_vendor: parseInt(document.getElementById('inputVendorId').value),
         term_of_payment: parseInt(document.getElementById('inputTop').value) || 0,
         pengiriman: document.getElementById('selectPengiriman').value,
         tanggal_pengiriman: document.getElementById('inputTanggalPengiriman').value || null,
@@ -801,15 +1034,17 @@ async function handleApproveToPo(e) {
     });
 
     btn.disabled = false;
-    btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Setujui &amp; Terbitkan Purchase Order';
+    btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Konfirmasi &amp; Terbitkan PO Sekarang';
 
     if (res && res.success) {
+        modalVerifyPoInstance.hide();
         showToast(res.message, 'success');
         setTimeout(() => {
             window.location.href = `${BASE_URL}/admin/pages/request_order/index.php`;
         }, 1500);
     } else {
         showToast(res ? res.message : 'Gagal memproses Purchase Order.', 'error');
+        document.getElementById('inputVerifyPassword').focus();
     }
 }
 
@@ -929,49 +1164,6 @@ async function submitRejectRo() {
         }, 1200);
     } else {
         showToast(res ? res.message : 'Gagal menolak Request Order.', 'error');
-    }
-}
-
-// -------------------------------------------------------------
-// SUBMIT: BATALKAN RO
-// -------------------------------------------------------------
-function openCancelModal() {
-    document.getElementById('cancelAlasanText').value = '';
-    modalCancelInstance.show();
-}
-
-async function submitCancelRo() {
-    const alasan = document.getElementById('cancelAlasanText').value.trim();
-    if (!alasan) {
-        showToast('Wajib memasukkan alasan pembatalan.', 'warning');
-        document.getElementById('cancelAlasanText').focus();
-        return;
-    }
-
-    const btn = document.getElementById('btnConfirmCancel');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Membatalkan...';
-
-    const res = await apiRequest('/api/purchase_order/process_ro.php', {
-        method: 'POST',
-        body: JSON.stringify({
-            action: 'cancel',
-            id_request: ID_REQUEST,
-            alasan: alasan
-        })
-    });
-
-    btn.disabled = false;
-    btn.innerHTML = '<i class="bi bi-slash-circle me-1"></i> Konfirmasi Pembatalan';
-
-    if (res && res.success) {
-        modalCancelInstance.hide();
-        showToast(res.message, 'success');
-        setTimeout(() => {
-            window.location.href = `${BASE_URL}/admin/pages/request_order/index.php`;
-        }, 1200);
-    } else {
-        showToast(res ? res.message : 'Gagal membatalkan Request Order.', 'error');
     }
 }
 

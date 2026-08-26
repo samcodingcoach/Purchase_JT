@@ -218,6 +218,30 @@ require_once __DIR__ . '/../../components/navbar.php';
 
 <!-- STYLING AUTOCOMPLETE & SEARCHABLE SELECT LAYER ATAS -->
 <style>
+#roItemsTable {
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    border: 1px solid #dee2e6 !important;
+    width: 100% !important;
+}
+#roItemsTable th,
+#roItemsTable td {
+    border-right: 1px solid #dee2e6 !important;
+    border-bottom: 1px solid #dee2e6 !important;
+    vertical-align: middle !important;
+    box-shadow: none !important;
+}
+#roItemsTable th:last-child,
+#roItemsTable td:last-child {
+    border-right: none !important;
+}
+#roItemsTable thead th {
+    background-color: #f8f9fa !important;
+    border-bottom: 2px solid #dee2e6 !important;
+}
+#roItemsTable tbody tr:last-child td {
+    border-bottom: none !important;
+}
 .table-container {
     overflow: visible !important;
     position: relative;
@@ -655,13 +679,13 @@ function calculateGrandTotal() {
 // 6. SUBMIT REQUEST ORDER (DRAFT ATAU TERKIRIM)
 // -------------------------------------------------------------
 async function submitRequestOrder(targetStatus = 'TERKIRIM') {
-    const nomor = document.getElementById('roNomor').value.trim();
-    const tanggalRo = document.getElementById('roTanggal').value;
-    const idKaryawan = document.getElementById('roIdKaryawan').value;
-    const idSite = document.getElementById('roIdSite').value;
-    const idVendor = document.getElementById('roIdVendor').value;
-    const prioritas = document.getElementById('roPrioritas').value;
-    const keterangan = document.getElementById('roKeterangan').value.trim();
+    const nomor = document.getElementById('roNomor')?.value.trim() || '';
+    const tanggalRo = document.getElementById('roTanggal')?.value || '';
+    const idKaryawan = document.getElementById('roIdKaryawan')?.value || null;
+    const idSite = document.getElementById('roIdSite')?.value || '';
+    const idVendor = document.getElementById('roIdVendor')?.value || null;
+    const prioritas = document.querySelector('input[name="roPrioritas"]:checked')?.value || 'NORMAL';
+    const keterangan = document.getElementById('roKeterangan')?.value.trim() || '';
 
     // Validasi Form Utama
     if (!nomor) {

@@ -227,7 +227,7 @@ require_once __DIR__ . '/components/navbar.php';
 <div class="mb-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="fs-6 fw-bold text-dark mb-0">
-            <i class="bi bi-hourglass-split me-2 text-primary"></i>Request Order Saya yang Belum Diterima (In Progress)
+            <i class="bi bi-hourglass-split me-2 text-primary"></i>Request Order (In Progress)
         </h5>
         <a href="<?= BASE_URL ?>/admin/pages/request_order/index.php" class="btn btn-sm btn-outline-primary fw-semibold">
             Lihat Semua RO &rarr;
@@ -411,7 +411,7 @@ async function loadPendingRoCards() {
                             </div>
 
                             <div class="mt-auto pt-2 border-top d-flex justify-content-end">
-                                <a href="<?= BASE_URL ?>/admin/pages/request_order/index.php" class="btn btn-outline-primary btn-sm px-3 py-1 fw-semibold w-100" style="font-size: 0.8rem;">
+                                <a href="<?= BASE_URL ?>/admin/pages/request_order/edit.php?id=${ro.id_request}" class="btn btn-outline-primary btn-sm px-3 py-1 fw-semibold w-100" style="font-size: 0.8rem;">
                                     Lihat Rincian RO &rarr;
                                 </a>
                             </div>
@@ -482,7 +482,7 @@ async function loadRecentRoTable() {
                     <td class="small text-muted">${vendor}</td>
                     <td class="text-center">${badgeHtml}</td>
                     <td class="text-end">
-                        <a href="<?= BASE_URL ?>/admin/pages/request_order/index.php" class="btn btn-outline-primary btn-sm py-0 px-2" style="font-size: 0.75rem;">
+                        <a href="<?= BASE_URL ?>/admin/pages/request_order/edit.php?id=${ro.id_request}" class="btn btn-outline-primary btn-sm py-0 px-2" style="font-size: 0.75rem;">
                             Detail
                         </a>
                     </td>

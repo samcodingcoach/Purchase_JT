@@ -125,7 +125,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                                     <input type="text" class="form-control" id="formKodeBarang" placeholder="Otomatis jika kosong">
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label small fw-bold">Nama Barang / Material <span class="text-danger">*</span></label>
+                                    <label class="form-label small fw-bold">Nama Barang / Jasa <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="formNamaBarang" required placeholder="Contoh: Plat Baja Marine AH36">
                                 </div>
                                 

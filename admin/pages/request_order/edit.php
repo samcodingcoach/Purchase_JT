@@ -15,14 +15,24 @@ $isLogistik = in_array($user['role'], [ROLE_LOGISTIK, ROLE_ADMIN, ROLE_MANAGER])
 $targetRoleName = $isMekanik ? 'Logistik' : 'Purchasing';
 $btnSubmitLabel = $isMekanik ? 'Perbarui & Kirim ke Logistik' : 'Perbarui & Kirim ke Purchasing';
 
-$pageTitle = 'Edit Request Order';
-$pageHeading = 'Edit Formulir Request Order (RO)';
-
 $idRequest = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if ($idRequest <= 0) {
     header('Location: ' . BASE_URL . '/admin/pages/request_order/index.php');
     exit;
 }
+
+$nomorRo = '';
+$stmtRo = $conn->prepare("SELECT nomor FROM request_order WHERE id_request = ? LIMIT 1");
+$stmtRo->bind_param("i", $idRequest);
+$stmtRo->execute();
+$resRo = $stmtRo->get_result()->fetch_assoc();
+if ($resRo) {
+    $nomorRo = $resRo['nomor'];
+}
+$stmtRo->close();
+
+$pageTitle = $nomorRo ?: 'Edit Request Order';
+$pageHeading = $nomorRo ? 'Request Order: ' . $nomorRo : 'Edit Formulir Request Order (RO)';
 
 require_once __DIR__ . '/../../components/header.php';
 require_once __DIR__ . '/../../components/sidebar.php';
@@ -183,10 +193,10 @@ require_once __DIR__ . '/../../components/navbar.php';
                                 <thead class="table-light text-muted small text-uppercase">
                                     <tr>
                                         <th style="width: 45px;" class="text-center">No</th>
-                                        <th style="min-width: 320px;">Nama Barang / Material <span class="text-danger">*</span></th>
-                                        <th style="width: 160px;">Kode</th>
-                                        <th style="width: 140px;">Qty <span class="text-danger">*</span></th>
-                                        <th style="width: 130px;">Satuan</th>
+                                        <th style="min-width: 320px;">Nama Barang / Jasa <span class="text-danger">*</span></th>
+                                        <th style="width: 160px;" class="text-center">Kode</th>
+                                        <th style="width: 140px;" class="text-center">Kts <span class="text-danger">*</span></th>
+                                        <th style="width: 130px;" class="text-center">Satuan</th>
                                         <th style="width: 50px;" class="text-center">Aksi</th>
                                     </tr>
                                 </thead>
@@ -230,6 +240,30 @@ require_once __DIR__ . '/../../components/navbar.php';
 
 <!-- STYLING AUTOCOMPLETE & SEARCHABLE SELECT LAYER ATAS -->
 <style>
+#roItemsTable {
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    border: 1px solid #dee2e6 !important;
+    width: 100% !important;
+}
+#roItemsTable th,
+#roItemsTable td {
+    border-right: 1px solid #dee2e6 !important;
+    border-bottom: 1px solid #dee2e6 !important;
+    vertical-align: middle !important;
+    box-shadow: none !important;
+}
+#roItemsTable th:last-child,
+#roItemsTable td:last-child {
+    border-right: none !important;
+}
+#roItemsTable thead th {
+    background-color: #f8f9fa !important;
+    border-bottom: 2px solid #dee2e6 !important;
+}
+#roItemsTable tbody tr:last-child td {
+    border-bottom: none !important;
+}
 .table-container {
     overflow: visible !important;
     position: relative;
@@ -271,6 +305,7 @@ require_once __DIR__ . '/../../components/navbar.php';
 const CURRENT_USER_ROLE = <?= json_encode($user['role']) ?>;
 const CURRENT_USER_ID_KARYAWAN = <?= json_encode($user['id_karyawan'] ?? 0) ?>;
 const ID_REQUEST = <?= json_encode($idRequest) ?>;
+const CURRENT_RO_NOMOR = <?= json_encode($nomorRo) ?>;
 let nextRowIndex = 0;
 let masterBarangCache = [];
 let masterSiteCache = [];
@@ -362,6 +397,9 @@ async function loadExistingRoData() {
     // Isi data Header
     document.getElementById('headerNomorRoDisplay').textContent = ro.nomor;
     document.getElementById('roNomor').value = ro.nomor;
+    if (typeof AppTabs !== 'undefined' && ro.nomor) {
+        AppTabs.updateCurrentTabTitle(ro.nomor);
+    }
     
     // Tanggal
     if (ro.tanggal_ro) {
