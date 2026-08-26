@@ -18,12 +18,12 @@ require_once __DIR__ . '/../../components/navbar.php';
     <div>
         <h2 class="fs-4 fw-bold text-dark mb-0">Kategori Klasifikasi Barang</h2>
     </div>
-    <div class="d-flex gap-2 align-items-center flex-wrap">
+    <div class="d-flex gap-2 align-items-stretch flex-wrap">
         <div class="input-group input-group-sm" style="width: 260px;">
-            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-            <input type="text" id="searchInput" class="form-control" placeholder="Cari nama / kode..." oninput="debounceSearch()">
+            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" id="searchInput" class="form-control border-start-0 ps-0" placeholder="Cari nama / kode..." oninput="debounceSearch()">
         </div>
-        <button class="btn btn-primary btn-sm fw-semibold" onclick="openTambahKategoriModal()">
+        <button class="btn btn-primary btn-sm px-3 fw-semibold shadow-sm d-inline-flex align-items-center" onclick="openTambahKategoriModal()">
             <i class="bi bi-plus-circle-fill me-1"></i> Tambah Kategori
         </button>
     </div>

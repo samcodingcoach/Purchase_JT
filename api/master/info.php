@@ -23,6 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../config/session.php';
 require_once __DIR__ . '/../../config/koneksi.php';
+require_once __DIR__ . '/../middleware/auth.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -203,9 +204,9 @@ if ($method === 'GET') {
 }
 
 // =========================================================================
-// UNTUK POST, PUT, DELETE: Wajib Login & Memiliki Hak Akses Admin
+// UNTUK POST, PUT, DELETE: Wajib Terautentikasi
 // =========================================================================
-$currentUser = requireAuth([ROLE_ADMIN]);
+$currentUser = apiAuth();
 
 // Helper: Handle upload file attachment info (Gambar atau Dokumen)
 function handleInfoFileUpload() {
@@ -305,8 +306,8 @@ if ($method === 'PUT') {
         jsonResponse(false, 'ID Informasi wajib disertakan untuk pembaruan.', null, 422);
     }
 
-    // Cek keberadaan data
-    $stmtCheck = $conn->prepare("SELECT id_info, file FROM info WHERE id_info = ? LIMIT 1");
+    // Cek keberadaan data & id_karyawan pembuat
+    $stmtCheck = $conn->prepare("SELECT id_info, file, id_karyawan FROM info WHERE id_info = ? LIMIT 1");
     $stmtCheck->bind_param("i", $id);
     $stmtCheck->execute();
     $curr = $stmtCheck->get_result()->fetch_assoc();
@@ -314,6 +315,15 @@ if ($method === 'PUT') {
 
     if (!$curr) {
         jsonResponse(false, 'Informasi tidak ditemukan.', null, 404);
+    }
+
+    // Validasi Hak Akses: Hanya Admin atau Karyawan Pembuat yang boleh mengubah
+    $isAdmin = ($currentUser['role'] === ROLE_ADMIN);
+    $userIdKaryawan = $currentUser['id_karyawan'] ?? null;
+    $isOwner = ($userIdKaryawan !== null && $curr['id_karyawan'] !== null && (int)$userIdKaryawan === (int)$curr['id_karyawan']);
+
+    if (!$isAdmin && !$isOwner) {
+        jsonResponse(false, 'Akses ditolak. Anda hanya dapat mengubah pengumuman yang dibuat oleh akun/karyawan Anda sendiri.', null, 403);
     }
 
     // Aksi Cepat: Toggle Status Aktif (1 / 0)
@@ -399,8 +409,8 @@ if ($method === 'DELETE') {
         jsonResponse(false, 'ID Informasi wajib disertakan untuk penghapusan.', null, 422);
     }
 
-    // Cek dan ambil path file untuk dibersihkan
-    $stmtCheck = $conn->prepare("SELECT id_info, judul, file FROM info WHERE id_info = ? LIMIT 1");
+    // Cek dan ambil path file serta id_karyawan untuk dibersihkan
+    $stmtCheck = $conn->prepare("SELECT id_info, judul, file, id_karyawan FROM info WHERE id_info = ? LIMIT 1");
     $stmtCheck->bind_param("i", $id);
     $stmtCheck->execute();
     $curr = $stmtCheck->get_result()->fetch_assoc();
@@ -408,6 +418,15 @@ if ($method === 'DELETE') {
 
     if (!$curr) {
         jsonResponse(false, 'Informasi tidak ditemukan.', null, 404);
+    }
+
+    // Validasi Hak Akses: Hanya Admin atau Karyawan Pembuat yang boleh menghapus
+    $isAdmin = ($currentUser['role'] === ROLE_ADMIN);
+    $userIdKaryawan = $currentUser['id_karyawan'] ?? null;
+    $isOwner = ($userIdKaryawan !== null && $curr['id_karyawan'] !== null && (int)$userIdKaryawan === (int)$curr['id_karyawan']);
+
+    if (!$isAdmin && !$isOwner) {
+        jsonResponse(false, 'Akses ditolak. Anda hanya dapat menghapus pengumuman yang dibuat oleh akun/karyawan Anda sendiri.', null, 403);
     }
 
     // Hapus dari database

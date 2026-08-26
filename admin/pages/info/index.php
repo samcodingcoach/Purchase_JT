@@ -8,8 +8,8 @@
 require_once __DIR__ . '/../../../config/config.php';
 require_once __DIR__ . '/../../../config/session.php';
 
-// Auth Protection: Hanya Administrator yang boleh mengakses
-$user = requireAuth([ROLE_ADMIN]);
+// Auth Protection: Terintegrasi dengan izin menu dinamis
+$user = requireAuth();
 $pageTitle = 'Informasi & Pengumuman';
 $pageHeading = 'Manajemen Pengumuman & Informasi';
 
@@ -22,16 +22,14 @@ require_once __DIR__ . '/../../components/navbar.php';
     <!-- Header Halaman & Search Bar & Tombol Tambah -->
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
-            <h4 class="fw-bold text-dark mb-0">
-                <i class="bi bi-megaphone-fill text-primary me-2"></i>Manajemen Pengumuman &amp; Informasi
-            </h4>
+            <h4 class="fw-bold text-dark mb-0">Manajemen Pengumuman &amp; Informasi</h4>
         </div>
-        <div class="d-flex gap-2 align-items-center flex-wrap">
+        <div class="d-flex gap-2 align-items-stretch flex-wrap">
             <div class="input-group input-group-sm" style="width: 260px;">
-                <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
-                <input type="text" class="form-control" id="filterSearch" placeholder="Cari judul / isi..." oninput="debounceInfoSearch()">
+                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                <input type="text" class="form-control border-start-0 ps-0" id="filterSearch" placeholder="Cari judul / isi..." oninput="debounceInfoSearch()">
             </div>
-            <button type="button" class="btn btn-primary btn-sm px-3 fw-semibold shadow-sm" onclick="openAddInfoModal()">
+            <button type="button" class="btn btn-primary btn-sm px-3 fw-semibold shadow-sm d-inline-flex align-items-center" onclick="openAddInfoModal()">
                 <i class="bi bi-plus-circle-fill me-1"></i> Tambah Pengumuman Baru
             </button>
         </div>
@@ -46,9 +44,9 @@ require_once __DIR__ . '/../../components/navbar.php';
                         <tr>
                             <th class="text-center" style="width: 45px;">#</th>
                             <th style="min-width: 260px;">Judul &amp; Ringkasan Isi</th>
-                            <th style="width: 200px;">Divisi Sasaran</th>
+                            <th style="width: 200px;">Divisi</th>
                             <th class="text-center" style="width: 100px;">Tayang</th>
-                            <th class="text-center" style="width: 110px;">Tampil Login</th>
+                            <th class="text-center" style="width: 110px;">Login</th>
                             <th style="width: 160px;">Dibuat Pada</th>
                             <th class="text-center" style="width: 100px;">Aksi</th>
                         </tr>
@@ -230,6 +228,9 @@ require_once __DIR__ . '/../../components/navbar.php';
 
 <!-- Client-side Logic Script for Info Management -->
 <script>
+const CURRENT_USER_ROLE = <?= json_encode($user['role'] ?? '') ?>;
+const CURRENT_USER_ID_KARYAWAN = <?= json_encode($user['id_karyawan'] ?? null) ?>;
+
 let infoListCache = [];
 let divisiListCache = [];
 let currentPage = 1;
@@ -363,6 +364,9 @@ function renderInfoTable(items, pagination) {
     const startIndex = ((pagination.current_page - 1) * pagination.limit) + 1;
 
     items.forEach((item, idx) => {
+        // Hak akses edit: Hanya Admin atau Karyawan Pembuat
+        const canEdit = (CURRENT_USER_ROLE === 'ADMIN') || (CURRENT_USER_ID_KARYAWAN && item.id_karyawan && parseInt(CURRENT_USER_ID_KARYAWAN, 10) === parseInt(item.id_karyawan, 10));
+
         // Target Divisi Badges
         let divisiBadgeHtml = '';
         if (item.is_all_divisi || (item.divisi_names && item.divisi_names.length === divisiListCache.length)) {
@@ -380,10 +384,31 @@ function renderInfoTable(items, pagination) {
         // Status Aktif Toggle Switch
         const isChecked = item.aktif === 1 ? 'checked' : '';
         const statusLabel = item.aktif === 1 ? '<span class="badge bg-success-subtle text-success">Aktif</span>' : '<span class="badge bg-secondary-subtle text-secondary">Draft</span>';
+        const switchAktifDisabled = canEdit ? '' : 'disabled';
+        const switchAktifTitle = canEdit ? 'Klik untuk mengaktifkan/menonaktifkan' : 'Hanya pembuat pengumuman atau Administrator yang dapat mengubah status tayang';
 
         // Tampil Login Toggle Switch
         const isTampilLoginChecked = item.tampil_login === 1 ? 'checked' : '';
         const tampilLoginLabel = item.tampil_login === 1 ? '<span class="badge bg-primary-subtle text-primary">Tampil</span>' : '<span class="badge bg-light text-muted border">Hide</span>';
+        const switchLoginDisabled = canEdit ? '' : 'disabled';
+        const switchLoginTitle = canEdit ? 'Klik untuk mengatur tayang di login' : 'Hanya pembuat pengumuman atau Administrator yang dapat mengatur tayang di login';
+
+        // Action Buttons
+        let actionButtonsHtml = `
+            <button type="button" class="btn btn-outline-info p-1 px-2" onclick="openPreviewModal(${idx})" title="Lihat Rincian Pengumuman">
+                <i class="bi bi-eye"></i>
+            </button>
+        `;
+        if (canEdit) {
+            actionButtonsHtml += `
+                <button type="button" class="btn btn-outline-primary p-1 px-2" onclick="openEditInfoModal(${idx})" title="Edit Pengumuman">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button type="button" class="btn btn-outline-danger p-1 px-2" onclick="deleteInfo(${item.id_info}, '${escapeHtml(item.judul)}')" title="Hapus Pengumuman">
+                    <i class="bi bi-trash"></i>
+                </button>
+            `;
+        }
 
         html += `
             <tr class="${item.aktif !== 1 ? 'table-light opacity-75' : ''}">
@@ -399,13 +424,13 @@ function renderInfoTable(items, pagination) {
                 <td>${divisiBadgeHtml}</td>
                 <td class="text-center">
                     <div class="form-check form-switch d-inline-block">
-                        <input class="form-check-input" type="checkbox" role="switch" ${isChecked} onchange="toggleInfoStatus(${item.id_info}, this.checked)" title="Klik untuk mengaktifkan/menonaktifkan">
+                        <input class="form-check-input" type="checkbox" role="switch" ${isChecked} ${switchAktifDisabled} onchange="toggleInfoStatus(${item.id_info}, this.checked)" title="${switchAktifTitle}">
                     </div>
                     <div style="font-size: 0.72rem;">${statusLabel}</div>
                 </td>
                 <td class="text-center">
                     <div class="form-check form-switch d-inline-block">
-                        <input class="form-check-input" type="checkbox" role="switch" ${isTampilLoginChecked} onchange="toggleInfoTampilLogin(${item.id_info}, this.checked)" title="Klik untuk mengatur tayang di login">
+                        <input class="form-check-input" type="checkbox" role="switch" ${isTampilLoginChecked} ${switchLoginDisabled} onchange="toggleInfoTampilLogin(${item.id_info}, this.checked)" title="${switchLoginTitle}">
                     </div>
                     <div style="font-size: 0.72rem;">${tampilLoginLabel}</div>
                 </td>
@@ -415,15 +440,7 @@ function renderInfoTable(items, pagination) {
                 </td>
                 <td class="text-center">
                     <div class="btn-group btn-group-sm">
-                        <button type="button" class="btn btn-outline-info p-1 px-2" onclick="openPreviewModal(${idx})" title="Preview">
-                            <i class="bi bi-eye"></i>
-                        </button>
-                        <button type="button" class="btn btn-outline-primary p-1 px-2" onclick="openEditInfoModal(${idx})" title="Edit">
-                            <i class="bi bi-pencil"></i>
-                        </button>
-                        <button type="button" class="btn btn-outline-danger p-1 px-2" onclick="deleteInfo(${item.id_info}, '${escapeHtml(item.judul)}')" title="Hapus">
-                            <i class="bi bi-trash"></i>
-                        </button>
+                        ${actionButtonsHtml}
                     </div>
                 </td>
             </tr>
