@@ -130,82 +130,112 @@ require_once __DIR__ . '/../../components/navbar.php';
 <!-- MODAL DETAIL REQUEST ORDER -->
 <div class="modal fade" id="modalDetailRo" tabindex="-1" aria-labelledby="modalDetailRoLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-light py-3">
-                <div>
-                    <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="modalDetailRoLabel">
-                        <i class="bi bi-file-text-fill text-primary"></i>
-                        <span id="detailNomorRo">RO-XXXX-XXXX</span>
-                    </h5>
-                    <div class="text-muted small" id="detailHeaderSub">Informasi Rincian Request Order</div>
-                </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-4">
-                <!-- Info Grid -->
-                <div class="card bg-light border-0 rounded-3 p-3 mb-4">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <div class="mb-2">
-                                <span class="text-muted small d-block">Tanggal Pengajuan:</span>
-                                <strong class="text-dark" id="detailTanggalRo">-</strong>
-                            </div>
-                            <div class="mb-2">
-                                <span class="text-muted small d-block">Pemohon:</span>
-                                <strong class="text-dark" id="detailPemohon">-</strong>
-                                <div class="text-muted" style="font-size: 0.75rem;" id="detailJabatanDivisi">-</div>
-                            </div>
-                            <div>
-                                <span class="text-muted small d-block">Referensi Vendor Rekanan:</span>
-                                <span class="text-dark fw-semibold" id="detailVendor">-</span>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-2">
-                                <span class="text-muted small d-block">Site / Workshop Tujuan:</span>
-                                <span class="badge bg-secondary-subtle text-secondary px-2 py-1 fs-6" id="detailSite">-</span>
-                            </div>
-                            <div class="mb-2">
-                                <span class="text-muted small d-block">Status & Prioritas:</span>
-                                <div class="d-flex gap-2 align-items-center mt-1">
-                                    <span id="detailBadgeStatus">-</span>
-                                    <span id="detailBadgePrioritas">-</span>
-                                </div>
-                            </div>
-                            <div class="mb-2">
-                                <span class="text-muted small d-block">Persetujuan Logistik:</span>
-                                <span id="detailApproverBadge">-</span>
-                            </div>
-                            <div>
-                                <span class="text-muted small d-block">Keperluan / Catatan:</span>
-                                <div class="text-dark small fst-italic" id="detailKeterangan">-</div>
-                            </div>
-                        </div>
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <!-- MODAL HEADER DENGAN STATUS & PRIORITAS DI SEBELAH TOMBOL X -->
+            <div class="modal-header bg-white pt-3 pb-0 px-4 border-bottom flex-column align-items-stretch">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-file-earmark-text-fill text-primary fs-5"></i>
+                        <h5 class="modal-title fw-bold text-dark font-monospace mb-0" id="detailNomorRo">
+                            RO-XXXX-XXXX
+                        </h5>
+                    </div>
+                    <!-- Status & Prioritas di bagian atas di samping X -->
+                    <div class="d-flex align-items-center gap-2">
+                        <span id="detailBadgeStatus">-</span>
+                        <span id="detailBadgePrioritas">-</span>
+                        <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                 </div>
 
-                <!-- Tabel Rincian Material Barang -->
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h6 class="fw-bold text-dark mb-0"><i class="bi bi-box-seam text-primary me-1"></i> Rincian Material / Barang</h6>
-                    <span class="badge bg-primary" id="detailBadgeItemCount">0 Item</span>
-                </div>
-                <div class="table-responsive border rounded-3 bg-white mb-3">
-                    <table class="table table-bordered align-middle mb-0">
-                        <thead class="table-light small text-muted text-uppercase">
-                            <tr>
-                                <th style="width: 40px;" class="text-center">No</th>
-                                <th>Nama Barang / Material</th>
-                                <th style="width: 140px;">Kode</th>
-                                <th style="width: 110px;" class="text-center">Qty</th>
-                                <th style="width: 100px;">Satuan</th>
-                            </tr>
-                        </thead>
-                        <tbody id="detailItemsTableBody">
-                            <!-- Populated dynamically -->
-                        </tbody>
-                    </table>
+                <!-- Nav Tabs Modal Sesuai Fungsi -->
+                <ul class="nav nav-tabs border-bottom-0" id="roModalTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active fw-bold text-dark small py-2 px-3" id="ro-tab-dokumen" data-bs-toggle="tab" data-bs-target="#ro-pane-dokumen" type="button" role="tab">
+                            <i class="bi bi-file-earmark-text me-1 text-primary"></i> 1. Informasi Dokumen
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold text-dark small py-2 px-3" id="ro-tab-rincian" data-bs-toggle="tab" data-bs-target="#ro-pane-rincian" type="button" role="tab">
+                            <i class="bi bi-boxes me-1 text-primary"></i> 2. Rincian Material / Barang
+                            <span class="badge bg-primary text-white ms-1" id="detailBadgeItemCount">0</span>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- MODAL BODY DENGAN 2 TAB -->
+            <div class="modal-body p-4">
+                <div class="tab-content" id="roModalTabContent">
+                    
+                    <!-- TAB 1: INFORMASI DOKUMEN -->
+                    <div class="tab-pane fade show active" id="ro-pane-dokumen" role="tabpanel">
+                        <div class="card bg-light border-0 rounded-3 p-3">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <!-- Tanggal Pengajuan -->
+                                    <div class="mb-3">
+                                        <span class="text-muted small d-block">Tanggal Pengajuan:</span>
+                                        <strong class="text-dark font-monospace fs-6" id="detailTanggalRo">-</strong>
+                                    </div>
+                                    <!-- Pemohon -->
+                                    <div class="mb-3">
+                                        <span class="text-muted small d-block">Pemohon:</span>
+                                        <strong class="text-dark fs-6 d-block" id="detailPemohon">-</strong>
+                                        <span class="text-secondary small" id="detailJabatanDivisi">-</span>
+                                    </div>
+                                    <!-- Referensi Vendor -->
+                                    <div>
+                                        <span class="text-muted small d-block">Referensi Vendor:</span>
+                                        <strong class="text-dark" id="detailVendor">-</strong>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <!-- Site Tujuan -->
+                                    <div class="mb-3">
+                                        <span class="text-muted small d-block">Site Tujuan:</span>
+                                        <span class="badge bg-secondary-subtle text-secondary px-2 py-1 fs-6 font-monospace" id="detailSite">-</span>
+                                    </div>
+                                    <!-- Persetujuan Logistik -->
+                                    <div class="mb-3">
+                                        <span class="text-muted small d-block">Persetujuan Logistik:</span>
+                                        <span id="detailApproverBadge">-</span>
+                                    </div>
+                                    <!-- Keperluan / Catatan -->
+                                    <div>
+                                        <span class="text-muted small d-block">Keperluan / Catatan:</span>
+                                        <div class="text-dark small fst-italic" id="detailKeterangan">-</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: RINCIAN MATERIAL / BARANG -->
+                    <div class="tab-pane fade" id="ro-pane-rincian" role="tabpanel">
+                        <div class="table-responsive border rounded-3 bg-white">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light small text-muted text-uppercase align-middle">
+                                    <tr class="align-middle">
+                                        <th style="width: 40px;" class="text-center align-middle">No</th>
+                                        <th class="align-middle">Nama Barang / Material</th>
+                                        <th style="width: 140px;" class="align-middle">Kode</th>
+                                        <th style="width: 110px;" class="text-center align-middle">Qty</th>
+                                        <th style="width: 100px;" class="text-center align-middle">Satuan</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="detailItemsTableBody">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
                 </div>
             </div>
+
+            <!-- MODAL FOOTER -->
             <div class="modal-footer bg-light py-2 justify-content-between">
                 <div>
                     <button type="button" class="btn btn-success btn-sm px-3 fw-semibold" id="btnModalApproveRo" style="display: none;" onclick="approveRequestOrderFromModal()">
@@ -473,7 +503,28 @@ function renderTableRows(items, offset) {
 // -------------------------------------------------------------
 // 3. MODAL DETAIL REQUEST ORDER
 // -------------------------------------------------------------
+function formatRoDetailDate(dateStr) {
+    if (!dateStr) return '-';
+    const parts = dateStr.split(' ')[0].split('-');
+    if (parts.length === 3) {
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+        const mIdx = parseInt(parts[1], 10) - 1;
+        const day = parts[2].padStart(2, '0');
+        const month = months[mIdx] || parts[1];
+        const year = parts[0];
+        return `${day} ${month} ${year}`;
+    }
+    return dateStr.split(' ')[0];
+}
+
 async function openDetailModal(idRequest) {
+    // Reset ke tab pertama (Informasi Dokumen)
+    const tabTrigger = document.querySelector('#ro-tab-dokumen');
+    if (tabTrigger) {
+        const tab = bootstrap.Tab.getInstance(tabTrigger) || new bootstrap.Tab(tabTrigger);
+        tab.show();
+    }
+
     const res = await apiRequest(`/api/request_order/index.php?id=${idRequest}`);
     if (!res || !res.success) {
         showToast('Gagal memuat detail data Request Order.', 'danger');
@@ -482,11 +533,11 @@ async function openDetailModal(idRequest) {
 
     const ro = res.data;
     document.getElementById('detailNomorRo').textContent = ro.nomor;
-    document.getElementById('detailTanggalRo').textContent = ro.tanggal_ro;
-    document.getElementById('detailPemohon').textContent = `${ro.nama_karyawan || 'Karyawan'} (${ro.kode_karyawan || 'KRY'})`;
-    document.getElementById('detailJabatanDivisi').innerHTML = `${ro.nama_jabatan || '-'} &bull; ${ro.nama_divisi || '-'}`;
-    document.getElementById('detailSite').textContent = `${ro.nama_site} (${ro.kode_site})`;
-    document.getElementById('detailVendor').textContent = ro.nama_vendor ? `${ro.nama_vendor} (${ro.kode_vendor || '-'})` : 'Tidak Ada (Umum)';
+    document.getElementById('detailTanggalRo').textContent = formatRoDetailDate(ro.tanggal_ro);
+    document.getElementById('detailPemohon').textContent = ro.nama_karyawan || 'Pemohon';
+    document.getElementById('detailJabatanDivisi').textContent = ro.nama_jabatan || '-';
+    document.getElementById('detailSite').textContent = ro.nama_site ? `${ro.nama_site} (${ro.kode_site || 'SITE'})` : '-';
+    document.getElementById('detailVendor').textContent = ro.nama_vendor ? ro.nama_vendor : 'Tidak Ada (Umum)';
     document.getElementById('detailKeterangan').textContent = ro.keterangan || 'Tidak ada catatan khusus.';
 
     currentDetailRo = ro;
@@ -515,42 +566,47 @@ async function openDetailModal(idRequest) {
 
     let statusBadge = '';
     if (ro.status === 'DRAFT') {
-        statusBadge = `<span class="badge bg-secondary">Draft</span>`;
+        statusBadge = `<span class="badge bg-secondary-subtle text-secondary border px-2 py-1">Draft</span>`;
     } else if (ro.status === 'TERKIRIM') {
         if (roleUpperModal === 'MEKANIK') {
-            statusBadge = `<span class="badge bg-primary">Terkirim</span>`;
+            statusBadge = `<span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">Terkirim</span>`;
         } else {
-            statusBadge = `<span class="badge bg-warning text-dark">Menunggu Logistik</span>`;
+            statusBadge = `<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1">Menunggu Logistik</span>`;
         }
     } else if (ro.status === 'DISETUJUI LOGISTIK') {
         if (roleUpperModal === 'MEKANIK') {
-            statusBadge = `<span class="badge bg-info text-dark">Disetujui Logistik</span>`;
+            statusBadge = `<span class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-2 py-1">Disetujui Logistik</span>`;
         } else if (roleUpperModal === 'LOGISTIK') {
-            statusBadge = `<span class="badge bg-primary">Menunggu Purchasing</span>`;
+            statusBadge = `<span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">Menunggu Purchasing</span>`;
         } else {
-            statusBadge = `<span class="badge bg-warning text-dark">Menunggu Purchasing</span>`;
+            statusBadge = `<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1">Menunggu Purchasing</span>`;
         }
     } else if (ro.status === 'TIDAK DISETUJUI LOGISTIK') {
-        statusBadge = `<span class="badge bg-danger">Ditolak Logistik</span>`;
+        statusBadge = `<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">Ditolak Logistik</span>`;
     } else if (ro.status === 'DISETUJUI PURCHASING') {
-        statusBadge = `<span class="badge bg-success">Disetujui Purchasing (PO Terbit)</span>`;
+        statusBadge = `<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">PO Terbit</span>`;
     } else if (ro.status === 'TIDAK DISETUJUI PURCHASING') {
-        statusBadge = `<span class="badge bg-danger">Ditolak Purchasing</span>`;
+        statusBadge = `<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">Ditolak Purchasing</span>`;
+    } else if (ro.status === 'DITERIMA FULL') {
+        statusBadge = `<span class="badge bg-success text-white border border-success px-2 py-1"><i class="bi bi-box-seam-fill me-1"></i>DITERIMA FULL</span>`;
+    } else if (ro.status === 'DITERIMA SEBAGIAN') {
+        statusBadge = `<span class="badge bg-warning text-dark border border-warning px-2 py-1"><i class="bi bi-box-seam me-1"></i>DITERIMA SEBAGIAN</span>`;
     } else if (ro.status === 'BATAL') {
-        statusBadge = `<span class="badge bg-dark">Dibatalkan</span>`;
+        statusBadge = `<span class="badge bg-dark-subtle text-dark border px-2 py-1">Dibatalkan</span>`;
     } else {
-        statusBadge = `<span class="badge bg-secondary">${ro.status}</span>`;
+        statusBadge = `<span class="badge bg-secondary-subtle text-secondary border px-2 py-1">${escapeHtml(ro.status)}</span>`;
     }
     document.getElementById('detailBadgeStatus').innerHTML = statusBadge;
 
     // Prioritas Badge
-    const prioritasBadge = (ro.prioritas === 'URGENT') 
-        ? `<span class="badge bg-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i>Urgent</span>`
-        : `<span class="badge bg-primary"><i class="bi bi-check-circle me-1"></i>Normal</span>`;
+    const prioritasBadge = (ro.prioritas === 'URGENT' || ro.prioritas === 'TINGGI') 
+        ? `<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1"><i class="bi bi-exclamation-triangle-fill me-1"></i>Urgent</span>`
+        : `<span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1"><i class="bi bi-check-circle me-1"></i>Normal</span>`;
     document.getElementById('detailBadgePrioritas').innerHTML = prioritasBadge;
 
     // Render Items
-    document.getElementById('detailBadgeItemCount').textContent = `${ro.total_items} Jenis Item (${ro.total_qty} Kuantitas)`;
+    const items = ro.items || [];
+    document.getElementById('detailBadgeItemCount').textContent = `${items.length} Item`;
     const tbodyItems = document.getElementById('detailItemsTableBody');
     let itemsHtml = '';
 

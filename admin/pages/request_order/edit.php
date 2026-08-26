@@ -171,7 +171,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                                 <h6 class="fw-bold text-dark mb-0">
                                     <i class="bi bi-boxes text-primary me-1"></i> Daftar Kebutuhan Material / Barang
                                 </h6>
-                                <span class="text-muted small">Pilih material dari katalog atau ketik material yang dibutuhkan</span>
+                                
                             </div>
                             <button type="button" class="btn btn-outline-primary btn-sm fw-semibold" onclick="addNewItemRow()">
                                 <i class="bi bi-plus-circle-fill me-1"></i> Tambah Baris Material

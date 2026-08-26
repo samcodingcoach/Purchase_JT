@@ -67,16 +67,24 @@ if ($chkRo && $chkRo->num_rows > 0) {
         $whereUser = " WHERE id_karyawan = $idK";
     }
 
+    // 1. Draft
     $resDraft = $conn->query("SELECT COUNT(*) as c FROM request_order " . ($whereUser ? "$whereUser AND status = 'DRAFT'" : "WHERE status = 'DRAFT'"));
     if ($resDraft) $roDraft = (int)$resDraft->fetch_assoc()['c'];
 
+    // 2. Terkirim / Menunggu Logistik
     $resSub = $conn->query("SELECT COUNT(*) as c FROM request_order " . ($whereUser ? "$whereUser AND status = 'TERKIRIM'" : "WHERE status = 'TERKIRIM'"));
     if ($resSub) $roSubmitted = (int)$resSub->fetch_assoc()['c'];
 
-    $resApp = $conn->query("SELECT COUNT(*) as c FROM request_order " . ($whereUser ? "$whereUser AND status = 'DISETUJUI'" : "WHERE status = 'DISETUJUI'"));
+    // 3. Sedang Diproses (Disetujui Logistik / Purchasing)
+    $resProc = $conn->query("SELECT COUNT(*) as c FROM request_order " . ($whereUser ? "$whereUser AND status IN ('DISETUJUI LOGISTIK', 'DISETUJUI PURCHASING')" : "WHERE status IN ('DISETUJUI LOGISTIK', 'DISETUJUI PURCHASING')"));
+    if ($resProc) $roProcessing = (int)$resProc->fetch_assoc()['c'];
+
+    // 4. Selesai Diproses (DITERIMA FULL & DITERIMA SEBAGIAN)
+    $resApp = $conn->query("SELECT COUNT(*) as c FROM request_order " . ($whereUser ? "$whereUser AND status IN ('DITERIMA FULL', 'DITERIMA SEBAGIAN')" : "WHERE status IN ('DITERIMA FULL', 'DITERIMA SEBAGIAN')"));
     if ($resApp) $roApproved = (int)$resApp->fetch_assoc()['c'];
 
-    $resRej = $conn->query("SELECT COUNT(*) as c FROM request_order " . ($whereUser ? "$whereUser AND status = 'TIDAK DISETUJUI'" : "WHERE status = 'TIDAK DISETUJUI'"));
+    // 5. Ditolak
+    $resRej = $conn->query("SELECT COUNT(*) as c FROM request_order " . ($whereUser ? "$whereUser AND status IN ('TIDAK DISETUJUI LOGISTIK', 'TIDAK DISETUJUI PURCHASING', 'BATAL')" : "WHERE status IN ('TIDAK DISETUJUI LOGISTIK', 'TIDAK DISETUJUI PURCHASING', 'BATAL')"));
     if ($resRej) $roRejected = (int)$resRej->fetch_assoc()['c'];
 }
 
