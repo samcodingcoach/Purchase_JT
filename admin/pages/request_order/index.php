@@ -22,8 +22,17 @@ require_once __DIR__ . '/../../components/navbar.php';
 <!-- KONTEN UTAMA -->
 <div class="container-fluid px-0">
     <!-- HEADER HALAMAN -->
-    <div class="mb-4">
-        <h4 class="fw-bold text-dark mb-0">Daftar Request Order (RO)</h4>
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h4 class="fw-bold text-dark mb-0">Daftar Request Order (RO)</h4>
+        </div>
+        <?php if ($user['role'] === ROLE_MEKANIK || $user['role'] === ROLE_LOGISTIK || $user['role'] === ROLE_ADMIN): ?>
+        <div>
+            <a href="<?= BASE_URL ?>/admin/pages/request_order/create.php" class="btn btn-primary btn-sm px-3 fw-semibold">
+                <i class="bi bi-plus-lg me-1"></i> Buat Request Order
+            </a>
+        </div>
+        <?php endif; ?>
     </div>
 
     <!-- FILTER & PENCARIAN -->

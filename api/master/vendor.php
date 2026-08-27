@@ -106,10 +106,12 @@ if ($method === 'GET') {
 }
 
 // -------------------------------------------------------------
-// Hanya Role ADMIN yang diizinkan melakukan CREATE, UPDATE, DELETE
+// Role yang diizinkan mengelola data vendor (CREATE, UPDATE, DELETE):
+// ADMIN, LOGISTIK, PURCHASING, MANAGER
 // -------------------------------------------------------------
-if ($currentUser['role'] !== ROLE_ADMIN) {
-    jsonResponse(false, 'Forbidden. Hanya Role ADMIN yang dapat mengelola data vendor.', null, 403);
+$allowedRoles = [ROLE_ADMIN, ROLE_LOGISTIK, ROLE_PURCHASING, ROLE_MANAGER];
+if (!in_array($currentUser['role'], $allowedRoles, true)) {
+    jsonResponse(false, 'Forbidden. Anda tidak memiliki hak akses untuk mengelola data vendor.', null, 403);
 }
 
 $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;

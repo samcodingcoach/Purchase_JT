@@ -667,8 +667,16 @@ function renderRoData() {
         document.getElementById('inputAlamatPengiriman').value = `Lokasi ${ro.nama_site}`;
     }
 
-    // 4. Inisialisasi T.O.P info
-    updateTopKeterangan(document.getElementById('inputTop').value);
+    // 4. Inisialisasi T.O.P default dari vendor.term_of_payment (namun tetap dapat diubah)
+    const inputTopEl = document.getElementById('inputTop');
+    if (inputTopEl) {
+        if (typeof ro.vendor_term_of_payment !== 'undefined' && ro.vendor_term_of_payment !== null && ro.vendor_term_of_payment !== '') {
+            inputTopEl.value = parseInt(ro.vendor_term_of_payment);
+        } else {
+            inputTopEl.value = 30;
+        }
+        updateTopKeterangan(inputTopEl.value);
+    }
 
     // 5. Render Items di Tab Pricing (Lengkap dengan Kategori, Merk, & Total Stok)
     const items = ro.items || [];

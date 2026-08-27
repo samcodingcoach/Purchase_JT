@@ -5,7 +5,7 @@
 require_once __DIR__ . '/../../../config/config.php';
 require_once __DIR__ . '/../../../config/session.php';
 
-$user = requireAuth([ROLE_ADMIN]);
+$user = requireAuth([ROLE_ADMIN, ROLE_LOGISTIK, ROLE_PURCHASING, ROLE_MANAGER]);
 $pageTitle = 'Master Vendor';
 $pageHeading = 'Master Data Vendor & Supplier';
 

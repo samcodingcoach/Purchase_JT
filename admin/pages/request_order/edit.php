@@ -571,13 +571,12 @@ async function loadExistingRoData() {
             if (btnApprove) btnApprove.style.display = 'inline-block';
             if (btnSubmit) btnSubmit.style.display = 'none';
         } else if (ro.status === 'DISETUJUI LOGISTIK') {
-            // Setelah di-Setujui: tombol Setujui hilang, tombol Tidak Disetujui tetap ada, tombol Perbarui/Kirim tampil
             if (btnSaveDraft) btnSaveDraft.style.display = 'none';
-            if (btnReject) btnReject.style.display = 'inline-block';
+            if (btnReject) btnReject.style.display = 'none';
             if (btnApprove) btnApprove.style.display = 'none';
             if (btnSubmit) {
                 btnSubmit.style.display = 'inline-block';
-                btnSubmit.innerHTML = '<i class="bi bi-send-fill me-1"></i> Perbarui & Kirim ke Purchasing';
+                btnSubmit.innerHTML = '<i class="bi bi-save me-1"></i> Simpan Perubahan';
             }
         } else if (ro.status === 'TIDAK DISETUJUI LOGISTIK') {
             if (btnSaveDraft) btnSaveDraft.style.display = 'inline-block';

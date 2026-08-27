@@ -32,7 +32,7 @@ if ($method === 'GET') {
                                        COALESCE(d.nama_divisi, '-') AS nama_divisi,
                                        COALESCE(appr.nama_karyawan, u_appr.nama_users) AS nama_approver,
                                        s.nama_site, s.kode_site, s.alamat AS alamat_site,
-                                       v.nama_perusahaan AS nama_vendor, v.kode_vendor
+                                       v.nama_perusahaan AS nama_vendor, v.kode_vendor, v.term_of_payment AS vendor_term_of_payment
                                 FROM request_order ro
                                 LEFT JOIN karyawan kry ON ro.id_karyawan = kry.id_karyawan
                                 LEFT JOIN users u ON ro.id_karyawan = u.id_users

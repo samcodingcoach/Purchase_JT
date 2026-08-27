@@ -146,8 +146,8 @@ try {
         $namaBarang = $cItem['nama_barang'];
         $satuan = $cItem['satuan'];
 
-        // HANYA jika status = 'TERKIRIM' dan barang belum ada di master barang ($idBarang kosong)
-        if ($status === 'TERKIRIM' && empty($idBarang)) {
+        // Jika barang belum ada id_barang (material kustom baru), daftarkan ke master barang
+        if (empty($idBarang)) {
             // 1. Cek apakah barang dengan nama persis sudah ada di tabel barang
             $chkExisting = $conn->prepare("SELECT id_barang, kode_barang FROM barang WHERE LOWER(TRIM(nama_barang)) = LOWER(TRIM(?)) LIMIT 1");
             $chkExisting->bind_param("s", $namaBarang);

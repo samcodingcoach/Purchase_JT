@@ -125,8 +125,9 @@ const AppTabs = {
             { id: 'dashboard', title: 'Dashboard', url: BASE_URL + '/admin/dashboard.php', icon: 'bi-grid-1x2-fill', closable: false },
             { id: 'request_order', title: 'Daftar Request Order', url: BASE_URL + '/admin/pages/request_order/index.php', icon: 'bi-file-earmark-text', closable: true },
             { id: 'ro_edit', title: 'Detail RO', url: BASE_URL + '/admin/pages/request_order/edit.php', icon: 'bi-file-earmark-text-fill', closable: true },
-            { id: 'purchase_order', title: 'Purchase Order (PO)', url: BASE_URL + '/admin/pages/purchase_order/index.php', icon: 'bi-cart-check', closable: true },
-            { id: 'receiving', title: 'Penerimaan Barang (Receiving)', url: BASE_URL + '/admin/pages/receiving/index.php', icon: 'bi-box-seam', closable: true },
+            { id: 'purchase_order', title: 'Purchase Order', url: BASE_URL + '/admin/pages/purchase_order/index.php', icon: 'bi-file-earmark-spreadsheet', closable: true },
+            { id: 'po_outstanding', title: 'PO Outstanding', url: BASE_URL + '/admin/pages/purchase_order/outstanding.php', icon: 'bi-hourglass-split', closable: true },
+            { id: 'receiving', title: 'Penerimaan Barang', url: BASE_URL + '/admin/pages/receiving/index.php', icon: 'bi-box-seam-fill', closable: true },
             { id: 'receiving_create', title: 'Terima Barang Baru', url: BASE_URL + '/admin/pages/receiving/create.php', icon: 'bi-box-arrow-in-down', closable: true },
             { id: 'receiving_edit', title: 'Edit Penerimaan', url: BASE_URL + '/admin/pages/receiving/edit.php', icon: 'bi-pencil-square', closable: true },
             { id: 'ro_create', title: 'Buat RO Baru', url: BASE_URL + '/admin/pages/request_order/create.php', icon: 'bi-file-earmark-plus', closable: true },
@@ -185,6 +186,7 @@ const AppTabs = {
                 (t.id === 'receiving_create' && path.includes('/receiving/create.php')) ||
                 (t.id === 'receiving_edit' && path.includes('/receiving/edit.php')) ||
                 (t.id === 'receiving' && path.includes('/receiving/')) ||
+                (t.id === 'po_outstanding' && path.includes('/purchase_order/outstanding.php')) ||
                 (t.id === 'purchase_order' && (path.includes('/purchase_order/index.php') || path.includes('/purchase_order/edit.php'))) || 
                 (t.id === 'request_order' && path.includes('/request_order/index.php')) || 
                 (t.id === 'ro_create' && path.includes('/create.php'))
