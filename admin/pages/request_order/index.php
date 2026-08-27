@@ -55,18 +55,18 @@ require_once __DIR__ . '/../../components/navbar.php';
                 </div>
 
                 <!-- Range Tanggal: Dari Tanggal (Lebar 220px, Ikon) -->
-                <div class="col-6 col-md-2" style="min-width: 220px;">
+                <div class="col-6 col-md-2" style="min-width: 170px;">
                     <div class="input-group input-group-sm">
-                        <span class="input-group-text bg-white text-muted cursor-pointer" title="Dari Tanggal" onclick="document.getElementById('filterStartDate')?.showPicker?.()"><i class="bi bi-calendar-event"></i></span>
-                        <input type="date" class="form-control form-control-sm" id="filterStartDate" title="Dari Tanggal" onclick="this.showPicker && this.showPicker()">
+                        <span class="input-group-text bg-white text-muted cursor-pointer" title="Dari Tanggal" onclick="const el=document.getElementById('filterStartDate'); el.type='date'; el.showPicker?.(); el.focus();"><i class="bi bi-calendar-event"></i></span>
+                        <input type="text" class="form-control form-control-sm" id="filterStartDate" placeholder="mm / dd / yyyy" title="Dari Tanggal" onfocus="this.type='date'; this.showPicker && this.showPicker()" onblur="if(!this.value) this.type='text'" onchange="applyFilters()">
                     </div>
                 </div>
 
                 <!-- Range Tanggal: Sampai Tanggal (Lebar 220px, Ikon) -->
-                <div class="col-6 col-md-2" style="min-width: 220px;">
+                <div class="col-6 col-md-2" style="min-width: 170px;">
                     <div class="input-group input-group-sm">
-                        <span class="input-group-text bg-white text-muted cursor-pointer" title="Sampai Tanggal" onclick="document.getElementById('filterEndDate')?.showPicker?.()"><i class="bi bi-calendar-check"></i></span>
-                        <input type="date" class="form-control form-control-sm" id="filterEndDate" title="Sampai Tanggal" onclick="this.showPicker && this.showPicker()">
+                        <span class="input-group-text bg-white text-muted cursor-pointer" title="Sampai Tanggal" onclick="const el=document.getElementById('filterEndDate'); el.type='date'; el.showPicker?.(); el.focus();"><i class="bi bi-calendar-check"></i></span>
+                        <input type="text" class="form-control form-control-sm" id="filterEndDate" placeholder="mm / dd / yyyy" title="Sampai Tanggal" onfocus="this.type='date'; this.showPicker && this.showPicker()" onblur="if(!this.value) this.type='text'" onchange="applyFilters()">
                     </div>
                 </div>
 
@@ -96,16 +96,29 @@ require_once __DIR__ . '/../../components/navbar.php';
         padding-right: 10px;
     }
     .ro-filter-bar .form-select {
-        padding-top: 0.35rem;
-        padding-bottom: 0.35rem;
+        padding-top: 0.15rem !important;
+        padding-bottom: 0.35rem !important;
+        line-height: 1.5 !important;
+    }
+    .ro-filter-bar .form-control {
+        padding-top: 0.22rem !important;
+        padding-bottom: 0.28rem !important;
+        line-height: 1.5 !important;
     }
     .ro-filter-bar input[type="date"] {
-        padding-top: 0.3rem;
-        padding-bottom: 0.3rem;
+        -moz-appearance: textfield !important;
+        appearance: none !important;
+        padding-top: 0.22rem !important;
+        padding-bottom: 0.28rem !important;
     }
     .ro-filter-bar input[type="date"]::-webkit-calendar-picker-indicator {
         display: none !important;
         -webkit-appearance: none !important;
+        opacity: 0 !important;
+        width: 0 !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
     .table-container {
         overflow: visible !important;

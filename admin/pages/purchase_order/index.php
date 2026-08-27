@@ -24,10 +24,7 @@ require_once __DIR__ . '/../../components/navbar.php';
     <!-- HEADER HALAMAN -->
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
         <div>
-            <h4 class="fw-bold text-dark mb-1">
-                <i class="bi bi-cart-check text-primary me-2"></i>Purchase Order (PO)
-            </h4>
-            <p class="text-muted small mb-0">Manajemen dan pemantauan dokumen pengadaan barang serta transaksi vendor.</p>
+            <h4 class="fw-bold text-dark mb-0">Purchase Order (PO)</h4>
         </div>
         <div class="d-flex align-items-center gap-2">
             <button type="button" class="btn btn-outline-secondary btn-sm px-3 shadow-sm" onclick="loadPoList(1)">
@@ -69,18 +66,18 @@ require_once __DIR__ . '/../../components/navbar.php';
                 </div>
 
                 <!-- Range Tanggal: Dari Tanggal -->
-                <div class="col-6 col-md-2">
+                <div class="col-6 col-md-2" style="min-width: 170px;">
                     <div class="input-group input-group-sm">
-                        <span class="input-group-text bg-light text-muted small" style="width: 50px; justify-content: center;">Dari</span>
-                        <input type="date" class="form-control form-control-sm" id="filterStartDate" title="Dari Tanggal">
+                        <span class="input-group-text bg-white text-muted cursor-pointer" title="Dari Tanggal" onclick="const el=document.getElementById('filterStartDate'); el.type='date'; el.showPicker?.(); el.focus();"><i class="bi bi-calendar-event"></i></span>
+                        <input type="text" class="form-control form-control-sm" id="filterStartDate" placeholder="mm / dd / yyyy" title="Dari Tanggal" onfocus="this.type='date'; this.showPicker && this.showPicker()" onblur="if(!this.value) this.type='text'" onchange="applyFilters()">
                     </div>
                 </div>
 
                 <!-- Range Tanggal: Sampai Tanggal -->
-                <div class="col-6 col-md-2">
+                <div class="col-6 col-md-2" style="min-width: 170px;">
                     <div class="input-group input-group-sm">
-                        <span class="input-group-text bg-light text-muted small" style="width: 55px; justify-content: center;">Sampai</span>
-                        <input type="date" class="form-control form-control-sm" id="filterEndDate" title="Sampai Tanggal">
+                        <span class="input-group-text bg-white text-muted cursor-pointer" title="Sampai Tanggal" onclick="const el=document.getElementById('filterEndDate'); el.type='date'; el.showPicker?.(); el.focus();"><i class="bi bi-calendar-check"></i></span>
+                        <input type="text" class="form-control form-control-sm" id="filterEndDate" placeholder="mm / dd / yyyy" title="Sampai Tanggal" onfocus="this.type='date'; this.showPicker && this.showPicker()" onblur="if(!this.value) this.type='text'" onchange="applyFilters()">
                     </div>
                 </div>
 
@@ -101,6 +98,41 @@ require_once __DIR__ . '/../../components/navbar.php';
     .po-filter-bar .btn {
         height: 36px;
         font-size: 0.85rem;
+    }
+    .po-filter-bar .input-group-text {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+    .po-filter-bar .form-select {
+        padding-top: 0.15rem !important;
+        padding-bottom: 0.35rem !important;
+        line-height: 1.5 !important;
+    }
+    .po-filter-bar .form-control {
+        padding-top: 0.22rem !important;
+        padding-bottom: 0.28rem !important;
+        line-height: 1.5 !important;
+    }
+    .po-filter-bar input[type="date"] {
+        -moz-appearance: textfield !important;
+        appearance: none !important;
+        padding-top: 0.22rem !important;
+        padding-bottom: 0.28rem !important;
+    }
+    .po-filter-bar input[type="date"]::-webkit-calendar-picker-indicator {
+        display: none !important;
+        -webkit-appearance: none !important;
+        opacity: 0 !important;
+        width: 0 !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    .cursor-pointer {
+        cursor: pointer;
     }
     .table-container {
         overflow: visible !important;

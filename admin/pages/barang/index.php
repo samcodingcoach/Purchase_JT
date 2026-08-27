@@ -8,7 +8,7 @@ require_once __DIR__ . '/../../../config/session.php';
 
 $user = requireAuth([ROLE_ADMIN]);
 $pageTitle = 'Master Barang';
-$pageHeading = 'Master Data Barang & Material';
+$pageHeading = 'Master Data Barang & Jasa';
 
 require_once __DIR__ . '/../../components/header.php';
 require_once __DIR__ . '/../../components/sidebar.php';
@@ -17,7 +17,7 @@ require_once __DIR__ . '/../../components/navbar.php';
 
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
-        <h2 class="fs-4 fw-bold text-dark mb-0">Katalog Master Barang &amp; Material</h2>
+        <h2 class="fs-4 fw-bold text-dark mb-0">Katalog Master Barang &amp; Jasa</h2>
     </div>
     <!-- Action Controls: Search di kiri, Tombol Tambah di paling kanan -->
     <div class="d-flex gap-2 align-items-stretch flex-wrap">
@@ -37,8 +37,8 @@ require_once __DIR__ . '/../../components/navbar.php';
             <thead>
                 <tr>
                     <th style="width: 50px;" class="text-center">No</th>
-                    <th>Nama Barang / Material</th>
-                    <th>Total Stok</th>
+                    <th>Nama Barang / Jasa</th>
+                    <th>Total KTS</th>
                     <th>Jenis</th>
                     <th>Status</th>
                     <th class="text-center" style="width: 140px;">Aksi</th>
