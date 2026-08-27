@@ -38,12 +38,16 @@ function apiAuth(array $allowedRoles = []): array {
         jsonResponse(false, 'Unauthorized. Silakan login terlebih dahulu.', null, 401);
     }
 
-    // Validasi hak akses role jika ditentukan
-    if (!empty($allowedRoles) && !in_array($user['role'], $allowedRoles)) {
-        jsonResponse(false, 'Forbidden. Anda tidak memiliki hak akses untuk tindakan ini.', [
-            'user_role' => $user['role'],
-            'allowed_roles' => $allowedRoles
-        ], 403);
+    // Validasi hak akses role jika ditentukan (Case-insensitive)
+    if (!empty($allowedRoles)) {
+        $upperAllowed = array_map('strtoupper', $allowedRoles);
+        $userRoleUpper = strtoupper((string)($user['role'] ?? ''));
+        if (!in_array($userRoleUpper, $upperAllowed)) {
+            jsonResponse(false, 'Forbidden. Anda tidak memiliki hak akses untuk tindakan ini.', [
+                'user_role' => $user['role'],
+                'allowed_roles' => $allowedRoles
+            ], 403);
+        }
     }
 
     return $user;

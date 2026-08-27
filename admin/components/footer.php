@@ -130,6 +130,9 @@ const AppTabs = {
             { id: 'receiving', title: 'Penerimaan Barang', url: BASE_URL + '/admin/pages/receiving/index.php', icon: 'bi-box-seam-fill', closable: true },
             { id: 'receiving_create', title: 'Terima Barang Baru', url: BASE_URL + '/admin/pages/receiving/create.php', icon: 'bi-box-arrow-in-down', closable: true },
             { id: 'receiving_edit', title: 'Edit Penerimaan', url: BASE_URL + '/admin/pages/receiving/edit.php', icon: 'bi-pencil-square', closable: true },
+            { id: 'retur_po', title: 'Retur PO', url: BASE_URL + '/admin/pages/retur_po/index.php', icon: 'bi-arrow-return-left', closable: true },
+            { id: 'retur_create', title: 'Buat Retur PO', url: BASE_URL + '/admin/pages/retur_po/create.php', icon: 'bi-plus-circle-fill', closable: true },
+            { id: 'retur_detail', title: 'Detail Retur PO', url: BASE_URL + '/admin/pages/retur_po/detail.php', icon: 'bi-file-earmark-diff-fill', closable: true },
             { id: 'ro_create', title: 'Buat RO Baru', url: BASE_URL + '/admin/pages/request_order/create.php', icon: 'bi-file-earmark-plus', closable: true },
             { id: 'proses_po', title: 'Proses PO', url: BASE_URL + '/admin/pages/request_order/proses_po.php', icon: 'bi-cart-check-fill', closable: true },
             { id: 'site', title: 'Master Site', url: BASE_URL + '/admin/pages/site/index.php', icon: 'bi-geo-alt-fill', closable: true },
@@ -186,6 +189,9 @@ const AppTabs = {
                 (t.id === 'receiving_create' && path.includes('/receiving/create.php')) ||
                 (t.id === 'receiving_edit' && path.includes('/receiving/edit.php')) ||
                 (t.id === 'receiving' && path.includes('/receiving/')) ||
+                (t.id === 'retur_create' && path.includes('/retur_po/create.php')) ||
+                (t.id === 'retur_detail' && path.includes('/retur_po/detail.php')) ||
+                (t.id === 'retur_po' && path.includes('/retur_po/')) ||
                 (t.id === 'po_outstanding' && path.includes('/purchase_order/outstanding.php')) ||
                 (t.id === 'purchase_order' && (path.includes('/purchase_order/index.php') || path.includes('/purchase_order/edit.php'))) || 
                 (t.id === 'request_order' && path.includes('/request_order/index.php')) || 
@@ -452,7 +458,15 @@ async function apiRequest(endpoint, options = {}) {
     options.credentials = options.credentials || 'include';
     
     try {
-        const response = await fetch(BASE_URL + endpoint, options);
+        let fetchUrl = endpoint;
+        if (!fetchUrl.startsWith('http://') && !fetchUrl.startsWith('https://')) {
+            if (fetchUrl.startsWith(BASE_URL)) {
+                // already starts with BASE_URL
+            } else {
+                fetchUrl = BASE_URL + (fetchUrl.startsWith('/') ? '' : '/') + fetchUrl;
+            }
+        }
+        const response = await fetch(fetchUrl, options);
         const text = await response.text();
         
         let data;
