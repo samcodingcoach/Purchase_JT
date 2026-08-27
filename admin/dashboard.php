@@ -17,6 +17,18 @@ require_once __DIR__ . '/components/sidebar.php';
 require_once __DIR__ . '/components/navbar.php';
 ?>
 
+<!-- Styling Hover Efek Status -->
+<style>
+.hover-opacity {
+    transition: transform 0.15s ease, filter 0.15s ease;
+    cursor: pointer;
+}
+.hover-opacity:hover {
+    transform: translateY(-1px);
+    filter: brightness(0.92);
+}
+</style>
+
 <!-- Banner Welcome (Bersih Tanpa Label & Tombol) -->
 <div class="row mb-4">
     <div class="col-12">
@@ -266,13 +278,12 @@ require_once __DIR__ . '/components/navbar.php';
                         <th>Peminta</th>
                         <th>Site / Workshop</th>
                         <th>Vendor Referensi</th>
-                        <th style="width: 150px;" class="text-center">Status</th>
-                        <th class="text-end" style="width: 100px;">Aksi</th>
+                        <th style="width: 180px;" class="text-center">Status</th>
                     </tr>
                 </thead>
                 <tbody id="recentRoBody">
                     <tr>
-                        <td colspan="7" class="text-center py-5 text-muted">
+                        <td colspan="6" class="text-center py-5 text-muted">
                             <div class="spinner-border spinner-border-sm text-primary me-2"></div> Memuat data Request Order...
                         </td>
                     </tr>
@@ -455,6 +466,7 @@ async function loadRecentRoTable() {
             const site = escapeHtml(ro.nama_site || '-');
             const vendor = escapeHtml(ro.nama_vendor || '-');
             const status = ro.status || 'DRAFT';
+            const detailUrl = `<?= BASE_URL ?>/admin/pages/request_order/edit.php?id=${ro.id_request}`;
 
             let badgeHtml = '';
             if (status === 'DRAFT') {
@@ -475,15 +487,18 @@ async function loadRecentRoTable() {
 
             html += `
                 <tr>
-                    <td><strong class="font-monospace text-primary">${noRo}</strong></td>
+                    <td>
+                        <a href="${detailUrl}" class="font-monospace fw-bold text-primary text-decoration-none" title="Buka Detail ${noRo}">
+                            ${noRo}
+                        </a>
+                    </td>
                     <td class="small text-muted font-monospace">${tgl}</td>
                     <td class="fw-semibold text-dark">${peminta}</td>
                     <td><span class="badge bg-light text-dark border font-monospace">${site}</span></td>
                     <td class="small text-muted">${vendor}</td>
-                    <td class="text-center">${badgeHtml}</td>
-                    <td class="text-end">
-                        <a href="<?= BASE_URL ?>/admin/pages/request_order/edit.php?id=${ro.id_request}" class="btn btn-outline-primary btn-sm py-0 px-2" style="font-size: 0.75rem;">
-                            Detail
+                    <td class="text-center">
+                        <a href="${detailUrl}" class="text-decoration-none d-inline-block hover-opacity" title="Buka Detail ${noRo}">
+                            ${badgeHtml}
                         </a>
                     </td>
                 </tr>
@@ -492,7 +507,7 @@ async function loadRecentRoTable() {
 
         tbody.innerHTML = html;
     } catch (err) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-3 text-danger">Gagal memuat data Request Order.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-3 text-danger">Gagal memuat data Request Order.</td></tr>';
     }
 }
 
