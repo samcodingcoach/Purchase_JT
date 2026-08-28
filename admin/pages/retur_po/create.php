@@ -316,9 +316,9 @@ require_once __DIR__ . '/../../components/navbar.php';
                     <!-- TAB 4: RINCIAN BARANG -->
                     <div class="tab-pane fade" id="tab-items" role="tabpanel">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="fw-bold text-dark mb-0"><i class="bi bi-list-check text-primary me-2"></i>Daftar Material yang Diretur</h6>
+                            <h6 class="fw-bold text-dark mb-0"><i class="bi bi-list-check text-primary me-2"></i>Daftar Barang yang Diretur</h6>
                             <button type="button" class="btn btn-outline-primary btn-sm" onclick="openAddItemModal()">
-                                <i class="bi bi-plus-lg me-1"></i> Tambah Item Lain dari RCV
+                                <i class="bi bi-plus-lg me-1"></i> Tambah Barang Lain dari RCV
                             </button>
                         </div>
 
@@ -523,7 +523,7 @@ require_once __DIR__ . '/../../components/navbar.php';
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
             <div class="modal-header">
-                <h6 class="modal-title fw-bold"><i class="bi bi-plus-circle text-primary me-2"></i>Pilih Material dari Penerimaan (RCV)</h6>
+                <h6 class="modal-title fw-bold"><i class="bi bi-plus-circle text-primary me-2"></i>Pilih Barang dari Penerimaan (RCV)</h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -909,7 +909,7 @@ function renderItemsTable() {
             <tr>
                 <td colspan="7" class="text-center py-5 text-muted">
                     <i class="bi bi-box-arrow-in-left fs-3 d-block mb-2 text-secondary"></i>
-                    Belum ada material yang dipilih untuk diretur.
+                    Belum ada barang yang dipilih untuk diretur.
                 </td>
             </tr>`;
         updateSummary();
@@ -1105,7 +1105,7 @@ function openAddItemModal() {
     const damagedList = currentRcvData.items.filter(it => (it.status_qc == 0 || it.is_damaged));
 
     if (damagedList.length === 0) {
-        list.innerHTML = `<div class="text-center py-4 text-muted small"><i class="bi bi-check2-circle fs-2 text-success d-block mb-1"></i>Tidak ada material cacat/rusak lainnya pada dokumen penerimaan ini.</div>`;
+        list.innerHTML = `<div class="text-center py-4 text-muted small"><i class="bi bi-check2-circle fs-2 text-success d-block mb-1"></i>Tidak ada barang cacat/rusak lainnya pada dokumen penerimaan ini.</div>`;
     } else {
         damagedList.forEach(it => {
             const alreadyInTable = returItems.some(r => r.id_barang == it.id_barang);

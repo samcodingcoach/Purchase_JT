@@ -155,7 +155,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                             <th style="min-width: 130px;" class="text-center">Kompensasi</th>
                             <th style="min-width: 130px;" class="text-end pe-3">Total Nilai</th>
                             <th style="min-width: 140px;" class="text-center">Status</th>
-                            <th style="width: 110px;" class="text-center">Aksi</th>
+                            <th style="width: 80px;" class="text-center">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="returTableBody">
@@ -448,11 +448,9 @@ async function loadReturList(page = 1) {
                     <td class="text-end fw-bold text-dark font-monospace pe-3">${formatRupiah(item.total)}</td>
                     <td class="text-center">${getStatusBadge(item.status)}</td>
                     <td class="text-center">
-                        <div class="d-flex justify-content-center gap-1">
-                            <a href="<?= BASE_URL ?>/admin/pages/retur_po/detail.php?id=${item.id_po_retur}" class="btn btn-outline-primary btn-sm py-1 px-2" title="Lihat Detail & Tindak Lanjut">
-                                <i class="bi bi-eye me-1"></i>Detail
-                            </a>
-                        </div>
+                        <a href="<?= BASE_URL ?>/admin/pages/retur_po/detail.php?id=${item.id_po_retur}" class="btn btn-outline-primary btn-sm px-2 py-1 shadow-sm" title="Lihat Detail & Tindak Lanjut">
+                            <i class="bi bi-eye"></i>
+                        </a>
                     </td>
                 </tr>`;
             });

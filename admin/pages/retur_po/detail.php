@@ -27,14 +27,14 @@ require_once __DIR__ . '/../../components/navbar.php';
 ?>
 
 <div class="container-fluid px-0" id="detailContainer">
-    <!-- HEADER -->
+    <!-- TOP HEADER -->
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
         <div>
             <div class="d-flex align-items-center gap-2">
                 <h4 class="fw-bold text-dark font-monospace mb-0" id="headerNomorRetur">-</h4>
                 <span id="headerStatusBadge"></span>
             </div>
-            <p class="text-muted small mb-0">Dokumen Pengembalian Material ke Vendor Rekanan</p>
+            <p class="text-muted small mb-0">Dokumen Pengembalian Barang Rusak / Cacat ke Vendor Rekanan</p>
         </div>
         <div class="d-flex gap-2 align-items-center flex-wrap">
             <a href="<?= BASE_URL ?>/admin/pages/retur_po/index.php" class="btn btn-outline-secondary btn-sm px-3 shadow-sm">
@@ -44,7 +44,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                 <i class="bi bi-arrow-repeat me-1"></i> Tindak Lanjut / Ubah Status
             </button>
             <button type="button" class="btn btn-outline-dark btn-sm px-3 shadow-sm" onclick="window.print()">
-                <i class="bi bi-printer me-1"></i> Cetak
+                <i class="bi bi-printer me-1"></i> Cetak Dokumen
             </button>
             <button type="button" class="btn btn-outline-danger btn-sm px-3 shadow-sm" id="btnDeleteDraft" onclick="deleteDraft()" style="display: none;">
                 <i class="bi bi-trash me-1"></i> Hapus Draft
@@ -52,132 +52,271 @@ require_once __DIR__ . '/../../components/navbar.php';
         </div>
     </div>
 
-    <!-- CARDS INFORMASI (3 GRID) -->
-    <div class="row g-3 mb-4">
-        <!-- Dokumen Asal -->
-        <div class="col-lg-4 col-md-6">
-            <div class="card border-0 shadow-sm rounded-3 h-100">
-                <div class="card-body p-3">
-                    <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-link-45deg text-primary me-1"></i>Dokumen Asal</h6>
-                    <div class="mb-2">
-                        <span class="text-muted small d-block">Nomor Purchase Order (PO):</span>
-                        <span class="fw-bold font-monospace text-dark" id="infoNoPo">-</span>
-                    </div>
-                    <div class="mb-2">
-                        <span class="text-muted small d-block">Nomor Penerimaan Barang (RCV):</span>
-                        <span class="fw-bold font-monospace text-dark" id="infoNoRcv">-</span>
-                    </div>
-                    <div class="mb-2">
-                        <span class="text-muted small d-block">Surat Jalan Vendor:</span>
-                        <span class="fw-semibold text-dark" id="infoNoSjVendor">-</span>
-                    </div>
-                    <div>
-                        <span class="text-muted small d-block">Site / Lokasi Fisik:</span>
-                        <span class="badge bg-light text-dark border" id="infoSite">-</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Vendor & PIC -->
-        <div class="col-lg-4 col-md-6">
-            <div class="card border-0 shadow-sm rounded-3 h-100">
-                <div class="card-body p-3">
-                    <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-building text-primary me-1"></i>Vendor &amp; PIC</h6>
-                    <div class="mb-2">
-                        <span class="text-muted small d-block">Perusahaan Vendor:</span>
-                        <span class="fw-bold text-dark" id="infoVendor">-</span>
-                    </div>
-                    <div class="mb-2">
-                        <span class="text-muted small d-block">PIC Vendor yang Dihubungi:</span>
-                        <span class="fw-semibold text-dark" id="infoPicVendor">-</span>
-                    </div>
-                    <div class="mb-2">
-                        <span class="text-muted small d-block">Jalur &amp; Armada Pengiriman:</span>
-                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace" id="infoPengiriman">-</span>
-                    </div>
-                    <div class="mb-2">
-                        <span class="text-muted small d-block">Biaya Pengiriman (IDR):</span>
-                        <span class="fw-bold font-monospace text-dark" id="infoBiayaRetur">Rp 0</span>
-                    </div>
-                    <div class="mb-2">
-                        <span class="text-muted small d-block">No. SJ Pengembalian:</span>
-                        <span class="fw-semibold font-monospace" id="infoNoSjRetur">-</span>
-                    </div>
-                    <div>
-                        <span class="text-muted small d-block">No. Nota Retur Pajak:</span>
-                        <span class="fw-semibold font-monospace" id="infoNoNotaPajak">-</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Kompensasi & Finansial -->
-        <div class="col-lg-4 col-md-12">
-            <div class="card border-0 shadow-sm rounded-3 h-100 bg-light">
-                <div class="card-body p-3">
-                    <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-cash-stack text-primary me-1"></i>Kompensasi &amp; Finansial</h6>
-                    <div class="mb-2">
-                        <span class="text-muted small d-block">Skema Kompensasi:</span>
-                        <span id="infoKompensasiBadge">-</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-1">
-                        <span class="text-muted small">Subtotal Nilai Barang (DPP):</span>
-                        <span class="fw-bold font-monospace" id="infoSubtotal">Rp 0</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted small">Pajak PPN (<span id="infoRatePajak">0</span>%):</span>
-                        <span class="fw-bold font-monospace text-primary" id="infoNominalPajak">Rp 0</span>
-                    </div>
-                    <hr class="my-2">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span class="fw-bold text-dark">Total Nilai Klaim:</span>
-                        <span class="fs-5 fw-bold text-success font-monospace" id="infoGrandTotal">Rp 0</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- TABEL MATERIAL RETUR -->
+    <!-- MAIN CARD WITH 5 TABS (CONSISTENT WITH CREATE.PHP) -->
     <div class="card border-0 shadow-sm rounded-3 mb-4">
-        <div class="card-header bg-white border-bottom py-3">
-            <h6 class="fw-bold text-dark mb-0"><i class="bi bi-box-seam text-primary me-2"></i>Rincian Material yang Dikembalikan</h6>
+        <div class="card-header bg-white border-bottom p-0">
+            <ul class="nav nav-tabs card-header-tabs m-0 px-3" id="returDetailTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active fw-semibold py-3 px-3" id="tab-info-btn" data-bs-toggle="tab" data-bs-target="#tab-info" type="button" role="tab">
+                        <i class="bi bi-file-earmark-text me-1 text-primary"></i> 1. Informasi Utama
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold py-3 px-3" id="tab-vendor-btn" data-bs-toggle="tab" data-bs-target="#tab-vendor" type="button" role="tab">
+                        <i class="bi bi-building me-1 text-primary"></i> 2. Vendor
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold py-3 px-3" id="tab-pengiriman-btn" data-bs-toggle="tab" data-bs-target="#tab-pengiriman" type="button" role="tab">
+                        <i class="bi bi-truck me-1 text-primary"></i> 3. Pengiriman
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold py-3 px-3" id="tab-items-btn" data-bs-toggle="tab" data-bs-target="#tab-items" type="button" role="tab">
+                        <i class="bi bi-box-seam me-1 text-primary"></i> 4. Rincian Barang <span class="badge bg-danger ms-1" id="badgeItemCount">0</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold py-3 px-3" id="tab-persetujuan-btn" data-bs-toggle="tab" data-bs-target="#tab-persetujuan" type="button" role="tab">
+                        <i class="bi bi-check2-circle me-1 text-primary"></i> 5. Persetujuan
+                    </button>
+                </li>
+            </ul>
         </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0" id="tableDetailItems">
-                    <thead class="table-light text-muted small text-uppercase">
-                        <tr>
-                            <th style="width: 45px;" class="text-center">No</th>
-                            <th style="min-width: 220px;">Nama Barang</th>
-                            <th style="width: 110px;" class="text-center">Qty Retur</th>
-                            <th style="width: 90px;" class="text-center">Satuan</th>
-                            <th style="width: 140px;" class="text-end">Harga Satuan</th>
-                            <th style="width: 150px;" class="text-end">Subtotal</th>
-                            <th style="width: 120px;" class="text-center">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody id="itemsDetailBody">
-                        <tr>
-                            <td colspan="7" class="text-center py-5 text-muted">
-                                <div class="spinner-border spinner-border-sm text-primary me-2"></div> Memuat rincian material...
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
 
-    <!-- METADATA PEMBUAT & PENYETUJU -->
-    <div class="card border-0 shadow-sm rounded-3 p-3 bg-white">
-        <div class="row g-3 text-muted small">
-            <div class="col-md-6">
-                <div><i class="bi bi-person-fill me-1"></i> Diajukan oleh Logistik: <strong class="text-dark" id="metaPembuat">-</strong> pada <span id="metaTanggal">-</span></div>
-            </div>
-            <div class="col-md-6 text-md-end">
-                <div><i class="bi bi-shield-check me-1"></i> Pejabat Penyetuju / Otorisasi: <strong class="text-dark" id="metaPenyetuju">Belum Disetujui</strong></div>
+        <div class="card-body p-3 p-md-4">
+            <div class="tab-content" id="returDetailTabContent">
+
+                <!-- ========================================================= -->
+                <!-- TAB 1: INFORMASI UTAMA -->
+                <!-- ========================================================= -->
+                <div class="tab-pane fade show active" id="tab-info" role="tabpanel">
+                    <div class="row g-4">
+                        <div class="col-lg-6">
+                            <div class="border rounded-3 p-3 h-100 bg-white">
+                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-link-45deg text-primary me-2"></i>Dokumen Asal Penerimaan (Receiving)</h6>
+                                <div class="mb-3">
+                                    <span class="text-muted small d-block">Nomor Penerimaan Barang (RCV):</span>
+                                    <span class="fw-bold font-monospace fs-6 text-dark" id="infoNoRcv">-</span>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="text-muted small d-block">Nomor Purchase Order (PO):</span>
+                                    <span class="fw-bold font-monospace fs-6 text-dark" id="infoNoPo">-</span>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="text-muted small d-block">No. Surat Jalan Asal Vendor:</span>
+                                    <span class="fw-semibold text-dark" id="infoNoSjVendor">-</span>
+                                </div>
+                                <div>
+                                    <span class="text-muted small d-block">Site / Gudang Lokasi Fisik:</span>
+                                    <span class="badge bg-light text-dark border px-2 py-1" id="infoSite">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-6">
+                            <div class="border rounded-3 p-3 h-100 bg-white">
+                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-info-circle text-primary me-2"></i>Identitas Retur &amp; Skema</h6>
+                                <div class="mb-3">
+                                    <span class="text-muted small d-block">Nomor Retur PO:</span>
+                                    <span class="fw-bold font-monospace fs-6 text-primary" id="infoNomorReturCard">-</span>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="text-muted small d-block">Tanggal Pengajuan Retur:</span>
+                                    <span class="fw-semibold text-dark" id="infoTanggalRetur">-</span>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="text-muted small d-block mb-1">Skema Kompensasi:</span>
+                                    <div id="infoKompensasiBadge" class="fw-bold fs-6">-</div>
+                                </div>
+                                <div>
+                                    <span class="text-muted small d-block mb-1">Status Dokumen:</span>
+                                    <div id="infoStatusCardBadge"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========================================================= -->
+                <!-- TAB 2: VENDOR -->
+                <!-- ========================================================= -->
+                <div class="tab-pane fade" id="tab-vendor" role="tabpanel">
+                    <div class="row g-4">
+                        <div class="col-lg-6">
+                            <div class="border rounded-3 p-3 h-100 bg-white">
+                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-building text-primary me-2"></i>Perusahaan Vendor</h6>
+                                <div class="mb-3">
+                                    <span class="text-muted small d-block">Nama Vendor Rekanan:</span>
+                                    <span class="fw-bold text-dark fs-6" id="infoVendor">-</span>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="text-muted small d-block">No. Telepon / WhatsApp:</span>
+                                    <span class="fw-semibold font-monospace text-dark" id="infoTeleponVendor">-</span>
+                                </div>
+                                <div>
+                                    <span class="text-muted small d-block">Email Resmi Vendor:</span>
+                                    <span class="text-dark" id="infoEmailVendor">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-6">
+                            <div class="border rounded-3 p-3 h-100 bg-white">
+                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-person-badge text-primary me-2"></i>Person In Charge (PIC) Vendor</h6>
+                                <div class="mb-3">
+                                    <span class="text-muted small d-block">Nama PIC Vendor:</span>
+                                    <span class="fw-bold text-dark fs-6" id="infoPicVendor">-</span>
+                                </div>
+                                <div>
+                                    <span class="text-muted small d-block">Keterangan Vendor:</span>
+                                    <span class="text-muted small">Pihak perwakilan vendor rekanan yang telah dihubungi dan mengonfirmasi proses klaim pengembalian barang.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========================================================= -->
+                <!-- TAB 3: PENGIRIMAN -->
+                <!-- ========================================================= -->
+                <div class="tab-pane fade" id="tab-pengiriman" role="tabpanel">
+                    <div class="row g-4">
+                        <!-- Jalur & Armada Pengiriman -->
+                        <div class="col-lg-6">
+                            <div class="border rounded-3 p-3 h-100 bg-white">
+                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-truck text-primary me-2"></i>Metode &amp; Armada Pengiriman</h6>
+                                <div class="mb-3">
+                                    <span class="text-muted small d-block">Jalur &amp; Penanggung Jawab Pengiriman:</span>
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 fs-6 font-monospace" id="infoPengiriman">-</span>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="text-muted small d-block">Biaya Pengiriman Retur (IDR):</span>
+                                    <span class="fw-bold fs-5 font-monospace text-dark" id="infoBiayaRetur">Rp 0</span>
+                                </div>
+                                <div>
+                                    <span class="text-muted small d-block">Catatan Pengiriman:</span>
+                                    <span class="text-dark small" id="infoKeterangan">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Dokumen Surat Jalan & Faktur Pajak -->
+                        <div class="col-lg-6">
+                            <div class="border rounded-3 p-3 h-100 bg-white">
+                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-card-checklist text-primary me-2"></i>Dokumen Surat Jalan &amp; Faktur</h6>
+                                <div class="mb-3">
+                                    <span class="text-muted small d-block">No. Surat Jalan Pengembalian / Retur Fisik:</span>
+                                    <span class="fw-bold font-monospace fs-6 text-dark" id="infoNoSjRetur">-</span>
+                                </div>
+                                <div>
+                                    <span class="text-muted small d-block">No. Nota Retur Pajak (e-Faktur):</span>
+                                    <span class="fw-bold font-monospace fs-6 text-dark" id="infoNoNotaPajak">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========================================================= -->
+                <!-- TAB 4: RINCIAN BARANG -->
+                <!-- ========================================================= -->
+                <div class="tab-pane fade" id="tab-items" role="tabpanel">
+                    <!-- Ringkasan Finansial -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-lg-4 col-md-6">
+                            <div class="p-3 border rounded-3 bg-light h-100">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="text-muted small">Subtotal Nilai Barang (DPP):</span>
+                                    <span class="fw-bold font-monospace text-dark" id="infoSubtotal">Rp 0</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span class="text-muted small">Pajak PPN (<span id="infoRatePajak">0</span>%):</span>
+                                    <span class="fw-bold font-monospace text-primary" id="infoNominalPajak">Rp 0</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 col-md-6">
+                            <div class="p-3 border rounded-3 bg-light h-100">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="text-muted small">Biaya Pengiriman Retur:</span>
+                                    <span class="fw-bold font-monospace text-dark" id="infoBiayaReturTab4">Rp 0</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span class="text-muted small">Armada Pengiriman:</span>
+                                    <span class="fw-semibold text-primary small" id="infoPengirimanTab4">-</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 col-md-12">
+                            <div class="p-3 border rounded-3 bg-primary-subtle border-primary-subtle h-100 d-flex flex-column justify-content-center">
+                                <span class="text-primary-emphasis small fw-bold d-block">Total Nilai Klaim Retur:</span>
+                                <span class="fs-4 fw-bold text-primary font-monospace" id="infoGrandTotal">Rp 0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabel Rincian Barang -->
+                    <div class="table-responsive border rounded-3">
+                        <table class="table table-hover align-middle mb-0" id="tableDetailItems">
+                            <thead class="table-light text-muted small text-uppercase">
+                                <tr>
+                                    <th style="width: 45px;" class="text-center">No</th>
+                                    <th style="min-width: 220px;">Nama Barang</th>
+                                    <th style="width: 110px;" class="text-center">Qty Retur</th>
+                                    <th style="width: 90px;" class="text-center">Satuan</th>
+                                    <th style="width: 140px;" class="text-end">Harga Satuan</th>
+                                    <th style="width: 150px;" class="text-end">Subtotal</th>
+                                    <th style="width: 80px;" class="text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="itemsDetailBody">
+                                <tr>
+                                    <td colspan="7" class="text-center py-5 text-muted">
+                                        <div class="spinner-border spinner-border-sm text-primary me-2"></div> Memuat rincian barang...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ========================================================= -->
+                <!-- TAB 5: PERSETUJUAN -->
+                <!-- ========================================================= -->
+                <div class="tab-pane fade" id="tab-persetujuan" role="tabpanel">
+                    <div class="row g-4">
+                        <div class="col-lg-6">
+                            <div class="border rounded-3 p-3 h-100 bg-white">
+                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-shield-check text-success me-2"></i>Pejabat Penyetuju (Approval)</h6>
+                                <div class="mb-3">
+                                    <span class="text-muted small d-block">Pejabat Penyetuju:</span>
+                                    <span class="fw-bold text-dark fs-6" id="metaPenyetuju">-</span>
+                                </div>
+                                <div>
+                                    <span class="text-muted small d-block">Diajukan oleh Logistik:</span>
+                                    <span class="fw-semibold text-dark" id="metaPembuat">-</span> pada <span id="metaTanggal">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-6">
+                            <div class="border rounded-3 p-3 h-100 bg-light">
+                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-arrow-repeat text-primary me-2"></i>Status Dokumen Terkini</h6>
+                                <div class="mb-3">
+                                    <span class="text-muted small d-block mb-1">Status Retur PO:</span>
+                                    <div id="infoStatusLargeBadge"></div>
+                                </div>
+                                <div class="mt-4 pt-2 border-top">
+                                    <button type="button" class="btn btn-primary btn-sm px-3 fw-semibold shadow-sm" onclick="openUpdateStatusModal()">
+                                        <i class="bi bi-pencil-square me-1"></i> Perbarui Status Dokumen
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -316,7 +455,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                             </div>
                             <div id="modalItemActionFotoEmpty" class="py-5 text-muted">
                                 <i class="bi bi-image fs-1 d-block mb-2 text-secondary"></i>
-                                Tidak ada lampiran foto bukti kerusakan fisik untuk material ini.
+                                Tidak ada lampiran foto bukti kerusakan fisik untuk barang ini.
                             </div>
                         </div>
                     </div>
@@ -395,26 +534,36 @@ async function loadReturDetail() {
 function renderDetail(d) {
     document.getElementById('headerNomorRetur').textContent = d.nomor_po_retur || '-';
     document.getElementById('headerStatusBadge').innerHTML = getStatusBadge(d.status);
-
-    // Dokumen Asal
+    
+    // Tab 1: Informasi Utama
     document.getElementById('infoNoPo').textContent = d.nomor_po || '-';
     document.getElementById('infoNoRcv').textContent = d.nomor_rcv || '-';
     document.getElementById('infoNoSjVendor').textContent = d.nomor_sj || '-';
     document.getElementById('infoSite').textContent = d.nama_site || '-';
+    document.getElementById('infoNomorReturCard').textContent = d.nomor_po_retur || '-';
+    document.getElementById('infoTanggalRetur').textContent = formatShortDate(d.tanggal_po_retur);
+    if (document.getElementById('infoStatusCardBadge')) {
+        document.getElementById('infoStatusCardBadge').innerHTML = getStatusBadge(d.status);
+    }
 
-    // Vendor & Pengiriman
+    // Tab 2: Vendor
     document.getElementById('infoVendor').textContent = d.nama_vendor || '-';
     document.getElementById('infoPicVendor').textContent = d.pic_vendor || '-';
+    document.getElementById('infoTeleponVendor').textContent = d.telepon_vendor || '-';
+    document.getElementById('infoEmailVendor').textContent = d.email_vendor || '-';
+
+    // Tab 3: Pengiriman
     document.getElementById('infoPengiriman').textContent = d.pengiriman_retur ? `Armada ${d.pengiriman_retur}` : '-';
     document.getElementById('infoBiayaRetur').textContent = formatRupiah(d.biaya_retur || 0);
     document.getElementById('infoNoSjRetur').textContent = d.nomor_sj_retur || '-';
     document.getElementById('infoNoNotaPajak').textContent = d.nomor_nota_retur_pajak || '-';
+    document.getElementById('infoKeterangan').textContent = d.keterangan || 'Tidak ada catatan tambahan.';
 
-    // Kompensasi & Finansial
+    // Tab 4: Rincian Barang
     const isTukarUnit = (d.kompensasi == 1);
     document.getElementById('infoKompensasiBadge').innerHTML = isTukarUnit
-        ? '<span class="badge bg-primary-subtle text-primary border border-primary-subtle"><i class="bi bi-arrow-repeat me-1"></i>Tukar Unit (Ganti Barang Baru)</span>'
-        : '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle"><i class="bi bi-cash-coin me-1"></i>Potong Tagihan (Credit Note)</span>';
+        ? '<span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2"><i class="bi bi-arrow-repeat me-1"></i>Tukar Unit (Ganti Barang Baru)</span>'
+        : '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-2"><i class="bi bi-cash-coin me-1"></i>Potong Tagihan (Credit Note)</span>';
 
     const subtotal = parseFloat(d.total) || 0;
     const ratePajak = parseInt(d.rate_pajak) || 0;
@@ -425,11 +574,20 @@ function renderDetail(d) {
     document.getElementById('infoSubtotal').textContent = formatRupiah(subtotal);
     document.getElementById('infoNominalPajak').textContent = formatRupiah(nominalPajak);
     document.getElementById('infoGrandTotal').textContent = formatRupiah(grandTotal);
+    if (document.getElementById('infoBiayaReturTab4')) {
+        document.getElementById('infoBiayaReturTab4').textContent = formatRupiah(d.biaya_retur || 0);
+    }
+    if (document.getElementById('infoPengirimanTab4')) {
+        document.getElementById('infoPengirimanTab4').textContent = d.pengiriman_retur ? `Armada ${d.pengiriman_retur}` : '-';
+    }
 
-    // Metadata
+    // Tab 5: Persetujuan
     document.getElementById('metaPembuat').textContent = d.nama_pembuat || 'Logistik';
     document.getElementById('metaTanggal').textContent = formatShortDate(d.tanggal_po_retur);
     document.getElementById('metaPenyetuju').textContent = d.nama_penyetuju ? `${d.nama_penyetuju} (Disetujui)` : 'Belum Disetujui';
+    if (document.getElementById('infoStatusLargeBadge')) {
+        document.getElementById('infoStatusLargeBadge').innerHTML = getStatusBadge(d.status);
+    }
 
     // Tombol Hapus Draft
     if (d.status === 'DRAFT') {
@@ -438,12 +596,16 @@ function renderDetail(d) {
         document.getElementById('btnDeleteDraft').style.display = 'none';
     }
 
-    // Render Items
+    // Render Items Table
     const tbody = document.getElementById('itemsDetailBody');
+    const badgeCount = document.getElementById('badgeItemCount');
     if (!d.items || d.items.length === 0) {
         tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">Tidak ada rincian barang.</td></tr>`;
+        if (badgeCount) badgeCount.textContent = '0';
         return;
     }
+
+    if (badgeCount) badgeCount.textContent = d.items.length;
 
     let html = '';
     d.items.forEach((it, idx) => {
@@ -459,8 +621,8 @@ function renderDetail(d) {
             <td class="text-end font-monospace">${formatRupiah(it.harga_satuan)}</td>
             <td class="text-end font-monospace fw-bold text-dark">${formatRupiah(it.subtotal)}</td>
             <td class="text-center">
-                <button type="button" class="btn btn-outline-primary btn-sm py-1 px-3 shadow-sm fw-semibold" onclick="openItemActionModal(${idx})" title="Lihat Rincian, Bukti Foto & Unit Pengganti">
-                    <i class="bi bi-eye me-1"></i>Aksi
+                <button type="button" class="btn btn-outline-primary btn-sm px-2 py-1 shadow-sm" onclick="openItemActionModal(${idx})" title="Lihat Rincian, Bukti Foto & Unit Pengganti">
+                    <i class="bi bi-eye"></i>
                 </button>
             </td>
         </tr>`;
@@ -499,19 +661,18 @@ function openItemActionModal(idx) {
     }
 
     // Unit Pengganti
-    const isTukarUnit = (returDetailData.kompensasi == 1);
+    const isTukarUnit = (returDetailData && returDetailData.kompensasi == 1);
     if (isTukarUnit) {
         document.getElementById('gantiTukarUnitSection').style.display = 'block';
         document.getElementById('gantiPotongTagihanSection').style.display = 'none';
-        document.getElementById('modalItemActionInputQtyGanti').value = it.qty_diganti || 0;
-        document.getElementById('modalItemActionInputQtyGanti').max = it.qty_retur;
+        document.getElementById('modalItemActionInputQtyGanti').value = parseFloat(it.qty_diganti) || 0;
         document.getElementById('modalItemActionMaxQty').textContent = `/ ${it.qty_retur} ${it.satuan}`;
     } else {
         document.getElementById('gantiTukarUnitSection').style.display = 'none';
         document.getElementById('gantiPotongTagihanSection').style.display = 'block';
     }
 
-    // Reset ke tab 1
+    // Reset ke tab 1 modal item
     const firstTab = new bootstrap.Tab(document.getElementById('tab-item-info-btn'));
     firstTab.show();
 
@@ -531,7 +692,10 @@ async function saveItemUnitPengganti() {
     };
 
     try {
-        const res = await apiRequest('/api/retur_po/index.php', 'PUT', payload);
+        const res = await apiRequest('/api/retur_po/index.php', {
+            method: 'PUT',
+            body: JSON.stringify(payload)
+        });
         if (res && res.success) {
             showToast('Kuantitas unit pengganti berhasil disimpan!', 'success');
             bootstrap.Modal.getInstance(document.getElementById('modalItemAction')).hide();
@@ -547,15 +711,15 @@ async function saveItemUnitPengganti() {
 function getReasonBadge(reason) {
     switch (reason) {
         case 'RUSAK_FISIK':
-            return '<span class="badge bg-danger-subtle text-danger border border-danger-subtle">Rusak Fisik / Kirim</span>';
+            return '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">Rusak Fisik / Kirim</span>';
         case 'CACAT_PRODUKSI':
-            return '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">Cacat Pabrik Vendor</span>';
+            return '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1">Cacat Pabrik Vendor</span>';
         case 'SALAH_SPESIFIKASI':
-            return '<span class="badge bg-info-subtle text-info border border-info-subtle">Salah Spesifikasi</span>';
+            return '<span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1">Salah Spesifikasi</span>';
         case 'KURANG_PENGIRIMAN':
-            return '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Kurang Kuantitas</span>';
+            return '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1">Kurang Kuantitas</span>';
         case 'KADALUARSA_EXP':
-            return '<span class="badge bg-dark-subtle text-dark border border-dark-subtle">Kadaluarsa</span>';
+            return '<span class="badge bg-dark-subtle text-dark border border-dark-subtle px-2 py-1">Kadaluarsa</span>';
         default:
             return `<span class="badge bg-light text-dark">${reason || '-'}</span>`;
     }
@@ -564,17 +728,17 @@ function getReasonBadge(reason) {
 function getStatusBadge(status) {
     switch (status) {
         case 'DRAFT':
-            return '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1"><i class="bi bi-pencil me-1"></i>Draft</span>';
+            return '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-3 py-1"><i class="bi bi-pencil me-1"></i>Draft</span>';
         case 'MENUNGGU KONFIRMASI VENDOR':
-            return '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1"><i class="bi bi-hourglass-split me-1"></i>Menunggu Vendor</span>';
+            return '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-1"><i class="bi bi-hourglass-split me-1"></i>Menunggu Vendor</span>';
         case 'DISETUJUI VENDOR':
-            return '<span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1"><i class="bi bi-check2-circle me-1"></i>Disetujui Vendor</span>';
+            return '<span class="badge bg-info-subtle text-info border border-info-subtle px-3 py-1"><i class="bi bi-check2-circle me-1"></i>Disetujui Vendor</span>';
         case 'TIDAK DISETUJUI VENDOR':
-            return '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1"><i class="bi bi-x-circle me-1"></i>Ditolak Vendor</span>';
+            return '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-1"><i class="bi bi-x-circle me-1"></i>Ditolak Vendor</span>';
         case 'DIKIRIM KE VENDOR':
-            return '<span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1"><i class="bi bi-truck me-1"></i>Dikirim ke Vendor</span>';
+            return '<span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1"><i class="bi bi-truck me-1"></i>Dikirim ke Vendor</span>';
         case 'DITERIMA':
-            return '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1"><i class="bi bi-check-circle-fill me-1"></i>Selesai / Diterima</span>';
+            return '<span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1"><i class="bi bi-check-circle-fill me-1"></i>Selesai / Diterima</span>';
         default:
             return `<span class="badge bg-light text-dark">${status || '-'}</span>`;
     }
@@ -606,7 +770,10 @@ async function submitStatusUpdate(e) {
     };
 
     try {
-        const res = await apiRequest(`/api/retur_po/index.php?id=${currentId}`, 'PUT', payload);
+        const res = await apiRequest(`/api/retur_po/index.php?id=${currentId}`, {
+            method: 'PUT',
+            body: JSON.stringify(payload)
+        });
         if (res && res.success) {
             showToast(res.message || 'Status Retur PO berhasil diperbarui!', 'success');
             bootstrap.Modal.getInstance(document.getElementById('modalUpdateStatus')).hide();
@@ -616,23 +783,6 @@ async function submitStatusUpdate(e) {
         }
     } catch (err) {
         showToast('Terjadi kesalahan: ' + err.message, 'danger');
-    }
-}
-
-async function updateQtyDiganti(idDetail, val) {
-    const qty = parseFloat(val) || 0;
-    const payload = {
-        id_po_retur: returId,
-        items: [{ id_po_retur_detail: idDetail, qty_diganti: qty }]
-    };
-
-    try {
-        const res = await apiRequest('/api/retur_po/index.php', 'PUT', payload);
-        if (res && res.success) {
-            showToast('Kuantitas unit pengganti berhasil dicatat.', 'success');
-        }
-    } catch (e) {
-        showToast('Gagal mencatat unit pengganti: ' + e.message, 'danger');
     }
 }
 
@@ -663,11 +813,13 @@ function formatShortDate(dateStr) {
     if (!dateStr) return '-';
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return dateStr;
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
     const day = String(d.getDate()).padStart(2, '0');
-    const mon = months[d.getMonth()];
-    const yr = d.getFullYear();
-    return `${day} ${mon} ${yr}`;
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    const month = months[d.getMonth()];
+    const year = d.getFullYear();
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${day} ${month} ${year} ${hours}:${minutes}`;
 }
 
 function formatRupiah(num) {
