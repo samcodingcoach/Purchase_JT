@@ -538,6 +538,11 @@ if ($method === 'PUT') {
             sendJson(false, 'Dokumen Retur tidak ditemukan.', null, 404);
         }
 
+        // Kunci dokumen jika status sudah DITERIMA
+        if ($retur['status'] === 'DITERIMA') {
+            sendJson(false, 'Dokumen Retur PO ini sudah berstatus DITERIMA (Selesai) dan terkunci permanen sehingga tidak dapat diubah lagi.', null, 422);
+        }
+
         $newStatus = trim($input['status'] ?? $retur['status']);
         $validStatuses = ['DRAFT', 'MENUNGGU KONFIRMASI VENDOR', 'DISETUJUI VENDOR', 'TIDAK DISETUJUI VENDOR', 'DIKIRIM KE VENDOR', 'DITERIMA'];
         if (!in_array($newStatus, $validStatuses)) {

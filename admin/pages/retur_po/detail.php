@@ -40,9 +40,12 @@ require_once __DIR__ . '/../../components/navbar.php';
             <a href="<?= BASE_URL ?>/admin/pages/retur_po/index.php" class="btn btn-outline-secondary btn-sm px-3 shadow-sm">
                 <i class="bi bi-arrow-left me-1"></i> Kembali ke Daftar
             </a>
-            <button type="button" class="btn btn-primary btn-sm px-3 shadow-sm fw-semibold" onclick="openUpdateStatusModal()">
+            <button type="button" class="btn btn-primary btn-sm px-3 shadow-sm fw-semibold" id="btnUpdateStatusHeader" onclick="openUpdateStatusModal()">
                 <i class="bi bi-arrow-repeat me-1"></i> Tindak Lanjut / Ubah Status
             </button>
+            <a href="<?= BASE_URL ?>/admin/pages/retur_po/print_spb.php?id=<?= $idRetur ?>" target="_blank" class="btn btn-outline-success btn-sm px-3 shadow-sm fw-semibold" id="btnPrintSpbHeader" style="display: none;">
+                <i class="bi bi-printer me-1"></i> Print SPB Retur
+            </a>
             <button type="button" class="btn btn-outline-danger btn-sm px-3 shadow-sm" id="btnDeleteDraft" onclick="deleteDraft()" style="display: none;">
                 <i class="bi bi-trash me-1"></i> Hapus Draft
             </button>
@@ -309,7 +312,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                                     <span class="text-muted small d-block mb-1">Status Retur PO:</span>
                                     <div id="infoStatusLargeBadge"></div>
                                 </div>
-                                <div class="mt-4 pt-2 border-top">
+                                <div class="mt-4 pt-2 border-top" id="containerUpdateStatusTab5">
                                     <button type="button" class="btn btn-primary btn-sm px-3 fw-semibold shadow-sm" onclick="openUpdateStatusModal()">
                                         <i class="bi bi-pencil-square me-1"></i> Perbarui Status Dokumen
                                     </button>
@@ -661,7 +664,40 @@ function renderDetail(d) {
         document.getElementById('infoStatusLargeBadge').innerHTML = getStatusBadge(d.status);
     }
 
-    // Tombol Hapus Draft
+    // Tombol Update Status & Cetak SPB Retur
+    const isLockedDiterima = (d.status === 'DITERIMA');
+    const headerUpdateBtn = document.getElementById('btnUpdateStatusHeader');
+    const headerPrintSpbBtn = document.getElementById('btnPrintSpbHeader');
+    const tab5UpdateContainer = document.getElementById('containerUpdateStatusTab5');
+
+    if (headerUpdateBtn) {
+        headerUpdateBtn.style.display = isLockedDiterima ? 'none' : 'inline-flex';
+    }
+
+    if (headerPrintSpbBtn) {
+        headerPrintSpbBtn.style.display = isLockedDiterima ? 'inline-flex' : 'none';
+    }
+
+    if (tab5UpdateContainer) {
+        if (isLockedDiterima) {
+            tab5UpdateContainer.innerHTML = `
+                <div class="alert alert-success d-flex justify-content-between align-items-center flex-wrap gap-2 py-2 px-3 mb-0 small border-0 shadow-none">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-lock-fill me-2 fs-5 text-success"></i>
+                        <div>
+                            <strong>Dokumen Selesai (Terkunci)</strong><br>
+                            Kompensasi retur telah tuntas diterima dan stok gudang telah diperbarui.
+                        </div>
+                    </div>
+                    <a href="<?= BASE_URL ?>/admin/pages/retur_po/print_spb.php?id=${d.id_po_retur}" target="_blank" class="btn btn-success btn-sm px-3 shadow-sm fw-semibold">
+                        <i class="bi bi-printer me-1"></i> Print SPB Retur
+                    </a>
+                </div>`;
+        } else {
+            tab5UpdateContainer.innerHTML = '<button type="button" class="btn btn-primary btn-sm px-3 fw-semibold shadow-sm" onclick="openUpdateStatusModal()"><i class="bi bi-pencil-square me-1"></i> Perbarui Status Dokumen</button>';
+        }
+    }
+
     if (d.status === 'DRAFT') {
         document.getElementById('btnDeleteDraft').style.display = 'inline-block';
     } else {
@@ -952,11 +988,19 @@ async function submitStatusUpdate(e) {
             body: JSON.stringify(payload)
         });
         if (res && res.success) {
-            const successMsg = (selectedStatus === 'DITERIMA' && itemsPayload.length > 0)
-                ? 'Status Retur berhasil diperbarui menjadi DITERIMA dan stok barang pengganti berhasil ditambahkan ke gudang!'
-                : (res.message || 'Status Retur PO berhasil diperbarui!');
-            showToast(successMsg, 'success');
             bootstrap.Modal.getInstance(document.getElementById('modalUpdateStatus')).hide();
+
+            // Jika status DITERIMA, tampilkan toast sukses dan langsung redirect kembali ke index.php
+            if (selectedStatus === 'DITERIMA') {
+                showToast('Status Retur PO berhasil diselesaikan (DITERIMA) dan stok gudang telah diperbarui! Mengalihkan ke daftar...', 'success');
+                setTimeout(() => {
+                    window.location.href = '<?= BASE_URL ?>/admin/pages/retur_po/index.php';
+                }, 1000);
+                return;
+            }
+
+            const successMsg = res.message || 'Status Retur PO berhasil diperbarui!';
+            showToast(successMsg, 'success');
             await loadReturDetail();
 
             // Jika status DISETUJUI VENDOR atau DIKIRIM KE VENDOR, langsung buka print view template Surat Jalan Retur
