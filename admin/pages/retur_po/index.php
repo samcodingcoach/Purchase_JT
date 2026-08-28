@@ -149,10 +149,10 @@ require_once __DIR__ . '/../../components/navbar.php';
                         <tr>
                             <th style="width: 45px;" class="text-center">No</th>
                             <th style="min-width: 140px;">Nomor Retur</th>
-                            <th style="min-width: 130px;">Tanggal</th>
-                            <th style="min-width: 150px;">Ref PO &amp; RCV</th>
+                            <th style="min-width: 120px;">Tanggal</th>
+                            <th style="min-width: 130px;">Ref PO</th>
                             <th style="min-width: 160px;">Vendor Rekanan</th>
-                            <th style="min-width: 120px;">Kompensasi</th>
+                            <th style="min-width: 130px;" class="text-center">Kompensasi</th>
                             <th style="min-width: 130px;" class="text-end pe-3">Total Nilai</th>
                             <th style="min-width: 140px;" class="text-center">Status</th>
                             <th style="width: 110px;" class="text-center">Aksi</th>
@@ -424,8 +424,8 @@ async function loadReturList(page = 1) {
             data.items.forEach((item, index) => {
                 const no = startNo + index;
                 const kompensasiBadge = (item.kompensasi == 1) 
-                    ? '<span class="badge bg-primary-subtle text-primary border border-primary-subtle"><i class="bi bi-arrow-repeat me-1"></i>Tukar Unit</span>'
-                    : '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle"><i class="bi bi-cash-coin me-1"></i>Potong Tagihan</span>';
+                    ? '<span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1"><i class="bi bi-arrow-repeat me-1"></i>Tukar Unit</span>'
+                    : '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1"><i class="bi bi-cash-coin me-1"></i>Potong Tagihan</span>';
 
                 html += `
                 <tr>
@@ -434,27 +434,23 @@ async function loadReturList(page = 1) {
                         <a href="<?= BASE_URL ?>/admin/pages/retur_po/detail.php?id=${item.id_po_retur}" class="fw-bold font-monospace text-primary text-decoration-none">
                             ${item.nomor_po_retur || '-'}
                         </a>
-                        <div class="small text-muted">${item.total_items || 0} Material (${item.total_qty_retur || 0} Qty)</div>
                     </td>
                     <td>
-                        <div class="fw-semibold text-dark">${formatShortDate(item.tanggal_po_retur)}</div>
-                        <div class="small text-muted">${item.nama_site || '-'}</div>
+                        <span class="fw-semibold text-dark">${formatShortDate(item.tanggal_po_retur)}</span>
                     </td>
                     <td>
-                        <div class="small"><span class="text-muted">PO:</span> <span class="fw-semibold font-monospace">${item.nomor_po || '-'}</span></div>
-                        <div class="small"><span class="text-muted">RCV:</span> <span class="fw-semibold font-monospace">${item.nomor_rcv || '-'}</span></div>
+                        <span class="font-monospace fw-semibold text-dark">${item.nomor_po || '-'}</span>
                     </td>
                     <td>
-                        <div class="fw-semibold text-dark">${item.nama_vendor || '-'}</div>
-                        <div class="small text-muted">PIC: ${item.pic_vendor || '-'}</div>
+                        <span class="fw-semibold text-dark">${item.nama_vendor || '-'}</span>
                     </td>
-                    <td>${kompensasiBadge}</td>
-                    <td class="text-end fw-bold text-dark font-monospace">${formatRupiah(item.total)}</td>
+                    <td class="text-center">${kompensasiBadge}</td>
+                    <td class="text-end fw-bold text-dark font-monospace pe-3">${formatRupiah(item.total)}</td>
                     <td class="text-center">${getStatusBadge(item.status)}</td>
                     <td class="text-center">
                         <div class="d-flex justify-content-center gap-1">
                             <a href="<?= BASE_URL ?>/admin/pages/retur_po/detail.php?id=${item.id_po_retur}" class="btn btn-outline-primary btn-sm py-1 px-2" title="Lihat Detail & Tindak Lanjut">
-                                <i class="bi bi-eye"></i> Detail
+                                <i class="bi bi-eye me-1"></i>Detail
                             </a>
                         </div>
                     </td>

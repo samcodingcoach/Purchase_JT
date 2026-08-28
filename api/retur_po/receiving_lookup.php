@@ -26,7 +26,7 @@ try {
         // Ambil rincian spesifik satu dokumen receiving
         $sqlRcv = "SELECT r.*, 
                           po.nomor_po, po.id_vendor, po.id_site, po.pajak AS rate_pajak,
-                          v.nama_perusahaan AS nama_vendor, v.kontak_person AS pic_vendor, v.telepon AS telepon_vendor,
+                          v.nama_perusahaan AS nama_vendor, COALESCE(v.kontak_person, v.person, '') AS pic_vendor, v.no_telepon AS telepon_vendor,
                           s.nama_site
                    FROM receiving_order r
                    JOIN purchase_order po ON r.id_po = po.id_po
@@ -49,6 +49,7 @@ try {
         }
 
         // Ambil item receiving detail dan JOIN ke barang & purchase_order_detail untuk harga
+        // HANYA mengambil item yang berkondisi cacat / rusak fisik (status_qc = 0)
         $sqlItems = "SELECT rod.id_rcv_detail, rod.id_rcv, rod.id_barang, rod.qty AS qty_rcv, rod.status_qc, rod.keterangan AS ket_rcv,
                             b.kode_barang, b.nama_barang, b.satuan AS master_satuan,
                             COALESCE(pod.harga, 0) AS harga_satuan,
@@ -57,8 +58,8 @@ try {
                      FROM receiving_order_detail rod
                      JOIN barang b ON rod.id_barang = b.id_barang
                      LEFT JOIN purchase_order_detail pod ON (pod.id_po = ? AND pod.id_barang = rod.id_barang)
-                     WHERE rod.id_rcv = ?
-                     ORDER BY rod.status_qc ASC, rod.id_rcv_detail ASC";
+                     WHERE rod.id_rcv = ? AND rod.status_qc = 0
+                     ORDER BY rod.id_rcv_detail ASC";
 
         $stmtItems = $conn->prepare($sqlItems);
         $stmtItems->bind_param("ii", $rcvHeader['id_po'], $idRcv);
@@ -69,12 +70,10 @@ try {
         $damagedItems = [];
 
         while ($item = $resItems->fetch_assoc()) {
-            $item['is_damaged'] = ($item['status_qc'] == 0);
-            $item['suggested_reason'] = $item['is_damaged'] ? 'RUSAK_FISIK' : '';
+            $item['is_damaged'] = true;
+            $item['suggested_reason'] = 'RUSAK_FISIK';
             $items[] = $item;
-            if ($item['is_damaged']) {
-                $damagedItems[] = $item;
-            }
+            $damagedItems[] = $item;
         }
         $stmtItems->close();
 
@@ -88,35 +87,43 @@ try {
         ]);
         exit;
 
-    } else {
         // Ambil daftar dokumen receiving untuk dropdown / modal selector
-        $where = "WHERE 1=1";
+        // HANYA menampilkan dokumen receiving yang memiliki barang cacat/rusak (status_qc = 0)
+        // dan BELUM PERNAH dibuatkan Retur PO (atau status bukan DIBATALKAN)
+        $onlyDamaged = !isset($_GET['all']) || $_GET['all'] != '1';
+        $where = "WHERE r.id_rcv NOT IN (SELECT id_rcv FROM retur_po WHERE status != 'DIBATALKAN')";
         $params = [];
         $types = "";
 
         if (!empty($q)) {
-            $where .= " AND (r.nomor_rcv LIKE ? OR po.nomor_po LIKE ? OR v.nama_perusahaan LIKE ? OR r.nomor_sj LIKE ?)";
+            $where .= " AND (r.nomor_rcv LIKE ? OR po.nomor_po LIKE ? OR v.nama_perusahaan LIKE ? OR r.nomor_sj LIKE ? OR b.nama_barang LIKE ?)";
             $search = "%{$q}%";
             $params[] = $search;
             $params[] = $search;
             $params[] = $search;
             $params[] = $search;
-            $types .= "ssss";
+            $params[] = $search;
+            $types .= "sssss";
         }
+
+        $having = $onlyDamaged ? "HAVING damaged_count > 0" : "";
 
         $sql = "SELECT r.id_rcv, r.nomor_rcv, r.tanggal_rcv, r.tanggal_diterima, r.nomor_sj,
                        po.id_po, po.nomor_po,
                        v.id_vendor, v.nama_perusahaan AS nama_vendor,
                        s.id_site, s.nama_site,
-                       COUNT(rod.id_rcv_detail) AS total_items,
-                       SUM(CASE WHEN rod.status_qc = 0 THEN 1 ELSE 0 END) AS damaged_count
+                       COUNT(DISTINCT rod.id_rcv_detail) AS total_items,
+                       SUM(CASE WHEN rod.status_qc = 0 THEN 1 ELSE 0 END) AS damaged_count,
+                       GROUP_CONCAT(DISTINCT CASE WHEN rod.status_qc = 0 THEN CONCAT(b.nama_barang, ' (', rod.qty, ' ', b.satuan, ')') ELSE NULL END SEPARATOR ', ') AS damaged_items_summary
                 FROM receiving_order r
                 JOIN purchase_order po ON r.id_po = po.id_po
                 JOIN vendor v ON po.id_vendor = v.id_vendor
                 JOIN site s ON po.id_site = s.id_site
                 LEFT JOIN receiving_order_detail rod ON r.id_rcv = rod.id_rcv
+                LEFT JOIN barang b ON rod.id_barang = b.id_barang
                 {$where}
                 GROUP BY r.id_rcv
+                {$having}
                 ORDER BY r.id_rcv DESC
                 LIMIT 50";
 

@@ -14,6 +14,44 @@ $user = requireAuth([ROLE_LOGISTIK, ROLE_ADMIN, ROLE_MANAGER]);
 $pageTitle = 'Buat Retur PO';
 $pageHeading = 'Formulir Pengajuan Retur PO';
 
+// Ambil daftar Dokumen Penerimaan RCV yang memiliki barang rusak (status_qc = 0) dan BELUM pernah dibuatkan Retur PO
+$rcvOptions = [];
+$qRcv = "SELECT r.id_rcv, r.nomor_rcv, r.nomor_sj, po.id_po, po.nomor_po, 
+                v.id_vendor, v.nama_perusahaan AS nama_vendor, 
+                s.id_site, s.nama_site,
+                COUNT(rod.id_rcv_detail) AS damaged_count,
+                GROUP_CONCAT(CONCAT(b.nama_barang, ' (', rod.qty, ' ', b.satuan, ')') SEPARATOR ', ') AS damaged_items_summary
+         FROM receiving_order r
+         JOIN purchase_order po ON r.id_po = po.id_po
+         JOIN vendor v ON po.id_vendor = v.id_vendor
+         JOIN site s ON po.id_site = s.id_site
+         JOIN receiving_order_detail rod ON r.id_rcv = rod.id_rcv
+         JOIN barang b ON rod.id_barang = b.id_barang
+         WHERE rod.status_qc = 0 
+           AND r.id_rcv NOT IN (SELECT id_rcv FROM retur_po WHERE status != 'DIBATALKAN')
+         GROUP BY r.id_rcv
+         ORDER BY r.id_rcv DESC";
+$resRcv = $conn->query($qRcv);
+if ($resRcv) {
+    while ($row = $resRcv->fetch_assoc()) {
+        $rcvOptions[] = $row;
+    }
+}
+
+// Ambil daftar karyawan dengan level jabatan 1 dan 2 untuk Approval
+$approvers = [];
+$qApprovers = "SELECT k.id_karyawan, k.nama_karyawan, j.nama_jabatan, j.level 
+               FROM karyawan k 
+               JOIN jabatan j ON k.id_jabatan = j.id_jabatan 
+               WHERE j.level IN (1, 2) AND k.aktif = 1
+               ORDER BY j.level ASC, k.nama_karyawan ASC";
+$resApprovers = $conn->query($qApprovers);
+if ($resApprovers) {
+    while ($row = $resApprovers->fetch_assoc()) {
+        $approvers[] = $row;
+    }
+}
+
 // Include Header & Layout Components
 require_once __DIR__ . '/../../components/header.php';
 require_once __DIR__ . '/../../components/sidebar.php';
@@ -24,8 +62,7 @@ require_once __DIR__ . '/../../components/navbar.php';
     <!-- HEADER -->
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
         <div>
-            <h4 class="fw-bold text-dark mb-0">Pengajuan Retur Purchase Order (PO)</h4>
-            <p class="text-muted small mb-0">Formulir klaim pengembalian barang cacat / rusak ke pihak vendor rekanan.</p>
+            <h4 class="fw-bold text-dark mb-0">Retur Purchase Order (PO)</h4>
         </div>
         <div class="d-flex gap-2">
             <a href="<?= BASE_URL ?>/admin/pages/retur_po/index.php" class="btn btn-outline-secondary btn-sm px-3 shadow-sm">
@@ -34,40 +71,80 @@ require_once __DIR__ . '/../../components/navbar.php';
         </div>
     </div>
 
-    <!-- FORM DUA TAB -->
+    <!-- FORM 5 TAB -->
     <div class="card border-0 shadow-sm rounded-3">
         <div class="card-header bg-white border-bottom p-0">
             <ul class="nav nav-tabs card-header-tabs m-0 px-3" id="returTab" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link active fw-semibold py-3 px-4" id="tab-info-btn" data-bs-toggle="tab" data-bs-target="#tab-info" type="button" role="tab">
-                        <i class="bi bi-file-earmark-text me-2"></i>1. Informasi Dokumen &amp; Vendor
+                    <button class="nav-link active fw-semibold py-3 px-3" id="tab-info-btn" data-bs-toggle="tab" data-bs-target="#tab-info" type="button" role="tab">
+                        <i class="bi bi-file-earmark-text me-1 text-primary"></i> 1. Informasi Utama
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link fw-semibold py-3 px-4" id="tab-items-btn" data-bs-toggle="tab" data-bs-target="#tab-items" type="button" role="tab">
-                        <i class="bi bi-box-seam me-2"></i>2. Rincian Barang yang Diretur <span class="badge bg-danger ms-1" id="badgeItemCount">0</span>
+                    <button class="nav-link fw-semibold py-3 px-3" id="tab-vendor-btn" data-bs-toggle="tab" data-bs-target="#tab-vendor" type="button" role="tab">
+                        <i class="bi bi-building me-1 text-primary"></i> 2. Vendor
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold py-3 px-3" id="tab-pengiriman-btn" data-bs-toggle="tab" data-bs-target="#tab-pengiriman" type="button" role="tab">
+                        <i class="bi bi-truck me-1 text-primary"></i> 3. Pengiriman
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold py-3 px-3" id="tab-items-btn" data-bs-toggle="tab" data-bs-target="#tab-items" type="button" role="tab">
+                        <i class="bi bi-box-seam me-1 text-primary"></i> 4. Rincian Barang <span class="badge bg-danger ms-1" id="badgeItemCount">0</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold py-3 px-3" id="tab-persetujuan-btn" data-bs-toggle="tab" data-bs-target="#tab-persetujuan" type="button" role="tab">
+                        <i class="bi bi-check2-circle me-1 text-primary"></i> 5. Persetujuan
                     </button>
                 </li>
             </ul>
         </div>
 
         <div class="card-body p-4">
-            <form id="formRetur" onsubmit="submitRetur(event)">
+            <form id="formRetur" onsubmit="event.preventDefault();">
                 <div class="tab-content" id="returTabContent">
                     
-                    <!-- TAB 1: INFORMASI DOKUMEN -->
+                    <!-- TAB 1: INFORMASI UTAMA -->
                     <div class="tab-pane fade show active" id="tab-info" role="tabpanel">
                         <div class="row g-4">
                             <!-- Kolom Kiri: Sumber Dokumen -->
                             <div class="col-lg-6">
                                 <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-link-45deg text-primary me-2"></i>Dokumen Asal Penerimaan (Receiving)</h6>
                                 
-                                <div class="mb-3">
-                                    <label class="form-label small fw-semibold text-dark">Pilih Dokumen Penerimaan (RCV) <span class="text-danger">*</span></label>
-                                    <select class="form-select form-select-sm" id="selectRcv" onchange="onRcvSelected()" required>
-                                        <option value="">-- Pilih Dokumen Penerimaan Barang --</option>
-                                    </select>
-                                    <div class="form-text small" id="rcvHelp">Pilih nomor penerimaan barang yang memiliki barang cacat/rusak.</div>
+                                <div class="mb-3 position-relative" id="rcvSearchableWrapper">
+                                    <label class="form-label small fw-semibold text-dark">
+                                        Pilih Dokumen Penerimaan (RCV) <span class="text-danger">*</span>
+                                    </label>
+                                    
+                                    <!-- Hidden Input for Form Submission & State -->
+                                    <input type="hidden" id="selectRcv" name="id_rcv" required>
+
+                                    <!-- Trigger Search Box (Searchable UI) -->
+                                    <div class="rcv-custom-select d-flex align-items-center justify-content-between p-2 px-3 border rounded-3 bg-white cursor-pointer shadow-sm" id="rcvTriggerBox" onclick="toggleRcvDropdown(event)">
+                                        <div id="rcvSelectedDisplay" class="text-truncate me-2">
+                                            <span class="text-muted"><i class="bi bi-search me-2 text-primary"></i>Cari Dokumen Penerimaan (No. RCV, PO, Vendor)...</span>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-1">
+                                            <button type="button" class="btn btn-sm btn-link text-danger p-0 me-1" id="rcvClearBtn" onclick="clearRcvSelection(event)" style="display: none;" title="Hapus Pilihan">
+                                                <i class="bi bi-x-circle-fill fs-6"></i>
+                                            </button>
+                                            <i class="bi bi-chevron-down text-muted small transition-chevron" id="rcvChevronIcon"></i>
+                                        </div>
+                                    </div>
+
+                                    <!-- Searchable Dropdown Menu -->
+                                    <div class="rcv-dropdown-menu shadow-lg border rounded-3 p-2 bg-white" id="rcvDropdownMenu" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 1050;">
+                                        <div class="input-group input-group-sm mb-2">
+                                            <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                                            <input type="text" class="form-control form-control-sm border-start-0" id="rcvSearchInput" placeholder="Ketik No. RCV, No. PO, Vendor, atau Barang..." autocomplete="off" oninput="filterRcvList()">
+                                        </div>
+                                        <div class="overflow-auto" id="rcvOptionsContainer" style="max-height: 260px;">
+                                            <!-- Options populated dynamically by JS -->
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div class="row g-3">
@@ -81,82 +158,164 @@ require_once __DIR__ . '/../../components/navbar.php';
                                         <input type="text" class="form-control form-control-sm bg-light" id="displayNoSj" placeholder="-" readonly>
                                     </div>
                                 </div>
+                            </div>
 
-                                <div class="mt-3">
+                            <!-- Kolom Kanan: Detail Lokasi & Waktu Retur -->
+                            <div class="col-lg-6">
+                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-geo-alt text-primary me-2"></i>Lokasi &amp; Waktu Pengiriman</h6>
+
+                                <div class="mb-3">
                                     <label class="form-label small fw-semibold text-muted">Site / Lokasi Fisik Barang</label>
                                     <input type="text" class="form-control form-control-sm bg-light" id="displaySite" placeholder="-" readonly>
                                     <input type="hidden" id="inputSiteId">
                                 </div>
 
-                                <div class="mt-3">
-                                    <label class="form-label small fw-semibold text-dark">Tanggal Pengajuan Retur <span class="text-danger">*</span></label>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold text-dark">Tanggal Kirim Retur <span class="text-danger">*</span></label>
                                     <input type="date" class="form-control form-control-sm" id="inputTanggalRetur" value="<?= date('Y-m-d') ?>" required>
                                 </div>
-                            </div>
 
-                            <!-- Kolom Kanan: Vendor & Skema Kompensasi -->
-                            <div class="col-lg-6">
-                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-building text-primary me-2"></i>Informasi Vendor &amp; Skema Klaim</h6>
-
-                                <div class="mb-3">
-                                    <label class="form-label small fw-semibold text-muted">Vendor Rekanan</label>
-                                    <input type="text" class="form-control form-control-sm bg-light fw-bold text-dark" id="displayVendor" placeholder="-" readonly>
-                                    <input type="hidden" id="inputVendorId">
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label small fw-semibold text-dark">PIC Vendor yang Dihubungi <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control form-control-sm" id="inputPicVendor" placeholder="Nama sales/kontak person vendor" required>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label small fw-semibold text-dark">Skema Kompensasi yang Disepakati <span class="text-danger">*</span></label>
-                                    <div class="d-flex gap-3 mt-1">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="kompensasi" id="kompTukarUnit" value="1" checked>
-                                            <label class="form-check-label small fw-semibold" for="kompTukarUnit">
-                                                <i class="bi bi-arrow-repeat text-primary me-1"></i> Tukar Unit (Ganti Barang Baru)
-                                            </label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="kompensasi" id="kompPotongTagihan" value="0">
-                                            <label class="form-check-label small fw-semibold" for="kompPotongTagihan">
-                                                <i class="bi bi-cash-coin text-warning-emphasis me-1"></i> Potong Tagihan (Credit Note)
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div class="form-text small">Tukar Unit: Vendor mengirimkan barang baru. Potong Tagihan: Mengurangi nominal pelunasan invoice.</div>
-                                </div>
-
-                                <div class="row g-2">
-                                    <div class="col-md-6">
-                                        <label class="form-label small fw-semibold text-muted">No. SJ Pengembalian (Opsional)</label>
-                                        <input type="text" class="form-control form-control-sm" id="inputNoSjRetur" placeholder="SJ-RET-XXXX">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label small fw-semibold text-muted">No. Nota Retur Pajak (Opsional)</label>
-                                        <input type="text" class="form-control form-control-sm" id="inputNoNotaPajak" placeholder="Untuk e-Faktur Pajak">
-                                    </div>
-                                </div>
-
-                                <div class="mt-3">
-                                    <label class="form-label small fw-semibold text-muted">Keterangan / Catatan Tambahan</label>
-                                    <textarea class="form-control form-control-sm" id="inputKeterangan" rows="2" placeholder="Catatan pengembalian untuk pihak vendor..."></textarea>
+                                <div>
+                                    <label class="form-label small fw-semibold text-muted">Keterangan / Catatan Tambahan Dokumen</label>
+                                    <textarea class="form-control form-control-sm" id="inputKeterangan" rows="2" placeholder="Catatan pengembalian atau perihal khusus..."></textarea>
                                 </div>
                             </div>
                         </div>
 
                         <div class="d-flex justify-content-end mt-4 pt-3 border-top">
-                            <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold" onclick="goToTab2()">
+                            <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold" onclick="goToTab('tab-vendor-btn')">
+                                Lanjut ke Vendor <i class="bi bi-arrow-right ms-1"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: VENDOR -->
+                    <div class="tab-pane fade" id="tab-vendor" role="tabpanel">
+                        <div class="row g-4">
+                            <!-- Kolom Kiri: Info Vendor Rekanan -->
+                            <div class="col-lg-6">
+                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-building text-primary me-2"></i>Identitas Vendor Rekanan</h6>
+
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold text-muted">Nama Perusahaan Vendor</label>
+                                    <input type="text" class="form-control form-control-sm bg-light fw-bold text-dark" id="displayVendor" placeholder="-" readonly>
+                                    <input type="hidden" id="inputVendorId">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold text-muted">Telepon / Kontak Vendor</label>
+                                    <input type="text" class="form-control form-control-sm bg-light" id="displayTeleponVendor" placeholder="-" readonly>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold text-dark">PIC Vendor yang Dihubungi <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control form-control-sm" id="inputPicVendor" placeholder="Nama sales / perwakilan kontak vendor" required>
+                                </div>
+                            </div>
+
+                            <!-- Kolom Kanan: Skema Kompensasi -->
+                            <div class="col-lg-6">
+                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-arrow-repeat text-primary me-2"></i>Skema Kompensasi Retur</h6>
+
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold text-dark mb-2">Skema yang Disepakati Bersama Vendor <span class="text-danger">*</span></label>
+                                    <div class="d-flex flex-column gap-2">
+                                        <div class="form-check p-3 border rounded-3 bg-light">
+                                            <input class="form-check-input ms-0 me-2" type="radio" name="kompensasi" id="kompTukarUnit" value="1" checked>
+                                            <label class="form-check-label fw-semibold text-dark" for="kompTukarUnit">
+                                                Tukar Unit (Ganti Barang Baru)
+                                            </label>
+                                            <div class="small text-muted ms-4">Vendor akan mengirimkan barang baru yang sesuai sebagai pengganti barang rusak.</div>
+                                        </div>
+                                        <div class="form-check p-3 border rounded-3 bg-light">
+                                            <input class="form-check-input ms-0 me-2" type="radio" name="kompensasi" id="kompPotongTagihan" value="0">
+                                            <label class="form-check-label fw-semibold text-dark" for="kompPotongTagihan">
+                                                Potong Tagihan (Credit Note / Pemotongan Invoice)
+                                            </label>
+                                            <div class="small text-muted ms-4">Nilai barang yang diretur akan dipotong langsung dari tagihan/pembayaran PO.</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end mt-4 pt-3 border-top">
+                            <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold" onclick="goToTab('tab-pengiriman-btn')">
+                                Lanjut ke Pengiriman <i class="bi bi-arrow-right ms-1"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: PENGIRIMAN -->
+                    <div class="tab-pane fade" id="tab-pengiriman" role="tabpanel">
+                        <div class="row g-4">
+                            <!-- Kolom Kiri: Metode & Biaya Pengiriman -->
+                            <div class="col-lg-6">
+                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-truck text-primary me-2"></i>Metode &amp; Armada Pengiriman</h6>
+
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold text-dark mb-2">Penanggung Jawab / Jalur Pengiriman <span class="text-danger">*</span></label>
+                                    <div class="d-flex flex-column gap-2">
+                                        <div class="form-check p-2 px-3 border rounded-3 bg-light">
+                                            <input class="form-check-input" type="radio" name="pengiriman_retur" id="kirimVendor" value="Vendor" checked>
+                                            <label class="form-check-label fw-semibold text-dark" for="kirimVendor">
+                                                Vendor (Dijemput / Diambil oleh Vendor)
+                                            </label>
+                                        </div>
+                                        <div class="form-check p-2 px-3 border rounded-3 bg-light">
+                                            <input class="form-check-input" type="radio" name="pengiriman_retur" id="kirimExpedisi" value="Expedisi">
+                                            <label class="form-check-label fw-semibold text-dark" for="kirimExpedisi">
+                                                Expedisi (Jasa Ekspedisi / Cargo / Kurir Luar)
+                                            </label>
+                                        </div>
+                                        <div class="form-check p-2 px-3 border rounded-3 bg-light">
+                                            <input class="form-check-input" type="radio" name="pengiriman_retur" id="kirimInternal" value="Internal">
+                                            <label class="form-check-label fw-semibold text-dark" for="kirimInternal">
+                                                Internal (Diantar oleh Armada Internal Logistik)
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold text-dark">Biaya Pengiriman Retur (IDR)</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-light fw-bold text-muted">Rp</span>
+                                        <input type="number" class="form-control form-control-sm" id="inputBiayaRetur" value="0" min="0" step="500" placeholder="0">
+                                    </div>
+                                    <div class="form-text small text-muted">Isi 0 jika ongkos kirim ditanggung oleh pihak vendor rekanan.</div>
+                                </div>
+                            </div>
+
+                            <!-- Kolom Kanan: Dokumen Jalan & Pajak -->
+                            <div class="col-lg-6">
+                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-card-checklist text-primary me-2"></i>Dokumen Surat Jalan &amp; Faktur</h6>
+
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold text-muted">No. Surat Jalan Pengembalian / Retur (Opsional)</label>
+                                    <input type="text" class="form-control form-control-sm" id="inputNoSjRetur" placeholder="Contoh: SJ-RET-2026-001">
+                                    <div class="form-text small text-muted">Nomor surat jalan fisik saat barang dikirim keluar dari gudang.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold text-muted">No. Nota Retur Pajak (Opsional)</label>
+                                    <input type="text" class="form-control form-control-sm" id="inputNoNotaPajak" placeholder="Untuk e-Faktur Pembatalan Pajak">
+                                    <div class="form-text small text-muted">Nomor nota retur resmi untuk pelaporan SPT PPN bila ada pemotongan faktur.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end mt-4 pt-3 border-top">
+                            <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold" onclick="goToTab('tab-items-btn')">
                                 Lanjut ke Rincian Barang <i class="bi bi-arrow-right ms-1"></i>
                             </button>
                         </div>
                     </div>
 
-                    <!-- TAB 2: RINCIAN BARANG -->
+                    <!-- TAB 4: RINCIAN BARANG -->
                     <div class="tab-pane fade" id="tab-items" role="tabpanel">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="fw-bold text-dark mb-0"><i class="bi bi-list-check text-primary me-2"></i>Daftar Material yang Dikembalikan</h6>
+                            <h6 class="fw-bold text-dark mb-0"><i class="bi bi-list-check text-primary me-2"></i>Daftar Material yang Diretur</h6>
                             <button type="button" class="btn btn-outline-primary btn-sm" onclick="openAddItemModal()">
                                 <i class="bi bi-plus-lg me-1"></i> Tambah Item Lain dari RCV
                             </button>
@@ -166,20 +325,18 @@ require_once __DIR__ . '/../../components/navbar.php';
                             <table class="table table-bordered align-middle mb-0" id="tableReturItems">
                                 <thead class="table-light text-muted small text-uppercase">
                                     <tr>
-                                        <th style="width: 40px;" class="text-center">No</th>
-                                        <th style="min-width: 200px;">Nama Barang</th>
-                                        <th style="width: 110px;" class="text-center">Qty Retur</th>
-                                        <th style="width: 80px;" class="text-center">Satuan</th>
-                                        <th style="width: 130px;" class="text-end">Harga Satuan</th>
-                                        <th style="width: 130px;" class="text-end">Subtotal</th>
-                                        <th style="min-width: 160px;">Alasan Retur</th>
-                                        <th style="min-width: 140px;">Keterangan &amp; Foto</th>
-                                        <th style="width: 50px;" class="text-center">Aksi</th>
+                                        <th style="width: 45px;" class="text-center">No</th>
+                                        <th style="min-width: 250px;">Nama Barang</th>
+                                        <th style="width: 130px;" class="text-center">Qty Retur</th>
+                                        <th style="width: 90px;" class="text-center">Satuan</th>
+                                        <th style="width: 140px;" class="text-end">Harga Satuan</th>
+                                        <th style="width: 150px;" class="text-end">Subtotal</th>
+                                        <th style="width: 100px;" class="text-center">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody id="itemsBody">
                                     <tr>
-                                        <td colspan="9" class="text-center py-5 text-muted">
+                                        <td colspan="7" class="text-center py-5 text-muted">
                                             <i class="bi bi-box-arrow-in-left fs-3 d-block mb-2 text-secondary"></i>
                                             Silakan pilih Dokumen Penerimaan (RCV) pada Tab 1 terlebih dahulu.
                                         </td>
@@ -209,19 +366,41 @@ require_once __DIR__ . '/../../components/navbar.php';
                             </div>
                         </div>
 
-                        <!-- ACTION BUTTONS -->
-                        <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
-                            <button type="button" class="btn btn-outline-secondary btn-sm px-3" onclick="goToTab1()">
-                                <i class="bi bi-arrow-left me-1"></i> Kembali ke Tab 1
+                        <div class="d-flex justify-content-end mt-4 pt-3 border-top">
+                            <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold" onclick="goToTab('tab-persetujuan-btn')">
+                                Lanjut ke Persetujuan <i class="bi bi-arrow-right ms-1"></i>
                             </button>
-                            <div class="d-flex gap-2">
-                                <button type="button" class="btn btn-outline-primary btn-sm px-3" onclick="submitReturForm('DRAFT')">
-                                    <i class="bi bi-save me-1"></i> Simpan Draft
-                                </button>
-                                <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold" onclick="submitReturForm('MENUNGGU KONFIRMASI VENDOR')">
-                                    <i class="bi bi-send-check me-1"></i> Terbitkan Retur PO
-                                </button>
+                        </div>
+                    </div>
+
+                    <!-- TAB 5: PERSETUJUAN -->
+                    <div class="tab-pane fade" id="tab-persetujuan" role="tabpanel">
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-shield-check text-success me-2"></i>Pejabat Penyetuju (Approval)</h6>
+
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold text-dark">Pilih Pejabat yang Menyetujui Retur <span class="text-danger">*</span></label>
+                                    <select class="form-select form-select-sm" id="selectKaryawanApproved" required>
+                                        <option value="">-- Pilih Pejabat Penyetuju --</option>
+                                        <?php foreach ($approvers as $app): ?>
+                                            <option value="<?= $app['id_karyawan'] ?>" <?= ($app['id_karyawan'] == ($user['id_karyawan'] ?? 0)) ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($app['nama_karyawan']) ?> &bull; <?= htmlspecialchars($app['nama_jabatan']) ?> (Level <?= $app['level'] ?>)
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
                             </div>
+                        </div>
+
+                        <!-- ACTION BUTTONS -->
+                        <div class="d-flex justify-content-end align-items-center gap-2 mt-4 pt-3 border-top">
+                            <button type="button" class="btn btn-outline-primary btn-sm px-3" onclick="submitReturForm('DRAFT')">
+                                <i class="bi bi-save me-1"></i> Simpan Draft
+                            </button>
+                            <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold" onclick="submitReturForm('MENUNGGU KONFIRMASI VENDOR')">
+                                <i class="bi bi-send-check me-1"></i> Terbitkan Retur PO
+                            </button>
                         </div>
                     </div>
 
@@ -230,6 +409,104 @@ require_once __DIR__ . '/../../components/navbar.php';
         </div>
     </div>
 </div>
+
+<!-- STYLES UNTUK SELECT2 CUSTOM SEARCHABLE DROPDOWN -->
+<style>
+.select2-custom-box {
+    min-height: 38px;
+    background-color: #ffffff;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    padding: 0.35rem 0.75rem;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+.select2-custom-box:hover {
+    border-color: #86b7fe;
+}
+.select2-custom-box.is-open {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+}
+.btn-clear-select2 {
+    background: transparent;
+    border: none;
+    padding: 0 4px;
+    color: #94a3b8;
+    font-size: 1.1rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    border-radius: 50%;
+}
+.btn-clear-select2:hover {
+    color: #ef4444;
+}
+.transition-icon {
+    transition: transform 0.2s ease;
+}
+.select2-custom-box.is-open .transition-icon {
+    transform: rotate(180deg);
+}
+.select2-custom-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1050;
+    margin-top: 4px;
+    background: #ffffff;
+}
+.select2-search-box .form-control:focus {
+    box-shadow: none;
+}
+.rcv-option-card {
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    background: #ffffff;
+    transition: all 0.15s ease;
+    cursor: pointer;
+    margin-bottom: 6px;
+}
+.rcv-option-card:hover {
+    background-color: #f8fafc;
+    border-color: #93c5fd;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+}
+.rcv-option-card.active {
+    background-color: #eff6ff;
+    border-color: #3b82f6;
+}
+
+/* Modal Detail Tabs Sesuai Request Order (Card Folder Tabs) */
+#modalDetailTab {
+    border-bottom: 0;
+    margin-bottom: -1px;
+}
+#modalDetailTab .nav-link {
+    border: 1px solid transparent;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    color: #334155;
+    background: transparent;
+    transition: all 0.15s ease;
+    margin-bottom: -1px;
+    padding: 0.5rem 1rem;
+}
+#modalDetailTab .nav-link:hover {
+    border-color: #e2e8f0 #e2e8f0 transparent;
+    color: #0d6efd;
+}
+#modalDetailTab .nav-link.active {
+    color: #0f172a !important;
+    background-color: #ffffff !important;
+    border-color: #dee2e6 #dee2e6 #ffffff !important;
+    font-weight: 700 !important;
+    border-bottom: 1px solid #ffffff !important;
+}
+</style>
 
 <!-- MODAL TAMBAH ITEM LAIN DARI RCV -->
 <div class="modal fade" id="modalAddOtherItem" tabindex="-1" aria-hidden="true">
@@ -248,33 +525,257 @@ require_once __DIR__ . '/../../components/navbar.php';
     </div>
 </div>
 
+<!-- MODAL INFORMASI DETAIL (GAYA UI REQUEST ORDER POPUP) -->
+<div class="modal fade" id="modalClaimDetail" tabindex="-1" aria-labelledby="modalClaimDetailLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <!-- MODAL HEADER DENGAN TAB INTEGRATED SEPERTI REQUEST ORDER -->
+            <div class="modal-header bg-white pt-3 pb-0 px-4 border-bottom flex-column align-items-stretch">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-file-earmark-text-fill text-primary fs-5"></i>
+                        <h5 class="modal-title fw-bold text-dark font-monospace mb-0" id="modalItemNamaHeader">
+                            Informasi Detail
+                        </h5>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace" id="modalItemKodeHeader">-</span>
+                        <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                </div>
+
+                <!-- Nav Tabs Modal Sesuai Gaya Request Order -->
+                <ul class="nav nav-tabs border-bottom-0" id="modalDetailTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active fw-bold text-dark small py-2 px-3" id="tab-modal-info-btn" data-bs-toggle="tab" data-bs-target="#tab-modal-info" type="button" role="tab">
+                            <i class="bi bi-file-earmark-text me-1 text-primary"></i> 1. Informasi Kerusakan
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold text-dark small py-2 px-3" id="tab-modal-foto-btn" data-bs-toggle="tab" data-bs-target="#tab-modal-foto" type="button" role="tab">
+                            <i class="bi bi-image me-1 text-primary"></i> 2. Bukti Foto
+                            <span class="badge bg-primary text-white ms-1" id="modalFotoBadge" style="display:none;">1</span>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- MODAL BODY DENGAN 2 TAB -->
+            <div class="modal-body p-4 bg-light">
+                <input type="hidden" id="modalItemIndex">
+
+                <div class="tab-content" id="modalDetailTabContent">
+                    
+                    <!-- TAB 1: RINCIAN KERUSAKAN -->
+                    <div class="tab-pane fade show active" id="tab-modal-info" role="tabpanel">
+                        <div class="card bg-white border-0 shadow-sm rounded-3 p-3">
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold text-dark">Alasan Pengembalian / Retur <span class="text-danger">*</span></label>
+                                <select class="form-select form-select-sm" id="modalItemAlasan">
+                                    <option value="RUSAK_FISIK">Rusak Fisik / Pengiriman</option>
+                                    <option value="CACAT_PRODUKSI">Cacat Pabrik / Vendor</option>
+                                    <option value="SALAH_SPESIFIKASI">Salah Spesifikasi</option>
+                                    <option value="KURANG_PENGIRIMAN">Kurang Kuantitas</option>
+                                    <option value="KADALUARSA_EXP">Kadaluarsa / Expired</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="form-label small fw-semibold text-dark">Keterangan / Rincian Kerusakan</label>
+                                <textarea class="form-control form-control-sm" id="modalItemKet" rows="4" placeholder="Deskripsikan kondisi cacat, pecah, retak, atau kerusakan fisik barang..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: BUKTI FOTO -->
+                    <div class="tab-pane fade" id="tab-modal-foto" role="tabpanel">
+                        <div class="card bg-white border-0 shadow-sm rounded-3 p-3">
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold text-dark mb-1">Unggah Foto Bukti Fisik Kerusakan</label>
+                                <input type="file" class="form-control form-control-sm" id="modalItemPhotoInput" accept=".jpg,.jpeg,image/jpeg" onchange="previewModalPhoto(this)">
+                                <div class="form-text small text-muted">Format yang didukung: JPG / JPEG (Maks 2MB).</div>
+                            </div>
+
+                            <!-- PREVIEW CONTAINER SEBELUM UPLOAD / DISIMPAN -->
+                            <div class="border rounded-3 p-3 bg-light text-center" id="modalPhotoPreviewWrapper" style="display: none;">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="badge bg-secondary-subtle text-secondary small text-truncate" id="modalPhotoName" style="max-width: 260px;">foto.jpg</span>
+                                    <button type="button" class="btn btn-outline-danger btn-sm py-0 px-2" onclick="removeModalPhoto()">
+                                        <i class="bi bi-trash me-1"></i>Hapus Foto
+                                    </button>
+                                </div>
+                                <div class="d-flex justify-content-center">
+                                    <img id="modalPhotoPreviewImg" src="" alt="Pratinjau Foto Kerusakan" class="img-fluid rounded border shadow-sm" style="max-height: 240px; object-fit: contain; background: #fff;">
+                                </div>
+                            </div>
+
+                            <div class="border rounded-3 p-4 bg-light text-center text-muted" id="modalPhotoEmptyState">
+                                <i class="bi bi-image fs-1 d-block mb-1 text-secondary"></i>
+                                <div class="small">Belum ada foto yang dipilih. Silakan pilih file foto di atas untuk melihat pratinjau.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- MODAL FOOTER SEPERTI REQUEST ORDER -->
+            <div class="modal-footer bg-white py-3 px-4 border-top d-flex justify-content-between align-items-center">
+                <button type="button" class="btn btn-outline-secondary btn-sm px-3" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold" onclick="saveClaimModal()">
+                    <i class="bi bi-check2 me-1"></i> Simpan Keterangan
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 let currentRcvData = null;
 let returItems = [];
 let ratePajak = 0;
+let rcvLookupList = <?= json_encode($rcvOptions, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+let selectedRcvId = null;
 
 document.addEventListener('DOMContentLoaded', () => {
-    loadRcvOptions();
+    renderRcvOptions(rcvLookupList);
+    if (rcvLookupList && rcvLookupList.length === 1) {
+        selectRcvOption(rcvLookupList[0].id_rcv);
+    }
 });
 
-async function loadRcvOptions() {
-    try {
-        const res = await apiRequest('/api/retur_po/receiving_lookup.php', 'GET');
-        if (res && res.success && res.data) {
-            const select = document.getElementById('selectRcv');
-            select.innerHTML = '<option value="">-- Pilih Dokumen Penerimaan Barang --</option>';
-            res.data.forEach(item => {
-                const damagedBadge = item.damaged_count > 0 ? ` [ ⚠️ ${item.damaged_count} Barang Cacat ]` : '';
-                select.innerHTML += `<option value="${item.id_rcv}">${item.nomor_rcv} — PO: ${item.nomor_po} (${item.nama_vendor})${damagedBadge}</option>`;
-            });
-        }
-    } catch (e) {
-        console.error('Gagal memuat opsi RCV:', e);
+// Click outside untuk menutup dropdown searchable
+document.addEventListener('click', (e) => {
+    const wrapper = document.getElementById('rcvSearchableWrapper');
+    if (wrapper && !wrapper.contains(e.target)) {
+        closeRcvDropdown();
+    }
+});
+
+function toggleRcvDropdown(e) {
+    if (e) e.stopPropagation();
+    const menu = document.getElementById('rcvDropdownMenu');
+    if (!menu) return;
+    if (menu.style.display === 'none' || !menu.style.display) {
+        openRcvDropdown();
+    } else {
+        closeRcvDropdown();
     }
 }
 
-async function onRcvSelected() {
-    const idRcv = document.getElementById('selectRcv').value;
+function openRcvDropdown() {
+    const menu = document.getElementById('rcvDropdownMenu');
+    const trigger = document.getElementById('rcvTriggerBox');
+    if (!menu || !trigger) return;
+    menu.style.display = 'block';
+    trigger.classList.add('border-primary', 'shadow');
+    const searchInput = document.getElementById('rcvSearchInput');
+    if (searchInput) {
+        setTimeout(() => searchInput.focus(), 50);
+    }
+}
+
+function closeRcvDropdown() {
+    const menu = document.getElementById('rcvDropdownMenu');
+    const trigger = document.getElementById('rcvTriggerBox');
+    if (menu) menu.style.display = 'none';
+    if (trigger) trigger.classList.remove('border-primary', 'shadow');
+}
+
+function filterRcvList() {
+    const q = (document.getElementById('rcvSearchInput').value || '').toLowerCase().trim();
+    if (!q) {
+        renderRcvOptions(rcvLookupList);
+        return;
+    }
+
+    const filtered = rcvLookupList.filter(item => {
+        const noRcv = (item.nomor_rcv || '').toLowerCase();
+        const noPo = (item.nomor_po || '').toLowerCase();
+        const vendor = (item.nama_vendor || '').toLowerCase();
+        const sj = (item.nomor_sj || '').toLowerCase();
+        const site = (item.nama_site || '').toLowerCase();
+        const damaged = (item.damaged_items_summary || '').toLowerCase();
+        return noRcv.includes(q) || noPo.includes(q) || vendor.includes(q) || sj.includes(q) || site.includes(q) || damaged.includes(q);
+    });
+
+    renderRcvOptions(filtered);
+}
+
+function renderRcvOptions(list) {
+    const container = document.getElementById('rcvOptionsContainer');
+    if (!container) return;
+
+    if (!list || list.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4 text-muted small">
+                <i class="bi bi-box2-check fs-2 text-secondary d-block mb-1"></i>
+                Tidak ada dokumen penerimaan yang tersedia untuk retur.
+            </div>`;
+        return;
+    }
+
+    let html = '';
+    list.forEach(item => {
+        const isSelected = (selectedRcvId == item.id_rcv);
+        const damagedSummary = item.damaged_items_summary 
+            ? `<div class="small mt-1 p-1 px-2 rounded bg-warning-subtle text-warning-emphasis border border-warning-subtle text-truncate"><strong>Rusak:</strong> ${escapeHtml(item.damaged_items_summary)}</div>` 
+            : '';
+
+        html += `
+            <div class="rcv-item-card p-2 px-3 rounded-2 border mb-1 cursor-pointer ${isSelected ? 'active-rcv' : ''}" onclick="selectRcvOption(${item.id_rcv})">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <div>
+                        <span class="badge bg-primary-subtle text-primary font-monospace fw-bold me-1">${escapeHtml(item.nomor_rcv)}</span>
+                        <span class="badge bg-light text-dark border font-monospace me-1">PO: ${escapeHtml(item.nomor_po)}</span>
+                    </div>
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle">${item.damaged_count || 1} Rusak</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center small text-dark">
+                    <span class="fw-bold text-dark text-truncate me-2"><i class="bi bi-building text-muted me-1"></i>${escapeHtml(item.nama_vendor || '-')}</span>
+                    <span class="text-muted text-nowrap"><i class="bi bi-geo-alt text-muted me-1"></i>${escapeHtml(item.nama_site || '-')}</span>
+                </div>
+                ${damagedSummary}
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+function selectRcvOption(idRcv) {
+    selectedRcvId = idRcv;
+    document.getElementById('selectRcv').value = idRcv;
+    closeRcvDropdown();
+
+    const selectedItem = rcvLookupList.find(x => x.id_rcv == idRcv);
+    if (selectedItem) {
+        document.getElementById('rcvSelectedDisplay').innerHTML = `
+            <div class="d-flex align-items-center flex-wrap gap-1">
+                <span class="badge bg-primary font-monospace fw-bold">${escapeHtml(selectedItem.nomor_rcv)}</span>
+                <span class="badge bg-light text-dark border font-monospace">PO: ${escapeHtml(selectedItem.nomor_po)}</span>
+                <span class="fw-bold text-dark small ms-1">${escapeHtml(selectedItem.nama_vendor)}</span>
+                <span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-auto">${selectedItem.damaged_count || 1} Rusak</span>
+            </div>
+        `;
+        document.getElementById('rcvClearBtn').style.display = 'inline-block';
+    }
+
+    onRcvSelected(idRcv);
+}
+
+function clearRcvSelection(e) {
+    if (e) e.stopPropagation();
+    selectedRcvId = null;
+    document.getElementById('selectRcv').value = '';
+    document.getElementById('rcvSelectedDisplay').innerHTML = `<span class="text-muted"><i class="bi bi-search me-2 text-primary"></i>Cari Dokumen Penerimaan (No. RCV, PO, Vendor)...</span>`;
+    document.getElementById('rcvClearBtn').style.display = 'none';
+    resetRcvDisplay();
+    renderRcvOptions(rcvLookupList);
+}
+
+async function onRcvSelected(idRcvParam) {
+    const idRcv = idRcvParam || (document.getElementById('selectRcv') ? document.getElementById('selectRcv').value : null);
     if (!idRcv) {
         resetRcvDisplay();
         return;
@@ -286,7 +787,7 @@ async function onRcvSelected() {
             currentRcvData = res.data;
             const h = res.data.header;
 
-            // Populate Tab 1
+            // Populate Tab 1 & Tab 2
             document.getElementById('displayNoPo').value = h.nomor_po || '-';
             document.getElementById('inputPoId').value = h.id_po || '';
             document.getElementById('displayNoSj').value = h.nomor_sj || '-';
@@ -294,6 +795,7 @@ async function onRcvSelected() {
             document.getElementById('inputSiteId').value = h.id_site || '';
             document.getElementById('displayVendor').value = h.nama_vendor || '-';
             document.getElementById('inputVendorId').value = h.id_vendor || '';
+            document.getElementById('displayTeleponVendor').value = h.telepon_vendor || '-';
             document.getElementById('inputPicVendor').value = h.pic_vendor || '';
             ratePajak = parseInt(h.rate_pajak) || 0;
             document.getElementById('summaryRatePajak').textContent = ratePajak;
@@ -317,7 +819,6 @@ async function onRcvSelected() {
                     });
                 });
             } else if (res.data.items && res.data.items.length > 0) {
-                // Jika tidak ada QC rusak, masukkan item pertama sebagai default
                 const first = res.data.items[0];
                 returItems.push({
                     id_barang: first.id_barang,
@@ -351,9 +852,21 @@ function resetRcvDisplay() {
     document.getElementById('inputSiteId').value = '';
     document.getElementById('displayVendor').value = '-';
     document.getElementById('inputVendorId').value = '';
+    document.getElementById('displayTeleponVendor').value = '-';
     document.getElementById('inputPicVendor').value = '';
     ratePajak = 0;
     renderItemsTable();
+}
+
+function getReasonText(code) {
+    switch (code) {
+        case 'RUSAK_FISIK': return 'Rusak Fisik / Pengiriman';
+        case 'CACAT_PRODUKSI': return 'Cacat Pabrik / Vendor';
+        case 'SALAH_SPESIFIKASI': return 'Salah Spesifikasi';
+        case 'KURANG_PENGIRIMAN': return 'Kurang Kuantitas';
+        case 'KADALUARSA_EXP': return 'Kadaluarsa / Expired';
+        default: return code || 'Rusak Fisik';
+    }
 }
 
 function renderItemsTable() {
@@ -363,7 +876,7 @@ function renderItemsTable() {
     if (!returItems || returItems.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="9" class="text-center py-5 text-muted">
+                <td colspan="7" class="text-center py-5 text-muted">
                     <i class="bi bi-box-arrow-in-left fs-3 d-block mb-2 text-secondary"></i>
                     Belum ada material yang dipilih untuk diretur.
                 </td>
@@ -375,45 +888,161 @@ function renderItemsTable() {
     let html = '';
     returItems.forEach((item, idx) => {
         const subtotal = item.qty_retur * item.harga_satuan;
+        const hasPhotoDot = item.foto_base64 
+            ? '<span class="badge bg-info-subtle text-info border border-info-subtle ms-1" style="font-size:0.7rem;"><i class="bi bi-image"></i> Foto</span>' 
+            : '';
+
         html += `
         <tr>
             <td class="text-center text-muted fw-semibold">${idx + 1}</td>
             <td>
-                <div class="fw-bold text-dark">${item.nama_barang}</div>
-                <div class="font-monospace text-muted small">${item.kode_barang || '-'}</div>
-            </td>
-            <td>
-                <input type="number" step="any" min="0.01" max="${item.qty_max}" class="form-control form-control-sm text-center fw-bold" value="${item.qty_retur}" onchange="updateItemQty(${idx}, this.value)">
-                <div class="text-muted text-center" style="font-size: 0.75rem;">Maks: ${item.qty_max}</div>
-            </td>
-            <td class="text-center fw-semibold text-muted small">${item.satuan}</td>
-            <td class="text-end font-monospace">${formatRupiah(item.harga_satuan)}</td>
-            <td class="text-end font-monospace fw-bold text-dark">${formatRupiah(subtotal)}</td>
-            <td>
-                <select class="form-select form-select-sm" onchange="updateItemReason(${idx}, this.value)">
-                    <option value="RUSAK_FISIK" ${item.alasan_retur === 'RUSAK_FISIK' ? 'selected' : ''}>Rusak Fisik / Pengiriman</option>
-                    <option value="CACAT_PRODUKSI" ${item.alasan_retur === 'CACAT_PRODUKSI' ? 'selected' : ''}>Cacat Pabrik / Vendor</option>
-                    <option value="SALAH_SPESIFIKASI" ${item.alasan_retur === 'SALAH_SPESIFIKASI' ? 'selected' : ''}>Salah Spesifikasi</option>
-                    <option value="KURANG_PENGIRIMAN" ${item.alasan_retur === 'KURANG_PENGIRIMAN' ? 'selected' : ''}>Kurang Kuantitas</option>
-                    <option value="KADALUARSA_EXP" ${item.alasan_retur === 'KADALUARSA_EXP' ? 'selected' : ''}>Kadaluarsa / Expired</option>
-                </select>
-            </td>
-            <td>
-                <input type="text" class="form-control form-control-sm mb-1" placeholder="Catatan kerusakan..." value="${item.keterangan_kerusakan}" onchange="updateItemRemarks(${idx}, this.value)">
-                <div class="d-flex align-items-center gap-1">
-                    <input type="file" class="form-control form-control-sm" accept="image/*" onchange="handleItemPhotoUpload(${idx}, this)">
+                <div class="fw-bold text-dark">${escapeHtml(item.nama_barang)}</div>
+                <div class="d-flex align-items-center gap-1 mt-1">
+                    <span class="font-monospace text-muted small">${escapeHtml(item.kode_barang || '-')}</span>
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle" style="font-size:0.72rem;">${getReasonText(item.alasan_retur)}</span>
+                    ${hasPhotoDot}
                 </div>
             </td>
+            <td>
+                <input type="number" step="any" min="0.01" max="${item.qty_max}" class="form-control form-control-sm text-center fw-bold font-monospace" value="${item.qty_retur}" onchange="updateItemQty(${idx}, this.value)">
+                <div class="text-muted text-center" style="font-size: 0.72rem;">Maks: ${item.qty_max}</div>
+            </td>
+            <td class="text-center fw-semibold text-muted small">${escapeHtml(item.satuan)}</td>
+            <td class="text-end font-monospace">${formatRupiah(item.harga_satuan)}</td>
+            <td class="text-end font-monospace fw-bold text-dark">${formatRupiah(subtotal)}</td>
             <td class="text-center">
-                <button type="button" class="btn btn-outline-danger btn-sm p-1" onclick="removeItem(${idx})" title="Hapus Baris">
-                    <i class="bi bi-trash"></i>
-                </button>
+                <div class="d-flex justify-content-center gap-1">
+                    <button type="button" class="btn btn-outline-primary btn-sm p-1 px-2" onclick="openClaimModal(${idx})" title="Alasan Kerusakan, Keterangan & Bukti Foto">
+                        <i class="bi bi-chat-left-text"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-danger btn-sm p-1 px-2" onclick="removeItem(${idx})" title="Hapus Baris">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
             </td>
         </tr>`;
     });
 
     tbody.innerHTML = html;
     updateSummary();
+}
+
+// -------------------------------------------------------------
+// LOGIKA MODAL DETAIL KERUSAKAN & BUKTI FOTO PER ITEM
+// -------------------------------------------------------------
+let activeModalItemIdx = null;
+let tempModalPhotoBase64 = '';
+let tempModalPhotoName = '';
+
+function openClaimModal(idx) {
+    if (!returItems[idx]) return;
+    activeModalItemIdx = idx;
+    const item = returItems[idx];
+
+    document.getElementById('modalItemIndex').value = idx;
+    document.getElementById('modalItemNamaHeader').textContent = item.nama_barang || 'Informasi Detail';
+    document.getElementById('modalItemKodeHeader').textContent = `${item.kode_barang || '-'} • Qty: ${item.qty_retur} ${item.satuan}`;
+    document.getElementById('modalItemAlasan').value = item.alasan_retur || 'RUSAK_FISIK';
+    document.getElementById('modalItemKet').value = item.keterangan_kerusakan || '';
+
+    // Kembalikan tab ke Tab 1 (Rincian Kerusakan) saat modal dibuka
+    const firstTabBtn = document.getElementById('tab-modal-info-btn');
+    if (firstTabBtn) {
+        bootstrap.Tab.getOrCreateInstance(firstTabBtn).show();
+    }
+
+    // Foto Preview
+    tempModalPhotoBase64 = item.foto_base64 || '';
+    tempModalPhotoName = item.foto_name || '';
+
+    const previewWrapper = document.getElementById('modalPhotoPreviewWrapper');
+    const emptyState = document.getElementById('modalPhotoEmptyState');
+    const previewImg = document.getElementById('modalPhotoPreviewImg');
+    const photoNameBadge = document.getElementById('modalPhotoName');
+    const fotoBadge = document.getElementById('modalFotoBadge');
+    const fileInput = document.getElementById('modalItemPhotoInput');
+    fileInput.value = '';
+
+    if (tempModalPhotoBase64) {
+        previewImg.src = tempModalPhotoBase64;
+        photoNameBadge.textContent = tempModalPhotoName || 'foto.jpg';
+        previewWrapper.style.display = 'block';
+        emptyState.style.display = 'none';
+        fotoBadge.style.display = 'inline-block';
+    } else {
+        previewImg.src = '';
+        photoNameBadge.textContent = '';
+        previewWrapper.style.display = 'none';
+        emptyState.style.display = 'block';
+        fotoBadge.style.display = 'none';
+    }
+
+    const modal = new bootstrap.Modal(document.getElementById('modalClaimDetail'));
+    modal.show();
+}
+
+function previewModalPhoto(input) {
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        
+        // Validasi format JPG / JPEG
+        const validTypes = ['image/jpeg', 'image/jpg'];
+        const fileName = file.name.toLowerCase();
+        const isJpg = validTypes.includes(file.type) || fileName.endsWith('.jpg') || fileName.endsWith('.jpeg');
+        
+        if (!isJpg) {
+            showToast('Hanya file foto berekstensi JPG / JPEG yang diperbolehkan.', 'warning');
+            input.value = '';
+            return;
+        }
+
+        // Validasi ukuran maks 2MB
+        if (file.size > 2 * 1024 * 1024) {
+            showToast('Ukuran foto melebihi batas maksimal (Maks 2MB).', 'warning');
+            input.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            tempModalPhotoBase64 = e.target.result;
+            tempModalPhotoName = file.name;
+
+            document.getElementById('modalPhotoPreviewImg').src = tempModalPhotoBase64;
+            document.getElementById('modalPhotoName').textContent = file.name;
+            document.getElementById('modalPhotoPreviewWrapper').style.display = 'block';
+            document.getElementById('modalPhotoEmptyState').style.display = 'none';
+            document.getElementById('modalFotoBadge').style.display = 'inline-block';
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+function removeModalPhoto() {
+    tempModalPhotoBase64 = '';
+    tempModalPhotoName = '';
+    document.getElementById('modalItemPhotoInput').value = '';
+    document.getElementById('modalPhotoPreviewImg').src = '';
+    document.getElementById('modalPhotoName').textContent = '';
+    document.getElementById('modalPhotoPreviewWrapper').style.display = 'none';
+    document.getElementById('modalPhotoEmptyState').style.display = 'block';
+    document.getElementById('modalFotoBadge').style.display = 'none';
+}
+
+function saveClaimModal() {
+    if (activeModalItemIdx === null || !returItems[activeModalItemIdx]) return;
+
+    returItems[activeModalItemIdx].alasan_retur = document.getElementById('modalItemAlasan').value;
+    returItems[activeModalItemIdx].keterangan_kerusakan = document.getElementById('modalItemKet').value.trim();
+    returItems[activeModalItemIdx].foto_base64 = tempModalPhotoBase64;
+    returItems[activeModalItemIdx].foto_name = tempModalPhotoName;
+
+    const modalEl = document.getElementById('modalClaimDetail');
+    const modalInstance = bootstrap.Modal.getInstance(modalEl);
+    if (modalInstance) modalInstance.hide();
+
+    renderItemsTable();
+    showToast('Informasi detail & foto berhasil disimpan.', 'success');
 }
 
 function updateItemQty(idx, val) {
@@ -425,26 +1054,6 @@ function updateItemQty(idx, val) {
         returItems[idx].qty_retur = Math.max(0.01, num);
     }
     renderItemsTable();
-}
-
-function updateItemReason(idx, val) {
-    returItems[idx].alasan_retur = val;
-}
-
-function updateItemRemarks(idx, val) {
-    returItems[idx].keterangan_kerusakan = val;
-}
-
-function handleItemPhotoUpload(idx, input) {
-    if (input.files && input.files[0]) {
-        const file = input.files[0];
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            returItems[idx].foto_base64 = e.target.result;
-            returItems[idx].foto_name = file.name;
-        };
-        reader.readAsDataURL(file);
-    }
 }
 
 function removeItem(idx) {
@@ -461,20 +1070,27 @@ function openAddItemModal() {
     const list = document.getElementById('rcvAvailableItemsList');
     list.innerHTML = '';
 
-    currentRcvData.items.forEach(it => {
-        const alreadyInTable = returItems.some(r => r.id_barang == it.id_barang);
-        const disabled = alreadyInTable ? 'disabled opacity-50' : '';
-        const badge = alreadyInTable ? '<span class="badge bg-secondary ms-2">Sudah Masuk</span>' : '';
+    // Hanya ambil item yang tercatat rusak / cacat fisik saat penerimaan (status_qc == 0)
+    const damagedList = currentRcvData.items.filter(it => (it.status_qc == 0 || it.is_damaged));
 
-        list.innerHTML += `
-            <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center ${disabled}" onclick="addOtherItem(${it.id_barang})">
-                <div>
-                    <div class="fw-semibold">${it.nama_barang}</div>
-                    <div class="small text-muted font-monospace">${it.kode_barang} &bull; Diterima: ${it.qty_rcv} ${it.master_satuan}</div>
-                </div>
-                <div>${badge}</div>
-            </button>`;
-    });
+    if (damagedList.length === 0) {
+        list.innerHTML = `<div class="text-center py-4 text-muted small"><i class="bi bi-check2-circle fs-2 text-success d-block mb-1"></i>Tidak ada material cacat/rusak lainnya pada dokumen penerimaan ini.</div>`;
+    } else {
+        damagedList.forEach(it => {
+            const alreadyInTable = returItems.some(r => r.id_barang == it.id_barang);
+            const disabled = alreadyInTable ? 'disabled opacity-50' : '';
+            const badge = alreadyInTable ? '<span class="badge bg-secondary ms-2">Sudah Masuk</span>' : '';
+
+            list.innerHTML += `
+                <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center ${disabled}" onclick="addOtherItem(${it.id_barang})">
+                    <div>
+                        <div class="fw-semibold text-dark">${it.nama_barang}</div>
+                        <div class="small text-muted font-monospace">${it.kode_barang} &bull; Rusak: ${it.qty_rcv} ${it.master_satuan}</div>
+                    </div>
+                    <div>${badge}</div>
+                </button>`;
+        });
+    }
 
     const modal = new bootstrap.Modal(document.getElementById('modalAddOtherItem'));
     modal.show();
@@ -515,65 +1131,93 @@ function updateSummary() {
     document.getElementById('summaryGrandTotal').textContent = formatRupiah(grandTotal);
 }
 
-function goToTab2() {
-    const rcv = document.getElementById('selectRcv').value;
-    const pic = document.getElementById('inputPicVendor').value.trim();
+function goToTab(tabBtnId) {
+    const rcvEl = document.getElementById('selectRcv');
+    const headerData = (currentRcvData && currentRcvData.header) ? currentRcvData.header : {};
+    const rcvId = parseInt(rcvEl ? rcvEl.value : 0) || parseInt(headerData.id_rcv || 0) || parseInt(selectedRcvId || 0);
 
-    if (!rcv) {
-        showToast('Harap pilih Dokumen Penerimaan (RCV) terlebih dahulu.', 'warning');
-        return;
+    // Validasi saat berpindah dari Tab 1
+    if (tabBtnId !== 'tab-info-btn') {
+        if (!rcvId || rcvId <= 0) {
+            showToast('Harap pilih Dokumen Penerimaan (RCV) pada Tab 1 terlebih dahulu.', 'warning');
+            const infoBtn = document.getElementById('tab-info-btn');
+            if (infoBtn) bootstrap.Tab.getOrCreateInstance(infoBtn).show();
+            return;
+        }
     }
-    if (!pic) {
-        showToast('Harap isi PIC Vendor yang bertanggung jawab.', 'warning');
-        document.getElementById('inputPicVendor').focus();
-        return;
+
+    // Validasi saat melewati Tab 2 (Vendor)
+    if (tabBtnId === 'tab-pengiriman-btn' || tabBtnId === 'tab-items-btn' || tabBtnId === 'tab-persetujuan-btn') {
+        const pic = (document.getElementById('inputPicVendor').value || headerData.pic_vendor || '').trim();
+        if (!pic) {
+            showToast('Harap lengkapi PIC Vendor pada Tab 2.', 'warning');
+            const vendorBtn = document.getElementById('tab-vendor-btn');
+            if (vendorBtn) bootstrap.Tab.getOrCreateInstance(vendorBtn).show();
+            document.getElementById('inputPicVendor').focus();
+            return;
+        }
     }
 
-    const tab = new bootstrap.Tab(document.getElementById('tab-items-btn'));
-    tab.show();
-}
-
-function goToTab1() {
-    const tab = new bootstrap.Tab(document.getElementById('tab-info-btn'));
-    tab.show();
+    const targetBtn = document.getElementById(tabBtnId);
+    if (targetBtn) {
+        bootstrap.Tab.getOrCreateInstance(targetBtn).show();
+    }
 }
 
 async function submitReturForm(targetStatus) {
-    const idPo = document.getElementById('inputPoId').value;
-    const idRcv = document.getElementById('selectRcv').value;
-    const idVendor = document.getElementById('inputVendorId').value;
-    const idSite = document.getElementById('inputSiteId').value;
-    const picVendor = document.getElementById('inputPicVendor').value.trim();
-    const kompensasi = document.querySelector('input[name="kompensasi"]:checked').value;
+    const rcvEl = document.getElementById('selectRcv');
+    const headerData = (currentRcvData && currentRcvData.header) ? currentRcvData.header : {};
+    
+    const idRcv = parseInt(rcvEl ? rcvEl.value : 0) || parseInt(headerData.id_rcv || 0) || parseInt(selectedRcvId || 0);
+    const idPo = parseInt(document.getElementById('inputPoId').value || 0) || parseInt(headerData.id_po || 0);
+    const idVendor = parseInt(document.getElementById('inputVendorId').value || 0) || parseInt(headerData.id_vendor || 0);
+    const idSite = parseInt(document.getElementById('inputSiteId').value || 0) || parseInt(headerData.id_site || 0);
+    const picVendor = (document.getElementById('inputPicVendor').value || headerData.pic_vendor || '').trim();
+    const kompensasiEl = document.querySelector('input[name="kompensasi"]:checked');
+    const kompensasi = kompensasiEl ? parseInt(kompensasiEl.value) : 1;
+    const pengirimanEl = document.querySelector('input[name="pengiriman_retur"]:checked');
+    const pengirimanRetur = pengirimanEl ? pengirimanEl.value : 'Vendor';
+    const biayaRetur = parseFloat(document.getElementById('inputBiayaRetur').value) || 0;
+    const idKaryawanApproved = document.getElementById('selectKaryawanApproved').value;
     const tanggalRetur = document.getElementById('inputTanggalRetur').value;
     const noSjRetur = document.getElementById('inputNoSjRetur').value.trim();
     const noNotaPajak = document.getElementById('inputNoNotaPajak').value.trim();
     const keterangan = document.getElementById('inputKeterangan').value.trim();
 
-    if (!idRcv || !idPo || !idVendor) {
-        showToast('Dokumen penerimaan dan vendor wajib dipilih.', 'warning');
-        goToTab1();
+    if (!idRcv || idRcv <= 0) {
+        showToast('Dokumen Penerimaan (RCV) wajib dipilih pada Tab 1.', 'warning');
+        goToTab('tab-info-btn');
         return;
     }
 
     if (!picVendor) {
-        showToast('PIC Vendor wajib diisi.', 'warning');
-        goToTab1();
+        showToast('PIC Vendor wajib diisi pada Tab 2.', 'warning');
+        goToTab('tab-vendor-btn');
         return;
     }
 
-    if (returItems.length === 0) {
-        showToast('Harap tambahkan minimal 1 item barang yang akan diretur.', 'warning');
+    if (!returItems || returItems.length === 0) {
+        showToast('Harap tambahkan minimal 1 item barang yang akan diretur pada Tab 4.', 'warning');
+        goToTab('tab-items-btn');
+        return;
+    }
+
+    if (!idKaryawanApproved) {
+        showToast('Harap pilih pejabat yang menyetujui retur pada Tab 5.', 'warning');
+        goToTab('tab-persetujuan-btn');
         return;
     }
 
     const payload = {
-        id_po: parseInt(idPo),
-        id_rcv: parseInt(idRcv),
-        id_vendor: parseInt(idVendor),
-        id_site: parseInt(idSite),
+        id_po: idPo,
+        id_rcv: idRcv,
+        id_vendor: idVendor,
+        id_site: idSite,
         pic_vendor: picVendor,
-        kompensasi: parseInt(kompensasi),
+        kompensasi: kompensasi,
+        pengiriman_retur: pengirimanRetur,
+        biaya_retur: biayaRetur,
+        id_karyawan_approved: idKaryawanApproved ? parseInt(idKaryawanApproved) : null,
         tanggal_po_retur: tanggalRetur,
         rate_pajak: ratePajak,
         nomor_sj_retur: noSjRetur,
@@ -598,9 +1242,49 @@ async function submitReturForm(targetStatus) {
     }
 }
 
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 function formatRupiah(num) {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num || 0);
 }
 </script>
+
+<style>
+.rcv-custom-select {
+    min-height: 40px;
+    transition: all 0.2s ease;
+}
+.rcv-custom-select:hover {
+    border-color: #86b7fe;
+    background-color: #fafbfc !important;
+}
+.rcv-item-card {
+    background-color: #fafbfc;
+    transition: all 0.15s ease;
+}
+.rcv-item-card:hover {
+    background-color: #f0f7ff;
+    border-color: #86b7fe !important;
+    transform: translateY(-1px);
+}
+.rcv-item-card.active-rcv {
+    background-color: #e7f1ff;
+    border-color: #0d6efd !important;
+}
+.transition-chevron {
+    transition: transform 0.2s ease;
+}
+.cursor-pointer {
+    cursor: pointer;
+}
+</style>
 
 <?php require_once __DIR__ . '/../../components/footer.php'; ?>

@@ -43,7 +43,7 @@ if ($method === 'GET') {
             $sqlHeader = "SELECT r.*,
                                  po.nomor_po, po.tanggal_po,
                                  rcv.nomor_rcv, rcv.nomor_sj, rcv.tanggal_diterima,
-                                 v.nama_perusahaan AS nama_vendor, v.telepon AS telepon_vendor, v.email AS email_vendor,
+                                 v.nama_perusahaan AS nama_vendor, v.no_telepon AS telepon_vendor, v.email AS email_vendor,
                                  s.nama_site,
                                  k_buat.nama_karyawan AS nama_pembuat,
                                  k_app.nama_karyawan AS nama_penyetuju
@@ -243,6 +243,9 @@ if ($method === 'POST') {
     $nomorSjRetur = trim($input['nomor_sj_retur'] ?? '');
     $nomorNotaReturPajak = trim($input['nomor_nota_retur_pajak'] ?? '');
     $keterangan = trim($input['keterangan'] ?? '');
+    $pengirimanRetur = in_array($input['pengiriman_retur'] ?? '', ['Vendor', 'Expedisi', 'Internal']) ? $input['pengiriman_retur'] : 'Vendor';
+    $biayaRetur = floatval($input['biaya_retur'] ?? 0);
+    $idKaryawanApproved = !empty($input['id_karyawan_approved']) ? intval($input['id_karyawan_approved']) : null;
     $status = in_array($input['status'] ?? '', ['DRAFT', 'MENUNGGU KONFIRMASI VENDOR']) ? $input['status'] : 'MENUNGGU KONFIRMASI VENDOR';
     $tanggalRetur = !empty($input['tanggal_po_retur']) ? trim($input['tanggal_po_retur']) : date('Y-m-d H:i:s');
     if (strlen($tanggalRetur) === 10) { $tanggalRetur .= ' ' . date('H:i:s'); }
@@ -250,12 +253,107 @@ if ($method === 'POST') {
     $idKaryawan = !empty($currentUser['id_karyawan']) ? $currentUser['id_karyawan'] : 1;
     $items = isset($input['items']) && is_array($input['items']) ? $input['items'] : [];
 
+    // Fallback: Jika id_rcv belum terisi (misal bernilai 0), coba auto-resolve dari items atau RCV rusak terbaru
+    if ($idRcv <= 0) {
+        if (!empty($items) && !empty($items[0]['id_barang'])) {
+            $firstIdBarang = intval($items[0]['id_barang']);
+            $stmtAutoRcv = $conn->prepare("SELECT rod.id_rcv FROM receiving_order_detail rod JOIN receiving_order r ON rod.id_rcv = r.id_rcv WHERE rod.id_barang = ? AND rod.status_qc = 0 ORDER BY r.id_rcv DESC LIMIT 1");
+            $stmtAutoRcv->bind_param("i", $firstIdBarang);
+            $stmtAutoRcv->execute();
+            $resAuto = $stmtAutoRcv->get_result()->fetch_assoc();
+            $stmtAutoRcv->close();
+            if ($resAuto && !empty($resAuto['id_rcv'])) {
+                $idRcv = intval($resAuto['id_rcv']);
+            }
+        }
+        if ($idRcv <= 0 && $idPo > 0) {
+            $stmtPoRcv = $conn->prepare("SELECT id_rcv FROM receiving_order WHERE id_po = ? ORDER BY id_rcv DESC LIMIT 1");
+            $stmtPoRcv->bind_param("i", $idPo);
+            $stmtPoRcv->execute();
+            $resPoRcv = $stmtPoRcv->get_result()->fetch_assoc();
+            $stmtPoRcv->close();
+            if ($resPoRcv && !empty($resPoRcv['id_rcv'])) {
+                $idRcv = intval($resPoRcv['id_rcv']);
+            }
+        }
+        if ($idRcv <= 0) {
+            $resLatestRcv = $conn->query("SELECT r.id_rcv FROM receiving_order r JOIN receiving_order_detail rod ON r.id_rcv = rod.id_rcv WHERE rod.status_qc = 0 ORDER BY r.id_rcv DESC LIMIT 1");
+            if ($resLatestRcv && $rowLat = $resLatestRcv->fetch_assoc()) {
+                $idRcv = intval($rowLat['id_rcv']);
+            }
+        }
+    }
+
+    // Auto-resolve id_po, id_vendor, id_site, pic_vendor dari receiving_order jika belum terisi
+    if ($idRcv > 0 && ($idPo <= 0 || $idVendor <= 0 || $idSite <= 0 || empty($picVendor))) {
+        $stmtRcvCheck = $conn->prepare("SELECT r.id_po, po.id_vendor, po.id_site, v.person AS pic_vendor FROM receiving_order r JOIN purchase_order po ON r.id_po = po.id_po JOIN vendor v ON po.id_vendor = v.id_vendor WHERE r.id_rcv = ?");
+        $stmtRcvCheck->bind_param("i", $idRcv);
+        $stmtRcvCheck->execute();
+        $rcvRow = $stmtRcvCheck->get_result()->fetch_assoc();
+        $stmtRcvCheck->close();
+        if ($rcvRow) {
+            if ($idPo <= 0) $idPo = intval($rcvRow['id_po']);
+            if ($idVendor <= 0) $idVendor = intval($rcvRow['id_vendor']);
+            if ($idSite <= 0) $idSite = intval($rcvRow['id_site']);
+            if (empty($picVendor) && !empty($rcvRow['pic_vendor'])) $picVendor = trim($rcvRow['pic_vendor']);
+        }
+    }
+
+    if (empty($picVendor)) {
+        $picVendor = 'PIC Vendor';
+    }
+
+    // Fallback: Jika items kosong, ambil item rusak dari RCV tersebut
+    if (empty($items) && $idRcv > 0) {
+        $stmtDamaged = $conn->prepare("SELECT rod.id_barang, rod.qty, b.satuan, COALESCE(pod.harga, 0) AS harga_satuan, rod.keterangan AS ket_rcv, b.nama_barang 
+                                       FROM receiving_order_detail rod 
+                                       JOIN receiving_order r ON rod.id_rcv = r.id_rcv
+                                       LEFT JOIN purchase_order_detail pod ON (r.id_po = pod.id_po AND rod.id_barang = pod.id_barang)
+                                       JOIN barang b ON rod.id_barang = b.id_barang 
+                                       WHERE rod.id_rcv = ? AND rod.status_qc = 0");
+        $stmtDamaged->bind_param("i", $idRcv);
+        $stmtDamaged->execute();
+        $resDamaged = $stmtDamaged->get_result();
+        while ($dRow = $resDamaged->fetch_assoc()) {
+            $items[] = [
+                'id_barang' => intval($dRow['id_barang']),
+                'qty_retur' => floatval($dRow['qty']),
+                'satuan' => !empty($dRow['satuan']) ? $dRow['satuan'] : 'PCS',
+                'harga_satuan' => floatval($dRow['harga_satuan']),
+                'alasan_retur' => 'RUSAK_FISIK',
+                'keterangan_kerusakan' => !empty($dRow['ket_rcv']) ? $dRow['ket_rcv'] : 'Kondisi rusak saat penerimaan barang',
+                'foto_base64' => '',
+                'foto_name' => ''
+            ];
+        }
+        $stmtDamaged->close();
+    }
+
     // Validasi
-    if ($idPo <= 0 || $idRcv <= 0 || $idVendor <= 0) {
-        sendJson(false, 'Dokumen PO, Penerimaan (RCV), dan Vendor wajib dipilih.', null, 422);
+    if ($idRcv <= 0) {
+        sendJson(false, 'Dokumen Penerimaan (RCV) wajib dipilih.', null, 422);
+    }
+
+    // Validasi Duplikasi Dokumen RCV
+    $stmtCheckExisting = $conn->prepare("SELECT id_po_retur, nomor_po_retur FROM retur_po WHERE id_rcv = ? AND status != 'DIBATALKAN' LIMIT 1");
+    $stmtCheckExisting->bind_param("i", $idRcv);
+    $stmtCheckExisting->execute();
+    $existingRetur = $stmtCheckExisting->get_result()->fetch_assoc();
+    $stmtCheckExisting->close();
+    if ($existingRetur) {
+        sendJson(false, "Dokumen Penerimaan (RCV) ini sudah pernah dibuatkan dokumen Retur PO dengan nomor {$existingRetur['nomor_po_retur']}.", null, 422);
+    }
+
+    if ($idPo <= 0 || $idVendor <= 0) {
+        sendJson(false, 'Dokumen PO dan Vendor rekanan tidak valid.', null, 422);
     }
     if (empty($items)) {
         sendJson(false, 'Harap sertakan minimal 1 baris item barang yang diretur.', null, 422);
+    }
+
+    $uploadDir = __DIR__ . '/../../uploads/retur/';
+    if (!is_dir($uploadDir)) {
+        @mkdir($uploadDir, 0777, true);
     }
 
     $conn->begin_transaction();
@@ -307,11 +405,12 @@ if ($method === 'POST') {
                 if (preg_match('/^data:image\/(\w+);base64,/', $imgData, $type)) {
                     $imgData = substr($imgData, strpos($imgData, ',') + 1);
                     $type = strtolower($type[1]);
+                    if ($type === 'jpeg') $type = 'jpg';
                     if (in_array($type, ['jpg', 'jpeg', 'png', 'webp'])) {
                         $imgDecoded = base64_decode($imgData);
                         if ($imgDecoded !== false) {
                             $fotoFileName = 'retur_' . $yymm . '_' . uniqid() . '.' . $type;
-                            $targetPath = __DIR__ . '/../../uploads/retur/' . $fotoFileName;
+                            $targetPath = $uploadDir . $fotoFileName;
                             file_put_contents($targetPath, $imgDecoded);
                             $fotoBukti = $fotoFileName;
                         }
@@ -343,19 +442,21 @@ if ($method === 'POST') {
 
         // 4. Insert Header `retur_po`
         $sqlInsH = "INSERT INTO retur_po (
-                        nomor_po_retur, id_karyawan, tanggal_po_retur, kompensasi,
+                        nomor_po_retur, id_karyawan, id_karyawan_approved, tanggal_po_retur, kompensasi,
                         id_vendor, pic_vendor, id_site, id_po, id_rcv,
                         total, status, nominal_pajak, rate_pajak,
-                        nomor_sj_retur, nomor_nota_retur_pajak, keterangan
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                        nomor_sj_retur, nomor_nota_retur_pajak, keterangan,
+                        pengiriman_retur, biaya_retur
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         $stmtInsH = $conn->prepare($sqlInsH);
         $stmtInsH->bind_param(
-            "sisissiiidsdisss",
-            $nomorRetur, $idKaryawan, $tanggalRetur, $kompensasi,
+            "siisiisiiidsdissssd",
+            $nomorRetur, $idKaryawan, $idKaryawanApproved, $tanggalRetur, $kompensasi,
             $idVendor, $picVendor, $idSite, $idPo, $idRcv,
             $totalSubtotal, $status, $nominalPajak, $ratePajak,
-            $nomorSjRetur, $nomorNotaReturPajak, $keterangan
+            $nomorSjRetur, $nomorNotaReturPajak, $keterangan,
+            $pengirimanRetur, $biayaRetur
         );
         $stmtInsH->execute();
         $idPoRetur = $conn->insert_id;

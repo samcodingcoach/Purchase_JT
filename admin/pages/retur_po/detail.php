@@ -144,17 +144,15 @@ require_once __DIR__ . '/../../components/navbar.php';
                             <th style="width: 45px;" class="text-center">No</th>
                             <th style="min-width: 220px;">Nama Barang</th>
                             <th style="width: 110px;" class="text-center">Qty Retur</th>
-                            <th style="width: 80px;" class="text-center">Satuan</th>
-                            <th style="width: 130px;" class="text-end">Harga Satuan</th>
-                            <th style="width: 140px;" class="text-end">Subtotal</th>
-                            <th style="min-width: 160px;">Alasan Retur</th>
-                            <th style="min-width: 180px;">Keterangan &amp; Foto</th>
-                            <th style="min-width: 140px;" class="text-center" id="thQtyGanti">Unit Pengganti</th>
+                            <th style="width: 90px;" class="text-center">Satuan</th>
+                            <th style="width: 140px;" class="text-end">Harga Satuan</th>
+                            <th style="width: 150px;" class="text-end">Subtotal</th>
+                            <th style="width: 120px;" class="text-center">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="itemsDetailBody">
                         <tr>
-                            <td colspan="9" class="text-center py-5 text-muted">
+                            <td colspan="7" class="text-center py-5 text-muted">
                                 <div class="spinner-border spinner-border-sm text-primary me-2"></div> Memuat rincian material...
                             </td>
                         </tr>
@@ -232,6 +230,122 @@ require_once __DIR__ . '/../../components/navbar.php';
     </div>
 </div>
 
+<!-- MODAL RINCIAN & TINDAK LANJUT BARANG (ACTION POPUP) -->
+<div class="modal fade" id="modalItemAction" tabindex="-1" aria-labelledby="modalItemActionLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <div class="modal-header bg-white pt-3 pb-0 px-4 border-bottom flex-column align-items-stretch">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-box-seam-fill text-primary fs-5"></i>
+                        <h5 class="modal-title fw-bold text-dark font-monospace mb-0" id="modalItemActionNama">
+                            Nama Barang
+                        </h5>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace" id="modalItemActionKode">-</span>
+                        <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                </div>
+
+                <ul class="nav nav-tabs border-bottom-0" id="modalItemActionTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active fw-bold text-dark small py-2 px-3" id="tab-item-info-btn" data-bs-toggle="tab" data-bs-target="#tab-item-info" type="button" role="tab">
+                            <i class="bi bi-file-earmark-text me-1 text-primary"></i> 1. Informasi &amp; Kerusakan
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold text-dark small py-2 px-3" id="tab-item-foto-btn" data-bs-toggle="tab" data-bs-target="#tab-item-foto" type="button" role="tab">
+                            <i class="bi bi-image me-1 text-primary"></i> 2. Bukti Foto
+                            <span class="badge bg-primary text-white ms-1" id="modalItemActionFotoBadge" style="display:none;">1</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation" id="tabItemGantiNav">
+                        <button class="nav-link fw-bold text-dark small py-2 px-3" id="tab-item-ganti-btn" data-bs-toggle="tab" data-bs-target="#tab-item-ganti" type="button" role="tab">
+                            <i class="bi bi-arrow-repeat me-1 text-primary"></i> 3. Unit Pengganti
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="modal-body p-4 bg-light">
+                <input type="hidden" id="modalItemActionIdDetail">
+                <div class="tab-content" id="modalItemActionTabContent">
+                    
+                    <!-- TAB 1: INFORMASI KERUSAKAN -->
+                    <div class="tab-pane fade show active" id="tab-item-info" role="tabpanel">
+                        <div class="card bg-white border-0 shadow-sm rounded-3 p-3">
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-semibold text-muted d-block mb-1">Qty Retur</label>
+                                    <span class="fw-bold fs-6 font-monospace text-dark" id="modalItemActionQty">-</span>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-semibold text-muted d-block mb-1">Harga Satuan</label>
+                                    <span class="fw-bold font-monospace text-dark" id="modalItemActionHarga">-</span>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-semibold text-muted d-block mb-1">Subtotal Nilai</label>
+                                    <span class="fw-bold font-monospace text-success" id="modalItemActionSubtotal">-</span>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold text-muted d-block mb-1">Alasan Pengembalian</label>
+                                <div id="modalItemActionAlasanBadge">-</div>
+                            </div>
+                            <div>
+                                <label class="form-label small fw-semibold text-muted d-block mb-1">Keterangan / Rincian Kerusakan Fisik</label>
+                                <div class="p-3 bg-light rounded-2 text-dark small border" id="modalItemActionKet">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: BUKTI FOTO -->
+                    <div class="tab-pane fade" id="tab-item-foto" role="tabpanel">
+                        <div class="card bg-white border-0 shadow-sm rounded-3 p-3 text-center">
+                            <div id="modalItemActionFotoWrapper" style="display:none;">
+                                <img id="modalItemActionFotoImg" src="" alt="Bukti Foto Kerusakan" class="img-fluid rounded border shadow-sm" style="max-height: 380px; object-fit: contain;">
+                            </div>
+                            <div id="modalItemActionFotoEmpty" class="py-5 text-muted">
+                                <i class="bi bi-image fs-1 d-block mb-2 text-secondary"></i>
+                                Tidak ada lampiran foto bukti kerusakan fisik untuk material ini.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: UNIT PENGGANTI -->
+                    <div class="tab-pane fade" id="tab-item-ganti" role="tabpanel">
+                        <div class="card bg-white border-0 shadow-sm rounded-3 p-3">
+                            <h6 class="fw-bold text-dark mb-3"><i class="bi bi-box-arrow-in-down text-primary me-2"></i>Penerimaan Unit Pengganti dari Vendor</h6>
+                            <div id="gantiTukarUnitSection">
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold text-dark">Jumlah Unit Barang Pengganti yang Telah Diterima</label>
+                                    <div class="input-group" style="max-width: 250px;">
+                                        <input type="number" step="any" min="0" class="form-control fw-bold font-monospace text-center fs-6" id="modalItemActionInputQtyGanti" value="0">
+                                        <span class="input-group-text fw-semibold text-muted font-monospace" id="modalItemActionMaxQty">/ 0 Unit</span>
+                                    </div>
+                                    <div class="form-text small text-muted">Masukkan jumlah barang pengganti kondisi baru/bagus yang telah dikirimkan oleh vendor.</div>
+                                </div>
+                                <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold" onclick="saveItemUnitPengganti()">
+                                    <i class="bi bi-save me-1"></i> Simpan Jumlah Pengganti
+                                </button>
+                            </div>
+                            <div id="gantiPotongTagihanSection" style="display:none;" class="p-3 bg-light rounded text-muted small">
+                                <i class="bi bi-info-circle me-1 text-primary"></i> Dokumen ini menggunakan skema <strong>Potong Tagihan (Credit Note)</strong>, sehingga tidak ada pengiriman unit pengganti fisik dari vendor.
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="modal-footer bg-white py-3 px-4 border-top">
+                <button type="button" class="btn btn-secondary btn-sm px-4 fw-semibold ms-auto" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- MODAL ZOOM FOTO BUKTI -->
 <div class="modal fade" id="modalZoomFoto" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -250,6 +364,7 @@ require_once __DIR__ . '/../../components/navbar.php';
 <script>
 const returId = <?= $idRetur ?>;
 let returDetailData = null;
+let activeItemDetail = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     loadReturDetail();
@@ -316,23 +431,12 @@ function renderDetail(d) {
     // Render Items
     const tbody = document.getElementById('itemsDetailBody');
     if (!d.items || d.items.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-muted">Tidak ada rincian barang.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">Tidak ada rincian barang.</td></tr>`;
         return;
     }
 
     let html = '';
     d.items.forEach((it, idx) => {
-        const fotoBtn = it.foto_url
-            ? `<button type="button" class="btn btn-outline-primary btn-sm p-1" onclick="zoomFoto('${it.foto_url}')" title="Lihat Foto"><i class="bi bi-image"></i> Foto</button>`
-            : '<span class="text-muted small">-</span>';
-
-        const unitGantiInput = isTukarUnit
-            ? `<div class="input-group input-group-sm justify-content-center">
-                 <input type="number" step="any" min="0" max="${it.qty_retur}" class="form-control form-control-sm text-center fw-bold font-monospace" style="max-width: 70px;" value="${it.qty_diganti || 0}" onchange="updateQtyDiganti(${it.id_po_retur_detail}, this.value)">
-                 <span class="input-group-text small text-muted">/ ${it.qty_retur}</span>
-               </div>`
-            : '<span class="badge bg-light text-muted border">Potong Tagihan</span>';
-
         html += `
         <tr>
             <td class="text-center text-muted fw-semibold">${idx + 1}</td>
@@ -344,16 +448,90 @@ function renderDetail(d) {
             <td class="text-center fw-semibold text-muted small">${it.satuan}</td>
             <td class="text-end font-monospace">${formatRupiah(it.harga_satuan)}</td>
             <td class="text-end font-monospace fw-bold text-dark">${formatRupiah(it.subtotal)}</td>
-            <td>${getReasonBadge(it.alasan_retur)}</td>
-            <td>
-                <div class="small text-muted mb-1">${it.keterangan_kerusakan || '-'}</div>
-                <div>${fotoBtn}</div>
+            <td class="text-center">
+                <button type="button" class="btn btn-outline-primary btn-sm py-1 px-3 shadow-sm fw-semibold" onclick="openItemActionModal(${idx})" title="Lihat Rincian, Bukti Foto & Unit Pengganti">
+                    <i class="bi bi-eye me-1"></i>Aksi
+                </button>
             </td>
-            <td class="text-center">${unitGantiInput}</td>
         </tr>`;
     });
 
     tbody.innerHTML = html;
+}
+
+function openItemActionModal(idx) {
+    if (!returDetailData || !returDetailData.items || !returDetailData.items[idx]) return;
+    const it = returDetailData.items[idx];
+    activeItemDetail = it;
+
+    document.getElementById('modalItemActionIdDetail').value = it.id_po_retur_detail;
+    document.getElementById('modalItemActionNama').textContent = it.nama_barang || '-';
+    document.getElementById('modalItemActionKode').textContent = it.kode_barang || '-';
+    document.getElementById('modalItemActionQty').textContent = `${it.qty_retur} ${it.satuan}`;
+    document.getElementById('modalItemActionHarga').textContent = formatRupiah(it.harga_satuan);
+    document.getElementById('modalItemActionSubtotal').textContent = formatRupiah(it.subtotal);
+    document.getElementById('modalItemActionAlasanBadge').innerHTML = getReasonBadge(it.alasan_retur);
+    document.getElementById('modalItemActionKet').textContent = it.keterangan_kerusakan || 'Tidak ada keterangan tambahan.';
+
+    // Bukti Foto
+    const fotoWrapper = document.getElementById('modalItemActionFotoWrapper');
+    const fotoEmpty = document.getElementById('modalItemActionFotoEmpty');
+    const fotoBadge = document.getElementById('modalItemActionFotoBadge');
+    if (it.foto_url) {
+        document.getElementById('modalItemActionFotoImg').src = it.foto_url;
+        fotoWrapper.style.display = 'block';
+        fotoEmpty.style.display = 'none';
+        fotoBadge.style.display = 'inline-block';
+    } else {
+        fotoWrapper.style.display = 'none';
+        fotoEmpty.style.display = 'block';
+        fotoBadge.style.display = 'none';
+    }
+
+    // Unit Pengganti
+    const isTukarUnit = (returDetailData.kompensasi == 1);
+    if (isTukarUnit) {
+        document.getElementById('gantiTukarUnitSection').style.display = 'block';
+        document.getElementById('gantiPotongTagihanSection').style.display = 'none';
+        document.getElementById('modalItemActionInputQtyGanti').value = it.qty_diganti || 0;
+        document.getElementById('modalItemActionInputQtyGanti').max = it.qty_retur;
+        document.getElementById('modalItemActionMaxQty').textContent = `/ ${it.qty_retur} ${it.satuan}`;
+    } else {
+        document.getElementById('gantiTukarUnitSection').style.display = 'none';
+        document.getElementById('gantiPotongTagihanSection').style.display = 'block';
+    }
+
+    // Reset ke tab 1
+    const firstTab = new bootstrap.Tab(document.getElementById('tab-item-info-btn'));
+    firstTab.show();
+
+    const modal = new bootstrap.Modal(document.getElementById('modalItemAction'));
+    modal.show();
+}
+
+async function saveItemUnitPengganti() {
+    if (!activeItemDetail) return;
+    const idDetail = activeItemDetail.id_po_retur_detail;
+    const val = document.getElementById('modalItemActionInputQtyGanti').value;
+    const qty = parseFloat(val) || 0;
+
+    const payload = {
+        id_po_retur: returId,
+        items: [{ id_po_retur_detail: idDetail, qty_diganti: qty }]
+    };
+
+    try {
+        const res = await apiRequest('/api/retur_po/index.php', 'PUT', payload);
+        if (res && res.success) {
+            showToast('Kuantitas unit pengganti berhasil disimpan!', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('modalItemAction')).hide();
+            loadReturDetail();
+        } else {
+            showToast(res.message || 'Gagal menyimpan unit pengganti.', 'danger');
+        }
+    } catch (e) {
+        showToast('Terjadi kesalahan: ' + e.message, 'danger');
+    }
 }
 
 function getReasonBadge(reason) {
