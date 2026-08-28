@@ -43,9 +43,6 @@ require_once __DIR__ . '/../../components/navbar.php';
             <button type="button" class="btn btn-primary btn-sm px-3 shadow-sm fw-semibold" onclick="openUpdateStatusModal()">
                 <i class="bi bi-arrow-repeat me-1"></i> Tindak Lanjut / Ubah Status
             </button>
-            <button type="button" class="btn btn-outline-dark btn-sm px-3 shadow-sm" onclick="window.print()">
-                <i class="bi bi-printer me-1"></i> Cetak Dokumen
-            </button>
             <button type="button" class="btn btn-outline-danger btn-sm px-3 shadow-sm" id="btnDeleteDraft" onclick="deleteDraft()" style="display: none;">
                 <i class="bi bi-trash me-1"></i> Hapus Draft
             </button>
@@ -205,9 +202,14 @@ require_once __DIR__ . '/../../components/navbar.php';
                         <div class="col-lg-6">
                             <div class="border rounded-3 p-3 h-100 bg-white">
                                 <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-card-checklist text-primary me-2"></i>Dokumen Surat Jalan &amp; Faktur</h6>
-                                <div class="mb-3">
-                                    <span class="text-muted small d-block">No. Surat Jalan Pengembalian / Retur Fisik:</span>
-                                    <span class="fw-bold font-monospace fs-6 text-dark" id="infoNoSjRetur">-</span>
+                                <div class="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                    <div>
+                                        <span class="text-muted small d-block">No. Surat Jalan Pengembalian / Retur Fisik:</span>
+                                        <span class="fw-bold font-monospace fs-6 text-dark" id="infoNoSjRetur">-</span>
+                                    </div>
+                                    <a href="<?= BASE_URL ?>/admin/pages/retur_po/print_sj.php?id=<?= $idRetur ?>" target="_blank" class="btn btn-outline-primary btn-sm px-3 fw-semibold shadow-sm">
+                                        <i class="bi bi-printer me-1"></i> SJ Retur
+                                    </a>
                                 </div>
                                 <div>
                                     <span class="text-muted small d-block">No. Nota Retur Pajak (e-Faktur):</span>
@@ -334,7 +336,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                 <form id="formUpdateStatus" onsubmit="submitStatusUpdate(event)">
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-dark">Status Dokumen Retur <span class="text-danger">*</span></label>
-                        <select class="form-select form-select-sm" id="updateStatusSelect" required>
+                        <select class="form-select form-select-sm" id="updateStatusSelect" onchange="onUpdateStatusChange()" required>
                             <option value="DRAFT">DRAFT (Draft Pengajuan)</option>
                             <option value="MENUNGGU KONFIRMASI VENDOR">MENUNGGU KONFIRMASI VENDOR</option>
                             <option value="DISETUJUI VENDOR">DISETUJUI VENDOR (Klaim Diterima)</option>
@@ -751,20 +753,36 @@ function openUpdateStatusModal() {
     document.getElementById('updateNoSjRetur').value = returDetailData.nomor_sj_retur || '';
     document.getElementById('updateNoNotaPajak').value = returDetailData.nomor_nota_retur_pajak || '';
     document.getElementById('updateKeterangan').value = returDetailData.keterangan || '';
+    onUpdateStatusChange();
 
     const modal = new bootstrap.Modal(document.getElementById('modalUpdateStatus'));
     modal.show();
 }
 
+function onUpdateStatusChange() {
+    const st = document.getElementById('updateStatusSelect').value;
+    const sjInput = document.getElementById('updateNoSjRetur');
+    if ((st === 'DISETUJUI VENDOR' || st === 'DIKIRIM KE VENDOR') && !sjInput.value.trim()) {
+        const now = new Date();
+        const yy = String(now.getFullYear()).slice(-2);
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const idPad = String(returId).padStart(4, '0');
+        sjInput.value = `SJ-RET-${yy}${mm}-${idPad}`;
+    }
+}
+
 async function submitStatusUpdate(e) {
     e.preventDefault();
     const currentId = returId || (returDetailData ? returDetailData.id_po_retur : parseInt(new URLSearchParams(window.location.search).get('id')));
+    const selectedStatus = document.getElementById('updateStatusSelect').value;
+    const nomorSjInput = document.getElementById('updateNoSjRetur').value.trim();
+
     const payload = {
         id_po_retur: currentId,
         id: currentId,
-        status: document.getElementById('updateStatusSelect').value,
+        status: selectedStatus,
         pic_vendor: document.getElementById('updatePicVendor').value.trim(),
-        nomor_sj_retur: document.getElementById('updateNoSjRetur').value.trim(),
+        nomor_sj_retur: nomorSjInput,
         nomor_nota_retur_pajak: document.getElementById('updateNoNotaPajak').value.trim(),
         keterangan: document.getElementById('updateKeterangan').value.trim()
     };
@@ -777,7 +795,13 @@ async function submitStatusUpdate(e) {
         if (res && res.success) {
             showToast(res.message || 'Status Retur PO berhasil diperbarui!', 'success');
             bootstrap.Modal.getInstance(document.getElementById('modalUpdateStatus')).hide();
-            loadReturDetail();
+            await loadReturDetail();
+
+            // Jika status DISETUJUI VENDOR atau DIKIRIM KE VENDOR, langsung buka print view template Surat Jalan Retur
+            if (selectedStatus === 'DISETUJUI VENDOR' || selectedStatus === 'DIKIRIM KE VENDOR') {
+                const printUrl = `<?= BASE_URL ?>/admin/pages/retur_po/print_sj.php?id=${currentId}&autoprint=1`;
+                window.open(printUrl, '_blank');
+            }
         } else {
             showToast(res.message || 'Gagal memperbarui status.', 'danger');
         }
