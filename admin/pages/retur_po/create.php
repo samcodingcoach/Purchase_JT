@@ -255,25 +255,26 @@ require_once __DIR__ . '/../../components/navbar.php';
 
                                 <div class="mb-3">
                                     <label class="form-label small fw-semibold text-dark mb-2">Penanggung Jawab / Jalur Pengiriman <span class="text-danger">*</span></label>
-                                    <div class="d-flex flex-column gap-2">
-                                        <div class="form-check p-2 px-3 border rounded-3 bg-light">
-                                            <input class="form-check-input" type="radio" name="pengiriman_retur" id="kirimVendor" value="Vendor" checked>
-                                            <label class="form-check-label fw-semibold text-dark" for="kirimVendor">
+                                    <input type="hidden" id="selectedPengiriman" name="pengiriman_retur_val" value="Vendor">
+                                    <div class="d-flex flex-column gap-2" id="pengirimanRadioGroup">
+                                        <label class="p-2 px-3 border rounded-3 cursor-pointer pengiriman-card d-flex align-items-center mb-0 border-primary bg-primary-subtle" id="cardKirimVendor" onclick="selectPengirimanCard('Vendor')">
+                                            <input class="form-check-input me-2 mt-0" type="radio" name="pengiriman_retur" id="kirimVendor" value="Vendor" checked>
+                                            <span class="fw-semibold text-dark">
                                                 Vendor (Dijemput / Diambil oleh Vendor)
-                                            </label>
-                                        </div>
-                                        <div class="form-check p-2 px-3 border rounded-3 bg-light">
-                                            <input class="form-check-input" type="radio" name="pengiriman_retur" id="kirimExpedisi" value="Expedisi">
-                                            <label class="form-check-label fw-semibold text-dark" for="kirimExpedisi">
+                                            </span>
+                                        </label>
+                                        <label class="p-2 px-3 border rounded-3 cursor-pointer pengiriman-card d-flex align-items-center mb-0 bg-light" id="cardKirimExpedisi" onclick="selectPengirimanCard('Expedisi')">
+                                            <input class="form-check-input me-2 mt-0" type="radio" name="pengiriman_retur" id="kirimExpedisi" value="Expedisi">
+                                            <span class="fw-semibold text-dark">
                                                 Expedisi (Jasa Ekspedisi / Cargo / Kurir Luar)
-                                            </label>
-                                        </div>
-                                        <div class="form-check p-2 px-3 border rounded-3 bg-light">
-                                            <input class="form-check-input" type="radio" name="pengiriman_retur" id="kirimInternal" value="Internal">
-                                            <label class="form-check-label fw-semibold text-dark" for="kirimInternal">
+                                            </span>
+                                        </label>
+                                        <label class="p-2 px-3 border rounded-3 cursor-pointer pengiriman-card d-flex align-items-center mb-0 bg-light" id="cardKirimInternal" onclick="selectPengirimanCard('Internal')">
+                                            <input class="form-check-input me-2 mt-0" type="radio" name="pengiriman_retur" id="kirimInternal" value="Internal">
+                                            <span class="fw-semibold text-dark">
                                                 Internal (Diantar oleh Armada Internal Logistik)
-                                            </label>
-                                        </div>
+                                            </span>
+                                        </label>
                                     </div>
                                 </div>
 
@@ -382,9 +383,18 @@ require_once __DIR__ . '/../../components/navbar.php';
                                 <div class="mb-3">
                                     <label class="form-label small fw-semibold text-dark">Pilih Pejabat yang Menyetujui Retur <span class="text-danger">*</span></label>
                                     <select class="form-select form-select-sm" id="selectKaryawanApproved" required>
-                                        <option value="">-- Pilih Pejabat Penyetuju --</option>
-                                        <?php foreach ($approvers as $app): ?>
-                                            <option value="<?= $app['id_karyawan'] ?>" <?= ($app['id_karyawan'] == ($user['id_karyawan'] ?? 0)) ? 'selected' : '' ?>>
+                                        <?php 
+                                        $userIsApprover = false;
+                                        foreach ($approvers as $app) {
+                                            if ($app['id_karyawan'] == ($user['id_karyawan'] ?? 0)) {
+                                                $userIsApprover = true;
+                                                break;
+                                            }
+                                        }
+                                        foreach ($approvers as $idx => $app): 
+                                            $isSelected = ($userIsApprover && $app['id_karyawan'] == ($user['id_karyawan'] ?? 0)) || (!$userIsApprover && $idx === 0);
+                                        ?>
+                                            <option value="<?= $app['id_karyawan'] ?>" <?= $isSelected ? 'selected' : '' ?>>
                                                 <?= htmlspecialchars($app['nama_karyawan']) ?> &bull; <?= htmlspecialchars($app['nama_jabatan']) ?> (Level <?= $app['level'] ?>)
                                             </option>
                                         <?php endforeach; ?>
@@ -858,6 +868,27 @@ function resetRcvDisplay() {
     renderItemsTable();
 }
 
+function selectPengirimanCard(val) {
+    const hidden = document.getElementById('selectedPengiriman');
+    if (hidden) hidden.value = val;
+
+    const radios = document.querySelectorAll('input[name="pengiriman_retur"]');
+    radios.forEach(r => {
+        const isMatch = (r.value === val);
+        r.checked = isMatch;
+        const card = r.closest('.pengiriman-card');
+        if (card) {
+            if (isMatch) {
+                card.classList.add('border-primary', 'bg-primary-subtle');
+                card.classList.remove('bg-light');
+            } else {
+                card.classList.remove('border-primary', 'bg-primary-subtle');
+                card.classList.add('bg-light');
+            }
+        }
+    });
+}
+
 function getReasonText(code) {
     switch (code) {
         case 'RUSAK_FISIK': return 'Rusak Fisik / Pengiriman';
@@ -1175,10 +1206,13 @@ async function submitReturForm(targetStatus) {
     const picVendor = (document.getElementById('inputPicVendor').value || headerData.pic_vendor || '').trim();
     const kompensasiEl = document.querySelector('input[name="kompensasi"]:checked');
     const kompensasi = kompensasiEl ? parseInt(kompensasiEl.value) : 1;
-    const pengirimanEl = document.querySelector('input[name="pengiriman_retur"]:checked');
-    const pengirimanRetur = pengirimanEl ? pengirimanEl.value : 'Vendor';
-    const biayaRetur = parseFloat(document.getElementById('inputBiayaRetur').value) || 0;
-    const idKaryawanApproved = document.getElementById('selectKaryawanApproved').value;
+    const pengirimanHidden = document.getElementById('selectedPengiriman');
+    const pengirimanRadio = document.querySelector('input[name="pengiriman_retur"]:checked');
+    const pengirimanRetur = (pengirimanHidden && pengirimanHidden.value) ? pengirimanHidden.value : (pengirimanRadio ? pengirimanRadio.value : 'Vendor');
+    const biayaReturInput = document.getElementById('inputBiayaRetur');
+    const biayaRetur = biayaReturInput ? (parseFloat(biayaReturInput.value) || 0) : 0;
+    const approverEl = document.getElementById('selectKaryawanApproved');
+    let idKaryawanApproved = approverEl ? parseInt(approverEl.value) : 0;
     const tanggalRetur = document.getElementById('inputTanggalRetur').value;
     const noSjRetur = document.getElementById('inputNoSjRetur').value.trim();
     const noNotaPajak = document.getElementById('inputNoNotaPajak').value.trim();
@@ -1202,8 +1236,8 @@ async function submitReturForm(targetStatus) {
         return;
     }
 
-    if (!idKaryawanApproved) {
-        showToast('Harap pilih pejabat yang menyetujui retur pada Tab 5.', 'warning');
+    if (!idKaryawanApproved || idKaryawanApproved <= 0) {
+        showToast('Harap pilih Pejabat Penyetuju pada Tab 5.', 'warning');
         goToTab('tab-persetujuan-btn');
         return;
     }
@@ -1217,7 +1251,7 @@ async function submitReturForm(targetStatus) {
         kompensasi: kompensasi,
         pengiriman_retur: pengirimanRetur,
         biaya_retur: biayaRetur,
-        id_karyawan_approved: idKaryawanApproved ? parseInt(idKaryawanApproved) : null,
+        id_karyawan_approved: idKaryawanApproved,
         tanggal_po_retur: tanggalRetur,
         rate_pajak: ratePajak,
         nomor_sj_retur: noSjRetur,
@@ -1228,7 +1262,10 @@ async function submitReturForm(targetStatus) {
     };
 
     try {
-        const res = await apiRequest('/api/retur_po/index.php', 'POST', payload);
+        const res = await apiRequest('/api/retur_po/index.php', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
         if (res && res.success) {
             showToast(res.message || 'Dokumen Retur PO berhasil dibuat!', 'success');
             setTimeout(() => {

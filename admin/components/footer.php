@@ -437,9 +437,17 @@ async function executeLogoutNow() {
 }
 
 // Centralized Fetch API Wrapper
-async function apiRequest(endpoint, options = {}) {
+async function apiRequest(endpoint, options = {}, payload = null) {
     if (typeof options === 'string') {
-        options = { method: options };
+        const method = options.toUpperCase();
+        if (payload !== null && payload !== undefined) {
+            options = {
+                method: method,
+                body: (payload instanceof FormData) ? payload : (typeof payload === 'string' ? payload : JSON.stringify(payload))
+            };
+        } else {
+            options = { method: method };
+        }
     }
     const defaultHeaders = {
         'Authorization': 'Bearer ' + API_TOKEN,

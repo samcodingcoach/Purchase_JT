@@ -93,6 +93,14 @@ require_once __DIR__ . '/../../components/navbar.php';
                         <span class="fw-semibold text-dark" id="infoPicVendor">-</span>
                     </div>
                     <div class="mb-2">
+                        <span class="text-muted small d-block">Jalur &amp; Armada Pengiriman:</span>
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace" id="infoPengiriman">-</span>
+                    </div>
+                    <div class="mb-2">
+                        <span class="text-muted small d-block">Biaya Pengiriman (IDR):</span>
+                        <span class="fw-bold font-monospace text-dark" id="infoBiayaRetur">Rp 0</span>
+                    </div>
+                    <div class="mb-2">
                         <span class="text-muted small d-block">No. SJ Pengembalian:</span>
                         <span class="fw-semibold font-monospace" id="infoNoSjRetur">-</span>
                     </div>
@@ -394,9 +402,11 @@ function renderDetail(d) {
     document.getElementById('infoNoSjVendor').textContent = d.nomor_sj || '-';
     document.getElementById('infoSite').textContent = d.nama_site || '-';
 
-    // Vendor
+    // Vendor & Pengiriman
     document.getElementById('infoVendor').textContent = d.nama_vendor || '-';
     document.getElementById('infoPicVendor').textContent = d.pic_vendor || '-';
+    document.getElementById('infoPengiriman').textContent = d.pengiriman_retur ? `Armada ${d.pengiriman_retur}` : '-';
+    document.getElementById('infoBiayaRetur').textContent = formatRupiah(d.biaya_retur || 0);
     document.getElementById('infoNoSjRetur').textContent = d.nomor_sj_retur || '-';
     document.getElementById('infoNoNotaPajak').textContent = d.nomor_nota_retur_pajak || '-';
 
@@ -584,8 +594,10 @@ function openUpdateStatusModal() {
 
 async function submitStatusUpdate(e) {
     e.preventDefault();
+    const currentId = returId || (returDetailData ? returDetailData.id_po_retur : parseInt(new URLSearchParams(window.location.search).get('id')));
     const payload = {
-        id_po_retur: returId,
+        id_po_retur: currentId,
+        id: currentId,
         status: document.getElementById('updateStatusSelect').value,
         pic_vendor: document.getElementById('updatePicVendor').value.trim(),
         nomor_sj_retur: document.getElementById('updateNoSjRetur').value.trim(),
@@ -594,7 +606,7 @@ async function submitStatusUpdate(e) {
     };
 
     try {
-        const res = await apiRequest('/api/retur_po/index.php', 'PUT', payload);
+        const res = await apiRequest(`/api/retur_po/index.php?id=${currentId}`, 'PUT', payload);
         if (res && res.success) {
             showToast(res.message || 'Status Retur PO berhasil diperbarui!', 'success');
             bootstrap.Modal.getInstance(document.getElementById('modalUpdateStatus')).hide();

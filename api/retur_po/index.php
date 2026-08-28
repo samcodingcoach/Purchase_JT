@@ -246,11 +246,17 @@ if ($method === 'POST') {
     $pengirimanRetur = in_array($input['pengiriman_retur'] ?? '', ['Vendor', 'Expedisi', 'Internal']) ? $input['pengiriman_retur'] : 'Vendor';
     $biayaRetur = floatval($input['biaya_retur'] ?? 0);
     $idKaryawanApproved = !empty($input['id_karyawan_approved']) ? intval($input['id_karyawan_approved']) : null;
+    if (empty($idKaryawanApproved)) {
+        $resAppFallback = $conn->query("SELECT k.id_karyawan FROM karyawan k JOIN jabatan j ON k.id_jabatan = j.id_jabatan WHERE j.level IN (1, 2) AND k.aktif = 1 ORDER BY j.level ASC LIMIT 1");
+        if ($resAppFallback && $rApp = $resAppFallback->fetch_assoc()) {
+            $idKaryawanApproved = intval($rApp['id_karyawan']);
+        }
+    }
     $status = in_array($input['status'] ?? '', ['DRAFT', 'MENUNGGU KONFIRMASI VENDOR']) ? $input['status'] : 'MENUNGGU KONFIRMASI VENDOR';
     $tanggalRetur = !empty($input['tanggal_po_retur']) ? trim($input['tanggal_po_retur']) : date('Y-m-d H:i:s');
     if (strlen($tanggalRetur) === 10) { $tanggalRetur .= ' ' . date('H:i:s'); }
 
-    $idKaryawan = !empty($currentUser['id_karyawan']) ? $currentUser['id_karyawan'] : 1;
+    $idKaryawan = !empty($user['id_karyawan']) ? $user['id_karyawan'] : 1;
     $items = isset($input['items']) && is_array($input['items']) ? $input['items'] : [];
 
     // Fallback: Jika id_rcv belum terisi (misal bernilai 0), coba auto-resolve dari items atau RCV rusak terbaru
@@ -497,8 +503,23 @@ if ($method === 'POST') {
 // 3. PUT: Update Status Persetujuan & Unit Pengganti
 // -------------------------------------------------------------
 if ($method === 'PUT') {
-    $input = json_decode(file_get_contents('php://input'), true) ?? [];
-    $idRetur = isset($input['id_po_retur']) ? intval($input['id_po_retur']) : (isset($_GET['id']) ? intval($_GET['id']) : 0);
+    $rawInput = file_get_contents('php://input');
+    $input = json_decode($rawInput, true);
+    if (!is_array($input)) {
+        parse_str($rawInput, $input);
+    }
+    $input = $input ?? [];
+
+    $idRetur = 0;
+    if (isset($input['id_po_retur']) && intval($input['id_po_retur']) > 0) {
+        $idRetur = intval($input['id_po_retur']);
+    } elseif (isset($input['id']) && intval($input['id']) > 0) {
+        $idRetur = intval($input['id']);
+    } elseif (isset($_GET['id']) && intval($_GET['id']) > 0) {
+        $idRetur = intval($_GET['id']);
+    } elseif (isset($_GET['id_po_retur']) && intval($_GET['id_po_retur']) > 0) {
+        $idRetur = intval($_GET['id_po_retur']);
+    }
 
     if ($idRetur <= 0) {
         sendJson(false, 'ID Retur PO tidak valid.', null, 422);
@@ -530,7 +551,7 @@ if ($method === 'PUT') {
 
         $idKaryawanApproved = $retur['id_karyawan_approved'];
         if (in_array($newStatus, ['DISETUJUI VENDOR', 'DITERIMA']) && empty($idKaryawanApproved)) {
-            $idKaryawanApproved = $currentUser['id_karyawan'] ?? 1;
+            $idKaryawanApproved = $user['id_karyawan'] ?? 1;
         }
 
         // Update Header
