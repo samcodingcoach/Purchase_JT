@@ -569,18 +569,87 @@ if ($method === 'PUT') {
         $stmtUpdH->execute();
         $stmtUpdH->close();
 
-        // Update Item Replacement / Qty Diganti jika ada
+        // 2. Update Detail & Stok Barang Gudang (barang_stok)
+        $idSite = (int)$retur['id_site'];
+        $isTukarUnit = ((int)$retur['kompensasi'] === 1);
+
+        // Ambil data detail lama
+        $stmtAllItems = $conn->prepare("SELECT id_po_retur_detail, id_barang, qty_retur, qty_diganti FROM retur_po_detail WHERE id_po_retur = ?");
+        $stmtAllItems->bind_param("i", $idRetur);
+        $stmtAllItems->execute();
+        $existingItems = $stmtAllItems->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmtAllItems->close();
+
+        // Petakan item input
+        $inputItemsMap = [];
         if (isset($input['items']) && is_array($input['items'])) {
-            $stmtUpdItem = $conn->prepare("UPDATE retur_po_detail SET qty_diganti = ? WHERE id_po_retur_detail = ? AND id_po_retur = ?");
             foreach ($input['items'] as $it) {
                 $idDet = intval($it['id_po_retur_detail'] ?? 0);
-                $qtyGanti = floatval($it['qty_diganti'] ?? 0);
-                if ($idDet > 0) {
-                    $stmtUpdItem->bind_param("dii", $qtyGanti, $idDet, $idRetur);
-                    $stmtUpdItem->execute();
+                if ($idDet > 0 && isset($it['qty_diganti'])) {
+                    $inputItemsMap[$idDet] = floatval($it['qty_diganti']);
                 }
             }
-            $stmtUpdItem->close();
+        }
+
+        $stmtUpdItem = $conn->prepare("UPDATE retur_po_detail SET qty_diganti = ? WHERE id_po_retur_detail = ? AND id_po_retur = ?");
+        $stmtCheckStok = $conn->prepare("SELECT id_stok, stok FROM barang_stok WHERE id_barang = ? AND id_site = ? LIMIT 1");
+        $stmtUpStok = $conn->prepare("UPDATE barang_stok SET stok = GREATEST(0, stok + ?) WHERE id_stok = ?");
+        $stmtInsStok = $conn->prepare("INSERT INTO barang_stok (id_barang, id_site, stok) VALUES (?, ?, ?)");
+
+        foreach ($existingItems as $exItem) {
+            $idDet = (int)$exItem['id_po_retur_detail'];
+            $idBarang = (int)$exItem['id_barang'];
+            $qtyRetur = (int)$exItem['qty_retur'];
+            $oldQtyGanti = (int)$exItem['qty_diganti'];
+
+            // Tentukan newQtyGanti
+            if (isset($inputItemsMap[$idDet])) {
+                $newQtyGanti = (int)$inputItemsMap[$idDet];
+            } elseif ($newStatus === 'DITERIMA' && $oldQtyGanti <= 0 && $isTukarUnit) {
+                $newQtyGanti = $qtyRetur;
+            } else {
+                $newQtyGanti = $oldQtyGanti;
+            }
+
+            $diffStok = $newQtyGanti - $oldQtyGanti;
+
+            // Update qty_diganti pada tabel retur_po_detail
+            $stmtUpdItem->bind_param("dii", $newQtyGanti, $idDet, $idRetur);
+            $stmtUpdItem->execute();
+
+            // Update stok di tabel barang_stok
+            if ($isTukarUnit && $diffStok != 0 && $idSite > 0 && $idBarang > 0) {
+                $stmtCheckStok->bind_param("ii", $idBarang, $idSite);
+                $stmtCheckStok->execute();
+                $stokRow = $stmtCheckStok->get_result()->fetch_assoc();
+
+                if ($stokRow) {
+                    $idStok = (int)$stokRow['id_stok'];
+                    $stmtUpStok->bind_param("ii", $diffStok, $idStok);
+                    $stmtUpStok->execute();
+                } else {
+                    if ($diffStok > 0) {
+                        $stmtInsStok->bind_param("iii", $idBarang, $idSite, $diffStok);
+                        $stmtInsStok->execute();
+                    }
+                }
+            }
+        }
+
+        $stmtUpdItem->close();
+        $stmtCheckStok->close();
+        $stmtUpStok->close();
+        $stmtInsStok->close();
+
+        // 3. Update receiving_order.status = 1 jika retur telah disetujui vendor atau diterima
+        $idRcv = (int)($retur['id_rcv'] ?? 0);
+        if ($idRcv > 0 && in_array($newStatus, ['DITERIMA', 'DISETUJUI VENDOR', 'DIKIRIM KE VENDOR'])) {
+            $stmtUpdRcv = $conn->prepare("UPDATE receiving_order SET status = 1 WHERE id_rcv = ?");
+            if ($stmtUpdRcv) {
+                $stmtUpdRcv->bind_param("i", $idRcv);
+                $stmtUpdRcv->execute();
+                $stmtUpdRcv->close();
+            }
         }
 
         $conn->commit();

@@ -265,7 +265,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                                 <tr>
                                     <th style="width: 45px;" class="text-center">No</th>
                                     <th style="min-width: 220px;">Nama Barang</th>
-                                    <th style="width: 110px;" class="text-center">Qty Retur</th>
+                                    <th style="width: 110px;" class="text-center">KTS Retur</th>
                                     <th style="width: 90px;" class="text-center">Satuan</th>
                                     <th style="width: 140px;" class="text-end">Harga Satuan</th>
                                     <th style="width: 150px;" class="text-end">Subtotal</th>
@@ -324,47 +324,116 @@ require_once __DIR__ . '/../../components/navbar.php';
     </div>
 </div>
 
-<!-- MODAL UPDATE STATUS & TRACKING -->
+<!-- MODAL UPDATE STATUS & TRACKING (3 TABS) -->
 <div class="modal fade" id="modalUpdateStatus" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow">
-            <div class="modal-header">
-                <h6 class="modal-title fw-bold"><i class="bi bi-arrow-repeat text-primary me-2"></i>Tindak Lanjut &amp; Status Retur PO</h6>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header bg-white pt-3 pb-0 px-4 border-bottom flex-column align-items-stretch">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-arrow-repeat text-primary fs-5"></i>
+                        <h6 class="modal-title fw-bold text-dark mb-0">Tindak Lanjut &amp; Status Retur PO</h6>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <ul class="nav nav-tabs border-bottom-0" id="modalUpdateStatusTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active fw-bold text-dark small py-2 px-3" id="tab-modal-status-btn" data-bs-toggle="tab" data-bs-target="#tab-modal-status" type="button" role="tab">
+                            <i class="bi bi-check2-circle me-1 text-primary"></i> 1. Status
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold text-dark small py-2 px-3" id="tab-modal-catatan-btn" data-bs-toggle="tab" data-bs-target="#tab-modal-catatan" type="button" role="tab">
+                            <i class="bi bi-journal-text me-1 text-primary"></i> 2. Catatan
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold text-dark small py-2 px-3" id="tab-modal-items-btn" data-bs-toggle="tab" data-bs-target="#tab-modal-items" type="button" role="tab">
+                            <i class="bi bi-box-seam me-1 text-primary"></i> 3. Rincian Retur
+                        </button>
+                    </li>
+                </ul>
             </div>
-            <div class="modal-body">
+
+            <div class="modal-body p-4 bg-light">
                 <form id="formUpdateStatus" onsubmit="submitStatusUpdate(event)">
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold text-dark">Status Dokumen Retur <span class="text-danger">*</span></label>
-                        <select class="form-select form-select-sm" id="updateStatusSelect" onchange="onUpdateStatusChange()" required>
-                            <option value="DRAFT">DRAFT (Draft Pengajuan)</option>
-                            <option value="MENUNGGU KONFIRMASI VENDOR">MENUNGGU KONFIRMASI VENDOR</option>
-                            <option value="DISETUJUI VENDOR">DISETUJUI VENDOR (Klaim Diterima)</option>
-                            <option value="TIDAK DISETUJUI VENDOR">TIDAK DISETUJUI VENDOR (Klaim Ditolak)</option>
-                            <option value="DIKIRIM KE VENDOR">DIKIRIM KE VENDOR (Barang Dalam Perjalanan)</option>
-                            <option value="DITERIMA">DITERIMA / SELESAI (Kompensasi Tuntas)</option>
-                        </select>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold text-dark">PIC Vendor</label>
-                        <input type="text" class="form-control form-control-sm" id="updatePicVendor" placeholder="Nama PIC vendor yang menyetujui">
-                    </div>
-
-                    <div class="row g-2 mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label small fw-semibold text-muted">No. SJ Pengembalian</label>
-                            <input type="text" class="form-control form-control-sm" id="updateNoSjRetur" placeholder="SJ-RET-XXXX">
+                    <div class="tab-content" id="modalUpdateStatusTabContent">
+                        <!-- TAB 1: STATUS -->
+                        <div class="tab-pane fade show active" id="tab-modal-status" role="tabpanel">
+                            <div class="card bg-white border-0 shadow-sm rounded-3 p-3">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold text-dark">Status Dokumen Retur <span class="text-danger">*</span></label>
+                                        <select class="form-select form-select-sm" id="updateStatusSelect" onchange="onUpdateStatusChange()" required>
+                                            <option value="DRAFT">DRAFT (Draft Pengajuan)</option>
+                                            <option value="MENUNGGU KONFIRMASI VENDOR">MENUNGGU KONFIRMASI VENDOR</option>
+                                            <option value="DISETUJUI VENDOR">DISETUJUI VENDOR (Klaim Diterima)</option>
+                                            <option value="TIDAK DISETUJUI VENDOR">TIDAK DISETUJUI VENDOR (Klaim Ditolak)</option>
+                                            <option value="DIKIRIM KE VENDOR">DIKIRIM KE VENDOR (Barang Dalam Perjalanan)</option>
+                                            <option value="DITERIMA">DITERIMA / SELESAI (Kompensasi Tuntas)</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold text-dark">PIC Vendor</label>
+                                        <input type="text" class="form-control form-control-sm" id="updatePicVendor" placeholder="Nama PIC vendor yang menyetujui">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold text-muted">No. SJ Pengembalian</label>
+                                        <input type="text" class="form-control form-control-sm" id="updateNoSjRetur" placeholder="SJ-RET-XXXX">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold text-muted">No. Nota Retur Pajak</label>
+                                        <input type="text" class="form-control form-control-sm" id="updateNoNotaPajak" placeholder="Untuk e-Faktur">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-semibold text-muted">No. Nota Retur Pajak</label>
-                            <input type="text" class="form-control form-control-sm" id="updateNoNotaPajak" placeholder="Untuk e-Faktur">
-                        </div>
-                    </div>
 
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold text-muted">Catatan Perkembangan Klaim</label>
-                        <textarea class="form-control form-control-sm" id="updateKeterangan" rows="2" placeholder="Tuliskan catatan respon vendor..."></textarea>
+                        <!-- TAB 2: CATATAN -->
+                        <div class="tab-pane fade" id="tab-modal-catatan" role="tabpanel">
+                            <div class="card bg-white border-0 shadow-sm rounded-3 p-3">
+                                <label class="form-label small fw-semibold text-dark mb-1">Catatan Perkembangan Klaim / Respon Vendor</label>
+                                <textarea class="form-control form-control-sm" id="updateKeterangan" rows="6" placeholder="Tuliskan catatan perkembangan tindak lanjut, kesepakatan kompensasi, atau respon vendor rekanan..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- TAB 3: RINCIAN RETUR -->
+                        <div class="tab-pane fade" id="tab-modal-items" role="tabpanel">
+                            <div class="card bg-white border-0 shadow-sm rounded-3 p-3">
+                                <div id="alertTabRincianInfo" class="alert alert-warning d-flex align-items-center py-2 px-3 mb-3 small border-0 shadow-none">
+                                    <i class="bi bi-info-circle-fill me-2 fs-6 text-warning-emphasis"></i>
+                                    <div>Rincian unit pengganti akan terisi otomatis saat status dokumen dipilih <strong>DITERIMA / SELESAI</strong>.</div>
+                                </div>
+
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <label class="form-label small fw-bold text-dark mb-0">
+                                            <i class="bi bi-box-arrow-in-down text-primary me-1"></i> Rincian Barang &amp; Unit Pengganti
+                                        </label>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-primary btn-sm px-2 py-1 small fw-semibold" id="btnFillAllQtyGanti" onclick="fillAllQtyGantiMax()">
+                                        <i class="bi bi-check-all me-1"></i> Isi Penuh Semua
+                                    </button>
+                                </div>
+
+                                <div class="table-responsive border rounded-2">
+                                    <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.82rem;">
+                                        <thead class="table-light text-muted">
+                                            <tr>
+                                                <th style="width: 40px;" class="text-center">No</th>
+                                                <th>Nama Barang</th>
+                                                <th style="width: 110px;" class="text-center">KTS Retur</th>
+                                                <th style="width: 140px;" class="text-center">KTS Diganti</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="updateUnitPenggantiList">
+                                            <!-- Populated dynamically -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="d-flex justify-content-end gap-2 mt-4 pt-2 border-top">
@@ -378,6 +447,7 @@ require_once __DIR__ . '/../../components/navbar.php';
         </div>
     </div>
 </div>
+
 
 <!-- MODAL RINCIAN & TINDAK LANJUT BARANG (ACTION POPUP) -->
 <div class="modal fade" id="modalItemAction" tabindex="-1" aria-labelledby="modalItemActionLabel" aria-hidden="true">
@@ -426,7 +496,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                         <div class="card bg-white border-0 shadow-sm rounded-3 p-3">
                             <div class="row g-3 mb-3">
                                 <div class="col-md-4">
-                                    <label class="form-label small fw-semibold text-muted d-block mb-1">Qty Retur</label>
+                                    <label class="form-label small fw-semibold text-muted d-block mb-1">KTS Retur</label>
                                     <span class="fw-bold fs-6 font-monospace text-dark" id="modalItemActionQty">-</span>
                                 </div>
                                 <div class="col-md-4">
@@ -753,6 +823,40 @@ function openUpdateStatusModal() {
     document.getElementById('updateNoSjRetur').value = returDetailData.nomor_sj_retur || '';
     document.getElementById('updateNoNotaPajak').value = returDetailData.nomor_nota_retur_pajak || '';
     document.getElementById('updateKeterangan').value = returDetailData.keterangan || '';
+
+    // Render tabel rincian barang pada Tab 3
+    const unitList = document.getElementById('updateUnitPenggantiList');
+    if (returDetailData.items && returDetailData.items.length > 0 && unitList) {
+        let listHtml = '';
+        returDetailData.items.forEach((it, idx) => {
+            const currentQtyGanti = (it.qty_diganti !== null && it.qty_diganti !== undefined && parseFloat(it.qty_diganti) > 0) ? it.qty_diganti : 0;
+            listHtml += `
+            <tr>
+                <td class="text-center text-muted fw-semibold">${idx + 1}</td>
+                <td>
+                    <div class="fw-bold text-dark">${it.nama_barang}</div>
+                    <div class="text-muted font-monospace" style="font-size:0.75rem;">${it.kode_barang || '-'}</div>
+                </td>
+                <td class="text-center font-monospace fw-bold">${it.qty_retur} ${it.satuan}</td>
+                <td class="text-center">
+                    <input type="number" step="any" min="0" max="${it.qty_retur}" 
+                           class="form-control form-control-sm text-center fw-bold font-monospace update-item-qty-diganti" 
+                           data-id-detail="${it.id_po_retur_detail}" 
+                           data-max="${it.qty_retur}"
+                           value="${currentQtyGanti}">
+                </td>
+            </tr>`;
+        });
+        unitList.innerHTML = listHtml;
+    }
+
+    // Aktifkan tab pertama (1. Status)
+    const firstTabBtn = document.getElementById('tab-modal-status-btn');
+    if (firstTabBtn) {
+        const tabTrigger = new bootstrap.Tab(firstTabBtn);
+        tabTrigger.show();
+    }
+
     onUpdateStatusChange();
 
     const modal = new bootstrap.Modal(document.getElementById('modalUpdateStatus'));
@@ -769,6 +873,43 @@ function onUpdateStatusChange() {
         const idPad = String(returId).padStart(4, '0');
         sjInput.value = `SJ-RET-${yy}${mm}-${idPad}`;
     }
+
+    // Penyesuaian Tab 3: Terisi otomatis jika dipilih DITERIMA
+    const isDiterima = (st === 'DITERIMA');
+    const alertInfo = document.getElementById('alertTabRincianInfo');
+    const btnFillAll = document.getElementById('btnFillAllQtyGanti');
+    const itemInputs = document.querySelectorAll('.update-item-qty-diganti');
+
+    if (alertInfo) {
+        if (isDiterima) {
+            alertInfo.className = 'alert alert-success d-flex align-items-center py-2 px-3 mb-3 small border-0 shadow-none';
+            alertInfo.innerHTML = '<i class="bi bi-check-circle-fill me-2 fs-6 text-success"></i><div>Status <strong>DITERIMA / SELESAI</strong> aktif. Unit pengganti telah terisi otomatis dan stok fisik gudang akan bertambah saat disimpan.</div>';
+        } else {
+            alertInfo.className = 'alert alert-warning d-flex align-items-center py-2 px-3 mb-3 small border-0 shadow-none';
+            alertInfo.innerHTML = '<i class="bi bi-info-circle-fill me-2 fs-6 text-warning-emphasis"></i><div>Rincian unit pengganti akan terisi otomatis saat status dokumen dipilih <strong>DITERIMA / SELESAI</strong>.</div>';
+        }
+    }
+
+    if (btnFillAll) {
+        btnFillAll.disabled = !isDiterima;
+    }
+
+    itemInputs.forEach(inp => {
+        inp.disabled = !isDiterima;
+        if (isDiterima) {
+            const maxVal = inp.getAttribute('data-max') || 0;
+            // Jika nilai saat ini masih 0, otomatis isi penuh dengan nilai max (qty_retur)
+            if (parseFloat(inp.value) <= 0) {
+                inp.value = maxVal;
+            }
+        }
+    });
+}
+
+function fillAllQtyGantiMax() {
+    document.querySelectorAll('.update-item-qty-diganti').forEach(inp => {
+        inp.value = inp.getAttribute('data-max') || inp.value;
+    });
 }
 
 async function submitStatusUpdate(e) {
@@ -776,6 +917,20 @@ async function submitStatusUpdate(e) {
     const currentId = returId || (returDetailData ? returDetailData.id_po_retur : parseInt(new URLSearchParams(window.location.search).get('id')));
     const selectedStatus = document.getElementById('updateStatusSelect').value;
     const nomorSjInput = document.getElementById('updateNoSjRetur').value.trim();
+
+    // Kumpulkan item unit pengganti
+    const itemsPayload = [];
+    document.querySelectorAll('.update-item-qty-diganti').forEach(inp => {
+        const idDet = parseInt(inp.getAttribute('data-id-detail'));
+        let qtyGanti = parseFloat(inp.value);
+        if (isNaN(qtyGanti) || (selectedStatus === 'DITERIMA' && qtyGanti <= 0)) {
+            qtyGanti = parseFloat(inp.getAttribute('data-max')) || 0;
+            inp.value = qtyGanti;
+        }
+        if (idDet > 0) {
+            itemsPayload.push({ id_po_retur_detail: idDet, qty_diganti: qtyGanti });
+        }
+    });
 
     const payload = {
         id_po_retur: currentId,
@@ -787,13 +942,20 @@ async function submitStatusUpdate(e) {
         keterangan: document.getElementById('updateKeterangan').value.trim()
     };
 
+    if (itemsPayload.length > 0) {
+        payload.items = itemsPayload;
+    }
+
     try {
         const res = await apiRequest(`/api/retur_po/index.php?id=${currentId}`, {
             method: 'PUT',
             body: JSON.stringify(payload)
         });
         if (res && res.success) {
-            showToast(res.message || 'Status Retur PO berhasil diperbarui!', 'success');
+            const successMsg = (selectedStatus === 'DITERIMA' && itemsPayload.length > 0)
+                ? 'Status Retur berhasil diperbarui menjadi DITERIMA dan stok barang pengganti berhasil ditambahkan ke gudang!'
+                : (res.message || 'Status Retur PO berhasil diperbarui!');
+            showToast(successMsg, 'success');
             bootstrap.Modal.getInstance(document.getElementById('modalUpdateStatus')).hide();
             await loadReturDetail();
 
