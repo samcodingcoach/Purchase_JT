@@ -133,6 +133,7 @@ const AppTabs = {
             { id: 'retur_po', title: 'Retur PO', url: BASE_URL + '/admin/pages/retur_po/index.php', icon: 'bi-arrow-return-left', closable: true },
             { id: 'retur_create', title: 'Buat Retur PO', url: BASE_URL + '/admin/pages/retur_po/create.php', icon: 'bi-plus-circle-fill', closable: true },
             { id: 'retur_detail', title: 'Detail Retur PO', url: BASE_URL + '/admin/pages/retur_po/detail.php', icon: 'bi-file-earmark-diff-fill', closable: true },
+            { id: 'faktur_po', title: 'Faktur PO', url: BASE_URL + '/admin/pages/faktur_po/index.php', icon: 'bi-receipt-cutoff', closable: true },
             { id: 'ro_create', title: 'Buat RO Baru', url: BASE_URL + '/admin/pages/request_order/create.php', icon: 'bi-file-earmark-plus', closable: true },
             { id: 'proses_po', title: 'Proses PO', url: BASE_URL + '/admin/pages/request_order/proses_po.php', icon: 'bi-cart-check-fill', closable: true },
             { id: 'site', title: 'Master Site', url: BASE_URL + '/admin/pages/site/index.php', icon: 'bi-geo-alt-fill', closable: true },
@@ -192,6 +193,7 @@ const AppTabs = {
                 (t.id === 'retur_create' && path.includes('/retur_po/create.php')) ||
                 (t.id === 'retur_detail' && path.includes('/retur_po/detail.php')) ||
                 (t.id === 'retur_po' && path.includes('/retur_po/')) ||
+                (t.id === 'faktur_po' && path.includes('/faktur_po/')) ||
                 (t.id === 'po_outstanding' && path.includes('/purchase_order/outstanding.php')) ||
                 (t.id === 'purchase_order' && (path.includes('/purchase_order/index.php') || path.includes('/purchase_order/edit.php'))) || 
                 (t.id === 'request_order' && path.includes('/request_order/index.php')) || 
