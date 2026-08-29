@@ -9,7 +9,8 @@ require_once __DIR__ . '/../../../config/config.php';
 require_once __DIR__ . '/../../../config/session.php';
 require_once __DIR__ . '/../../../config/koneksi.php';
 
-$user = requireAuth([ROLE_FINANCE, ROLE_PURCHASING, ROLE_ADMIN, ROLE_MANAGER]);
+// Auth Protection: Khusus Finance, Admin, dan Manager
+$user = requireAuth([ROLE_FINANCE, ROLE_ADMIN, ROLE_MANAGER]);
 
 $pageTitle = 'Catat Pembayaran PO';
 $pageHeading = 'Formulir Pembayaran Faktur Pembelian';
@@ -59,7 +60,6 @@ textarea.form-control {
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
         <div>
             <h4 class="fw-bold text-dark mb-0">Catat Pembayaran Faktur PO</h4>
-            <div class="small text-muted mt-1">Input pelunasan atau angsuran kredit/termin pembayaran ke vendor</div>
         </div>
         <div class="d-flex gap-2">
             <a href="<?= BASE_URL ?>/admin/pages/pembayaran_po/index.php" class="btn btn-outline-secondary btn-sm px-3 shadow-sm" style="height: 38px; display: inline-flex; align-items: center;">
@@ -357,7 +357,6 @@ textarea.form-control {
                                 <select class="form-select" id="selectApprover" name="id_karyawan_approved" required>
                                     <option value="">-- Pilih Pejabat / Finance --</option>
                                 </select>
-                                <div class="form-text small text-muted">Pilih nama pejabat finance / manajemen yang memberikan persetujuan transfer lisan.</div>
                             </div>
 
                             <div class="col-sm-6">

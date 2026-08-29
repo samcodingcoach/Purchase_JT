@@ -9,7 +9,8 @@ require_once __DIR__ . '/../../../config/config.php';
 require_once __DIR__ . '/../../../config/session.php';
 require_once __DIR__ . '/../../../config/koneksi.php';
 
-$user = requireAuth([ROLE_PURCHASING, ROLE_ADMIN, ROLE_MANAGER]);
+// Auth Protection: Khusus Purchasing, Finance, Admin, dan Manager
+$user = requireAuth([ROLE_PURCHASING, ROLE_FINANCE, ROLE_ADMIN, ROLE_MANAGER]);
 
 $pageTitle = 'Faktur Purchase Order';
 $pageHeading = 'Daftar Faktur Pembelian';
@@ -417,6 +418,8 @@ require_once __DIR__ . '/../../components/navbar.php';
 </div>
 
 <script>
+const CURRENT_USER_ROLE = '<?= strtoupper($user['role'] ?? '') ?>';
+const CAN_PAY_ROLE = ['FINANCE', 'ADMIN', 'MANAGER'].includes(CURRENT_USER_ROLE);
 let currentPage = 1;
 let debounceTimer = null;
 let detailModalInstance = null;
@@ -505,7 +508,7 @@ function renderTable(rows, pagination) {
             ? `<button type="button" class="btn btn-outline-secondary btn-sm px-2 py-1 shadow-none opacity-50" disabled title="Faktur berstatus ${r.status} dan terkunci dari perubahan"><i class="bi bi-pencil"></i></button>`
             : `<a href="<?= BASE_URL ?>/admin/pages/faktur_po/edit.php?id=${r.id_faktur}" class="btn btn-outline-warning btn-sm px-2 py-1 shadow-none" title="Edit Faktur"><i class="bi bi-pencil"></i></a>`;
 
-        const canPay = !['LUNAS', 'BATAL', 'DRAFT'].includes(r.status) && (parseFloat(r.sisa_tagihan) > 0);
+        const canPay = CAN_PAY_ROLE && !['LUNAS', 'BATAL', 'DRAFT'].includes(r.status) && (parseFloat(r.sisa_tagihan) > 0);
         const payBtnHtml = canPay
             ? `<a href="<?= BASE_URL ?>/admin/pages/pembayaran_po/create.php?id_faktur=${r.id_faktur}" class="btn btn-outline-success btn-sm px-2 py-1 shadow-none" title="Catat Pembayaran ke Vendor"><i class="bi bi-cash-coin"></i></a>`
             : '';

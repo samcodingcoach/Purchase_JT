@@ -199,6 +199,13 @@ if ($method === 'GET') {
     ]);
 }
 
+// Role Check: Purchasing hanya boleh melihat riwayat (GET), tidak boleh mencatat/mengubah pembayaran
+if (in_array($method, ['POST', 'PUT', 'DELETE'])) {
+    if (!in_array($user['role'], [ROLE_FINANCE, ROLE_ADMIN, ROLE_MANAGER])) {
+        sendJson(false, 'Akses ditolak. Hanya Finance, Admin, atau Manager yang berhak mencatat dan memproses transaksi pembayaran kas.', null, 403);
+    }
+}
+
 // -------------------------------------------------------------
 // 2. POST: Catat Transaksi Pembayaran Baru (1x Lunas / Kredit)
 // -------------------------------------------------------------

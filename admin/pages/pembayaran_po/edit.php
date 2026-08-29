@@ -9,7 +9,7 @@ require_once __DIR__ . '/../../../config/config.php';
 require_once __DIR__ . '/../../../config/session.php';
 require_once __DIR__ . '/../../../config/koneksi.php';
 
-$user = requireAuth([ROLE_FINANCE, ROLE_PURCHASING, ROLE_ADMIN, ROLE_MANAGER]);
+$user = requireAuth([ROLE_FINANCE, ROLE_ADMIN, ROLE_MANAGER]);
 
 $pageTitle = 'Edit Pembayaran PO';
 $pageHeading = 'Perbarui Data Pembayaran Faktur';
