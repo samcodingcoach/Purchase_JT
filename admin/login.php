@@ -459,6 +459,7 @@ $companyCity = $companyProfile['kota'] ?? 'Surabaya';
                         <button type="button" class="role-btn-chip" onclick="setDemoAccount('mekanik@jayateknis.com', 'admin123')">Mekanik</button>
                         <button type="button" class="role-btn-chip" onclick="setDemoAccount('logistik@jayateknis.com', 'admin123')">Logistik</button>
                         <button type="button" class="role-btn-chip" onclick="setDemoAccount('purchasing@jayateknis.com', 'admin123')">Purchasing</button>
+                        <button type="button" class="role-btn-chip" onclick="setDemoAccount('finance@jayateknis.com', 'admin123')">Finance</button>
                         <button type="button" class="role-btn-chip" onclick="setDemoAccount('manager@jayateknis.com', 'admin123')">Manager</button>
                     </div>
                 </div>

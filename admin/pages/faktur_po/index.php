@@ -505,6 +505,11 @@ function renderTable(rows, pagination) {
             ? `<button type="button" class="btn btn-outline-secondary btn-sm px-2 py-1 shadow-none opacity-50" disabled title="Faktur berstatus ${r.status} dan terkunci dari perubahan"><i class="bi bi-pencil"></i></button>`
             : `<a href="<?= BASE_URL ?>/admin/pages/faktur_po/edit.php?id=${r.id_faktur}" class="btn btn-outline-warning btn-sm px-2 py-1 shadow-none" title="Edit Faktur"><i class="bi bi-pencil"></i></a>`;
 
+        const canPay = !['LUNAS', 'BATAL', 'DRAFT'].includes(r.status) && (parseFloat(r.sisa_tagihan) > 0);
+        const payBtnHtml = canPay
+            ? `<a href="<?= BASE_URL ?>/admin/pages/pembayaran_po/create.php?id_faktur=${r.id_faktur}" class="btn btn-outline-success btn-sm px-2 py-1 shadow-none" title="Catat Pembayaran ke Vendor"><i class="bi bi-cash-coin"></i></a>`
+            : '';
+
         // Cek apakah data sudah pernah diedit/diupdate (created_at != updated_at)
         const isUpdated = r.updated_at && r.created_at && (r.updated_at !== r.created_at);
         const updatedBadge = isUpdated 
@@ -543,6 +548,7 @@ function renderTable(rows, pagination) {
                     <button type="button" class="btn btn-outline-primary btn-sm px-2 py-1 shadow-none" onclick="viewFakturDetail(${r.id_faktur})" title="View Detail Faktur">
                         <i class="bi bi-eye"></i>
                     </button>
+                    ${payBtnHtml}
                     ${editBtnHtml}
                 </div>
             </td>

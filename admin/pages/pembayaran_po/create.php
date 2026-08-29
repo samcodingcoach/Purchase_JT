@@ -1,0 +1,832 @@
+<?php
+/**
+ * Halaman Formulir Catat Pembayaran Faktur PO (Payment Purchase)
+ * Path: admin/pages/pembayaran_po/create.php
+ * Khusus Role: FINANCE, PURCHASING, ADMIN, MANAGER
+ */
+
+require_once __DIR__ . '/../../../config/config.php';
+require_once __DIR__ . '/../../../config/session.php';
+require_once __DIR__ . '/../../../config/koneksi.php';
+
+$user = requireAuth([ROLE_FINANCE, ROLE_PURCHASING, ROLE_ADMIN, ROLE_MANAGER]);
+
+$pageTitle = 'Catat Pembayaran PO';
+$pageHeading = 'Formulir Pembayaran Faktur Pembelian';
+
+// Ambil parameter id_faktur jika dibuka langsung dari faktur detail
+$preselectedIdFaktur = isset($_GET['id_faktur']) ? intval($_GET['id_faktur']) : 0;
+
+require_once __DIR__ . '/../../components/header.php';
+require_once __DIR__ . '/../../components/sidebar.php';
+require_once __DIR__ . '/../../components/navbar.php';
+?>
+
+<style>
+/* Standardize Height of all form inputs & controls */
+.form-control,
+.form-control-sm,
+.form-select,
+.form-select-sm,
+.input-group > .form-control,
+.input-group > .btn,
+.input-group > .input-group-text,
+.input-group-sm > .form-control,
+.input-group-sm > .btn,
+.input-group-sm > .input-group-text,
+.custom-select-trigger {
+    height: 38px !important;
+    min-height: 38px !important;
+    font-size: 0.875rem !important;
+}
+
+textarea.form-control {
+    height: auto !important;
+    min-height: 100px !important;
+}
+
+.faktur-opt-item {
+    transition: background-color 0.15s ease;
+    cursor: pointer !important;
+}
+.faktur-opt-item:hover {
+    background-color: #f1f5f9 !important;
+}
+</style>
+
+<div class="container-fluid px-0">
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <div>
+            <h4 class="fw-bold text-dark mb-0">Catat Pembayaran Faktur PO</h4>
+            <div class="small text-muted mt-1">Input pelunasan atau angsuran kredit/termin pembayaran ke vendor</div>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="<?= BASE_URL ?>/admin/pages/pembayaran_po/index.php" class="btn btn-outline-secondary btn-sm px-3 shadow-sm" style="height: 38px; display: inline-flex; align-items: center;">
+                Kembali ke Riwayat
+            </a>
+        </div>
+    </div>
+
+    <form id="formPayment" onsubmit="event.preventDefault(); submitPayment();">
+        <input type="hidden" id="selectedIdFaktur" name="id_faktur" value="<?= $preselectedIdFaktur ?>" required>
+        <input type="hidden" id="hiddenBuktiBase64" name="file_bukti_bayar_base64">
+
+        <!-- CARD TAB MODULAR SESUAI KONTEKS & FUNGSI -->
+        <div class="card border-0 shadow-sm rounded-3 mb-4">
+            <div class="card-header bg-white border-bottom p-0">
+                <ul class="nav nav-tabs card-header-tabs m-0 px-3" id="paymentTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active fw-semibold py-3 px-3" id="tab-faktur-btn" data-bs-toggle="tab" data-bs-target="#tab-faktur" type="button" role="tab">
+                            <i class="bi bi-receipt me-1 text-primary"></i> 1. Tagihan &amp; Faktur
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-semibold py-3 px-3" id="tab-nominal-btn" data-bs-toggle="tab" data-bs-target="#tab-nominal" type="button" role="tab">
+                            <i class="bi bi-cash-coin me-1 text-primary"></i> 2. Rincian Pembayaran
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-semibold py-3 px-3" id="tab-rekening-btn" data-bs-toggle="tab" data-bs-target="#tab-rekening" type="button" role="tab">
+                            <i class="bi bi-bank me-1 text-primary"></i> 3. Kas &amp; Rekening Pengirim
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-semibold py-3 px-3" id="tab-approval-btn" data-bs-toggle="tab" data-bs-target="#tab-approval" type="button" role="tab">
+                            <i class="bi bi-shield-check me-1 text-primary"></i> 4. Approval &amp; Bukti
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="card-body p-4">
+                <div class="tab-content" id="paymentTabContent">
+                    
+                    <!-- TAB 1: TAGIHAN & FAKTUR -->
+                    <div class="tab-pane fade show active" id="tab-faktur" role="tabpanel">
+                        <div class="row g-4">
+                            <div class="col-lg-6">
+                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Pilih Dokumen Faktur Tagihan</h6>
+
+                                <div class="mb-3 position-relative" id="fakturSelectWrapper">
+                                    <label class="form-label small fw-semibold text-dark">
+                                        Dokumen Faktur PO Belum Lunas <span class="text-danger">*</span>
+                                    </label>
+
+                                    <!-- Trigger Display Box -->
+                                    <div class="custom-select-trigger d-flex align-items-center justify-content-between p-2 px-3 border rounded-3 bg-white cursor-pointer shadow-sm" id="fakturTriggerBox" onclick="toggleFakturDropdown(event)" style="cursor: pointer;">
+                                        <div id="fakturSelectedDisplay" class="text-truncate me-2">
+                                            <span class="text-muted">Cari Faktur PO (No. Faktur, Vendor, Invoice)...</span>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-1">
+                                            <button type="button" class="btn btn-sm btn-link text-danger p-0 me-1" id="fakturClearBtn" onclick="clearFakturSelection(event)" style="display: none;" title="Hapus Pilihan">
+                                                Hapus
+                                            </button>
+                                            <span class="text-muted small">&#9662;</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Dropdown Menu -->
+                                    <div class="faktur-dropdown-menu shadow-lg border rounded-3 p-2 bg-white" id="fakturDropdownMenu" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 1050;">
+                                        <div class="input-group input-group-sm mb-2">
+                                            <span class="input-group-text bg-light text-muted">Cari</span>
+                                            <input type="text" class="form-control form-control-sm" id="fakturSearchInput" placeholder="Ketik No. Faktur, Vendor, atau No. Invoice..." autocomplete="off" oninput="filterFakturList()">
+                                        </div>
+                                        <div class="overflow-auto" id="fakturOptionsContainer" style="max-height: 250px;">
+                                            <!-- Populated dynamically by JS -->
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- INFORMASI REKENING VENDOR TUJUAN -->
+                                <div class="p-3 bg-light rounded-3 border mb-3">
+                                    <div class="small fw-bold text-dark mb-2">Rekening Vendor (Tujuan Transfer Pembayaran):</div>
+                                    <div class="row g-2 small">
+                                        <div class="col-sm-4">
+                                            <span class="text-muted d-block">Bank Tujuan:</span>
+                                            <strong class="font-monospace text-dark" id="dispBankVendor">-</strong>
+                                        </div>
+                                        <div class="col-sm-8">
+                                            <span class="text-muted d-block">Nomor Rekening Tujuan:</span>
+                                            <strong class="font-monospace text-primary fs-6" id="dispNorekVendor">-</strong>
+                                        </div>
+                                        <div class="col-12">
+                                            <span class="text-muted d-block">Atas Nama Rekening:</span>
+                                            <span class="fw-semibold text-dark" id="dispAnVendor">-</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-6">
+                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Status &amp; Nilai Tagihan</h6>
+
+                                <div id="fakturSummaryContainer" class="p-3 bg-light rounded-3 border">
+                                    <div class="row g-2 small mb-3">
+                                        <div class="col-sm-6">
+                                            <span class="text-muted d-block">No. Faktur Sistem:</span>
+                                            <strong class="font-monospace text-primary" id="dispNomorFaktur">-</strong>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <span class="text-muted d-block">No. Invoice Vendor:</span>
+                                            <strong class="font-monospace text-dark" id="dispNomorFakturVendor">-</strong>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <span class="text-muted d-block">Nama Vendor:</span>
+                                            <span class="fw-bold text-dark" id="dispNamaVendor">-</span>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <span class="text-muted d-block">Jatuh Tempo (TOP):</span>
+                                            <strong class="text-danger" id="dispTanggalJatuhTempo">-</strong>
+                                        </div>
+                                    </div>
+
+                                    <!-- KOTAK FINANSIAL -->
+                                    <div class="row g-2 pt-3 border-top text-center">
+                                        <div class="col-4">
+                                            <div class="text-muted small">Total Tagihan</div>
+                                            <div class="fw-bold font-monospace fs-6 text-dark" id="dispTotalTagihan">Rp 0</div>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="text-muted small">Sudah Dibayar</div>
+                                            <div class="fw-bold font-monospace fs-6 text-success" id="dispTerbayar">Rp 0</div>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="text-muted small">Sisa Tagihan</div>
+                                            <div class="fw-bold font-monospace fs-6 text-danger" id="dispSisaTagihan">Rp 0</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- RIWAYAT ANGSURAN SEBELUMNYA -->
+                                <div id="fakturHistoryContainer" class="mt-3" style="display: none;">
+                                    <div class="fw-semibold text-dark small mb-2">Riwayat Pembayaran Sebelumnya:</div>
+                                    <div class="table-responsive border rounded-3 bg-white">
+                                        <table class="table table-sm table-striped small mb-0">
+                                            <thead class="table-light text-secondary">
+                                                <tr>
+                                                    <th>Kode</th>
+                                                    <th>Tgl Bayar</th>
+                                                    <th class="text-end">Nominal</th>
+                                                    <th>Sisa Hutang</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="fakturHistoryTableBody">
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 pt-3 border-top d-flex justify-content-end">
+                            <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold shadow-sm" onclick="goToTab('tab-nominal')">
+                                Lanjut ke Rincian Pembayaran
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: RINCIAN PEMBAYARAN -->
+                    <div class="tab-pane fade" id="tab-nominal" role="tabpanel">
+                        <div class="row g-4">
+                            <div class="col-lg-6">
+                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Skema &amp; Waktu Pembayaran</h6>
+
+                                <!-- SKEMA PEMBAYARAN -->
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold text-dark">Skema Pembayaran <span class="text-danger">*</span></label>
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <input type="radio" class="btn-check" name="jenis_pembayaran" id="jenisLunas" value="1" checked onchange="handleJenisPembayaranChange()">
+                                            <label class="btn btn-outline-success w-100 p-2 text-start rounded-3" for="jenisLunas">
+                                                <div class="fw-bold small">1x Bayar (Lunas)</div>
+                                                <div class="text-muted" style="font-size: 0.72rem;">Bayar penuh sisa tagihan</div>
+                                            </label>
+                                        </div>
+                                        <div class="col-6">
+                                            <input type="radio" class="btn-check" name="jenis_pembayaran" id="jenisKredit" value="0" onchange="handleJenisPembayaranChange()">
+                                            <label class="btn btn-outline-warning w-100 p-2 text-start rounded-3" for="jenisKredit">
+                                                <div class="fw-bold small">Kredit / Sebagian</div>
+                                                <div class="text-muted" style="font-size: 0.72rem;">Angsuran (Maks. s/d TOP)</div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold text-dark">Tanggal Pembayaran <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" id="tanggalBayar" name="tanggal_bayar" value="<?= date('Y-m-d') ?>" required onchange="validateDueDateLimit()">
+                                    <div class="form-text small text-muted">Untuk pembayaran kredit/sebagian, tanggal bayar tidak boleh melewati tanggal jatuh tempo TOP Faktur.</div>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-6">
+                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Nominal &amp; Kalkulasi Finansial</h6>
+
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold text-dark">Nominal Pembayaran Transfer <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text font-monospace fw-bold">Rp</span>
+                                        <input type="text" class="form-control text-end font-monospace fw-bold fs-6 text-primary" id="nominalPengiriman" placeholder="0" required oninput="handleNominalInput(this)">
+                                    </div>
+                                    <div class="form-text small text-muted">Otomatis berpemisah ribuan saat diketik.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold text-dark">Biaya Admin Bank (Jika Ada)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text font-monospace">Rp</span>
+                                        <input type="text" class="form-control text-end font-monospace" id="biayaAdmin" value="0" placeholder="0" oninput="handleBiayaAdminInput(this)">
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold text-dark">Estimasi Sisa Tagihan Sesudah Transaksi</label>
+                                    <input type="text" class="form-control font-monospace fw-bold bg-light" id="displaySisaSesudah" value="Rp 0" readonly>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 pt-3 border-top d-flex justify-content-between">
+                            <button type="button" class="btn btn-outline-secondary btn-sm px-3" onclick="goToTab('tab-faktur')">
+                                Kembali ke Tagihan &amp; Faktur
+                            </button>
+                            <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold shadow-sm" onclick="goToTab('tab-rekening')">
+                                Lanjut ke Kas &amp; Rekening Pengirim
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: KAS & REKENING PENGIRIM -->
+                    <div class="tab-pane fade" id="tab-rekening" role="tabpanel">
+                        <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Informasi Rekening Asal Pengirim (Kas Perusahaan)</h6>
+                        
+                        <div class="row g-3">
+                            <div class="col-sm-6 position-relative" id="bankPengirimWrapper">
+                                <label class="form-label small fw-semibold text-dark">Bank Asal / Kas Pengirim <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control font-monospace fw-semibold" id="bankPengirim" name="bank_pengirim" placeholder="Pilih atau ketik bank..." autocomplete="off" onfocus="showBankPengirimDropdown()" oninput="filterBankPengirimDropdown()" required>
+                                    <button class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split px-3" type="button" onclick="toggleBankPengirimDropdown(event)" title="Pilih Bank"></button>
+                                </div>
+                                <div class="dropdown-menu shadow-sm w-100 p-1" id="bankPengirimMenu" style="max-height: 220px; overflow-y: auto; display: none; position: absolute; top: calc(100% + 2px); left: 0; z-index: 1050;">
+                                    <button type="button" class="dropdown-item py-1 small rounded bank-p-opt" onclick="selectBankPengirim('BCA')">BCA</button>
+                                    <button type="button" class="dropdown-item py-1 small rounded bank-p-opt" onclick="selectBankPengirim('Bank Mandiri')">Bank Mandiri</button>
+                                    <button type="button" class="dropdown-item py-1 small rounded bank-p-opt" onclick="selectBankPengirim('BRI')">BRI</button>
+                                    <button type="button" class="dropdown-item py-1 small rounded bank-p-opt" onclick="selectBankPengirim('BNI')">BNI</button>
+                                    <button type="button" class="dropdown-item py-1 small rounded bank-p-opt" onclick="selectBankPengirim('CIMB Niaga')">CIMB Niaga</button>
+                                    <button type="button" class="dropdown-item py-1 small rounded bank-p-opt" onclick="selectBankPengirim('BSI')">BSI</button>
+                                    <button type="button" class="dropdown-item py-1 small rounded bank-p-opt" onclick="selectBankPengirim('CASH')">CASH / TUNAI</button>
+                                    <button type="button" class="dropdown-item py-1 small rounded bank-p-opt" onclick="selectBankPengirim('QRIS')">QRIS</button>
+                                    <div id="noBankPengirimFound" class="text-muted small px-3 py-2 d-none">Gunakan nama bank yang diketik manual.</div>
+                                </div>
+                            </div>
+
+                            <div class="col-sm-6">
+                                <label class="form-label small fw-semibold text-dark">Nomor Rekening Pengirim</label>
+                                <input type="text" class="form-control font-monospace fw-bold" id="norekPengirim" name="norek_pengirim" placeholder="Nomor Rekening Kas / Tabungan">
+                            </div>
+
+                            <div class="col-sm-6">
+                                <label class="form-label small fw-semibold text-dark">Atas Nama Rekening Pengirim</label>
+                                <input type="text" class="form-control fw-semibold" id="anPengirim" name="an_pengirim" placeholder="Nama Pemilik Rekening / PT Jaya Teknis">
+                            </div>
+
+                            <div class="col-sm-6">
+                                <label class="form-label small fw-semibold text-dark">No. Referensi / Mutasi Bank</label>
+                                <input type="text" class="form-control font-monospace" id="noRef" name="no_ref" placeholder="Contoh: TRF-2608-88129">
+                            </div>
+                        </div>
+
+                        <div class="mt-4 pt-3 border-top d-flex justify-content-between">
+                            <button type="button" class="btn btn-outline-secondary btn-sm px-3" onclick="goToTab('tab-nominal')">
+                                Kembali ke Rincian Pembayaran
+                            </button>
+                            <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold shadow-sm" onclick="goToTab('tab-approval')">
+                                Lanjut ke Approval &amp; Bukti
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- TAB 4: APPROVAL & BUKTI -->
+                    <div class="tab-pane fade" id="tab-approval" role="tabpanel">
+                        <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Persetujuan Lisan &amp; Lampiran Bukti Transfer</h6>
+
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <label class="form-label small fw-semibold text-dark">Disetujui Oleh (Lisan) <span class="text-danger">*</span></label>
+                                <select class="form-select" id="selectApprover" name="id_karyawan_approved" required>
+                                    <option value="">-- Pilih Pejabat / Finance --</option>
+                                </select>
+                                <div class="form-text small text-muted">Pilih nama pejabat finance / manajemen yang memberikan persetujuan transfer lisan.</div>
+                            </div>
+
+                            <div class="col-sm-6">
+                                <label class="form-label small fw-semibold text-dark">Upload Bukti Transfer Bank (PDF/Foto)</label>
+                                <input type="file" class="form-control" id="fileBuktiBayar" accept="image/*,application/pdf" onchange="handleProofUpload(this)">
+                                <div class="form-text small text-muted" id="buktiFileInfo">Format: PDF, JPG, JPEG, PNG (Maks. 5MB)</div>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold text-dark">Catatan / Keterangan Pembayaran</label>
+                                <textarea class="form-control" id="keteranganPayment" name="keterangan" placeholder="Tuliskan catatan pembayaran jika ada (misal: Pelunasan termin 1 50% melalui transfer M-Banking)..."></textarea>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <button type="button" class="btn btn-outline-secondary btn-sm px-3" onclick="goToTab('tab-rekening')">
+                                Kembali ke Kas &amp; Rekening Pengirim
+                            </button>
+                            <button type="submit" class="btn btn-primary btn-sm px-4 shadow-sm fw-semibold" id="btnSubmitPayment" style="height: 38px; display: inline-flex; align-items: center;">
+                                Simpan Transaksi Pembayaran
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+let fakturList = [];
+let approverList = [];
+let currentSelectedFaktur = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadLookupData();
+
+    document.addEventListener('click', (e) => {
+        const fakturWrapper = document.getElementById('fakturSelectWrapper');
+        if (fakturWrapper && !fakturWrapper.contains(e.target)) {
+            hideFakturDropdown();
+        }
+
+        const bankWrapper = document.getElementById('bankPengirimWrapper');
+        if (bankWrapper && !bankWrapper.contains(e.target)) {
+            hideBankPengirimDropdown();
+        }
+    });
+});
+
+function goToTab(tabId) {
+    const btn = document.querySelector(`[data-bs-target="#${tabId}"]`);
+    if (btn) {
+        const tab = new bootstrap.Tab(btn);
+        tab.show();
+    }
+}
+
+async function loadLookupData() {
+    try {
+        const res = await fetch('<?= BASE_URL ?>/api/pembayaran_po/lookup_faktur.php');
+        const result = await res.json();
+
+        if (result && result.success && result.data) {
+            fakturList = result.data.faktur_list || [];
+            approverList = result.data.approvers || [];
+
+            renderFakturOptions(fakturList);
+            renderApproverOptions(approverList);
+
+            // Cek jika ada preselected id_faktur dari query parameter
+            const preselectedId = parseInt(document.getElementById('selectedIdFaktur').value);
+            if (preselectedId > 0) {
+                selectFaktur(preselectedId);
+            }
+        }
+    } catch (e) {
+        console.error('Gagal memuat data lookup faktur:', e);
+    }
+}
+
+function renderApproverOptions(approvers) {
+    const sel = document.getElementById('selectApprover');
+    sel.innerHTML = '<option value="">-- Pilih Pejabat / Finance --</option>';
+    approvers.forEach(a => {
+        const opt = document.createElement('option');
+        opt.value = a.id_karyawan;
+        opt.textContent = `${a.nama_karyawan} (${a.nama_jabatan || a.nama_divisi || 'Staff'})`;
+        sel.appendChild(opt);
+    });
+}
+
+// -------------------------------------------------------------
+// FAKTUR SELECTOR (SEARCHABLE DROPDOWN)
+// -------------------------------------------------------------
+function toggleFakturDropdown(e) {
+    if (e) e.stopPropagation();
+    const menu = document.getElementById('fakturDropdownMenu');
+    if (menu.style.display === 'block') {
+        hideFakturDropdown();
+    } else {
+        showFakturDropdown();
+    }
+}
+
+function showFakturDropdown() {
+    document.getElementById('fakturDropdownMenu').style.display = 'block';
+    document.getElementById('fakturSearchInput').focus();
+}
+
+function hideFakturDropdown() {
+    document.getElementById('fakturDropdownMenu').style.display = 'none';
+}
+
+function renderFakturOptions(list) {
+    const container = document.getElementById('fakturOptionsContainer');
+    if (!list || list.length === 0) {
+        container.innerHTML = '<div class="text-muted small p-3 text-center">Tidak ada faktur belum lunas.</div>';
+        return;
+    }
+
+    let html = '';
+    list.forEach(f => {
+        const sisaTagihan = parseFloat(f.sisa_tagihan) || 0;
+        html += `
+        <div class="faktur-opt-item p-2 px-3 border-bottom rounded-2" onclick="selectFaktur(${f.id_faktur})">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <strong class="font-monospace text-primary">${f.nomor_faktur}</strong>
+                <span class="badge bg-danger-subtle text-danger border font-monospace">Sisa: ${formatRupiah(sisaTagihan)}</span>
+            </div>
+            <div class="small fw-semibold text-dark">${f.nama_vendor}</div>
+            <div class="small text-muted d-flex justify-content-between">
+                <span>Inv: ${f.nomor_faktur_vendor || '-'} | PO: ${f.nomor_po}</span>
+                <span class="text-danger">Tempo: ${formatDate(f.tanggal_jatuh_tempo)}</span>
+            </div>
+        </div>`;
+    });
+    container.innerHTML = html;
+}
+
+function filterFakturList() {
+    const query = document.getElementById('fakturSearchInput').value.toLowerCase().trim();
+    const filtered = fakturList.filter(f => {
+        return (f.nomor_faktur || '').toLowerCase().includes(query) ||
+               (f.nomor_faktur_vendor || '').toLowerCase().includes(query) ||
+               (f.nama_vendor || '').toLowerCase().includes(query) ||
+               (f.nomor_po || '').toLowerCase().includes(query);
+    });
+    renderFakturOptions(filtered);
+}
+
+async function selectFaktur(idFaktur) {
+    hideFakturDropdown();
+    document.getElementById('selectedIdFaktur').value = idFaktur;
+
+    try {
+        const res = await fetch(`<?= BASE_URL ?>/api/pembayaran_po/lookup_faktur.php?id_faktur=${idFaktur}`);
+        const result = await res.json();
+
+        if (result && result.success && result.data && result.data.faktur) {
+            const f = result.data.faktur;
+            currentSelectedFaktur = f;
+
+            // Update Trigger Display
+            document.getElementById('fakturSelectedDisplay').innerHTML = `
+                <strong class="font-monospace text-primary">${f.nomor_faktur}</strong>
+                <span class="text-muted ms-1">| ${f.nama_vendor} | Sisa: ${formatRupiah(f.sisa_tagihan)}</span>
+            `;
+            document.getElementById('fakturClearBtn').style.display = 'inline-block';
+
+            // Show Summary
+            document.getElementById('dispNomorFaktur').textContent = f.nomor_faktur;
+            document.getElementById('dispNomorFakturVendor').textContent = f.nomor_faktur_vendor || '-';
+            document.getElementById('dispNamaVendor').textContent = f.nama_vendor;
+            document.getElementById('dispTanggalJatuhTempo').textContent = `${formatDate(f.tanggal_jatuh_tempo)} (${f.term_of_payment || 0} Hari TOP)`;
+            
+            document.getElementById('dispBankVendor').textContent = f.nama_bank || f.bank_vendor_master || 'BANK VENDOR';
+            document.getElementById('dispNorekVendor').textContent = f.nomor_rekening || f.norek_vendor_master || '-';
+            document.getElementById('dispAnVendor').textContent = f.atas_nama_rekening ? `(a.n ${f.atas_nama_rekening})` : '';
+
+            document.getElementById('dispTotalTagihan').textContent = formatRupiah(f.total_tagihan);
+            document.getElementById('dispTerbayar').textContent = formatRupiah(f.terbayar);
+            document.getElementById('dispSisaTagihan').textContent = formatRupiah(f.sisa_tagihan);
+
+            // History Table
+            const histBody = document.getElementById('fakturHistoryTableBody');
+            if (f.history_pembayaran && f.history_pembayaran.length > 0) {
+                let histHtml = '';
+                f.history_pembayaran.forEach(h => {
+                    histHtml += `
+                    <tr>
+                        <td class="font-monospace text-primary">${h.kode_pembayaran}</td>
+                        <td>${formatDate(h.tanggal_bayar)}</td>
+                        <td class="text-end font-monospace fw-semibold">${formatRupiah(h.nominal_pengiriman)}</td>
+                        <td class="font-monospace text-muted">${formatRupiah(h.sisa_piutang)}</td>
+                    </tr>`;
+                });
+                histBody.innerHTML = histHtml;
+                document.getElementById('fakturHistoryContainer').style.display = 'block';
+            } else {
+                document.getElementById('fakturHistoryContainer').style.display = 'none';
+            }
+
+            // Sync Nominal Pembayaran jika 1x Bayar (Lunas)
+            handleJenisPembayaranChange();
+        }
+    } catch (e) {
+        console.error('Gagal mengambil detail faktur terpilih:', e);
+    }
+}
+
+function clearFakturSelection(e) {
+    if (e) e.stopPropagation();
+    currentSelectedFaktur = null;
+    document.getElementById('selectedIdFaktur').value = '';
+    document.getElementById('fakturSelectedDisplay').innerHTML = '<span class="text-muted">Cari Faktur PO (No. Faktur, Vendor, Invoice)...</span>';
+    document.getElementById('fakturClearBtn').style.display = 'none';
+    
+    document.getElementById('dispNomorFaktur').textContent = '-';
+    document.getElementById('dispNomorFakturVendor').textContent = '-';
+    document.getElementById('dispNamaVendor').textContent = '-';
+    document.getElementById('dispTanggalJatuhTempo').textContent = '-';
+    document.getElementById('dispBankVendor').textContent = '-';
+    document.getElementById('dispNorekVendor').textContent = '-';
+    document.getElementById('dispAnVendor').textContent = '';
+
+    document.getElementById('dispTotalTagihan').textContent = 'Rp 0';
+    document.getElementById('dispTerbayar').textContent = 'Rp 0';
+    document.getElementById('dispSisaTagihan').textContent = 'Rp 0';
+
+    document.getElementById('fakturHistoryContainer').style.display = 'none';
+    document.getElementById('nominalPengiriman').value = '';
+    document.getElementById('displaySisaSesudah').value = 'Rp 0';
+}
+
+// -------------------------------------------------------------
+// AUTO THOUSAND SEPARATOR & FINANSIAL LOGIC
+// -------------------------------------------------------------
+function formatThousands(val) {
+    let clean = String(val).replace(/[^0-9]/g, '');
+    if (!clean) return '';
+    let n = parseInt(clean, 10);
+    return n.toLocaleString('id-ID');
+}
+
+function parseRawNumber(val) {
+    let clean = String(val).replace(/[^0-9]/g, '');
+    return parseInt(clean, 10) || 0;
+}
+
+function handleNominalInput(input) {
+    let raw = parseRawNumber(input.value);
+    input.value = raw > 0 ? raw.toLocaleString('id-ID') : '';
+    calculateRemainingBalance();
+}
+
+function handleBiayaAdminInput(input) {
+    let raw = parseRawNumber(input.value);
+    input.value = raw > 0 ? raw.toLocaleString('id-ID') : '0';
+}
+
+function handleJenisPembayaranChange() {
+    const isLunas = document.getElementById('jenisLunas').checked;
+    const nominalInput = document.getElementById('nominalPengiriman');
+
+    if (!currentSelectedFaktur) return;
+
+    const sisa = parseFloat(currentSelectedFaktur.sisa_tagihan) || 0;
+
+    if (isLunas) {
+        nominalInput.value = sisa > 0 ? sisa.toLocaleString('id-ID') : '0';
+        nominalInput.readOnly = true;
+    } else {
+        nominalInput.readOnly = false;
+        let currentVal = parseRawNumber(nominalInput.value);
+        if (currentVal >= sisa || currentVal === 0) {
+            let half = Math.round(sisa / 2);
+            nominalInput.value = half.toLocaleString('id-ID');
+        }
+    }
+    calculateRemainingBalance();
+    validateDueDateLimit();
+}
+
+function calculateRemainingBalance() {
+    if (!currentSelectedFaktur) return;
+    const sisaTagihan = parseFloat(currentSelectedFaktur.sisa_tagihan) || 0;
+    const nominalBayar = parseRawNumber(document.getElementById('nominalPengiriman').value);
+    const sisaSesudah = Math.max(0, sisaTagihan - nominalBayar);
+    
+    document.getElementById('displaySisaSesudah').value = formatRupiah(sisaSesudah);
+}
+
+function validateDueDateLimit() {
+    const isKredit = document.getElementById('jenisKredit').checked;
+    const tglBayar = document.getElementById('tanggalBayar').value;
+
+    if (isKredit && currentSelectedFaktur && currentSelectedFaktur.tanggal_jatuh_tempo && tglBayar) {
+        const dBayar = new Date(tglBayar);
+        const dTempo = new Date(currentSelectedFaktur.tanggal_jatuh_tempo);
+
+        if (dBayar > dTempo) {
+            showToast(`Peringatan: Tanggal pembayaran (${formatDate(tglBayar)}) melewati Tanggal Jatuh Tempo TOP Faktur (${formatDate(currentSelectedFaktur.tanggal_jatuh_tempo)}).`, 'warning');
+            document.getElementById('tanggalBayar').value = currentSelectedFaktur.tanggal_jatuh_tempo;
+        }
+    }
+}
+
+// -------------------------------------------------------------
+// BANK PENGIRIM COMBOBOX
+// -------------------------------------------------------------
+function showBankPengirimDropdown() {
+    document.getElementById('bankPengirimMenu').style.display = 'block';
+}
+function hideBankPengirimDropdown() {
+    document.getElementById('bankPengirimMenu').style.display = 'none';
+}
+function toggleBankPengirimDropdown(e) {
+    if (e) e.stopPropagation();
+    const m = document.getElementById('bankPengirimMenu');
+    m.style.display = m.style.display === 'block' ? 'none' : 'block';
+}
+function filterBankPengirimDropdown() {
+    const query = (document.getElementById('bankPengirim').value || '').toLowerCase().trim();
+    showBankPengirimDropdown();
+    const items = document.querySelectorAll('.bank-p-opt');
+    let count = 0;
+    items.forEach(el => {
+        const text = el.textContent.toLowerCase();
+        if (text.includes(query)) {
+            el.style.display = 'block';
+            count++;
+        } else {
+            el.style.display = 'none';
+        }
+    });
+
+    const noFound = document.getElementById('noBankPengirimFound');
+    if (noFound) {
+        if (count === 0) {
+            noFound.classList.remove('d-none');
+        } else {
+            noFound.classList.add('d-none');
+        }
+    }
+}
+function selectBankPengirim(val) {
+    document.getElementById('bankPengirim').value = val;
+    hideBankPengirimDropdown();
+}
+
+// -------------------------------------------------------------
+// UPLOAD BUKTI BAYAR HANDLER
+// -------------------------------------------------------------
+function handleProofUpload(input) {
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        if (file.size > 5 * 1024 * 1024) {
+            showToast('Ukuran file maksimal 5MB.', 'warning');
+            input.value = '';
+            document.getElementById('hiddenBuktiBase64').value = '';
+            document.getElementById('buktiFileInfo').textContent = 'Format: PDF, JPG, JPEG, PNG (Maks. 5MB)';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('hiddenBuktiBase64').value = e.target.result;
+            document.getElementById('buktiFileInfo').innerHTML = `<span class="text-success fw-semibold">File terpilih: ${file.name}</span>`;
+        };
+        reader.readAsDataURL(file);
+    } else {
+        document.getElementById('hiddenBuktiBase64').value = '';
+        document.getElementById('buktiFileInfo').textContent = 'Format: PDF, JPG, JPEG, PNG (Maks. 5MB)';
+    }
+}
+
+// -------------------------------------------------------------
+// SUBMIT PAYMENT
+// -------------------------------------------------------------
+async function submitPayment() {
+    const idFaktur = parseInt(document.getElementById('selectedIdFaktur').value);
+    if (!idFaktur) {
+        showToast('Silakan pilih dokumen Faktur PO terlebih dahulu pada Tab 1.', 'warning');
+        goToTab('tab-faktur');
+        return;
+    }
+
+    const nominal = parseRawNumber(document.getElementById('nominalPengiriman').value);
+    if (nominal <= 0) {
+        showToast('Nominal pembayaran harus lebih besar dari 0.', 'warning');
+        goToTab('tab-nominal');
+        document.getElementById('nominalPengiriman').focus();
+        return;
+    }
+
+    const bankPengirim = document.getElementById('bankPengirim').value.trim();
+    if (!bankPengirim) {
+        showToast('Nama Bank Pengirim wajib diisi pada Tab 3.', 'warning');
+        goToTab('tab-rekening');
+        document.getElementById('bankPengirim').focus();
+        return;
+    }
+
+    const idApprover = document.getElementById('selectApprover').value;
+    if (!idApprover) {
+        showToast('Silakan pilih Pejabat / Finance yang menyetujui transfer secara lisan pada Tab 4.', 'warning');
+        goToTab('tab-approval');
+        document.getElementById('selectApprover').focus();
+        return;
+    }
+
+    const payload = {
+        id_faktur: idFaktur,
+        jenis_pembayaran: document.getElementById('jenisLunas').checked ? 1 : 0,
+        tanggal_bayar: document.getElementById('tanggalBayar').value,
+        nominal_pengiriman: nominal,
+        biaya_admin: parseRawNumber(document.getElementById('biayaAdmin').value),
+        bank_pengirim: bankPengirim,
+        norek_pengirim: document.getElementById('norekPengirim').value.trim(),
+        an_pengirim: document.getElementById('anPengirim').value.trim(),
+        no_ref: document.getElementById('noRef').value.trim(),
+        id_karyawan_approved: parseInt(idApprover),
+        file_bukti_bayar_base64: document.getElementById('hiddenBuktiBase64').value,
+        keterangan: document.getElementById('keteranganPayment').value.trim()
+    };
+
+    const btn = document.getElementById('btnSubmitPayment');
+    btn.disabled = true;
+    btn.textContent = 'Menyimpan...';
+
+    try {
+        const res = await fetch('<?= BASE_URL ?>/api/pembayaran_po/index.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+
+        if (result && result.success) {
+            showToast(result.message || 'Pembayaran berhasil dicatat!', 'success');
+            setTimeout(() => {
+                window.location.href = '<?= BASE_URL ?>/admin/pages/pembayaran_po/index.php';
+            }, 1200);
+        } else {
+            showToast(result.message || 'Gagal menyimpan transaksi pembayaran.', 'danger');
+            btn.disabled = false;
+            btn.textContent = 'Simpan Transaksi Pembayaran';
+        }
+    } catch (e) {
+        showToast('Terjadi kesalahan jaringan: ' + e.message, 'danger');
+        btn.disabled = false;
+        btn.textContent = 'Simpan Transaksi Pembayaran';
+    }
+}
+
+function formatDate(dateStr) {
+    if (!dateStr || dateStr === '0000-00-00') return '-';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function formatRupiah(num) {
+    const n = parseFloat(num) || 0;
+    return 'Rp ' + n.toLocaleString('id-ID');
+}
+</script>
+
+<?php require_once __DIR__ . '/../../components/footer.php'; ?>

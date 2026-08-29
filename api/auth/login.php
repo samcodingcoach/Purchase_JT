@@ -173,6 +173,8 @@ if ($userSource === 'users') {
         $role = ROLE_LOGISTIK;
     } elseif ($idJabatan === 1 || strpos($divisiLower, 'purchasing') !== false || strpos($jabatanLower, 'purchasing') !== false || strpos($emailLower, 'purchasing') !== false) {
         $role = ROLE_PURCHASING;
+    } elseif (strpos($divisiLower, 'finance') !== false || strpos($jabatanLower, 'finance') !== false || strpos($emailLower, 'finance') !== false) {
+        $role = ROLE_FINANCE;
     } elseif ($idJabatan === 4 || $levelJabatan === 1 || strpos($divisiLower, 'manajemen') !== false || strpos($jabatanLower, 'manager') !== false || strpos($jabatanLower, 'direktur') !== false) {
         $role = ROLE_MANAGER;
     } elseif (strpos($divisiLower, 'admin') !== false || strpos($divisiLower, 'it') !== false) {

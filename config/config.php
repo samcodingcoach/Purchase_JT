@@ -26,6 +26,7 @@ define('ROLE_ADMIN', 'ADMIN');
 define('ROLE_MEKANIK', 'MEKANIK');
 define('ROLE_LOGISTIK', 'LOGISTIK');
 define('ROLE_PURCHASING', 'PURCHASING');
+define('ROLE_FINANCE', 'FINANCE');
 define('ROLE_MANAGER', 'MANAGER');
 
 // Status Request Order Constants (sesuai PRD dan kompatibel dengan DB enum)
