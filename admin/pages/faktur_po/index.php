@@ -135,24 +135,281 @@ require_once __DIR__ . '/../../components/navbar.php';
     </div>
 </div>
 
-<!-- MODAL DETAIL FAKTUR PO -->
-<div class="modal fade" id="modalDetailFaktur" tabindex="-1" aria-hidden="true">
+<!-- MODAL DETAIL FAKTUR PO (5 TAB SERAGAM SESUAI FORM BUAT/EDIT) -->
+<div class="modal fade" id="modalDetailFaktur" tabindex="-1" aria-labelledby="modalDetailFakturLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg rounded-3">
-            <div class="modal-header bg-light border-bottom py-3">
-                <div>
-                    <h5 class="modal-title fw-bold text-dark mb-0" id="modalDetailTitle">Detail Dokumen Faktur</h5>
-                    <div class="small text-muted font-monospace" id="modalDetailSubtitle">-</div>
+            <!-- MODAL HEADER DENGAN 5 NAV TABS -->
+            <div class="modal-header bg-white pt-3 pb-0 px-4 border-bottom flex-column align-items-stretch">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h5 class="modal-title fw-bold text-dark mb-0" id="modalDetailFakturLabel">
+                            Rincian Faktur Purchase Order
+                        </h5>
+                        <div class="small text-muted font-monospace mt-1" id="modalDetailSubtitle">-</div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                
+                <!-- Nav Tabs Modal (5 Tab Lengkap & Seragam) -->
+                <ul class="nav nav-tabs border-bottom-0" id="modalDetailTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active fw-bold text-dark small py-2 px-3" id="modal-tab-dokumen" data-bs-toggle="tab" data-bs-target="#modal-pane-dokumen" type="button" role="tab">
+                            <i class="bi bi-file-earmark-text me-1 text-primary"></i> 1. Dokumen Asal
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold text-dark small py-2 px-3" id="modal-tab-vendor" data-bs-toggle="tab" data-bs-target="#modal-pane-vendor" type="button" role="tab">
+                            <i class="bi bi-building me-1 text-primary"></i> 2. Vendor &amp; Rekening Bank
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold text-dark small py-2 px-3" id="modal-tab-tagihan" data-bs-toggle="tab" data-bs-target="#modal-pane-tagihan" type="button" role="tab">
+                            <i class="bi bi-receipt me-1 text-primary"></i> 3. Tagihan &amp; Pajak
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold text-dark small py-2 px-3" id="modal-tab-rincian" data-bs-toggle="tab" data-bs-target="#modal-pane-rincian" type="button" role="tab">
+                            <i class="bi bi-box-seam me-1 text-primary"></i> 4. Rincian Barang
+                            <span class="badge bg-primary text-white ms-1" id="modalItemCountBadge">0 Item</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold text-dark small py-2 px-3" id="modal-tab-catatan" data-bs-toggle="tab" data-bs-target="#modal-pane-catatan" type="button" role="tab">
+                            <i class="bi bi-card-text me-1 text-primary"></i> 5. Catatan &amp; Finansial
+                        </button>
+                    </li>
+                </ul>
             </div>
-            <div class="modal-body p-4" id="modalDetailBody">
-                <div class="text-center py-5 text-muted">
-                    <div class="spinner-border text-primary me-2"></div> Memuat rincian faktur...
+
+            <!-- MODAL BODY DENGAN 5 TAB CONTENT (TANPA ICON DI DALAM KONTEN TAB) -->
+            <div class="modal-body p-4">
+                <div class="tab-content" id="modalDetailTabContent">
+                    
+                    <!-- TAB 1: DOKUMEN ASAL -->
+                    <div class="tab-pane fade show active" id="modal-pane-dokumen" role="tabpanel">
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="card bg-light border-0 rounded-3 p-3 h-100">
+                                    <h6 class="fw-bold text-dark mb-3">Dokumen Penerimaan Barang</h6>
+                                    
+                                    <div class="mb-2">
+                                        <span class="text-muted small d-block">Dokumen Penerimaan (RCV):</span>
+                                        <strong class="text-primary font-monospace fs-6" id="detailNomorRcv">-</strong>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="text-muted small d-block">No. Surat Jalan Vendor (RCV):</span>
+                                        <strong class="text-dark font-monospace fs-6" id="detailNomorSjRcv">-</strong>
+                                    </div>
+                                    <div>
+                                        <span class="text-muted small d-block">Tanggal Penerimaan di Gudang:</span>
+                                        <span class="text-dark font-monospace" id="detailTanggalRcv">-</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="card bg-light border-0 rounded-3 p-3 h-100">
+                                    <h6 class="fw-bold text-dark mb-3">Referensi Purchase Order (PO) &amp; Lokasi</h6>
+                                    
+                                    <div class="mb-2">
+                                        <span class="text-muted small d-block">No. Purchase Order (PO):</span>
+                                        <strong class="text-primary font-monospace fs-6" id="detailNomorPo">-</strong>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="text-muted small d-block">Lokasi Site / Gudang Tujuan:</span>
+                                        <strong class="text-dark" id="detailSite">-</strong>
+                                    </div>
+                                    <div>
+                                        <span class="text-muted small d-block">Petugas Pembuat Dokumen:</span>
+                                        <strong class="text-dark" id="detailPetugas">-</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: VENDOR & REKENING BANK -->
+                    <div class="tab-pane fade" id="modal-pane-vendor" role="tabpanel">
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="card bg-light border-0 rounded-3 p-3 h-100">
+                                    <h6 class="fw-bold text-dark mb-3">Informasi Vendor Rekanan</h6>
+                                    <div class="mb-2">
+                                        <span class="text-muted small d-block">Nama Vendor:</span>
+                                        <strong class="text-dark fs-6" id="detailVendor">-</strong>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="text-muted small d-block">Kontak / Telepon Vendor:</span>
+                                        <span class="text-dark" id="detailTeleponVendor">-</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-muted small d-block">Status Tagihan Dokumen:</span>
+                                        <div id="detailStatusBadge">-</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="card bg-light border-0 rounded-3 p-3 h-100">
+                                    <h6 class="fw-bold text-dark mb-3">Informasi Rekening Bank Tujuan Transfer</h6>
+                                    <div class="mb-2">
+                                        <span class="text-muted small d-block">Nama Bank:</span>
+                                        <strong class="text-dark fs-6" id="detailNamaBank">-</strong>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="text-muted small d-block">Nomor Rekening:</span>
+                                        <div class="font-monospace text-primary fw-bold fs-5" id="detailNomorRekening">-</div>
+                                    </div>
+                                    <div>
+                                        <span class="text-muted small d-block">Atas Nama Rekening:</span>
+                                        <strong class="text-dark" id="detailAtasNamaRekening">-</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: TAGIHAN & PAJAK -->
+                    <div class="tab-pane fade" id="modal-pane-tagihan" role="tabpanel">
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="card bg-light border-0 rounded-3 p-3 h-100">
+                                    <h6 class="fw-bold text-dark mb-3">Nomor &amp; Waktu Tagihan</h6>
+                                    
+                                    <div class="mb-2">
+                                        <span class="text-muted small d-block">Nomor Faktur Sistem:</span>
+                                        <strong class="text-primary font-monospace fs-6" id="detailNomorFaktur">-</strong>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="text-muted small d-block">Nomor Faktur / Invoice Vendor:</span>
+                                        <strong class="text-dark font-monospace fs-6" id="detailNomorInvoiceVendor">-</strong>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="text-muted small d-block">No. Seri e-Faktur Pajak:</span>
+                                        <span class="text-dark font-monospace fw-semibold" id="detailNomorFakturPajak">-</span>
+                                    </div>
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <span class="text-muted small d-block">Tanggal Invoice:</span>
+                                            <span class="text-dark font-monospace" id="detailTanggalFaktur">-</span>
+                                        </div>
+                                        <div class="col-6">
+                                            <span class="text-muted small d-block">Tanggal Jatuh Tempo:</span>
+                                            <strong class="text-danger font-monospace" id="detailJatuhTempo">-</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="card bg-light border-0 rounded-3 p-3 h-100">
+                                    <h6 class="fw-bold text-dark mb-3">Lampiran Berkas Tagihan</h6>
+                                    
+                                    <div class="mb-3">
+                                        <span class="text-muted small d-block">Berkas Invoice / Tagihan Vendor:</span>
+                                        <div id="detailFileInvoiceContainer" class="mt-1">
+                                            <a href="#" id="detailFileInvoiceLink" target="_blank" class="btn btn-outline-primary btn-sm px-3 py-1">
+                                                Buka Berkas Tagihan Vendor
+                                            </a>
+                                        </div>
+                                        <div id="detailFileInvoiceNone" class="text-muted small mt-1 d-none">Tidak ada lampiran invoice.</div>
+                                    </div>
+
+                                    <div>
+                                        <span class="text-muted small d-block">Berkas e-Faktur Pajak:</span>
+                                        <div id="detailFilePajakContainer" class="mt-1">
+                                            <a href="#" id="detailFilePajakLink" target="_blank" class="btn btn-outline-primary btn-sm px-3 py-1">
+                                                Buka Berkas e-Faktur Pajak
+                                            </a>
+                                        </div>
+                                        <div id="detailFilePajakNone" class="text-muted small mt-1 d-none">Tidak ada lampiran faktur pajak.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 4: RINCIAN BARANG -->
+                    <div class="tab-pane fade" id="modal-pane-rincian" role="tabpanel">
+                        <div class="table-responsive border rounded-3">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light small text-muted text-uppercase align-middle">
+                                    <tr class="align-middle">
+                                        <th style="width: 40px;" class="text-center align-middle">No</th>
+                                        <th style="width: 120px;" class="align-middle">Kode</th>
+                                        <th class="align-middle">Nama Barang</th>
+                                        <th style="width: 90px;" class="text-center align-middle text-success">Qty Tagih</th>
+                                        <th style="width: 80px;" class="text-center align-middle">Satuan</th>
+                                        <th style="width: 130px;" class="text-end align-middle">Harga Satuan</th>
+                                        <th style="width: 110px;" class="text-end align-middle">Diskon Item</th>
+                                        <th style="width: 140px;" class="text-end align-middle">Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="detailFakturItemsBody">
+                                    <tr>
+                                        <td colspan="8" class="text-center py-4 text-muted">Memuat rincian barang...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- TAB 5: CATATAN & FINANSIAL -->
+                    <div class="tab-pane fade" id="modal-pane-catatan" role="tabpanel">
+                        <div class="row g-4">
+                            <div class="col-lg-6">
+                                <div class="card bg-light border-0 rounded-3 p-3 h-100">
+                                    <h6 class="fw-bold text-dark mb-3">Catatan Faktur Pembelian</h6>
+                                    <p class="mb-0 small text-dark" id="detailCatatan" style="white-space: pre-wrap;">-</p>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-6">
+                                <div class="card bg-light border-0 rounded-3 p-3">
+                                    <h6 class="fw-bold text-dark mb-3">Ringkasan Finansial Tagihan</h6>
+                                    <div class="d-flex justify-content-between mb-2 small">
+                                        <span class="text-muted">Subtotal Kontrak PO (Ref):</span>
+                                        <span class="font-monospace" id="finSubtotalPo">Rp 0</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2 small">
+                                        <span class="text-dark fw-semibold">Subtotal Barang Diterima (RCV):</span>
+                                        <span class="font-monospace fw-bold text-dark" id="finSubtotalDiterima">Rp 0</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2 small text-danger d-none" id="finRowNilaiRetur">
+                                        <span>Potongan Retur PO:</span>
+                                        <span class="font-monospace fw-bold" id="finNilaiRetur">- Rp 0</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2 small text-danger d-none" id="finRowDiskon">
+                                        <span>Diskon Tambahan Faktur:</span>
+                                        <span class="font-monospace fw-bold" id="finDiskon">- Rp 0</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2 small pt-2 border-top">
+                                        <span class="fw-bold text-dark">DPP (Dasar Pengenaan Pajak):</span>
+                                        <span class="font-monospace fw-bold text-dark fs-6" id="finDpp">Rp 0</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2 small">
+                                        <span class="text-muted" id="finLabelPpn">PPN:</span>
+                                        <span class="font-monospace" id="finNominalPajak">Rp 0</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2 small d-none" id="finRowBiayaLain">
+                                        <span class="text-muted">Biaya Lain-lain / Ongkir:</span>
+                                        <span class="font-monospace" id="finBiayaLain">Rp 0</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between pt-2 border-top border-2 border-dark">
+                                        <span class="fw-bold fs-6 text-dark">TOTAL TAGIHAN:</span>
+                                        <span class="font-monospace fw-bold text-primary fs-5" id="finTotalTagihan">Rp 0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
-            <div class="modal-footer bg-light border-top py-2 px-4 d-flex justify-content-between">
-                <div id="modalDetailFooterLeft"></div>
+
+            <!-- MODAL FOOTER -->
+            <div class="modal-footer bg-light py-2 px-4 d-flex justify-content-end">
                 <button type="button" class="btn btn-secondary btn-sm px-4" data-bs-dismiss="modal">Tutup</button>
             </div>
         </div>
@@ -233,6 +490,8 @@ function renderTable(rows, pagination) {
         let agingBadge = '';
         if (r.status === 'LUNAS') {
             agingBadge = '<span class="badge bg-success-subtle text-success border px-2 py-1"><i class="bi bi-check-circle me-1"></i>Lunas</span>';
+        } else if (isNaN(sisaHari)) {
+            agingBadge = '<span class="badge bg-light text-muted border px-2 py-1">-</span>';
         } else if (sisaHari < 0) {
             agingBadge = `<span class="badge bg-danger-subtle text-danger border px-2 py-1"><i class="bi bi-exclamation-octagon me-1"></i>Terlambat ${Math.abs(sisaHari)} Hari</span>`;
         } else if (sisaHari === 0) {
@@ -241,11 +500,25 @@ function renderTable(rows, pagination) {
             agingBadge = `<span class="badge bg-info-subtle text-info-emphasis border px-2 py-1">Sisa ${sisaHari} Hari</span>`;
         }
 
+        const isLocked = ['SEBAGIAN DIBAYAR', 'LUNAS', 'BATAL'].includes(r.status) || (parseFloat(r.terbayar) > 0);
+        const editBtnHtml = isLocked
+            ? `<button type="button" class="btn btn-outline-secondary btn-sm px-2 py-1 shadow-none opacity-50" disabled title="Faktur berstatus ${r.status} dan terkunci dari perubahan"><i class="bi bi-pencil"></i></button>`
+            : `<a href="<?= BASE_URL ?>/admin/pages/faktur_po/edit.php?id=${r.id_faktur}" class="btn btn-outline-warning btn-sm px-2 py-1 shadow-none" title="Edit Faktur"><i class="bi bi-pencil"></i></a>`;
+
+        // Cek apakah data sudah pernah diedit/diupdate (created_at != updated_at)
+        const isUpdated = r.updated_at && r.created_at && (r.updated_at !== r.created_at);
+        const updatedBadge = isUpdated 
+            ? `<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle py-1 px-1 ms-1 d-inline-flex align-items-center" title="Faktur telah diedit (Diperbarui: ${formatDate(r.updated_at)})"><i class="bi bi-pencil-fill" style="font-size: 0.65rem;"></i></span>` 
+            : '';
+
         html += `
         <tr>
             <td class="text-center">${no}</td>
             <td>
-                <strong class="font-monospace text-primary cursor-pointer hover-underline" style="cursor: pointer;" onclick="viewFakturDetail(${r.id_faktur})" title="Klik untuk lihat detail">${r.nomor_faktur}</strong>
+                <div class="d-inline-flex align-items-center flex-wrap gap-1">
+                    <strong class="font-monospace text-primary cursor-pointer hover-underline" style="cursor: pointer;" onclick="viewFakturDetail(${r.id_faktur})" title="Klik untuk lihat detail">${r.nomor_faktur}</strong>
+                    ${updatedBadge}
+                </div>
             </td>
             <td>
                 <span class="text-dark">${formatDate(tglFaktur)}</span>
@@ -270,9 +543,7 @@ function renderTable(rows, pagination) {
                     <button type="button" class="btn btn-outline-primary btn-sm px-2 py-1 shadow-none" onclick="viewFakturDetail(${r.id_faktur})" title="View Detail Faktur">
                         <i class="bi bi-eye"></i>
                     </button>
-                    <button type="button" class="btn btn-outline-warning btn-sm px-2 py-1 shadow-none" onclick="editFaktur(${r.id_faktur})" title="Edit Faktur">
-                        <i class="bi bi-pencil"></i>
-                    </button>
+                    ${editBtnHtml}
                 </div>
             </td>
         </tr>`;
@@ -327,15 +598,15 @@ function renderPaginationControls(p) {
 function getStatusBadge(st) {
     switch (st) {
         case 'DRAFT':
-            return '<span class="badge bg-secondary-subtle text-secondary border px-2 py-1">DRAFT</span>';
+            return '<span class="badge bg-secondary-subtle text-secondary border px-2 py-1"><i class="bi bi-file-earmark me-1"></i>Draft</span>';
         case 'BELUM DIBAYAR':
-            return '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1"><i class="bi bi-hourglass-split me-1"></i>Belum Dibayar</span>';
+            return '<span class="badge bg-warning-subtle text-warning-emphasis border px-2 py-1"><i class="bi bi-hourglass-split me-1"></i>Belum Dibayar</span>';
         case 'SEBAGIAN DIBAYAR':
-            return '<span class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-2 py-1"><i class="bi bi-pie-chart me-1"></i>Sebagian</span>';
+            return '<span class="badge bg-info-subtle text-info-emphasis border px-2 py-1"><i class="bi bi-pie-chart me-1"></i>Sebagian Dibayar</span>';
         case 'LUNAS':
-            return '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1"><i class="bi bi-check2-all me-1"></i>Lunas</span>';
+            return '<span class="badge bg-success-subtle text-success border px-2 py-1"><i class="bi bi-check-all me-1"></i>Lunas</span>';
         case 'BATAL':
-            return '<span class="badge bg-danger-subtle text-danger border px-2 py-1">BATAL</span>';
+            return '<span class="badge bg-danger-subtle text-danger border px-2 py-1"><i class="bi bi-x-circle me-1"></i>Batal</span>';
         default:
             return `<span class="badge bg-light text-dark border px-2 py-1">${st}</span>`;
     }
@@ -345,7 +616,13 @@ async function viewFakturDetail(idFaktur) {
     if (!detailModalInstance) {
         detailModalInstance = new bootstrap.Modal(document.getElementById('modalDetailFaktur'));
     }
-    document.getElementById('modalDetailBody').innerHTML = '<div class="text-center py-5 text-muted"><div class="spinner-border text-primary me-2"></div> Memuat rincian faktur...</div>';
+    
+    // Reset tab ke tab 1
+    const firstTabBtn = document.getElementById('modal-tab-dokumen');
+    if (firstTabBtn) {
+        bootstrap.Tab.getInstance(firstTabBtn)?.show() || new bootstrap.Tab(firstTabBtn).show();
+    }
+
     detailModalInstance.show();
 
     try {
@@ -355,25 +632,78 @@ async function viewFakturDetail(idFaktur) {
         if (result && result.success && result.data) {
             renderModalDetailContent(result.data);
         } else {
-            document.getElementById('modalDetailBody').innerHTML = `<div class="alert alert-danger mb-0">${result.message || 'Gagal memuat data detail faktur.'}</div>`;
+            alert(result.message || 'Gagal memuat data detail faktur.');
         }
     } catch (e) {
-        document.getElementById('modalDetailBody').innerHTML = `<div class="alert alert-danger mb-0">Terjadi kesalahan: ${e.message}</div>`;
+        alert('Terjadi kesalahan: ' + e.message);
     }
 }
 
 function renderModalDetailContent(d) {
-    document.getElementById('modalDetailTitle').textContent = `Faktur PO: ${d.nomor_faktur}`;
-    document.getElementById('modalDetailSubtitle').textContent = `No. Invoice Vendor: ${d.nomor_faktur_vendor || '-'} | Status: ${d.status}`;
+    const isUpdated = d.updated_at && d.created_at && (d.updated_at !== d.created_at);
+    const subtitleHtml = `No. Faktur: ${d.nomor_faktur || '-'} | Invoice Vendor: ${d.nomor_faktur_vendor || '-'}` +
+        (isUpdated ? ` <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle py-1 px-1 ms-2 d-inline-flex align-items-center" title="Faktur telah diedit (Diperbarui: ${formatDate(d.updated_at)})"><i class="bi bi-pencil-fill" style="font-size: 0.65rem;"></i></span>` : '');
+    document.getElementById('modalDetailSubtitle').innerHTML = subtitleHtml;
 
+    // 1. Tab 1: Dokumen Asal
+    document.getElementById('detailNomorRcv').textContent = d.nomor_rcv ? `RCV: ${d.nomor_rcv}` : '-';
+    document.getElementById('detailNomorSjRcv').textContent = d.nomor_sj_rcv || '-';
+    document.getElementById('detailTanggalRcv').textContent = formatDate(d.tanggal_rcv_diterima || d.created_at);
+    document.getElementById('detailNomorPo').textContent = d.nomor_po ? `PO: ${d.nomor_po}` : '-';
+    document.getElementById('detailSite').textContent = d.nama_site || '-';
+    document.getElementById('detailPetugas').textContent = d.nama_pembuat || 'Admin';
+
+    // 2. Tab 2: Vendor & Rekening Bank
+    document.getElementById('detailVendor').textContent = d.nama_vendor || '-';
+    document.getElementById('detailTeleponVendor').textContent = d.telepon_vendor ? `Telp: ${d.telepon_vendor}` : '-';
+    document.getElementById('detailStatusBadge').innerHTML = getStatusBadge(d.status);
+    document.getElementById('detailNamaBank').textContent = d.nama_bank || '-';
+    document.getElementById('detailNomorRekening').textContent = d.nomor_rekening || '-';
+    document.getElementById('detailAtasNamaRekening').textContent = d.atas_nama_rekening || '-';
+
+    // 3. Tab 3: Tagihan & Pajak
+    document.getElementById('detailNomorFaktur').textContent = d.nomor_faktur || '-';
+    document.getElementById('detailNomorInvoiceVendor').textContent = d.nomor_faktur_vendor || '-';
+    document.getElementById('detailNomorFakturPajak').textContent = d.nomor_faktur_pajak || '-';
+    document.getElementById('detailTanggalFaktur').textContent = formatDate(d.tanggal_faktur_vendor || d.tanggal_faktur);
+    document.getElementById('detailJatuhTempo').textContent = `${formatDate(d.tanggal_jatuh_tempo)} (${d.term_of_payment || 0} Hari)`;
+
+    // File Lampiran
+    const fileInvContainer = document.getElementById('detailFileInvoiceContainer');
+    const fileInvNone = document.getElementById('detailFileInvoiceNone');
+    if (d.file_faktur_vendor) {
+        fileInvContainer.classList.remove('d-none');
+        fileInvNone.classList.add('d-none');
+        document.getElementById('detailFileInvoiceLink').href = `<?= BASE_URL ?>/uploads/faktur/${d.file_faktur_vendor}`;
+    } else {
+        fileInvContainer.classList.add('d-none');
+        fileInvNone.classList.remove('d-none');
+    }
+
+    const filePajakContainer = document.getElementById('detailFilePajakContainer');
+    const filePajakNone = document.getElementById('detailFilePajakNone');
+    if (d.file_faktur_pajak) {
+        filePajakContainer.classList.remove('d-none');
+        filePajakNone.classList.add('d-none');
+        document.getElementById('detailFilePajakLink').href = `<?= BASE_URL ?>/uploads/faktur/${d.file_faktur_pajak}`;
+    } else {
+        filePajakContainer.classList.add('d-none');
+        filePajakNone.classList.remove('d-none');
+    }
+
+    // 4. Tab 4: Rincian Barang
     const items = d.items || [];
+    document.getElementById('modalItemCountBadge').textContent = `${items.length} Item`;
     let itemsHtml = '';
     items.forEach((it, idx) => {
         itemsHtml += `
         <tr>
             <td class="text-center">${idx + 1}</td>
             <td class="font-monospace">${it.kode_barang || '-'}</td>
-            <td><strong>${it.nama_barang}</strong></td>
+            <td>
+                <strong>${it.nama_barang}</strong>
+                ${it.nama_kategori ? `<div class="small text-muted" style="font-size:0.75rem;">${it.nama_kategori}</div>` : ''}
+            </td>
             <td class="text-center font-monospace fw-bold text-success">${parseFloat(it.qty_tagih)}</td>
             <td class="text-center">${it.satuan || 'Unit'}</td>
             <td class="text-end font-monospace">${formatRupiah(it.harga_satuan)}</td>
@@ -381,86 +711,45 @@ function renderModalDetailContent(d) {
             <td class="text-end font-monospace fw-bold">${formatRupiah(it.subtotal)}</td>
         </tr>`;
     });
+    document.getElementById('detailFakturItemsBody').innerHTML = itemsHtml || '<tr><td colspan="8" class="text-center py-3 text-muted">Tidak ada data rincian barang.</td></tr>';
 
-    const html = `
-    <div class="row g-4">
-        <!-- Informasi Header Faktur -->
-        <div class="col-lg-6">
-            <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-file-earmark-text text-primary me-2"></i>Informasi Dokumen &amp; Tagihan</h6>
-            <table class="table table-sm table-borderless small mb-0">
-                <tr><td class="text-muted" style="width: 140px;">No. Faktur Sistem:</td><td class="font-monospace fw-bold text-primary">${d.nomor_faktur}</td></tr>
-                <tr><td class="text-muted">No. Invoice Vendor:</td><td class="font-monospace fw-bold">${d.nomor_faktur_vendor || '-'}</td></tr>
-                <tr><td class="text-muted">No. Faktur Pajak:</td><td class="font-monospace">${d.nomor_faktur_pajak || '-'}</td></tr>
-                <tr><td class="text-muted">No. Purchase Order:</td><td class="font-monospace fw-semibold">${d.nomor_po || '-'}</td></tr>
-                <tr><td class="text-muted">No. Surat Jalan RCV:</td><td class="font-monospace">${d.nomor_sj_rcv || '-'}</td></tr>
-                <tr><td class="text-muted">Tgl. Invoice:</td><td>${formatDate(d.tanggal_faktur_vendor || d.tanggal_faktur)}</td></tr>
-                <tr><td class="text-muted">Tgl. Jatuh Tempo:</td><td class="fw-bold text-danger">${formatDate(d.tanggal_jatuh_tempo)} (${d.term_of_payment || 0} Hari)</td></tr>
-            </table>
-        </div>
+    // 5. Tab 5: Catatan & Finansial
+    document.getElementById('detailCatatan').textContent = d.keterangan || 'Tidak ada catatan khusus.';
+    document.getElementById('finSubtotalPo').textContent = formatRupiah(d.subtotal_po);
+    document.getElementById('finSubtotalDiterima').textContent = formatRupiah(d.subtotal_diterima);
 
-        <div class="col-lg-6">
-            <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-building text-primary me-2"></i>Informasi Vendor &amp; Rekening</h6>
-            <table class="table table-sm table-borderless small mb-0">
-                <tr><td class="text-muted" style="width: 140px;">Nama Vendor:</td><td class="fw-bold text-dark">${d.nama_vendor}</td></tr>
-                <tr><td class="text-muted">Site / Gudang:</td><td>${d.nama_site || '-'}</td></tr>
-                <tr><td class="text-muted">Nama Bank:</td><td>${d.nama_bank || '-'}</td></tr>
-                <tr><td class="text-muted">Nomor Rekening:</td><td class="font-monospace fw-bold text-dark">${d.nomor_rekening || '-'}</td></tr>
-                <tr><td class="text-muted">Atas Nama Rekening:</td><td>${d.atas_nama_rekening || '-'}</td></tr>
-                <tr><td class="text-muted">Status Dokumen:</td><td>${getStatusBadge(d.status)}</td></tr>
-                <tr><td class="text-muted">Dibuat Oleh:</td><td>${d.nama_pembuat || 'Admin'}</td></tr>
-            </table>
-        </div>
+    const nilaiRetur = parseFloat(d.nilai_retur) || 0;
+    const rowRetur = document.getElementById('finRowNilaiRetur');
+    if (nilaiRetur > 0) {
+        rowRetur.classList.remove('d-none');
+        document.getElementById('finNilaiRetur').textContent = `- ${formatRupiah(nilaiRetur)}`;
+    } else {
+        rowRetur.classList.add('d-none');
+    }
 
-        <!-- Tabel Rincian Barang -->
-        <div class="col-12">
-            <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-box-seam text-primary me-2"></i>Rincian Barang Tagihan</h6>
-            <div class="table-responsive border rounded-3 mb-3">
-                <table class="table table-hover align-middle mb-0" style="font-size: 0.86rem;">
-                    <thead class="table-light">
-                        <tr>
-                            <th class="text-center" style="width: 40px;">No</th>
-                            <th style="width: 120px;">Kode Barang</th>
-                            <th>Nama Barang</th>
-                            <th class="text-center" style="width: 80px;">Kts</th>
-                            <th class="text-center" style="width: 70px;">Satuan</th>
-                            <th class="text-end" style="width: 130px;">Harga Satuan</th>
-                            <th class="text-end" style="width: 110px;">Diskon Item</th>
-                            <th class="text-end" style="width: 140px;">Subtotal</th>
-                        </tr>
-                    </thead>
-                    <tbody>${itemsHtml || '<tr><td colspan="8" class="text-center py-3 text-muted">Tidak ada data rincian barang.</td></tr>'}</tbody>
-                </table>
-            </div>
-        </div>
+    const diskon = parseFloat(d.diskon) || 0;
+    const rowDiskon = document.getElementById('finRowDiskon');
+    if (diskon > 0) {
+        rowDiskon.classList.remove('d-none');
+        document.getElementById('finDiskon').textContent = `- ${formatRupiah(diskon)}`;
+    } else {
+        rowDiskon.classList.add('d-none');
+    }
 
-        <!-- Ringkasan Finansial Tagihan -->
-        <div class="col-12">
-            <div class="row justify-content-end">
-                <div class="col-md-6 col-lg-5">
-                    <div class="card bg-light border-0 rounded-3 p-3">
-                        <div class="d-flex justify-content-between mb-2 small"><span class="text-muted">Subtotal Kontrak PO:</span><span class="font-monospace">${formatRupiah(d.subtotal_po)}</span></div>
-                        <div class="d-flex justify-content-between mb-2 small"><span class="text-dark fw-semibold">Subtotal Diterima (RCV):</span><span class="font-monospace fw-bold">${formatRupiah(d.subtotal_diterima)}</span></div>
-                        ${parseFloat(d.nilai_retur) > 0 ? `<div class="d-flex justify-content-between mb-2 small text-danger"><span>Potongan Retur PO:</span><span class="font-monospace fw-bold">- ${formatRupiah(d.nilai_retur)}</span></div>` : ''}
-                        ${parseFloat(d.diskon) > 0 ? `<div class="d-flex justify-content-between mb-2 small text-danger"><span>Diskon Tambahan Faktur:</span><span class="font-monospace fw-bold">- ${formatRupiah(d.diskon)}</span></div>` : ''}
-                        <div class="d-flex justify-content-between mb-2 small pt-2 border-top"><span class="fw-bold text-dark">DPP:</span><span class="font-monospace fw-bold text-dark">${formatRupiah(d.dpp)}</span></div>
-                        <div class="d-flex justify-content-between mb-2 small"><span class="text-muted">PPN (${d.rate_pajak || 0}%):</span><span class="font-monospace">${formatRupiah(d.nominal_pajak)}</span></div>
-                        ${parseFloat(d.biaya_lain) > 0 ? `<div class="d-flex justify-content-between mb-2 small"><span class="text-muted">Biaya Lain / Ongkir:</span><span class="font-monospace">${formatRupiah(d.biaya_lain)}</span></div>` : ''}
-                        <div class="d-flex justify-content-between pt-2 border-top border-2 border-dark"><span class="fw-bold fs-6 text-dark">TOTAL TAGIHAN:</span><span class="font-monospace fw-bold text-primary fs-5">${formatRupiah(d.total_tagihan)}</span></div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    document.getElementById('finDpp').textContent = formatRupiah(d.dpp);
+    document.getElementById('finLabelPpn').textContent = `PPN (${d.rate_pajak || 0}%):`;
+    document.getElementById('finNominalPajak').textContent = formatRupiah(d.nominal_pajak);
 
-        ${d.keterangan ? `
-        <div class="col-12">
-            <div class="p-3 bg-light rounded-3 small">
-                <strong>Catatan Faktur:</strong><br>
-                ${d.keterangan.replace(/\n/g, '<br>')}
-            </div>
-        </div>` : ''}
-    </div>`;
+    const biayaLain = parseFloat(d.biaya_lain) || 0;
+    const rowBiayaLain = document.getElementById('finRowBiayaLain');
+    if (biayaLain > 0) {
+        rowBiayaLain.classList.remove('d-none');
+        document.getElementById('finBiayaLain').textContent = formatRupiah(biayaLain);
+    } else {
+        rowBiayaLain.classList.add('d-none');
+    }
 
-    document.getElementById('modalDetailBody').innerHTML = html;
+    document.getElementById('finTotalTagihan').textContent = formatRupiah(d.total_tagihan);
 }
 
 function editFaktur(idFaktur) {

@@ -129,19 +129,19 @@ if ($idRcv > 0) {
     sendJson(true, 'Data dokumen 3-Way Matching berhasil dimuat.', $header);
 }
 
-// MODE 2: Ambil daftar ringkas Dokumen RCV & PO yang siap dibuatkan Faktur
+// MODE 2: Ambil daftar ringkas Dokumen RCV & PO yang siap dibuatkan Faktur (belum difakturkan)
 $search = trim($_GET['q'] ?? '');
 
 $sqlList = "SELECT r.id_rcv, r.nomor_rcv, r.nomor_sj, r.tanggal_diterima,
                    po.id_po, po.nomor_po, po.tanggal_po, po.term_of_payment,
                    v.id_vendor, v.kode_vendor, v.nama_perusahaan AS nama_vendor,
-                   s.id_site, s.nama_site,
-                   (SELECT COUNT(*) FROM faktur_po fp WHERE fp.id_rcv = r.id_rcv AND fp.status != 'BATAL') AS sudah_faktur
+                   s.id_site, s.nama_site
             FROM receiving_order r
             JOIN purchase_order po ON r.id_po = po.id_po
             JOIN vendor v ON po.id_vendor = v.id_vendor
             JOIN site s ON po.id_site = s.id_site
-            WHERE 1=1 ";
+            WHERE r.status = 1
+              AND NOT EXISTS (SELECT 1 FROM faktur_po fp WHERE fp.id_rcv = r.id_rcv AND fp.status != 'BATAL') ";
 
 $params = [];
 $types = "";
@@ -153,7 +153,7 @@ if ($search !== '') {
     $types .= "ssss";
 }
 
-$sqlList .= " ORDER BY r.id_rcv DESC LIMIT 50";
+$sqlList .= " ORDER BY r.tanggal_diterima ASC, r.id_rcv ASC LIMIT 50";
 
 $stmtList = $conn->prepare($sqlList);
 if (!empty($params)) {

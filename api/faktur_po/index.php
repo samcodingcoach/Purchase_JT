@@ -250,6 +250,17 @@ if ($method === 'POST') {
         sendJson(false, 'Nomor Faktur Vendor wajib diisi.', null, 422);
     }
 
+    // Cek apakah RCV sudah pernah dibuatkan Faktur PO aktif sebelumnya
+    $stmtCheck = $conn->prepare("SELECT id_faktur, nomor_faktur FROM faktur_po WHERE id_rcv = ? AND status != 'BATAL' LIMIT 1");
+    $stmtCheck->bind_param("i", $idRcv);
+    $stmtCheck->execute();
+    $existingFaktur = $stmtCheck->get_result()->fetch_assoc();
+    $stmtCheck->close();
+
+    if ($existingFaktur) {
+        sendJson(false, "Dokumen Penerimaan ini sudah pernah dibuatkan Faktur ({$existingFaktur['nomor_faktur']}).", null, 422);
+    }
+
     // Hitung Tanggal Jatuh Tempo
     $tanggalJatuhTempo = date('Y-m-d', strtotime("$tanggalFaktur + $top days"));
 
@@ -363,5 +374,177 @@ if ($method === 'POST') {
     } catch (Exception $e) {
         $conn->rollback();
         sendJson(false, 'Gagal membuat Faktur PO: ' . $e->getMessage(), null, 500);
+    }
+}
+
+// -------------------------------------------------------------
+// 3. PUT: Update Faktur PO (Hanya jika status belum SEBAGIAN DIBAYAR / LUNAS / BATAL)
+// -------------------------------------------------------------
+if ($method === 'PUT') {
+    $rawInput = file_get_contents('php://input');
+    $input = json_decode($rawInput, true);
+
+    if (!is_array($input)) {
+        sendJson(false, 'Format data tidak valid.', null, 400);
+    }
+
+    $idFaktur = intval($input['id_faktur'] ?? ($input['id'] ?? ($_GET['id'] ?? 0)));
+    if ($idFaktur <= 0) {
+        sendJson(false, 'ID Faktur tidak valid.', null, 422);
+    }
+
+    // Cek Faktur Existing
+    $stmtC = $conn->prepare("SELECT id_faktur, nomor_faktur, status, terbayar FROM faktur_po WHERE id_faktur = ? LIMIT 1");
+    $stmtC->bind_param("i", $idFaktur);
+    $stmtC->execute();
+    $currFaktur = $stmtC->get_result()->fetch_assoc();
+    $stmtC->close();
+
+    if (!$currFaktur) {
+        sendJson(false, 'Faktur PO tidak ditemukan.', null, 404);
+    }
+
+    // Validasi aturan bisnis: Hanya boleh diedit jika belum SEBAGIAN DIBAYAR / LUNAS / BATAL
+    $statusExisting = strtoupper((string)$currFaktur['status']);
+    if (in_array($statusExisting, ['SEBAGIAN DIBAYAR', 'LUNAS', 'BATAL']) || floatval($currFaktur['terbayar']) > 0) {
+        sendJson(false, "Faktur dengan status '{$statusExisting}' tidak dapat diedit karena sudah masuk proses pembayaran / dibatalkan.", null, 400);
+    }
+
+    $nomorFakturVendor = trim($input['nomor_faktur_vendor'] ?? '');
+    $nomorFakturPajak = trim($input['nomor_faktur_pajak'] ?? '');
+    $tanggalFaktur = trim($input['tanggal_faktur'] ?? ($input['tanggal_faktur_vendor'] ?? date('Y-m-d')));
+    $tanggalTerimaFaktur = trim($input['tanggal_terima_faktur'] ?? ($input['tanggal_terima_faktur_vendor'] ?? date('Y-m-d')));
+    $top = max(0, intval($input['term_of_payment'] ?? 0));
+
+    $namaBank = trim($input['nama_bank'] ?? '');
+    $nomorRekening = trim($input['nomor_rekening'] ?? '');
+    $atasNamaRekening = trim($input['atas_nama_rekening'] ?? '');
+
+    $subtotalPo = floatval($input['subtotal_po'] ?? 0);
+    $subtotalDiterima = floatval($input['subtotal_diterima'] ?? 0);
+    $nilaiRetur = floatval($input['nilai_retur'] ?? 0);
+    $diskon = floatval($input['diskon'] ?? 0);
+    $dpp = floatval($input['dpp'] ?? ($subtotalDiterima - $nilaiRetur - $diskon));
+    $ratePajak = intval($input['rate_pajak'] ?? 0);
+    $nominalPajak = floatval($input['nominal_pajak'] ?? ($dpp * ($ratePajak / 100)));
+    $biayaLain = floatval($input['biaya_lain'] ?? 0);
+    $totalTagihan = floatval($input['total_tagihan'] ?? ($dpp + $nominalPajak + $biayaLain));
+    $keterangan = trim($input['keterangan'] ?? '');
+
+    // Status target edit hanya boleh DRAFT atau BELUM DIBAYAR
+    $statusTarget = in_array($input['status'] ?? '', ['DRAFT', 'BELUM DIBAYAR']) ? $input['status'] : $statusExisting;
+
+    if (empty($nomorFakturVendor)) {
+        sendJson(false, 'Nomor Faktur Vendor wajib diisi.', null, 422);
+    }
+
+    $tanggalJatuhTempo = date('Y-m-d', strtotime("$tanggalFaktur + $top days"));
+    $sisaTagihan = $totalTagihan; // karena belum ada pembayaran
+    $terbayar = 0;
+
+    // Handle Upload File jika dikirim via Base64
+    $uploadDir = __DIR__ . '/../../uploads/faktur/';
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0777, true);
+    }
+
+    $paramsUp = [
+        $nomorFakturVendor, $nomorFakturPajak,
+        $tanggalFaktur, $tanggalTerimaFaktur, $top, $tanggalJatuhTempo,
+        $namaBank, $nomorRekening, $atasNamaRekening,
+        $subtotalPo, $subtotalDiterima, $nilaiRetur, $diskon, $dpp,
+        $ratePajak, $nominalPajak, $biayaLain, $totalTagihan,
+        $statusTarget, $terbayar, $sisaTagihan,
+        $keterangan
+    ];
+    $typesUp = "ssssissssdddddidddsdss";
+
+    $fileFieldsSql = "";
+    if (!empty($input['file_faktur_vendor_base64'])) {
+        $ext = preg_match('/^data:application\/pdf/', $input['file_faktur_vendor_base64']) ? 'pdf' : 'jpg';
+        $dataImg = preg_replace('/^data:[^;]+;base64,/', '', $input['file_faktur_vendor_base64']);
+        $filename = 'inv_vendor_' . time() . '_' . rand(100, 999) . '.' . $ext;
+        if (file_put_contents($uploadDir . $filename, base64_decode($dataImg))) {
+            $fileFieldsSql .= ", file_faktur_vendor = ?";
+            $paramsUp[] = $filename;
+            $typesUp .= "s";
+        }
+    }
+
+    if (!empty($input['file_faktur_pajak_base64'])) {
+        $ext = preg_match('/^data:application\/pdf/', $input['file_faktur_pajak_base64']) ? 'pdf' : 'jpg';
+        $dataImg = preg_replace('/^data:[^;]+;base64,/', '', $input['file_faktur_pajak_base64']);
+        $filename = 'fp_pajak_' . time() . '_' . rand(100, 999) . '.' . $ext;
+        if (file_put_contents($uploadDir . $filename, base64_decode($dataImg))) {
+            $fileFieldsSql .= ", file_faktur_pajak = ?";
+            $paramsUp[] = $filename;
+            $typesUp .= "s";
+        }
+    }
+
+    $paramsUp[] = $idFaktur;
+    $typesUp .= "i";
+
+    $conn->begin_transaction();
+    try {
+        $sqlUp = "UPDATE faktur_po SET
+                    nomor_faktur_vendor = ?, nomor_faktur_pajak = ?,
+                    tanggal_faktur_vendor = ?, tanggal_terima_faktur_vendor = ?, term_of_payment = ?, tanggal_jatuh_tempo = ?,
+                    nama_bank = ?, nomor_rekening = ?, atas_nama_rekening = ?,
+                    subtotal_po = ?, subtotal_diterima = ?, nilai_retur = ?, diskon = ?, dpp = ?,
+                    rate_pajak = ?, nominal_pajak = ?, biaya_lain = ?, total_tagihan = ?,
+                    status = ?, terbayar = ?, sisa_tagihan = ?,
+                    keterangan = ?
+                    {$fileFieldsSql},
+                    updated_at = NOW()
+                  WHERE id_faktur = ?";
+
+        $stmtUp = $conn->prepare($sqlUp);
+        $stmtUp->bind_param($typesUp, ...$paramsUp);
+        $stmtUp->execute();
+        $stmtUp->close();
+
+        // Update Detail Items (Hapus detail lama dan masukkan detail baru)
+        $items = $input['items'] ?? [];
+        if (!empty($items) && is_array($items)) {
+            $conn->query("DELETE FROM faktur_po_detail WHERE id_faktur = {$idFaktur}");
+
+            $sqlD = "INSERT INTO faktur_po_detail (
+                        id_faktur, id_barang, qty_po, qty_rcv, qty_retur, qty_tagih,
+                        satuan, harga_satuan, diskon_item, subtotal, keterangan
+                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            $stmtD = $conn->prepare($sqlD);
+
+            foreach ($items as $it) {
+                $idBarang = intval($it['id_barang'] ?? 0);
+                $qPo = floatval($it['qty_po'] ?? 0);
+                $qRcv = floatval($it['qty_rcv'] ?? 0);
+                $qRetur = floatval($it['qty_retur'] ?? 0);
+                $qTagih = floatval($it['qty_tagih'] ?? 0);
+                $satuan = trim($it['satuan'] ?? 'Unit');
+                $harga = floatval($it['harga_satuan'] ?? 0);
+                $discItem = floatval($it['diskon_item'] ?? 0);
+                $sub = floatval($it['subtotal'] ?? ($qTagih * ($harga - $discItem)));
+                $ketItem = trim($it['keterangan'] ?? '');
+
+                if ($idBarang > 0 && $qTagih >= 0) {
+                    $stmtD->bind_param("iiddddsddds", $idFaktur, $idBarang, $qPo, $qRcv, $qRetur, $qTagih, $satuan, $harga, $discItem, $sub, $ketItem);
+                    $stmtD->execute();
+                }
+            }
+            $stmtD->close();
+        }
+
+        $conn->commit();
+
+        sendJson(true, "Dokumen Faktur PO {$currFaktur['nomor_faktur']} berhasil diperbarui!", [
+            'id_faktur' => $idFaktur,
+            'nomor_faktur' => $currFaktur['nomor_faktur'],
+            'total_tagihan' => $totalTagihan
+        ]);
+
+    } catch (Exception $e) {
+        $conn->rollback();
+        sendJson(false, 'Gagal memperbarui Faktur PO: ' . $e->getMessage(), null, 500);
     }
 }

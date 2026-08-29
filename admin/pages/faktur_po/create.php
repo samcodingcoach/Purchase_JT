@@ -14,20 +14,20 @@ $user = requireAuth([ROLE_PURCHASING, ROLE_ADMIN, ROLE_MANAGER]);
 $pageTitle = 'Buat Faktur PO';
 $pageHeading = 'Formulir Faktur Pembelian';
 
-// Ambil 5 Dokumen Penerimaan RCV terlama yang diterima semua (status = 1)
+// Ambil Dokumen Penerimaan RCV yang belum pernah difakturkan (status = 1 dan belum ada di faktur_po aktif)
 $rcvOptions = [];
 $qRcv = "SELECT r.id_rcv, r.nomor_rcv, r.nomor_sj, r.tanggal_diterima, r.tanggal_rcv,
                 po.id_po, po.nomor_po, po.tanggal_po, po.term_of_payment,
                 v.id_vendor, v.kode_vendor, v.nama_perusahaan AS nama_vendor,
-                s.id_site, s.nama_site,
-                (SELECT COUNT(*) FROM faktur_po fp WHERE fp.id_rcv = r.id_rcv AND fp.status != 'BATAL') AS sudah_faktur
+                s.id_site, s.nama_site
          FROM receiving_order r
          JOIN purchase_order po ON r.id_po = po.id_po
          JOIN vendor v ON po.id_vendor = v.id_vendor
          JOIN site s ON po.id_site = s.id_site
          WHERE r.status = 1
+           AND NOT EXISTS (SELECT 1 FROM faktur_po fp WHERE fp.id_rcv = r.id_rcv AND fp.status != 'BATAL')
          ORDER BY r.tanggal_diterima ASC, r.id_rcv ASC
-         LIMIT 5";
+         LIMIT 10";
 $resRcv = $conn->query($qRcv);
 if ($resRcv) {
     while ($row = $resRcv->fetch_assoc()) {
@@ -41,6 +41,26 @@ require_once __DIR__ . '/../../components/navbar.php';
 ?>
 
 <style>
+/* Standardize Height of all form inputs & input-groups */
+.form-control,
+.form-control-sm,
+.form-select,
+.form-select-sm,
+.input-group > .form-control,
+.input-group > .btn,
+.input-group > .input-group-text,
+.input-group-sm > .form-control,
+.input-group-sm > .btn,
+.input-group-sm > .input-group-text,
+.rcv-custom-select {
+    height: 38px !important;
+    min-height: 38px !important;
+    font-size: 0.875rem !important;
+}
+textarea.form-control {
+    height: auto !important;
+    min-height: 100px !important;
+}
 .rcv-option-item {
     transition: background-color 0.15s ease, transform 0.1s ease;
     border-radius: 6px;
@@ -72,7 +92,7 @@ require_once __DIR__ . '/../../components/navbar.php';
             <h4 class="fw-bold text-dark mb-0">Faktur Purchase Order (PO)</h4>
         </div>
         <div class="d-flex gap-2">
-            <a href="<?= BASE_URL ?>/admin/pages/faktur_po/index.php" class="btn btn-outline-secondary btn-sm px-3 shadow-sm">
+            <a href="<?= BASE_URL ?>/admin/pages/faktur_po/index.php" class="btn btn-outline-secondary btn-sm px-3 shadow-sm" style="height: 38px; display: inline-flex; align-items: center;">
                 <i class="bi bi-arrow-left me-1"></i> Kembali ke Daftar
             </a>
         </div>
@@ -124,7 +144,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                     <div class="tab-pane fade show active" id="tab-dokumen" role="tabpanel">
                         <div class="row g-4">
                             <div class="col-lg-6">
-                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-link-45deg text-primary me-2"></i>Pilih Dokumen Penerimaan Barang</h6>
+                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Pilih Dokumen Penerimaan Barang</h6>
                                 
                                 <div class="mb-3 position-relative" id="rcvSearchableWrapper">
                                     <label class="form-label small fw-semibold text-dark">
@@ -163,7 +183,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                             </div>
 
                             <div class="col-lg-6">
-                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-info-circle text-primary me-2"></i>Informasi Referensi Dokumen</h6>
+                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Informasi Referensi Dokumen</h6>
                                 
                                 <div class="row g-3">
                                     <div class="col-12">
@@ -184,36 +204,56 @@ require_once __DIR__ . '/../../components/navbar.php';
 
                         <div class="mt-4 pt-3 border-top d-flex justify-content-end">
                             <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold shadow-sm" onclick="goToTab('tab-vendor')">
-                                Lanjut ke Vendor &amp; Rekening Bank <i class="bi bi-arrow-right ms-1"></i>
+                                Lanjut ke Vendor &amp; Rekening Bank
                             </button>
                         </div>
                     </div>
 
                     <!-- TAB 2: VENDOR & REKENING BANK -->
                     <div class="tab-pane fade" id="tab-vendor" role="tabpanel">
-                        <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-bank text-primary me-2"></i>Informasi Rekening Bank Tujuan Transfer</h6>
+                        <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Informasi Rekening Bank Tujuan Transfer</h6>
                         <div class="row g-3">
-                            <div class="col-sm-4">
-                                <label class="form-label small fw-semibold text-dark">Nama Bank</label>
-                                <input type="text" class="form-control form-control-sm" id="namaBank" name="nama_bank" placeholder="Contoh: BCA / Mandiri">
+                            <div class="col-sm-4 position-relative" id="bankComboboxWrapper">
+                                <label class="form-label small fw-semibold text-dark">Nama Bank / Metode Bayar</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control font-monospace fw-semibold" id="namaBank" name="nama_bank" placeholder="Pilih atau ketik bank..." autocomplete="off" onfocus="showBankDropdown()" oninput="filterBankDropdown()">
+                                    <button class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split px-3" type="button" onclick="toggleBankDropdown(event)" title="Pilih Bank"></button>
+                                </div>
+                                <!-- Dropdown List Bank -->
+                                <div class="dropdown-menu shadow-sm w-100 p-1" id="bankDropdownMenu" style="max-height: 220px; overflow-y: auto; display: none; position: absolute; top: calc(100% + 2px); left: 0; z-index: 1050;">
+                                    <button type="button" class="dropdown-item py-1 small rounded bank-opt" onclick="selectBank('CASH')">CASH</button>
+                                    <button type="button" class="dropdown-item py-1 small rounded bank-opt" onclick="selectBank('QRIS')">QRIS</button>
+                                    <button type="button" class="dropdown-item py-1 small rounded bank-opt" onclick="selectBank('BRI')">BRI</button>
+                                    <button type="button" class="dropdown-item py-1 small rounded bank-opt" onclick="selectBank('Bank Mandiri')">Bank Mandiri</button>
+                                    <button type="button" class="dropdown-item py-1 small rounded bank-opt" onclick="selectBank('BCA')">BCA</button>
+                                    <button type="button" class="dropdown-item py-1 small rounded bank-opt" onclick="selectBank('BNI')">BNI</button>
+                                    <button type="button" class="dropdown-item py-1 small rounded bank-opt" onclick="selectBank('BTN')">BTN</button>
+                                    <button type="button" class="dropdown-item py-1 small rounded bank-opt" onclick="selectBank('BRIS')">BRIS</button>
+                                    <button type="button" class="dropdown-item py-1 small rounded bank-opt" onclick="selectBank('BSI')">BSI</button>
+                                    <button type="button" class="dropdown-item py-1 small rounded bank-opt" onclick="selectBank('CIMB Niaga')">CIMB Niaga</button>
+                                    <button type="button" class="dropdown-item py-1 small rounded bank-opt" onclick="selectBank('OCBC')">OCBC</button>
+                                    <button type="button" class="dropdown-item py-1 small rounded bank-opt" onclick="selectBank('Bank Permata')">Bank Permata</button>
+                                    <button type="button" class="dropdown-item py-1 small rounded bank-opt" onclick="selectBank('Danamon')">Danamon</button>
+                                    <div id="noBankFound" class="text-muted small px-3 py-2 d-none">Tekan Enter atau gunakan nama yang diketik manual.</div>
+                                </div>
                             </div>
                             <div class="col-sm-8">
                                 <label class="form-label small fw-semibold text-dark">Nomor Rekening</label>
-                                <input type="text" class="form-control form-control-sm font-monospace fw-bold" id="nomorRekening" name="nomor_rekening" placeholder="Nomor Rekening Vendor">
+                                <input type="text" class="form-control font-monospace fw-bold" id="nomorRekening" name="nomor_rekening" placeholder="Nomor Rekening Vendor">
                             </div>
                             <div class="col-12">
                                 <label class="form-label small fw-semibold text-dark">Atas Nama Rekening</label>
-                                <input type="text" class="form-control form-control-sm fw-semibold" id="atasNamaRekening" name="atas_nama_rekening" placeholder="Nama Pemilik Rekening sesuai Invoice">
+                                <input type="text" class="form-control fw-semibold" id="atasNamaRekening" name="atas_nama_rekening" placeholder="Nama Pemilik Rekening sesuai Invoice">
                                 <div class="form-text small text-muted">Data rekening otomatis dimuat dari master vendor, namun dapat disesuaikan jika tertulis nomor rekening khusus pada lembar invoice vendor.</div>
                             </div>
                         </div>
 
                         <div class="mt-4 pt-3 border-top d-flex justify-content-between">
                             <button type="button" class="btn btn-outline-secondary btn-sm px-3" onclick="goToTab('tab-dokumen')">
-                                <i class="bi bi-arrow-left me-1"></i> Kembali ke Dokumen Asal
+                                Kembali ke Dokumen Asal
                             </button>
                             <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold shadow-sm" onclick="goToTab('tab-tagihan')">
-                                Lanjut ke Tagihan &amp; Pajak <i class="bi bi-arrow-right ms-1"></i>
+                                Lanjut ke Tagihan &amp; Pajak
                             </button>
                         </div>
                     </div>
@@ -222,7 +262,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                     <div class="tab-pane fade" id="tab-tagihan" role="tabpanel">
                         <div class="row g-4">
                             <div class="col-lg-6">
-                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-receipt text-primary me-2"></i>Nomor &amp; Waktu Tagihan Vendor</h6>
+                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Nomor &amp; Waktu Tagihan Vendor</h6>
                                 <div class="row g-3">
                                     <div class="col-sm-6">
                                         <label class="form-label small fw-semibold text-dark">Nomor Faktur / Invoice Vendor <span class="text-danger">*</span></label>
@@ -256,7 +296,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                             </div>
 
                             <div class="col-lg-6">
-                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-paperclip text-primary me-2"></i>Lampiran Berkas Tagihan (Opsional)</h6>
+                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Lampiran Berkas Tagihan (Opsional)</h6>
                                 <div class="row g-3">
                                     <div class="col-12">
                                         <label class="form-label small fw-semibold text-dark">Scan Invoice / Tagihan Vendor</label>
@@ -276,10 +316,10 @@ require_once __DIR__ . '/../../components/navbar.php';
 
                         <div class="mt-4 pt-3 border-top d-flex justify-content-between">
                             <button type="button" class="btn btn-outline-secondary btn-sm px-3" onclick="goToTab('tab-vendor')">
-                                <i class="bi bi-arrow-left me-1"></i> Kembali ke Vendor &amp; Bank
+                                Kembali ke Vendor &amp; Bank
                             </button>
                             <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold shadow-sm" onclick="goToTab('tab-barang')">
-                                Lanjut ke Rincian Barang <i class="bi bi-arrow-right ms-1"></i>
+                                Lanjut ke Rincian Barang
                             </button>
                         </div>
                     </div>
@@ -292,7 +332,7 @@ require_once __DIR__ . '/../../components/navbar.php';
 
                         <!-- Tabel Rincian Kuantitas & Nilai Barang -->
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="fw-bold text-dark mb-0"><i class="bi bi-table text-primary me-2"></i>Rincian Kuantitas &amp; Nilai Barang Tagihan</h6>
+                            <h6 class="fw-bold text-dark mb-0">Rincian Kuantitas &amp; Nilai Barang Tagihan</h6>
                         </div>
                         
                         <div class="table-responsive mb-0 border rounded-3">
@@ -312,7 +352,6 @@ require_once __DIR__ . '/../../components/navbar.php';
                                 <tbody id="matchingItemsBody">
                                     <tr>
                                         <td colspan="8" class="text-center py-4 text-muted">
-                                            <i class="bi bi-box-seam fs-3 d-block mb-1 text-secondary"></i>
                                             Silakan pilih Dokumen Penerimaan (RCV) pada Tab 1 untuk memuat rincian barang.
                                         </td>
                                     </tr>
@@ -322,17 +361,17 @@ require_once __DIR__ . '/../../components/navbar.php';
 
                         <div class="mt-4 pt-3 border-top d-flex justify-content-between">
                             <button type="button" class="btn btn-outline-secondary btn-sm px-3" onclick="goToTab('tab-tagihan')">
-                                <i class="bi bi-arrow-left me-1"></i> Kembali ke Tagihan &amp; Pajak
+                                Kembali ke Tagihan &amp; Pajak
                             </button>
                             <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold shadow-sm" onclick="goToTab('tab-catatan')">
-                                Lanjut ke Catatan Faktur <i class="bi bi-arrow-right ms-1"></i>
+                                Lanjut ke Catatan Faktur
                             </button>
                         </div>
                     </div>
 
                     <!-- TAB 5: CATATAN FAKTUR -->
                     <div class="tab-pane fade" id="tab-catatan" role="tabpanel">
-                        <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-card-text text-primary me-2"></i>Catatan &amp; Instruksi Khusus Faktur</h6>
+                        <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Catatan &amp; Instruksi Khusus Faktur</h6>
                         <div class="mb-3">
                             <label class="form-label small fw-semibold text-dark">Catatan Faktur Pembelian (Internal &amp; Pelunasan)</label>
                             <textarea class="form-control" id="keteranganFaktur" name="keterangan" rows="6" placeholder="Tambahkan catatan terkait verifikasi tagihan vendor, kesepakatan diskon khusus, jadwal pembayaran, atau instruksi transfer rekening bank..."></textarea>
@@ -340,7 +379,7 @@ require_once __DIR__ . '/../../components/navbar.php';
 
                         <div class="mt-4 pt-3 border-top d-flex justify-content-start">
                             <button type="button" class="btn btn-outline-secondary btn-sm px-3" onclick="goToTab('tab-barang')">
-                                <i class="bi bi-arrow-left me-1"></i> Kembali ke Rincian Barang
+                                Kembali ke Rincian Barang
                             </button>
                         </div>
                     </div>
@@ -352,7 +391,7 @@ require_once __DIR__ . '/../../components/navbar.php';
         <!-- CARD 2: RINGKASAN FINANSIAL & PEMBAYARAN (SELALU TERLIHAT DI BAWAH) -->
         <div class="card border-0 shadow-sm rounded-3 mb-4">
             <div class="card-header bg-white border-bottom p-3">
-                <h6 class="fw-bold text-dark mb-0"><i class="bi bi-cash-stack text-primary me-2"></i>Ringkasan Finansial Tagihan</h6>
+                <h6 class="fw-bold text-dark mb-0">Ringkasan Finansial Tagihan</h6>
             </div>
             
             <div class="card-body p-4">
@@ -432,14 +471,68 @@ document.addEventListener('DOMContentLoaded', () => {
     populateRcvDropdownOptions(rawRcvData);
     calculateDueDate();
 
-    // Tutup dropdown RCV jika klik di luar
+    // Tutup dropdown RCV & Bank jika klik di luar
     document.addEventListener('click', (e) => {
         const wrapper = document.getElementById('rcvSearchableWrapper');
         if (wrapper && !wrapper.contains(e.target)) {
             closeRcvDropdown();
         }
+        const bankWrapper = document.getElementById('bankComboboxWrapper');
+        if (bankWrapper && !bankWrapper.contains(e.target)) {
+            hideBankDropdown();
+        }
     });
 });
+
+function showBankDropdown() {
+    const menu = document.getElementById('bankDropdownMenu');
+    if (menu) menu.style.display = 'block';
+}
+
+function hideBankDropdown() {
+    const menu = document.getElementById('bankDropdownMenu');
+    if (menu) menu.style.display = 'none';
+}
+
+function toggleBankDropdown(e) {
+    if (e) e.stopPropagation();
+    const menu = document.getElementById('bankDropdownMenu');
+    if (menu) {
+        menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    }
+}
+
+function filterBankDropdown() {
+    const query = (document.getElementById('namaBank').value || '').toLowerCase().trim();
+    const menu = document.getElementById('bankDropdownMenu');
+    if (menu) menu.style.display = 'block';
+
+    const items = document.querySelectorAll('.bank-opt');
+    let visibleCount = 0;
+    items.forEach(el => {
+        const text = el.textContent.toLowerCase();
+        if (text.includes(query)) {
+            el.style.display = 'block';
+            visibleCount++;
+        } else {
+            el.style.display = 'none';
+        }
+    });
+
+    const noFound = document.getElementById('noBankFound');
+    if (noFound) {
+        if (visibleCount === 0) {
+            noFound.classList.remove('d-none');
+        } else {
+            noFound.classList.add('d-none');
+        }
+    }
+}
+
+function selectBank(val) {
+    document.getElementById('namaBank').value = val;
+    hideBankDropdown();
+}
 
 function toggleRcvDropdown(e) {
     e.stopPropagation();
