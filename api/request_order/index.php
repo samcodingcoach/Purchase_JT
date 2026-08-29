@@ -106,6 +106,55 @@ if ($method === 'GET') {
         }
         $stmtItems->close();
 
+        // Ambil info PO, Receiving, dan Retur PO jika RO sudah terhubung ke PO
+        $header['po_info'] = null;
+        $header['receiving_info'] = null;
+        $header['retur_info'] = null;
+
+        $idPoRo = (int)($header['id_po'] ?? 0);
+        if ($idPoRo > 0) {
+            $stmtPo = $conn->prepare("SELECT po.id_po, po.nomor_po, po.tanggal_po, po.status AS status_po, po.id_receiving 
+                                      FROM purchase_order po WHERE po.id_po = ? LIMIT 1");
+            $stmtPo->bind_param("i", $idPoRo);
+            $stmtPo->execute();
+            $poData = $stmtPo->get_result()->fetch_assoc();
+            $stmtPo->close();
+
+            if ($poData) {
+                $header['po_info'] = $poData;
+                $idRcv = (int)($poData['id_receiving'] ?? 0);
+
+                // Info Receiving
+                $stmtRcv = $conn->prepare("SELECT rcv.id_rcv, rcv.nomor_rcv, rcv.nomor_sj, rcv.tanggal_rcv, rcv.tanggal_diterima, rcv.status AS status_rcv
+                                           FROM receiving_order rcv 
+                                           WHERE rcv.id_po = ? " . ($idRcv > 0 ? "OR rcv.id_rcv = {$idRcv}" : "") . " 
+                                           ORDER BY rcv.id_rcv DESC LIMIT 1");
+                $stmtRcv->bind_param("i", $idPoRo);
+                $stmtRcv->execute();
+                $rcvData = $stmtRcv->get_result()->fetch_assoc();
+                $stmtRcv->close();
+
+                if ($rcvData) {
+                    $header['receiving_info'] = $rcvData;
+                    if ($idRcv <= 0) $idRcv = (int)$rcvData['id_rcv'];
+                }
+
+                // Info Retur PO
+                $stmtRet = $conn->prepare("SELECT rp.id_po_retur, rp.nomor_po_retur, rp.tanggal_po_retur, rp.kompensasi, rp.status AS status_retur, rp.nomor_sj_retur, rp.total
+                                           FROM retur_po rp 
+                                           WHERE rp.id_po = ? " . ($idRcv > 0 ? "OR rp.id_rcv = {$idRcv}" : "") . " 
+                                           ORDER BY rp.id_po_retur DESC LIMIT 1");
+                $stmtRet->bind_param("i", $idPoRo);
+                $stmtRet->execute();
+                $retData = $stmtRet->get_result()->fetch_assoc();
+                $stmtRet->close();
+
+                if ($retData) {
+                    $header['retur_info'] = $retData;
+                }
+            }
+        }
+
         $header['items'] = $items;
         $header['total_items'] = count($items);
         $header['total_qty'] = $totalQty;
@@ -247,7 +296,7 @@ if ($method === 'GET') {
         'total_disetujui_logistik' => 0, 'total_disetujui_purchasing' => 0, 'total_ditolak' => 0, 'total_batal' => 0, 'total_urgent' => 0
     ];
 
-    // 3. Query List Data RO dengan agregasi item
+    // 3. Query List Data RO dengan agregasi item + info PO & Retur
     $sql = "SELECT ro.id_request, ro.nomor, ro.tanggal_ro, ro.id_karyawan, ro.id_site, 
                    ro.status, ro.prioritas, ro.id_vendor, ro.id_karyawan_approved, ro.tanggal_status, ro.keterangan, ro.id_po,
                    COALESCE(kry.nama_karyawan, u.nama_users, 'Karyawan') AS nama_karyawan,
@@ -259,7 +308,13 @@ if ($method === 'GET') {
                    COALESCE(appr.nama_karyawan, u_appr.nama_users) AS nama_approver,
                    COUNT(rod.id_request_detail) AS total_items,
                    COALESCE(SUM(rod.qty), 0) AS total_qty,
-                   COALESCE(SUM(rod.subtotal), 0) AS grand_total
+                   COALESCE(SUM(rod.subtotal), 0) AS grand_total,
+                   (SELECT po_sub.nomor_po FROM purchase_order po_sub WHERE po_sub.id_po = ro.id_po LIMIT 1) AS nomor_po,
+                   (SELECT rcv_sub.nomor_rcv FROM receiving_order rcv_sub WHERE rcv_sub.id_po = ro.id_po LIMIT 1) AS nomor_rcv,
+                   (SELECT CONCAT_WS('|', rp.nomor_po_retur, rp.status, rp.kompensasi) 
+                    FROM retur_po rp 
+                    WHERE rp.id_po = ro.id_po OR rp.id_rcv = (SELECT po_sub.id_receiving FROM purchase_order po_sub WHERE po_sub.id_po = ro.id_po)
+                    ORDER BY rp.id_po_retur DESC LIMIT 1) AS retur_raw
             FROM request_order ro
             LEFT JOIN karyawan kry ON ro.id_karyawan = kry.id_karyawan
             LEFT JOIN users u ON ro.id_karyawan = u.id_users
@@ -289,6 +344,16 @@ if ($method === 'GET') {
 
     $items = [];
     while ($row = $res->fetch_assoc()) {
+        $returInfo = null;
+        if (!empty($row['retur_raw'])) {
+            $parts = explode('|', $row['retur_raw']);
+            $returInfo = [
+                'nomor_retur' => $parts[0] ?? '',
+                'status' => $parts[1] ?? '',
+                'kompensasi' => isset($parts[2]) ? (int)$parts[2] : null,
+            ];
+        }
+
         $items[] = [
             'id_request' => (int)$row['id_request'],
             'nomor' => $row['nomor'],
@@ -311,7 +376,10 @@ if ($method === 'GET') {
             'total_items' => (int)$row['total_items'],
             'total_qty' => (float)$row['total_qty'],
             'grand_total' => (float)$row['grand_total'],
-            'id_po' => $row['id_po'] ? (int)$row['id_po'] : null
+            'id_po' => $row['id_po'] ? (int)$row['id_po'] : null,
+            'nomor_po' => $row['nomor_po'] ?? null,
+            'nomor_rcv' => $row['nomor_rcv'] ?? null,
+            'retur_info' => $returInfo
         ];
     }
     $stmt->close();

@@ -203,10 +203,16 @@ require_once __DIR__ . '/../../components/navbar.php';
                             <span class="badge bg-primary text-white ms-1" id="detailBadgeItemCount">0</span>
                         </button>
                     </li>
+                    <li class="nav-item" role="presentation" id="ro-tab-fulfillment-li" style="display: none;">
+                        <button class="nav-link fw-bold text-dark small py-2 px-3" id="ro-tab-fulfillment" data-bs-toggle="tab" data-bs-target="#ro-pane-fulfillment" type="button" role="tab">
+                            <i class="bi bi-truck me-1 text-primary"></i> 3. Penerimaan &amp; Retur PO
+                            <span class="badge bg-success text-white ms-1" id="detailBadgeFulfillment">Ada</span>
+                        </button>
+                    </li>
                 </ul>
             </div>
 
-            <!-- MODAL BODY DENGAN 2 TAB -->
+            <!-- MODAL BODY DENGAN 3 TAB -->
             <div class="modal-body p-4">
                 <div class="tab-content" id="roModalTabContent">
                     
@@ -252,6 +258,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                                 </div>
                             </div>
                         </div>
+                        <div id="detailQuickFulfillmentAlert" class="mt-3" style="display: none;"></div>
                     </div>
 
                     <!-- TAB 2: RINCIAN MATERIAL / BARANG -->
@@ -271,6 +278,13 @@ require_once __DIR__ . '/../../components/navbar.php';
                                     <!-- Populated dynamically -->
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: STATUS PENERIMAAN & RETUR PO -->
+                    <div class="tab-pane fade" id="ro-pane-fulfillment" role="tabpanel">
+                        <div id="detailFulfillmentContent">
+                            <!-- Populated dynamically -->
                         </div>
                     </div>
 
@@ -454,6 +468,17 @@ function renderTableRows(items, offset) {
             statusBadge = `<span class="badge bg-dark-subtle text-dark border px-2 py-1"><i class="bi bi-slash-circle me-1"></i>Dibatalkan</span>`;
         } else {
             statusBadge = `<span class="badge bg-secondary-subtle text-secondary border px-2 py-1">${ro.status}</span>`;
+        }
+
+        // Info Retur jika ada
+        if (ro.retur_info && ro.retur_info.nomor_retur) {
+            if (ro.retur_info.status === 'DITERIMA' && parseInt(ro.retur_info.kompensasi) === 1) {
+                statusBadge += `<div class="mt-1"><span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1" style="font-size: 0.72rem;" title="Retur ${escapeHtml(ro.retur_info.nomor_retur)} (Tukar Unit Selesai)"><i class="bi bi-arrow-repeat me-1"></i>Tukar Unit Selesai (${escapeHtml(ro.retur_info.nomor_retur)})</span></div>`;
+            } else if (ro.retur_info.status === 'DITERIMA' && parseInt(ro.retur_info.kompensasi) === 0) {
+                statusBadge += `<div class="mt-1"><span class="badge bg-secondary-subtle text-secondary border px-2 py-1" style="font-size: 0.72rem;" title="Retur ${escapeHtml(ro.retur_info.nomor_retur)} (Potong Tagihan)"><i class="bi bi-percent me-1"></i>Potong Tagihan (${escapeHtml(ro.retur_info.nomor_retur)})</span></div>`;
+            } else {
+                statusBadge += `<div class="mt-1"><span class="badge bg-warning-subtle text-warning-emphasis border px-2 py-1" style="font-size: 0.72rem;" title="Proses Retur: ${escapeHtml(ro.retur_info.status)}"><i class="bi bi-arrow-return-left me-1"></i>Retur: ${escapeHtml(ro.retur_info.status)}</span></div>`;
+            }
         }
 
         // Format Tanggal & Waktu Terpisah (Tanpa detik/milidetik)
@@ -683,6 +708,74 @@ async function openDetailModal(idRequest) {
         itemsHtml = `<tr><td colspan="5" class="text-center py-3 text-muted">Tidak ada rincian material.</td></tr>`;
     }
     tbodyItems.innerHTML = itemsHtml;
+
+    // Render Fulfillment & Retur (Tab 3)
+    const tabFulfillmentLi = document.getElementById('ro-tab-fulfillment-li');
+    const fulfillmentContent = document.getElementById('detailFulfillmentContent');
+    const quickAlert = document.getElementById('detailQuickFulfillmentAlert');
+
+    let hasFulfillment = false;
+    let fulfillmentHtml = '<div class="row g-3">';
+
+    if (ro.po_info) {
+        hasFulfillment = true;
+        fulfillmentHtml += `
+            <div class="col-md-4">
+                <div class="p-3 bg-light rounded-3 border h-100">
+                    <div class="small fw-bold text-dark mb-2"><i class="bi bi-receipt me-1 text-primary"></i>Purchase Order (PO)</div>
+                    <div class="font-monospace fw-bold text-primary">${escapeHtml(ro.po_info.nomor_po)}</div>
+                    <div class="small text-muted mt-1">Tgl: ${formatDateTimeModal(ro.po_info.tanggal_po)}</div>
+                    <div class="mt-2"><span class="badge bg-success-subtle text-success border">${escapeHtml(ro.po_info.status_po || 'PROSES')}</span></div>
+                </div>
+            </div>
+        `;
+    }
+
+    if (ro.receiving_info) {
+        hasFulfillment = true;
+        fulfillmentHtml += `
+            <div class="col-md-4">
+                <div class="p-3 bg-light rounded-3 border h-100">
+                    <div class="small fw-bold text-dark mb-2"><i class="bi bi-box-seam me-1 text-success"></i>Penerimaan (Receiving)</div>
+                    <div class="font-monospace fw-bold text-dark">${escapeHtml(ro.receiving_info.nomor_rcv)}</div>
+                    <div class="small text-muted mt-1">No. Surat Jalan: <strong>${escapeHtml(ro.receiving_info.nomor_sj || '-')}</strong></div>
+                    <div class="mt-2"><span class="badge ${parseInt(ro.receiving_info.status_rcv) === 1 ? 'bg-success text-white' : 'bg-warning text-dark'} border">${parseInt(ro.receiving_info.status_rcv) === 1 ? 'Diterima Penuh' : 'Diterima Sebagian'}</span></div>
+                </div>
+            </div>
+        `;
+    }
+
+    if (ro.retur_info) {
+        hasFulfillment = true;
+        const isTukar = parseInt(ro.retur_info.kompensasi) === 1;
+        fulfillmentHtml += `
+            <div class="col-md-4">
+                <div class="p-3 bg-light rounded-3 border h-100">
+                    <div class="small fw-bold text-dark mb-2"><i class="bi bi-arrow-return-left me-1 text-danger"></i>Retur Purchase Order</div>
+                    <div class="font-monospace fw-bold text-danger">${escapeHtml(ro.retur_info.nomor_po_retur)}</div>
+                    <div class="small text-muted mt-1">Kompensasi: <strong>${isTukar ? 'Tukar Unit / Ganti Barang' : 'Potong Tagihan'}</strong></div>
+                    <div class="mt-2"><span class="badge ${ro.retur_info.status_retur === 'DITERIMA' ? 'bg-info-subtle text-info border border-info-subtle' : 'bg-warning-subtle text-warning-emphasis border'}">${escapeHtml(ro.retur_info.status_retur)}</span></div>
+                </div>
+            </div>
+        `;
+    }
+    fulfillmentHtml += '</div>';
+
+    if (hasFulfillment) {
+        tabFulfillmentLi.style.display = 'block';
+        fulfillmentContent.innerHTML = fulfillmentHtml;
+
+        if (ro.retur_info && ro.retur_info.status_retur === 'DITERIMA' && parseInt(ro.retur_info.kompensasi) === 1) {
+            quickAlert.style.display = 'block';
+            quickAlert.className = 'alert alert-info py-2 px-3 small d-flex align-items-center mb-0 mt-3';
+            quickAlert.innerHTML = `<i class="bi bi-info-circle-fill me-2 fs-5"></i> <div>Barang dari Request Order ini sempat mengalami retur kerusakan, namun telah <strong>selesai diganti unit baru</strong> via Retur <strong>${escapeHtml(ro.retur_info.nomor_po_retur)}</strong> sehingga status pengajuan menjadi <strong>DITERIMA FULL</strong>.</div>`;
+        } else {
+            quickAlert.style.display = 'none';
+        }
+    } else {
+        tabFulfillmentLi.style.display = 'none';
+        quickAlert.style.display = 'none';
+    }
 
     const modal = new bootstrap.Modal(document.getElementById('modalDetailRo'));
     modal.show();
