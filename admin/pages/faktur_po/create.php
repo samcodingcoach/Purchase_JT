@@ -14,9 +14,9 @@ $user = requireAuth([ROLE_PURCHASING, ROLE_ADMIN, ROLE_MANAGER]);
 $pageTitle = 'Buat Faktur PO';
 $pageHeading = 'Formulir Faktur Pembelian';
 
-// Ambil daftar Dokumen Penerimaan RCV yang siap difakturkan
+// Ambil 5 Dokumen Penerimaan RCV terlama yang diterima semua (status = 1)
 $rcvOptions = [];
-$qRcv = "SELECT r.id_rcv, r.nomor_rcv, r.nomor_sj, r.tanggal_diterima,
+$qRcv = "SELECT r.id_rcv, r.nomor_rcv, r.nomor_sj, r.tanggal_diterima, r.tanggal_rcv,
                 po.id_po, po.nomor_po, po.tanggal_po, po.term_of_payment,
                 v.id_vendor, v.kode_vendor, v.nama_perusahaan AS nama_vendor,
                 s.id_site, s.nama_site,
@@ -25,7 +25,9 @@ $qRcv = "SELECT r.id_rcv, r.nomor_rcv, r.nomor_sj, r.tanggal_diterima,
          JOIN purchase_order po ON r.id_po = po.id_po
          JOIN vendor v ON po.id_vendor = v.id_vendor
          JOIN site s ON po.id_site = s.id_site
-         ORDER BY r.id_rcv DESC LIMIT 50";
+         WHERE r.status = 1
+         ORDER BY r.tanggal_diterima ASC, r.id_rcv ASC
+         LIMIT 5";
 $resRcv = $conn->query($qRcv);
 if ($resRcv) {
     while ($row = $resRcv->fetch_assoc()) {
@@ -37,6 +39,31 @@ require_once __DIR__ . '/../../components/header.php';
 require_once __DIR__ . '/../../components/sidebar.php';
 require_once __DIR__ . '/../../components/navbar.php';
 ?>
+
+<style>
+.rcv-option-item {
+    transition: background-color 0.15s ease, transform 0.1s ease;
+    border-radius: 6px;
+    cursor: pointer !important;
+}
+.rcv-option-item:hover {
+    background-color: #e9ecef !important;
+}
+.rcv-option-item:hover strong.text-primary {
+    color: #0a58ca !important;
+    text-decoration: underline;
+}
+.rcv-custom-select {
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.rcv-custom-select:hover {
+    border-color: #0d6efd !important;
+    background-color: #f8fafc !important;
+}
+.transition-chevron {
+    transition: transform 0.2s ease;
+}
+</style>
 
 <div class="container-fluid px-0">
     <!-- HEADER -->
@@ -164,34 +191,20 @@ require_once __DIR__ . '/../../components/navbar.php';
 
                     <!-- TAB 2: VENDOR & REKENING BANK -->
                     <div class="tab-pane fade" id="tab-vendor" role="tabpanel">
-                        <div class="row g-4">
-                            <div class="col-lg-6">
-                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-building text-primary me-2"></i>Identitas Vendor Rekanan</h6>
-                                <div class="row g-3">
-                                    <div class="col-12">
-                                        <label class="form-label small fw-semibold text-dark">Nama Perusahaan Vendor</label>
-                                        <input type="text" class="form-control form-control-sm bg-light fw-bold text-dark fs-6" id="displayNamaVendor" placeholder="Pilih RCV terlebih dahulu" readonly>
-                                    </div>
-                                </div>
+                        <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-bank text-primary me-2"></i>Informasi Rekening Bank Tujuan Transfer</h6>
+                        <div class="row g-3">
+                            <div class="col-sm-4">
+                                <label class="form-label small fw-semibold text-dark">Nama Bank</label>
+                                <input type="text" class="form-control form-control-sm" id="namaBank" name="nama_bank" placeholder="Contoh: BCA / Mandiri">
                             </div>
-
-                            <div class="col-lg-6">
-                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-bank text-primary me-2"></i>Informasi Rekening Bank Tujuan Transfer</h6>
-                                <div class="row g-3">
-                                    <div class="col-sm-4">
-                                        <label class="form-label small fw-semibold text-dark">Nama Bank</label>
-                                        <input type="text" class="form-control form-control-sm" id="namaBank" name="nama_bank" placeholder="Contoh: BCA / Mandiri">
-                                    </div>
-                                    <div class="col-sm-8">
-                                        <label class="form-label small fw-semibold text-dark">Nomor Rekening</label>
-                                        <input type="text" class="form-control form-control-sm font-monospace fw-bold" id="nomorRekening" name="nomor_rekening" placeholder="Nomor Rekening Vendor">
-                                    </div>
-                                    <div class="col-12">
-                                        <label class="form-label small fw-semibold text-dark">Atas Nama Rekening</label>
-                                        <input type="text" class="form-control form-control-sm fw-semibold" id="atasNamaRekening" name="atas_nama_rekening" placeholder="Nama Pemilik Rekening sesuai Invoice">
-                                        <div class="form-text small text-muted">Data rekening otomatis dimuat dari master vendor, namun dapat disesuaikan jika tertulis nomor rekening khusus pada lembar invoice vendor.</div>
-                                    </div>
-                                </div>
+                            <div class="col-sm-8">
+                                <label class="form-label small fw-semibold text-dark">Nomor Rekening</label>
+                                <input type="text" class="form-control form-control-sm font-monospace fw-bold" id="nomorRekening" name="nomor_rekening" placeholder="Nomor Rekening Vendor">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold text-dark">Atas Nama Rekening</label>
+                                <input type="text" class="form-control form-control-sm fw-semibold" id="atasNamaRekening" name="atas_nama_rekening" placeholder="Nama Pemilik Rekening sesuai Invoice">
+                                <div class="form-text small text-muted">Data rekening otomatis dimuat dari master vendor, namun dapat disesuaikan jika tertulis nomor rekening khusus pada lembar invoice vendor.</div>
                             </div>
                         </div>
 
@@ -289,19 +302,16 @@ require_once __DIR__ . '/../../components/navbar.php';
                                         <th class="text-center" style="width: 40px;">No</th>
                                         <th style="width: 120px;">Kode Barang</th>
                                         <th>Nama Barang</th>
-                                        <th class="text-center" style="width: 80px;">KTS PO</th>
-                                        <th class="text-center" style="width: 85px;">KTS RCV</th>
-                                        <th class="text-center" style="width: 85px;">KTS Retur</th>
-                                        <th class="text-center" style="width: 95px;">KTS Tagih</th>
-                                        <th class="text-center" style="width: 75px;">Satuan</th>
-                                        <th class="text-end" style="width: 130px;">Harga Satuan</th>
-                                        <th class="text-end" style="width: 110px;">Diskon Item</th>
-                                        <th class="text-end" style="width: 140px;">Subtotal Tagih</th>
+                                        <th class="text-center" style="width: 95px;">Kts</th>
+                                        <th class="text-center" style="width: 80px;">Satuan</th>
+                                        <th class="text-end" style="width: 140px;">Harga Satuan</th>
+                                        <th class="text-end" style="width: 120px;">Diskon Item</th>
+                                        <th class="text-end" style="width: 150px;">Subtotal</th>
                                     </tr>
                                 </thead>
                                 <tbody id="matchingItemsBody">
                                     <tr>
-                                        <td colspan="11" class="text-center py-4 text-muted">
+                                        <td colspan="8" class="text-center py-4 text-muted">
                                             <i class="bi bi-box-seam fs-3 d-block mb-1 text-secondary"></i>
                                             Silakan pilih Dokumen Penerimaan (RCV) pada Tab 1 untuk memuat rincian barang.
                                         </td>
@@ -458,6 +468,15 @@ function closeRcvDropdown() {
     if (chevron) chevron.style.transform = 'rotate(0deg)';
 }
 
+function formatIndoDateLong(dateStr) {
+    if (!dateStr) return '-';
+    const d = new Date(dateStr);
+    if (isNaN(d)) return dateStr;
+    const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${dd} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
 function populateRcvDropdownOptions(items) {
     const container = document.getElementById('rcvOptionsContainer');
     if (!container) return;
@@ -468,9 +487,7 @@ function populateRcvDropdownOptions(items) {
 
     let html = '';
     items.forEach(it => {
-        const statusBadge = (it.sudah_faktur > 0)
-            ? '<span class="badge bg-secondary-subtle text-secondary border px-2 py-1 small">Sudah Difakturkan</span>'
-            : '<span class="badge bg-success-subtle text-success border px-2 py-1 small">Siap Faktur</span>';
+        const tglDisplay = formatIndoDateLong(it.tanggal_diterima || it.tanggal_rcv);
 
         html += `
         <div class="p-2 border-bottom rcv-option-item cursor-pointer hover-bg-light rounded" 
@@ -478,11 +495,11 @@ function populateRcvDropdownOptions(items) {
              onclick="selectRcvDoc(${it.id_rcv})">
             <div class="d-flex justify-content-between align-items-center">
                 <strong class="text-primary font-monospace small">${it.nomor_rcv}</strong>
-                ${statusBadge}
+                <span class="badge bg-light text-secondary border px-2 py-1 small fw-normal">${tglDisplay}</span>
             </div>
-            <div class="small text-dark fw-semibold mt-1">${it.nama_vendor}</div>
-            <div class="small text-muted font-monospace" style="font-size: 0.76rem;">
-                PO: ${it.nomor_po} | SJ: ${it.nomor_sj || '-'} | Site: ${it.nama_site}
+            <div class="d-flex justify-content-between align-items-center mt-1">
+                <div class="small text-dark fw-semibold">${it.nama_vendor}</div>
+                <div class="small text-muted font-monospace" style="font-size: 0.76rem;">PO: ${it.nomor_po}</div>
             </div>
         </div>`;
     });
@@ -612,15 +629,12 @@ function renderMatchingTable(d) {
     document.getElementById('badgeItemCount').textContent = `${items.length} Item`;
 
     if (items.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="11" class="text-center py-3 text-muted">Tidak ada rincian barang.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-3 text-muted">Tidak ada rincian barang.</td></tr>';
         return;
     }
 
     let html = '';
     items.forEach((it, idx) => {
-        const qPo = parseFloat(it.qty_po) || 0;
-        const qRcv = parseFloat(it.qty_rcv) || 0;
-        const qRet = parseFloat(it.qty_retur) || 0;
         const qTagih = parseFloat(it.qty_tagih) || 0;
         const harga = parseFloat(it.harga_satuan) || 0;
         const disc = parseFloat(it.diskon_item) || 0;
@@ -634,9 +648,6 @@ function renderMatchingTable(d) {
                 <strong>${it.nama_barang}</strong>
                 ${it.nama_kategori ? `<div class="small text-muted" style="font-size:0.75rem;">${it.nama_kategori}</div>` : ''}
             </td>
-            <td class="text-center font-monospace">${qPo}</td>
-            <td class="text-center font-monospace fw-bold text-primary">${qRcv}</td>
-            <td class="text-center font-monospace ${qRet > 0 ? 'text-danger fw-bold' : 'text-muted'}">${qRet}</td>
             <td class="text-center font-monospace fw-bold text-success fs-6">${qTagih}</td>
             <td class="text-center">${it.satuan || it.satuan_master || 'Unit'}</td>
             <td class="text-end font-monospace">${formatRupiah(harga)}</td>

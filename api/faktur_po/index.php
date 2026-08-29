@@ -7,10 +7,9 @@
 
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../../config/config.php';
-require_once __DIR__ . '/../../config/koneksi.php';
-require_once __DIR__ . '/../../config/session.php';
+require_once __DIR__ . '/../middleware/auth.php';
 
-$user = requireAuth([ROLE_PURCHASING, ROLE_ADMIN, ROLE_MANAGER]);
+$user = apiAuth([ROLE_PURCHASING, ROLE_ADMIN, ROLE_MANAGER]);
 $method = $_SERVER['REQUEST_METHOD'];
 
 function sendJson($success, $message, $data = null, $code = 200) {
@@ -56,7 +55,7 @@ if ($method === 'GET') {
                 FROM faktur_po fp
                 JOIN purchase_order po ON fp.id_po = po.id_po
                 JOIN receiving_order rcv ON fp.id_rcv = rcv.id_rcv
-                LEFT JOIN retur_po rp ON fp.id_po_retur = rp.id_po_retur
+                LEFT JOIN retur_po rp ON (rp.id_rcv = fp.id_rcv OR rp.id_po = fp.id_po)
                 JOIN vendor v ON fp.id_vendor = v.id_vendor
                 JOIN site s ON fp.id_site = s.id_site
                 LEFT JOIN karyawan k ON fp.id_karyawan = k.id_karyawan
@@ -132,7 +131,7 @@ if ($method === 'GET') {
     }
 
     if ($startDate !== '' && $endDate !== '') {
-        $where .= " AND fp.tanggal_faktur BETWEEN ? AND ? ";
+        $where .= " AND fp.tanggal_faktur_vendor BETWEEN ? AND ? ";
         $params[] = $startDate;
         $params[] = $endDate;
         $types .= "ss";
@@ -290,8 +289,8 @@ if ($method === 'POST') {
 
         $sqlIns = "INSERT INTO faktur_po (
                     nomor_faktur, nomor_faktur_vendor, nomor_faktur_pajak,
-                    tanggal_faktur, tanggal_terima_faktur, term_of_payment, tanggal_jatuh_tempo,
-                    id_po, id_rcv, id_po_retur, id_vendor, id_site,
+                    tanggal_faktur_vendor, tanggal_terima_faktur_vendor, term_of_payment, tanggal_jatuh_tempo,
+                    id_po, id_rcv, id_vendor, id_site,
                     nama_bank, nomor_rekening, atas_nama_rekening, id_karyawan,
                     subtotal_po, subtotal_diterima, nilai_retur, diskon, dpp,
                     rate_pajak, nominal_pajak, biaya_lain, total_tagihan,
@@ -300,7 +299,7 @@ if ($method === 'POST') {
                    ) VALUES (
                     ?, ?, ?,
                     ?, ?, ?, ?,
-                    ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?,
                     ?, ?, ?, ?,
                     ?, ?, ?, ?, ?,
                     ?, ?, ?, ?,
@@ -310,10 +309,10 @@ if ($method === 'POST') {
 
         $stmtIns = $conn->prepare($sqlIns);
         $stmtIns->bind_param(
-            "sssssisiiiiisssiidddddidddsddsss",
+            "sssssisiiiisssidddddidddsddsss",
             $nomorFaktur, $nomorFakturVendor, $nomorFakturPajak,
             $tanggalFaktur, $tanggalTerimaFaktur, $top, $tanggalJatuhTempo,
-            $idPo, $idRcv, $idPoRetur, $idVendor, $idSite,
+            $idPo, $idRcv, $idVendor, $idSite,
             $namaBank, $nomorRekening, $atasNamaRekening, $idKaryawan,
             $subtotalPo, $subtotalDiterima, $nilaiRetur, $diskon, $dpp,
             $ratePajak, $nominalPajak, $biayaLain, $totalTagihan,
@@ -346,7 +345,7 @@ if ($method === 'POST') {
                 $ketItem = trim($it['keterangan'] ?? '');
 
                 if ($idBarang > 0 && $qTagih >= 0) {
-                    $stmtD->bind_param("iiddddssdds", $idFaktur, $idBarang, $qPo, $qRcv, $qRetur, $qTagih, $satuan, $harga, $discItem, $sub, $ketItem);
+                    $stmtD->bind_param("iiddddsddds", $idFaktur, $idBarang, $qPo, $qRcv, $qRetur, $qTagih, $satuan, $harga, $discItem, $sub, $ketItem);
                     $stmtD->execute();
                 }
             }

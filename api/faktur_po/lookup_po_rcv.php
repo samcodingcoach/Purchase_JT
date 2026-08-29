@@ -7,10 +7,9 @@
 
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../../config/config.php';
-require_once __DIR__ . '/../../config/koneksi.php';
-require_once __DIR__ . '/../../config/session.php';
+require_once __DIR__ . '/../middleware/auth.php';
 
-$user = requireAuth([ROLE_PURCHASING, ROLE_ADMIN, ROLE_MANAGER]);
+$user = apiAuth([ROLE_PURCHASING, ROLE_ADMIN, ROLE_MANAGER]);
 
 function sendJson($success, $message, $data = null, $code = 200) {
     http_response_code($code);
@@ -69,7 +68,7 @@ if ($idRcv > 0) {
                         b.kode_barang, b.nama_barang, b.satuan AS satuan_master,
                         kat.nama_kategori, mrk.nama_merk,
                         COALESCE(pod.qty, 0) AS qty_po,
-                        COALESCE(pod.harga_satuan, 0) AS harga_satuan,
+                        COALESCE(pod.harga, 0) AS harga_satuan,
                         COALESCE(pod.diskon, 0) AS diskon_item,
                         COALESCE(rpd.qty_retur, 0) AS qty_retur,
                         COALESCE(rpd.qty_diganti, 0) AS qty_diganti
