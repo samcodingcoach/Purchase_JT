@@ -233,6 +233,11 @@ if ($method === 'POST') {
     $noRef = trim($input['no_ref'] ?? '');
     $keterangan = trim($input['keterangan'] ?? '');
 
+    // Input Rekening Tujuan Vendor
+    $bankTujuan = trim($input['bank_tujuan'] ?? '');
+    $norekTujuan = trim($input['norek_tujuan'] ?? '');
+    $anPengiriman = trim($input['an_pengiriman'] ?? '');
+
     // Validasi Dasar
     if ($idFaktur <= 0) {
         sendJson(false, 'Dokumen Faktur PO wajib dipilih.', null, 422);
@@ -247,10 +252,15 @@ if ($method === 'POST') {
         sendJson(false, 'Pejabat/Finance yang menyetujui transfer secara lisan wajib dipilih.', null, 422);
     }
 
-    // Ambil Data Faktur Existing
-    $stmtF = $conn->prepare("SELECT id_faktur, nomor_faktur, total_tagihan, terbayar, sisa_tagihan, 
-                                    tanggal_faktur_vendor, tanggal_jatuh_tempo, term_of_payment, status 
-                             FROM faktur_po WHERE id_faktur = ? FOR UPDATE");
+    // Ambil Data Faktur Existing & Master Vendor
+    $stmtF = $conn->prepare("SELECT fp.id_faktur, fp.nomor_faktur, fp.total_tagihan, fp.terbayar, fp.sisa_tagihan, 
+                                    fp.tanggal_faktur_vendor, fp.tanggal_jatuh_tempo, fp.term_of_payment, fp.status,
+                                    fp.nama_bank, fp.nomor_rekening, fp.atas_nama_rekening,
+                                    v.nama_bank AS bank_vendor_master, v.nomor_rekening AS norek_vendor_master,
+                                    v.nama_perusahaan AS nama_vendor
+                             FROM faktur_po fp
+                             JOIN vendor v ON fp.id_vendor = v.id_vendor
+                             WHERE fp.id_faktur = ? FOR UPDATE");
     $conn->begin_transaction();
 
     $stmtF->bind_param("i", $idFaktur);
@@ -272,6 +282,17 @@ if ($method === 'POST') {
     if ($nominalPengiriman > $sisaTagihanExisting) {
         $conn->rollback();
         sendJson(false, "Nominal pembayaran (Rp " . number_format($nominalPengiriman, 0, ',', '.') . ") melebihi sisa tagihan faktur (Rp " . number_format($sisaTagihanExisting, 0, ',', '.') . ").", null, 422);
+    }
+
+    // Default Fallback Rekening Tujuan jika kosong
+    if (empty($bankTujuan)) {
+        $bankTujuan = !empty($faktur['nama_bank']) ? $faktur['nama_bank'] : ($faktur['bank_vendor_master'] ?? '');
+    }
+    if (empty($norekTujuan)) {
+        $norekTujuan = !empty($faktur['nomor_rekening']) ? $faktur['nomor_rekening'] : ($faktur['norek_vendor_master'] ?? '');
+    }
+    if (empty($anPengiriman)) {
+        $anPengiriman = !empty($faktur['atas_nama_rekening']) ? $faktur['atas_nama_rekening'] : ($faktur['nama_vendor'] ?? '');
     }
 
     // ATURAN BISNIS: Jika KREDIT / SEBAGIAN, tanggal bayar tidak boleh melebihi tanggal jatuh tempo TOP Faktur
@@ -333,14 +354,16 @@ if ($method === 'POST') {
         $sqlD = "INSERT INTO payment_purchase_detail (
                     id_pembayaran, kode_pembayaran, tanggal_bayar, id_karyawan, id_karyawan_approved,
                     bank_pengirim, norek_pengirim, an_pengirim, nominal_pengiriman, biaya_admin,
-                    no_ref, file_bukti_bayar, sisa_piutang, keterangan
-                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    no_ref, file_bukti_bayar, sisa_piutang, keterangan,
+                    bank_tujuan, norek_tujuan, an_pengiriman
+                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmtD = $conn->prepare($sqlD);
         $stmtD->bind_param(
-            "issiisssddssds",
+            "issiisssddssdssss",
             $idPembayaran, $kodePembayaran, $tanggalBayar, $idKaryawanInput, $idKaryawanApproved,
             $bankPengirim, $norekPengirim, $anPengirim, $nominalPengiriman, $biayaAdmin,
-            $noRef, $fileBuktiBayar, $sisaPiutangBaru, $keterangan
+            $noRef, $fileBuktiBayar, $sisaPiutangBaru, $keterangan,
+            $bankTujuan, $norekTujuan, $anPengiriman
         );
         $stmtD->execute();
         $idDetailBaru = $conn->insert_id;
@@ -406,6 +429,11 @@ if ($method === 'PUT') {
     $noRef = trim($input['no_ref'] ?? $old['no_ref']);
     $keterangan = trim($input['keterangan'] ?? $old['keterangan']);
 
+    // Rekening Tujuan Vendor
+    $bankTujuan = isset($input['bank_tujuan']) ? trim($input['bank_tujuan']) : ($old['bank_tujuan'] ?? '');
+    $norekTujuan = isset($input['norek_tujuan']) ? trim($input['norek_tujuan']) : ($old['norek_tujuan'] ?? '');
+    $anPengiriman = isset($input['an_pengiriman']) ? trim($input['an_pengiriman']) : ($old['an_pengiriman'] ?? '');
+
     // Handle Upload File Bukti Bayar baru jika Base64
     $fileBuktiBayar = $old['file_bukti_bayar'];
     $uploadDir = __DIR__ . '/../../uploads/pembayaran/';
@@ -431,9 +459,12 @@ if ($method === 'PUT') {
                                 no_ref = ?,
                                 file_bukti_bayar = ?,
                                 keterangan = ?,
+                                bank_tujuan = ?,
+                                norek_tujuan = ?,
+                                an_pengiriman = ?,
                                 updated_at = NOW()
                               WHERE id_pembayaran_detail = ?");
-    $stmtUp->bind_param("isssdsssi", $idKaryawanApproved, $bankPengirim, $norekPengirim, $anPengirim, $biayaAdmin, $noRef, $fileBuktiBayar, $keterangan, $idDetail);
+    $stmtUp->bind_param("isssdssssssi", $idKaryawanApproved, $bankPengirim, $norekPengirim, $anPengirim, $biayaAdmin, $noRef, $fileBuktiBayar, $keterangan, $bankTujuan, $norekTujuan, $anPengiriman, $idDetail);
     
     if ($stmtUp->execute()) {
         $stmtUp->close();

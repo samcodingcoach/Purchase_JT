@@ -249,23 +249,58 @@ require_once __DIR__ . '/../../components/navbar.php';
     </div>
 </div>
 
-<!-- MODAL DETAIL PEMBAYARAN -->
-<div class="modal fade" id="modalDetailPayment" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+<!-- MODAL DETAIL PEMBAYARAN (DILENGKAPI 5 TAB PEMISAH FUNGSI) -->
+<div class="modal fade" id="modalDetailPayment" tabindex="-1" aria-labelledby="modalDetailPaymentLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg rounded-3">
-            <div class="modal-header bg-light border-bottom p-3">
-                <div>
-                    <h6 class="modal-title fw-bold text-dark mb-0">Rincian Pembayaran Faktur PO</h6>
-                    <div class="small text-muted" id="modalDetailSubtitle">-</div>
+            <!-- MODAL HEADER DENGAN 5 NAV TABS -->
+            <div class="modal-header bg-white pt-3 pb-0 px-4 border-bottom flex-column align-items-stretch">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="modal-title fw-bold text-dark mb-0" id="modalDetailPaymentLabel">
+                        Rincian Pembayaran Faktur PO
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                
+                <!-- Nav Tabs Modal (5 Tab Lengkap & Seragam) -->
+                <ul class="nav nav-tabs border-bottom-0 flex-nowrap overflow-x-auto" id="modalDetailTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active fw-bold text-dark small py-2 px-3" id="modal-tab-faktur" data-bs-toggle="tab" data-bs-target="#modal-pane-faktur" type="button" role="tab">
+                            <i class="bi bi-receipt me-1 text-primary"></i> 1. Tagihan &amp; Faktur
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold text-dark small py-2 px-3" id="modal-tab-nominal" data-bs-toggle="tab" data-bs-target="#modal-pane-nominal" type="button" role="tab">
+                            <i class="bi bi-cash-coin me-1 text-primary"></i> 2. Rincian Transfer
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold text-dark small py-2 px-3" id="modal-tab-vendor-rek" data-bs-toggle="tab" data-bs-target="#modal-pane-vendor-rek" type="button" role="tab">
+                            <i class="bi bi-building me-1 text-primary"></i> 3. Rekening Vendor
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold text-dark small py-2 px-3" id="modal-tab-rekening" data-bs-toggle="tab" data-bs-target="#modal-pane-rekening" type="button" role="tab">
+                            <i class="bi bi-bank me-1 text-primary"></i> 4. Rekening Pengirim
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold text-dark small py-2 px-3" id="modal-tab-approval" data-bs-toggle="tab" data-bs-target="#modal-pane-approval" type="button" role="tab">
+                            <i class="bi bi-shield-check me-1 text-primary"></i> 5. Approval &amp; Bukti
+                        </button>
+                    </li>
+                </ul>
             </div>
-            <div class="modal-body p-4" id="modalDetailBody">
-                <!-- Diisi dinamis oleh JS -->
+
+            <!-- MODAL BODY DENGAN 5 TAB CONTENT -->
+            <div class="modal-body p-4">
+                <div class="tab-content" id="modalDetailTabContent">
+                    <!-- Diisi dinamis oleh JS -->
+                </div>
             </div>
-            <div class="modal-footer bg-light border-top p-2 px-3 d-flex justify-content-between">
-                <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">Tutup</button>
-                <div id="modalActionButtons"></div>
+
+            <div class="modal-footer bg-light border-top py-2 px-4 d-flex justify-content-end">
+                <button type="button" class="btn btn-secondary btn-sm px-4" data-bs-dismiss="modal">Tutup</button>
             </div>
         </div>
     </div>
@@ -435,9 +470,10 @@ function renderPaginationControls(p) {
 
 async function viewPaymentDetail(idDetail) {
     paymentModalInstance.show();
-    document.getElementById('modalDetailBody').innerHTML = `
-        <div class="text-center py-4 text-muted">
-            <div class="spinner-border spinner-border-sm text-primary me-2"></div> Memuat rincian transaksi...
+    document.getElementById('modalDetailTabContent').innerHTML = `
+        <div class="text-center py-5 text-muted">
+            <div class="spinner-border text-primary me-2"></div>
+            <div class="mt-2 small">Memuat rincian pembayaran...</div>
         </div>`;
 
     try {
@@ -447,119 +483,222 @@ async function viewPaymentDetail(idDetail) {
         if (result && result.success && result.data) {
             renderModalContent(result.data);
         } else {
-            document.getElementById('modalDetailBody').innerHTML = `<div class="alert alert-danger">${result.message || 'Gagal memuat detail.'}</div>`;
+            document.getElementById('modalDetailTabContent').innerHTML = `<div class="alert alert-danger">${result.message || 'Gagal memuat detail.'}</div>`;
         }
     } catch (e) {
-        document.getElementById('modalDetailBody').innerHTML = `<div class="alert alert-danger">Terjadi kesalahan: ${e.message}</div>`;
+        document.getElementById('modalDetailTabContent').innerHTML = `<div class="alert alert-danger">Terjadi kesalahan: ${e.message}</div>`;
     }
 }
 
 function renderModalContent(d) {
-    document.getElementById('modalDetailSubtitle').textContent = `Kode: ${d.kode_pembayaran} | Faktur: ${d.nomor_faktur}`;
+    // Reset ke Tab 1 saat modal dibuka
+    const firstTabBtn = document.getElementById('modal-tab-faktur');
+    if (firstTabBtn) {
+        const tabTrigger = new bootstrap.Tab(firstTabBtn);
+        tabTrigger.show();
+    }
+
+    const isLunas = parseInt(d.jenis_pembayaran) === 1;
+    const badgeSkema = isLunas 
+        ? '<span class="badge bg-success-subtle text-success border border-success-subtle fw-semibold">1x Bayar (Lunas)</span>'
+        : '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle fw-semibold">Kredit / Termin</span>';
+
+    const sisa = parseFloat(d.sisa_piutang) || 0;
+    const badgeSisa = sisa <= 0
+        ? '<span class="badge bg-success-subtle text-success border border-success-subtle fw-semibold">LUNAS</span>'
+        : '<span class="badge bg-danger-subtle text-danger border border-danger-subtle fw-semibold">BELUM LUNAS</span>';
 
     const proofHtml = d.file_bukti_bayar ? `
-        <div class="mt-3 p-3 bg-light rounded-3 border">
-            <div class="fw-semibold text-dark small mb-2"><i class="bi bi-paperclip me-1"></i>Lampiran Bukti Transfer Bank:</div>
-            <a href="<?= BASE_URL ?>/uploads/pembayaran/${d.file_bukti_bayar}" target="_blank" class="btn btn-sm btn-outline-primary px-3">
-                <i class="bi bi-box-arrow-up-right me-1"></i> Buka / Unduh Bukti Pembayaran
-            </a>
-        </div>` : `<div class="mt-3 text-muted small fst-italic">Tidak ada lampiran bukti transfer.</div>`;
-
-    document.getElementById('modalDetailBody').innerHTML = `
-        <div class="row g-4">
-            <div class="col-md-6">
-                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Informasi Dokumen &amp; Vendor</h6>
-                <table class="table table-sm table-borderless small mb-0">
-                    <tr>
-                        <td class="text-muted" style="width: 140px;">No. Faktur Sistem:</td>
-                        <td class="font-monospace fw-bold text-primary">${d.nomor_faktur}</td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">No. Invoice Vendor:</td>
-                        <td class="font-monospace fw-semibold">${d.nomor_faktur_vendor || '-'}</td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">No. Purchase Order:</td>
-                        <td class="font-monospace">${d.nomor_po}</td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">Nama Vendor:</td>
-                        <td class="fw-bold text-dark">${d.nama_vendor}</td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">Site / Gudang:</td>
-                        <td>${d.nama_site}</td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">Jatuh Tempo Faktur:</td>
-                        <td class="text-danger fw-semibold">${formatDate(d.tanggal_jatuh_tempo)}</td>
-                    </tr>
-                </table>
+        <div class="p-3 bg-white rounded-3 border">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div>
+                    <div class="fw-semibold text-dark small">Bukti Transfer Valid</div>
+                    <div class="text-muted" style="font-size: 0.72rem;">File: ${d.file_bukti_bayar}</div>
+                </div>
+                <a href="<?= BASE_URL ?>/uploads/pembayaran/${d.file_bukti_bayar}" target="_blank" class="btn btn-sm btn-outline-primary px-3 fw-semibold">
+                    Buka / Unduh File
+                </a>
             </div>
+        </div>` : `
+        <div class="p-3 bg-white rounded-3 border text-center text-muted small fst-italic">
+            Tidak ada lampiran file bukti transfer.
+        </div>`;
 
-            <div class="col-md-6">
-                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Detail Transfer Pembayaran</h6>
-                <table class="table table-sm table-borderless small mb-0">
-                    <tr>
-                        <td class="text-muted" style="width: 140px;">Tanggal Bayar:</td>
-                        <td class="fw-bold text-dark">${formatDateTime(d.tanggal_bayar)}</td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">Bank Pengirim:</td>
-                        <td><span class="badge bg-light text-dark border">${d.bank_pengirim || '-'}</span> ${d.norek_pengirim ? `<span class="font-monospace">(${d.norek_pengirim})</span>` : ''}</td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">Rekening Vendor:</td>
-                        <td><span class="badge bg-light text-dark border">${d.bank_vendor || '-'}</span> <span class="font-monospace fw-semibold">${d.norek_vendor || '-'}</span></td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">No. Referensi:</td>
-                        <td class="font-monospace">${d.no_ref || '-'}</td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">Disetujui Oleh:</td>
-                        <td><strong class="text-success">${d.nama_approver || '-'}</strong> ${d.jabatan_approver ? `<span class="text-muted">(${d.jabatan_approver})</span>` : ''}</td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">Diinput Oleh:</td>
-                        <td>${d.nama_pembuat || 'Admin'}</td>
-                    </tr>
-                </table>
-            </div>
-
-            <div class="col-12">
-                <div class="p-3 bg-light rounded-3 border">
-                    <div class="row g-2 text-center">
-                        <div class="col-sm-3">
-                            <div class="text-muted small">Total Tagihan Faktur</div>
-                            <div class="fw-bold font-monospace fs-6">${formatRupiah(d.total_tagihan)}</div>
+    document.getElementById('modalDetailTabContent').innerHTML = `
+        <!-- TAB 1: TAGIHAN & FAKTUR -->
+        <div class="tab-pane fade show active" id="modal-pane-faktur" role="tabpanel">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="card bg-light border-0 rounded-3 p-3 h-100">
+                        <h6 class="fw-bold text-dark mb-3">Identitas Faktur</h6>
+                        <div class="mb-2">
+                            <span class="text-muted small d-block">No. Faktur Sistem:</span>
+                            <strong class="text-primary font-monospace fs-6">${d.nomor_faktur}</strong>
                         </div>
-                        <div class="col-sm-3">
-                            <div class="text-muted small">Nominal Transfer Ini</div>
-                            <div class="fw-bold font-monospace fs-6 text-primary">${formatRupiah(d.nominal_pengiriman)}</div>
+                        <div class="mb-2">
+                            <span class="text-muted small d-block">No. Invoice Vendor:</span>
+                            <strong class="text-dark font-monospace">${d.nomor_faktur_vendor || '-'}</strong>
                         </div>
-                        <div class="col-sm-3">
-                            <div class="text-muted small">Biaya Admin Bank</div>
-                            <div class="fw-bold font-monospace fs-6 text-muted">${formatRupiah(d.biaya_admin)}</div>
+                        <div class="mb-2">
+                            <span class="text-muted small d-block">Referensi Purchase Order (PO):</span>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace">${d.nomor_po}</span>
                         </div>
-                        <div class="col-sm-3">
-                            <div class="text-muted small">Sisa Tagihan Faktur</div>
-                            <div class="fw-bold font-monospace fs-6 ${parseFloat(d.sisa_piutang) <= 0 ? 'text-success' : 'text-danger'}">${formatRupiah(d.sisa_piutang)}</div>
+                        <div>
+                            <span class="text-muted small d-block">Jatuh Tempo Faktur (TOP):</span>
+                            <strong class="text-danger font-monospace">${formatDate(d.tanggal_jatuh_tempo)}</strong>
                         </div>
                     </div>
                 </div>
-                ${d.keterangan ? `<div class="small mt-2 text-muted"><strong>Catatan:</strong> ${d.keterangan}</div>` : ''}
-                ${proofHtml}
-            </div>
-        </div>`;
 
-    document.getElementById('modalActionButtons').innerHTML = `
-        <a href="<?= BASE_URL ?>/admin/pages/pembayaran_po/edit.php?id=${d.id_pembayaran_detail}" class="btn btn-outline-warning btn-sm px-3 fw-semibold shadow-sm me-1">
-            <i class="bi bi-pencil me-1"></i> Edit
-        </a>
-        <a href="<?= BASE_URL ?>/admin/pages/pembayaran_po/print.php?id=${d.id_pembayaran_detail}" target="_blank" class="btn btn-primary btn-sm px-3 fw-semibold shadow-sm">
-            <i class="bi bi-printer me-1"></i> Cetak Bukti Bayar
-        </a>
+                <div class="col-md-6">
+                    <div class="card bg-light border-0 rounded-3 p-3 h-100">
+                        <h6 class="fw-bold text-dark mb-3">Data Vendor &amp; Lokasi</h6>
+                        <div class="mb-2">
+                            <span class="text-muted small d-block">Nama Vendor:</span>
+                            <strong class="text-dark fs-6">${d.nama_vendor}</strong>
+                        </div>
+                        <div class="mb-2">
+                            <span class="text-muted small d-block">Site / Gudang Operasional:</span>
+                            <span class="text-dark fw-semibold">${d.nama_site}</span>
+                        </div>
+                        <div class="mb-2">
+                            <span class="text-muted small d-block">Total Tagihan Faktur:</span>
+                            <strong class="text-dark font-monospace fs-6">${formatRupiah(d.total_tagihan)}</strong>
+                        </div>
+                        <div>
+                            <span class="text-muted small d-block">Status Faktur Pasca Pembayaran:</span>
+                            ${badgeSisa}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: RINCIAN TRANSFER -->
+        <div class="tab-pane fade" id="modal-pane-nominal" role="tabpanel">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="card bg-light border-0 rounded-3 p-3 h-100">
+                        <h6 class="fw-bold text-dark mb-3">Waktu &amp; Skema</h6>
+                        <div class="mb-2">
+                            <span class="text-muted small d-block">Kode Pembayaran:</span>
+                            <strong class="text-primary font-monospace fs-6">${d.kode_pembayaran}</strong>
+                        </div>
+                        <div class="mb-2">
+                            <span class="text-muted small d-block">Tanggal Bayar:</span>
+                            <strong class="text-dark font-monospace">${formatDateTime(d.tanggal_bayar)}</strong>
+                        </div>
+                        <div class="mb-2">
+                            <span class="text-muted small d-block">Skema Pembayaran:</span>
+                            ${badgeSkema}
+                        </div>
+                        <div>
+                            <span class="text-muted small d-block">No. Referensi Mutasi:</span>
+                            <span class="font-monospace fw-semibold text-dark">${d.no_ref || '-'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card bg-light border-0 rounded-3 p-3 h-100">
+                        <h6 class="fw-bold text-dark mb-3">Kalkulasi Finansial</h6>
+                        <div class="mb-2">
+                            <span class="text-muted small d-block">Nominal Transfer Ini:</span>
+                            <strong class="text-primary font-monospace fs-5">${formatRupiah(d.nominal_pengiriman)}</strong>
+                        </div>
+                        <div class="mb-2">
+                            <span class="text-muted small d-block">Biaya Admin Bank:</span>
+                            <span class="font-monospace text-muted">${formatRupiah(d.biaya_admin)}</span>
+                        </div>
+                        <div class="mb-2">
+                            <span class="text-muted small d-block">Total Beban Kas:</span>
+                            <strong class="font-monospace text-dark">${formatRupiah(parseFloat(d.nominal_pengiriman) + parseFloat(d.biaya_admin || 0))}</strong>
+                        </div>
+                        <div>
+                            <span class="text-muted small d-block">Sisa Tagihan Faktur:</span>
+                            <strong class="font-monospace fs-6 ${sisa <= 0 ? 'text-success' : 'text-danger'}">${formatRupiah(d.sisa_piutang)}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: REKENING VENDOR -->
+        <div class="tab-pane fade" id="modal-pane-vendor-rek" role="tabpanel">
+            <div class="card bg-light border-0 rounded-3 p-3">
+                <h6 class="fw-bold text-dark mb-3">Rekening Vendor (Tujuan Transfer)</h6>
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <span class="text-muted small d-block">Bank Tujuan:</span>
+                        <span class="badge bg-white text-dark border px-2 py-1 font-monospace fs-6">${d.bank_tujuan || d.bank_vendor || '-'}</span>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted small d-block">Nomor Rekening Tujuan:</span>
+                        <strong class="font-monospace fs-5 text-primary">${d.norek_tujuan || d.norek_vendor || '-'}</strong>
+                    </div>
+                    <div class="col-12">
+                        <span class="text-muted small d-block">Atas Nama Rekening Tujuan:</span>
+                        <strong class="text-dark fs-6">${d.an_pengiriman || d.an_vendor || d.nama_vendor || '-'}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: REKENING PENGIRIM -->
+        <div class="tab-pane fade" id="modal-pane-rekening" role="tabpanel">
+            <div class="card bg-light border-0 rounded-3 p-3">
+                <h6 class="fw-bold text-dark mb-3">Rekening Asal Pengirim (Kas Perusahaan)</h6>
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <span class="text-muted small d-block">Bank Asal / Kas Pengirim:</span>
+                        <span class="badge bg-white text-dark border px-2 py-1 font-monospace fs-6">${d.bank_pengirim || '-'}</span>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted small d-block">Nomor Rekening Pengirim:</span>
+                        <strong class="font-monospace fs-5 text-dark">${d.norek_pengirim || '-'}</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted small d-block">Atas Nama Rekening Pengirim:</span>
+                        <strong class="text-dark fs-6">${d.an_pengirim || '-'}</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted small d-block">No. Referensi Transfer:</span>
+                        <span class="font-monospace text-dark">${d.no_ref || '-'}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 5: APPROVAL & BUKTI -->
+        <div class="tab-pane fade" id="modal-pane-approval" role="tabpanel">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="card bg-light border-0 rounded-3 p-3 h-100">
+                        <h6 class="fw-bold text-dark mb-3">Otorisasi &amp; Petugas</h6>
+                        <div class="mb-2">
+                            <span class="text-muted small d-block">Disetujui Oleh (Lisan):</span>
+                            <strong class="text-success fs-6">${d.nama_approver || '-'}</strong>
+                            ${d.jabatan_approver ? `<div class="text-muted small">(${d.jabatan_approver})</div>` : ''}
+                        </div>
+                        <div class="mb-2">
+                            <span class="text-muted small d-block">Diinput Oleh Petugas:</span>
+                            <span class="text-dark fw-semibold">${d.nama_pembuat || 'Admin'}</span>
+                        </div>
+                        <div>
+                            <span class="text-muted small d-block mb-1">Catatan / Keterangan Pembayaran:</span>
+                            <div class="p-2 bg-white rounded border small text-dark">${d.keterangan || '<span class="text-muted fst-italic">Tidak ada catatan.</span>'}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card bg-light border-0 rounded-3 p-3 h-100">
+                        <h6 class="fw-bold text-dark mb-3">Lampiran Bukti Transfer Bank</h6>
+                        ${proofHtml}
+                    </div>
+                </div>
+            </div>
+        </div>
     `;
 }
 

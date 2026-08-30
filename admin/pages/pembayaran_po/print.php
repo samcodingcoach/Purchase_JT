@@ -246,13 +246,18 @@ $terbilangNominal = trim(terbilang($pay['nominal_pengiriman'])) . " Rupiah";
                     <td class="text-muted" style="width: 130px;">Dibayarkan Kepada</td>
                     <td>: <strong><?= htmlspecialchars($pay['nama_vendor']) ?></strong></td>
                 </tr>
+                <?php
+                $destBank = !empty($pay['bank_tujuan']) ? $pay['bank_tujuan'] : ($pay['bank_vendor'] ?: '-');
+                $destNorek = !empty($pay['norek_tujuan']) ? $pay['norek_tujuan'] : ($pay['norek_vendor'] ?: '-');
+                $destAn = !empty($pay['an_pengiriman']) ? $pay['an_pengiriman'] : ($pay['an_vendor'] ?: $pay['nama_vendor']);
+                ?>
                 <tr>
                     <td class="text-muted">Bank &amp; No. Rekening</td>
-                    <td>: <?= htmlspecialchars($pay['bank_vendor'] ?: '-') ?> &bull; <strong class="font-monospace"><?= htmlspecialchars($pay['norek_vendor'] ?: '-') ?></strong></td>
+                    <td>: <?= htmlspecialchars($destBank) ?> &bull; <strong class="font-monospace"><?= htmlspecialchars($destNorek) ?></strong></td>
                 </tr>
                 <tr>
                     <td class="text-muted">Atas Nama Rekening</td>
-                    <td>: <?= htmlspecialchars($pay['an_vendor'] ?: $pay['nama_vendor']) ?></td>
+                    <td>: <?= htmlspecialchars($destAn) ?></td>
                 </tr>
                 <tr>
                     <td class="text-muted">Site Operasional</td>

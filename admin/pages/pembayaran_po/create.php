@@ -72,7 +72,7 @@ textarea.form-control {
         <input type="hidden" id="selectedIdFaktur" name="id_faktur" value="<?= $preselectedIdFaktur ?>" required>
         <input type="hidden" id="hiddenBuktiBase64" name="file_bukti_bayar_base64">
 
-        <!-- CARD TAB MODULAR SESUAI KONTEKS & FUNGSI -->
+        <!-- CARD TAB MODULAR SESUAI KONTEKS & FUNGSI (5 TAB) -->
         <div class="card border-0 shadow-sm rounded-3 mb-4">
             <div class="card-header bg-white border-bottom p-0">
                 <ul class="nav nav-tabs card-header-tabs m-0 px-3" id="paymentTab" role="tablist">
@@ -87,13 +87,18 @@ textarea.form-control {
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-semibold py-3 px-3" id="tab-vendor-rek-btn" data-bs-toggle="tab" data-bs-target="#tab-vendor-rek" type="button" role="tab">
+                            <i class="bi bi-building me-1 text-primary"></i> 3. Rekening Vendor
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
                         <button class="nav-link fw-semibold py-3 px-3" id="tab-rekening-btn" data-bs-toggle="tab" data-bs-target="#tab-rekening" type="button" role="tab">
-                            <i class="bi bi-bank me-1 text-primary"></i> 3. Kas &amp; Rekening Pengirim
+                            <i class="bi bi-bank me-1 text-primary"></i> 4. Kas &amp; Rekening Pengirim
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link fw-semibold py-3 px-3" id="tab-approval-btn" data-bs-toggle="tab" data-bs-target="#tab-approval" type="button" role="tab">
-                            <i class="bi bi-shield-check me-1 text-primary"></i> 4. Approval &amp; Bukti
+                            <i class="bi bi-shield-check me-1 text-primary"></i> 5. Approval &amp; Bukti
                         </button>
                     </li>
                 </ul>
@@ -134,25 +139,6 @@ textarea.form-control {
                                         </div>
                                         <div class="overflow-auto" id="fakturOptionsContainer" style="max-height: 250px;">
                                             <!-- Populated dynamically by JS -->
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- INFORMASI REKENING VENDOR TUJUAN -->
-                                <div class="p-3 bg-light rounded-3 border mb-3">
-                                    <div class="small fw-bold text-dark mb-2">Rekening Vendor (Tujuan Transfer Pembayaran):</div>
-                                    <div class="row g-2 small">
-                                        <div class="col-sm-4">
-                                            <span class="text-muted d-block">Bank Tujuan:</span>
-                                            <strong class="font-monospace text-dark" id="dispBankVendor">-</strong>
-                                        </div>
-                                        <div class="col-sm-8">
-                                            <span class="text-muted d-block">Nomor Rekening Tujuan:</span>
-                                            <strong class="font-monospace text-primary fs-6" id="dispNorekVendor">-</strong>
-                                        </div>
-                                        <div class="col-12">
-                                            <span class="text-muted d-block">Atas Nama Rekening:</span>
-                                            <span class="fw-semibold text-dark" id="dispAnVendor">-</span>
                                         </div>
                                     </div>
                                 </div>
@@ -291,13 +277,69 @@ textarea.form-control {
                             <button type="button" class="btn btn-outline-secondary btn-sm px-3" onclick="goToTab('tab-faktur')">
                                 Kembali ke Tagihan &amp; Faktur
                             </button>
+                            <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold shadow-sm" onclick="goToTab('tab-vendor-rek')">
+                                Lanjut ke Rekening Vendor
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: REKENING VENDOR (TUJUAN TRANSFER) -->
+                    <div class="tab-pane fade" id="tab-vendor-rek" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom flex-wrap gap-2">
+                            <div>
+                                <h6 class="fw-bold text-dark mb-0">Rekening Vendor (Tujuan Transfer Pembayaran)</h6>
+                                <div class="small text-muted">Secara default diambil dari master vendor dan dapat diubah secara manual jika ada rekening alternatif.</div>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm px-3" onclick="resetRekeningVendorToDefault()" title="Kembalikan ke rekening default master vendor">
+                                <i class="bi bi-arrow-counterclockwise me-1"></i> Reset ke Rekening Vendor
+                            </button>
+                        </div>
+
+                        <div class="row g-3">
+                            <!-- Bank Tujuan Vendor (Combobox Persis Bank Asal) -->
+                            <div class="col-sm-6 position-relative" id="bankTujuanWrapper">
+                                <label class="form-label small fw-semibold text-dark">Bank Tujuan Vendor</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control font-monospace fw-semibold" id="bankTujuan" name="bank_tujuan" placeholder="Pilih atau ketik bank..." autocomplete="off" onfocus="showBankTujuanDropdown()" oninput="filterBankTujuanDropdown()">
+                                    <button class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split px-3" type="button" onclick="toggleBankTujuanDropdown(event)" title="Pilih Bank"></button>
+                                </div>
+                                <div class="dropdown-menu shadow-sm w-100 p-1" id="bankTujuanMenu" style="max-height: 220px; overflow-y: auto; display: none; position: absolute; top: calc(100% + 2px); left: 0; z-index: 1050;">
+                                    <button type="button" class="dropdown-item py-1 small rounded bank-t-opt" onclick="selectBankTujuan('BCA')">BCA</button>
+                                    <button type="button" class="dropdown-item py-1 small rounded bank-t-opt" onclick="selectBankTujuan('Bank Mandiri')">Bank Mandiri</button>
+                                    <button type="button" class="dropdown-item py-1 small rounded bank-t-opt" onclick="selectBankTujuan('BRI')">BRI</button>
+                                    <button type="button" class="dropdown-item py-1 small rounded bank-t-opt" onclick="selectBankTujuan('BNI')">BNI</button>
+                                    <button type="button" class="dropdown-item py-1 small rounded bank-t-opt" onclick="selectBankTujuan('CIMB Niaga')">CIMB Niaga</button>
+                                    <button type="button" class="dropdown-item py-1 small rounded bank-t-opt" onclick="selectBankTujuan('BSI')">BSI</button>
+                                    <button type="button" class="dropdown-item py-1 small rounded bank-t-opt" onclick="selectBankTujuan('Bank Danamon')">Bank Danamon</button>
+                                    <button type="button" class="dropdown-item py-1 small rounded bank-t-opt" onclick="selectBankTujuan('Bank Permata')">Bank Permata</button>
+                                    <button type="button" class="dropdown-item py-1 small rounded bank-t-opt" onclick="selectBankTujuan('CASH')">CASH / TUNAI</button>
+                                    <button type="button" class="dropdown-item py-1 small rounded bank-t-opt" onclick="selectBankTujuan('QRIS')">QRIS</button>
+                                    <div id="noBankTujuanFound" class="text-muted small px-3 py-2 d-none">Gunakan nama bank yang diketik manual.</div>
+                                </div>
+                            </div>
+
+                            <div class="col-sm-6">
+                                <label class="form-label small fw-semibold text-dark">Nomor Rekening Tujuan Vendor</label>
+                                <input type="text" class="form-control font-monospace fw-bold text-primary" id="norekTujuan" name="norek_tujuan" placeholder="Nomor Rekening Vendor">
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold text-dark">Atas Nama Rekening Tujuan</label>
+                                <input type="text" class="form-control fw-semibold text-dark" id="anPengiriman" name="an_pengiriman" placeholder="Atas Nama Pemilik Rekening Vendor">
+                            </div>
+                        </div>
+
+                        <div class="mt-4 pt-3 border-top d-flex justify-content-between">
+                            <button type="button" class="btn btn-outline-secondary btn-sm px-3" onclick="goToTab('tab-nominal')">
+                                Kembali ke Rincian Pembayaran
+                            </button>
                             <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold shadow-sm" onclick="goToTab('tab-rekening')">
                                 Lanjut ke Kas &amp; Rekening Pengirim
                             </button>
                         </div>
                     </div>
 
-                    <!-- TAB 3: KAS & REKENING PENGIRIM -->
+                    <!-- TAB 4: KAS & REKENING PENGIRIM -->
                     <div class="tab-pane fade" id="tab-rekening" role="tabpanel">
                         <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Informasi Rekening Asal Pengirim (Kas Perusahaan)</h6>
                         
@@ -338,8 +380,8 @@ textarea.form-control {
                         </div>
 
                         <div class="mt-4 pt-3 border-top d-flex justify-content-between">
-                            <button type="button" class="btn btn-outline-secondary btn-sm px-3" onclick="goToTab('tab-nominal')">
-                                Kembali ke Rincian Pembayaran
+                            <button type="button" class="btn btn-outline-secondary btn-sm px-3" onclick="goToTab('tab-vendor-rek')">
+                                Kembali ke Rekening Vendor
                             </button>
                             <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold shadow-sm" onclick="goToTab('tab-approval')">
                                 Lanjut ke Approval &amp; Bukti
@@ -347,7 +389,7 @@ textarea.form-control {
                         </div>
                     </div>
 
-                    <!-- TAB 4: APPROVAL & BUKTI -->
+                    <!-- TAB 5: APPROVAL & BUKTI -->
                     <div class="tab-pane fade" id="tab-approval" role="tabpanel">
                         <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Persetujuan Lisan &amp; Lampiran Bukti Transfer</h6>
 
@@ -367,16 +409,16 @@ textarea.form-control {
 
                             <div class="col-12">
                                 <label class="form-label small fw-semibold text-dark">Catatan / Keterangan Pembayaran</label>
-                                <textarea class="form-control" id="keteranganPayment" name="keterangan" placeholder="Tuliskan catatan pembayaran jika ada (misal: Pelunasan termin 1 50% melalui transfer M-Banking)..."></textarea>
+                                <textarea class="form-control" id="keteranganPayment" name="keterangan" rows="3" placeholder="Catatan opsional mengenai pembayaran ini..."></textarea>
                             </div>
                         </div>
 
-                        <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div class="mt-4 pt-3 border-top d-flex justify-content-between">
                             <button type="button" class="btn btn-outline-secondary btn-sm px-3" onclick="goToTab('tab-rekening')">
                                 Kembali ke Kas &amp; Rekening Pengirim
                             </button>
-                            <button type="submit" class="btn btn-primary btn-sm px-4 shadow-sm fw-semibold" id="btnSubmitPayment" style="height: 38px; display: inline-flex; align-items: center;">
-                                Simpan Transaksi Pembayaran
+                            <button type="submit" class="btn btn-primary btn-sm px-4 fw-semibold shadow-sm" id="btnSubmitPayment" style="height: 38px; display: inline-flex; align-items: center;">
+                                <i class="bi bi-check-circle-fill me-1"></i> Simpan Transaksi Pembayaran
                             </button>
                         </div>
                     </div>
@@ -534,9 +576,8 @@ async function selectFaktur(idFaktur) {
             document.getElementById('dispNamaVendor').textContent = f.nama_vendor;
             document.getElementById('dispTanggalJatuhTempo').textContent = `${formatDate(f.tanggal_jatuh_tempo)} (${f.term_of_payment || 0} Hari TOP)`;
             
-            document.getElementById('dispBankVendor').textContent = f.nama_bank || f.bank_vendor_master || 'BANK VENDOR';
-            document.getElementById('dispNorekVendor').textContent = f.nomor_rekening || f.norek_vendor_master || '-';
-            document.getElementById('dispAnVendor').textContent = f.atas_nama_rekening ? `(a.n ${f.atas_nama_rekening})` : '';
+            // Set Default Nilai Rekening Vendor Tujuan
+            resetRekeningVendorToDefault();
 
             document.getElementById('dispTotalTagihan').textContent = formatRupiah(f.total_tagihan);
             document.getElementById('dispTerbayar').textContent = formatRupiah(f.terbayar);
@@ -569,6 +610,14 @@ async function selectFaktur(idFaktur) {
     }
 }
 
+function resetRekeningVendorToDefault() {
+    if (!currentSelectedFaktur) return;
+    const f = currentSelectedFaktur;
+    document.getElementById('bankTujuan').value = f.nama_bank || f.bank_vendor_master || '';
+    document.getElementById('norekTujuan').value = f.nomor_rekening || f.norek_vendor_master || '';
+    document.getElementById('anPengiriman').value = f.atas_nama_rekening || f.nama_vendor || '';
+}
+
 function clearFakturSelection(e) {
     if (e) e.stopPropagation();
     currentSelectedFaktur = null;
@@ -580,9 +629,9 @@ function clearFakturSelection(e) {
     document.getElementById('dispNomorFakturVendor').textContent = '-';
     document.getElementById('dispNamaVendor').textContent = '-';
     document.getElementById('dispTanggalJatuhTempo').textContent = '-';
-    document.getElementById('dispBankVendor').textContent = '-';
-    document.getElementById('dispNorekVendor').textContent = '-';
-    document.getElementById('dispAnVendor').textContent = '';
+    document.getElementById('bankTujuan').value = '';
+    document.getElementById('norekTujuan').value = '';
+    document.getElementById('anPengiriman').value = '';
 
     document.getElementById('dispTotalTagihan').textContent = 'Rp 0';
     document.getElementById('dispTerbayar').textContent = 'Rp 0';
@@ -710,6 +759,55 @@ function selectBankPengirim(val) {
 }
 
 // -------------------------------------------------------------
+// BANK TUJUAN VENDOR COMBOBOX (PERSIS BANK PENGIRIM)
+// -------------------------------------------------------------
+function showBankTujuanDropdown() {
+    document.getElementById('bankTujuanMenu').style.display = 'block';
+}
+function hideBankTujuanDropdown() {
+    document.getElementById('bankTujuanMenu').style.display = 'none';
+}
+function toggleBankTujuanDropdown(e) {
+    if (e) e.stopPropagation();
+    const m = document.getElementById('bankTujuanMenu');
+    m.style.display = m.style.display === 'block' ? 'none' : 'block';
+}
+function filterBankTujuanDropdown() {
+    const query = (document.getElementById('bankTujuan').value || '').toLowerCase().trim();
+    showBankTujuanDropdown();
+    const items = document.querySelectorAll('.bank-t-opt');
+    let count = 0;
+    items.forEach(el => {
+        const text = el.textContent.toLowerCase();
+        if (text.includes(query)) {
+            el.style.display = 'block';
+            count++;
+        } else {
+            el.style.display = 'none';
+        }
+    });
+
+    const noFound = document.getElementById('noBankTujuanFound');
+    if (noFound) {
+        if (count === 0) {
+            noFound.classList.remove('d-none');
+        } else {
+            noFound.classList.add('d-none');
+        }
+    }
+}
+function selectBankTujuan(val) {
+    document.getElementById('bankTujuan').value = val;
+    hideBankTujuanDropdown();
+}
+
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('#bankPengirimWrapper')) hideBankPengirimDropdown();
+    if (!e.target.closest('#bankTujuanWrapper')) hideBankTujuanDropdown();
+    if (!e.target.closest('#fakturSelectWrapper')) hideFakturDropdown();
+});
+
+// -------------------------------------------------------------
 // UPLOAD BUKTI BAYAR HANDLER
 // -------------------------------------------------------------
 function handleProofUpload(input) {
@@ -779,6 +877,9 @@ async function submitPayment() {
         bank_pengirim: bankPengirim,
         norek_pengirim: document.getElementById('norekPengirim').value.trim(),
         an_pengirim: document.getElementById('anPengirim').value.trim(),
+        bank_tujuan: document.getElementById('bankTujuan').value.trim(),
+        norek_tujuan: document.getElementById('norekTujuan').value.trim(),
+        an_pengiriman: document.getElementById('anPengiriman').value.trim(),
         no_ref: document.getElementById('noRef').value.trim(),
         id_karyawan_approved: parseInt(idApprover),
         file_bukti_bayar_base64: document.getElementById('hiddenBuktiBase64').value,
