@@ -171,7 +171,7 @@ require_once __DIR__ . '/../../components/navbar.php';
 
 <!-- MODAL DETAIL REQUEST ORDER -->
 <div class="modal fade" id="modalDetailRo" tabindex="-1" aria-labelledby="modalDetailRoLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-dialog modal-xl modal-dialog-centered" style="max-width: 1000px;">
         <div class="modal-content border-0 shadow-lg rounded-3">
             <!-- MODAL HEADER DENGAN STATUS & PRIORITAS DI SEBELAH TOMBOL X -->
             <div class="modal-header bg-white pt-3 pb-0 px-4 border-bottom flex-column align-items-stretch">
@@ -191,7 +191,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                 </div>
 
                 <!-- Nav Tabs Modal Sesuai Fungsi -->
-                <ul class="nav nav-tabs border-bottom-0" id="roModalTabs" role="tablist">
+                <ul class="nav nav-tabs border-bottom-0 flex-nowrap" id="roModalTabs" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active fw-bold text-dark small py-2 px-3" id="ro-tab-dokumen" data-bs-toggle="tab" data-bs-target="#ro-pane-dokumen" type="button" role="tab">
                             <i class="bi bi-file-earmark-text me-1 text-primary"></i> 1. Informasi Dokumen
@@ -581,6 +581,10 @@ function formatRoDetailDate(dateStr) {
         return `${day} ${month} ${year}`;
     }
     return dateStr.split(' ')[0];
+}
+
+function formatDateTimeModal(dateStr) {
+    return formatRoDetailDate(dateStr);
 }
 
 async function openDetailModal(idRequest) {
