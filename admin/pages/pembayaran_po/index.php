@@ -160,7 +160,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                     <i class="bi bi-hourglass-split"></i>
                 </div>
                 <div class="stat-details">
-                    <div class="stat-label text-warning-emphasis">Cicilan / Kredit Aktif</div>
+                    <div class="stat-label text-warning-emphasis">Kredit Aktif</div>
                     <div class="stat-value text-warning-emphasis" id="metricTotalKredit">0 Faktur</div>
                 </div>
             </div>
@@ -251,7 +251,7 @@ require_once __DIR__ . '/../../components/navbar.php';
 
 <!-- MODAL DETAIL PEMBAYARAN (DILENGKAPI 5 TAB PEMISAH FUNGSI) -->
 <div class="modal fade" id="modalDetailPayment" tabindex="-1" aria-labelledby="modalDetailPaymentLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg rounded-3">
             <!-- MODAL HEADER DENGAN 5 NAV TABS -->
             <div class="modal-header bg-white pt-3 pb-0 px-4 border-bottom flex-column align-items-stretch">
@@ -263,7 +263,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                 </div>
                 
                 <!-- Nav Tabs Modal (5 Tab Lengkap & Seragam) -->
-                <ul class="nav nav-tabs border-bottom-0 flex-nowrap overflow-x-auto" id="modalDetailTabs" role="tablist">
+                <ul class="nav nav-tabs border-bottom-0" id="modalDetailTabs" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active fw-bold text-dark small py-2 px-3" id="modal-tab-faktur" data-bs-toggle="tab" data-bs-target="#modal-pane-faktur" type="button" role="tab">
                             <i class="bi bi-receipt me-1 text-primary"></i> 1. Tagihan &amp; Faktur
