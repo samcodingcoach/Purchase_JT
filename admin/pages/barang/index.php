@@ -68,13 +68,7 @@ require_once __DIR__ . '/../../components/navbar.php';
 <!-- Modal Form Tambah / Edit Barang dengan Tab Rapi (2 Kolom) -->
 <div class="modal fade" id="barangFormModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 850px;">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-primary text-white py-3">
-                <h5 class="modal-title fs-6 fw-bold" id="barangFormModalTitle">
-                    <i class="bi bi-box-seam-fill me-2"></i>Tambah Barang Baru
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
+        <div class="modal-content border-0 shadow-lg rounded-3">
             <form id="barangForm" onsubmit="handleSaveBarang(event)">
                 <input type="hidden" id="formIdBarang" name="id_barang">
                 <input type="hidden" id="formFoto1Val" name="foto1">
@@ -83,32 +77,39 @@ require_once __DIR__ . '/../../components/navbar.php';
                 <input type="hidden" id="formMerkIdVal" name="id_merk">
                 <input type="hidden" id="formVendorIdVal" name="default_id_vendor">
                 
-                <!-- Nav Tabs Modal Form (6 Tab Terfokus) -->
-                <div class="bg-light px-4 pt-3 border-bottom">
-                    <ul class="nav nav-tabs border-bottom-0" id="barangFormTabs" role="tablist">
+                <!-- Modal Header dengan Nav Tabs Terpadu -->
+                <div class="modal-header bg-white pt-3 pb-0 px-4 border-bottom flex-column align-items-stretch">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="modal-title fw-bold text-dark mb-0 d-flex align-items-center gap-2" id="barangFormModalTitle">
+                            <i class="bi bi-box-seam-fill text-primary"></i> Tambah Barang Baru
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    
+                    <ul class="nav nav-tabs border-bottom-0 flex-nowrap" id="barangFormTabs" role="tablist">
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link active fw-semibold small" id="bform-tab-utama" data-bs-toggle="tab" data-bs-target="#bform-pane-utama" type="button" role="tab">
-                                <i class="bi bi-tag me-1 text-primary"></i> Utama
+                            <button class="nav-link active fw-bold text-dark small py-2 px-3" id="bform-tab-utama" data-bs-toggle="tab" data-bs-target="#bform-pane-utama" type="button" role="tab">
+                                <i class="bi bi-tag-fill me-1 text-primary"></i> 1. Utama
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link fw-semibold small" id="bform-tab-tambahan" data-bs-toggle="tab" data-bs-target="#bform-pane-tambahan" type="button" role="tab">
-                                <i class="bi bi-sliders me-1 text-primary"></i> Speksifikasi
+                            <button class="nav-link fw-bold text-dark small py-2 px-3" id="bform-tab-tambahan" data-bs-toggle="tab" data-bs-target="#bform-pane-tambahan" type="button" role="tab">
+                                <i class="bi bi-sliders me-1 text-primary"></i> 2. Spesifikasi
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link fw-semibold small" id="bform-tab-stok" data-bs-toggle="tab" data-bs-target="#bform-pane-stok" type="button" role="tab">
-                                <i class="bi bi-boxes me-1 text-primary"></i> Stok
+                            <button class="nav-link fw-bold text-dark small py-2 px-3" id="bform-tab-stok" data-bs-toggle="tab" data-bs-target="#bform-pane-stok" type="button" role="tab">
+                                <i class="bi bi-boxes me-1 text-primary"></i> 3. Stok
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link fw-semibold small" id="bform-tab-harga" data-bs-toggle="tab" data-bs-target="#bform-pane-harga" type="button" role="tab">
-                                <i class="bi bi-cash-coin me-1 text-primary"></i> Vendor
+                            <button class="nav-link fw-bold text-dark small py-2 px-3" id="bform-tab-harga" data-bs-toggle="tab" data-bs-target="#bform-pane-harga" type="button" role="tab">
+                                <i class="bi bi-cash-coin me-1 text-primary"></i> 4. Vendor
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link fw-semibold small" id="bform-tab-foto" data-bs-toggle="tab" data-bs-target="#bform-pane-foto" type="button" role="tab">
-                                <i class="bi bi-images me-1 text-primary"></i> Foto
+                            <button class="nav-link fw-bold text-dark small py-2 px-3" id="bform-tab-foto" data-bs-toggle="tab" data-bs-target="#bform-pane-foto" type="button" role="tab">
+                                <i class="bi bi-images me-1 text-primary"></i> 5. Foto
                             </button>
                         </li>
                     </ul>
@@ -1114,7 +1115,7 @@ function openTambahBarangModal() {
     renderStokFormRows({});
     
     bootstrap.Tab.getOrCreateInstance(document.getElementById('bform-tab-utama')).show();
-    document.getElementById('barangFormModalTitle').innerHTML = '<i class="bi bi-box-seam-fill me-2"></i>Tambah Barang Baru';
+    document.getElementById('barangFormModalTitle').innerHTML = '<i class="bi bi-box-seam-fill text-primary"></i> Tambah Barang Baru';
     const modal = new bootstrap.Modal(document.getElementById('barangFormModal'));
     modal.show();
 }
@@ -1221,7 +1222,7 @@ function openEditBarangModal(idx) {
     }
 
     bootstrap.Tab.getOrCreateInstance(document.getElementById('bform-tab-utama')).show();
-    document.getElementById('barangFormModalTitle').innerHTML = '<i class="bi bi-pencil-square me-2"></i>Edit Data Barang';
+    document.getElementById('barangFormModalTitle').innerHTML = '<i class="bi bi-pencil-square text-primary"></i> Edit Data Barang';
     const modal = new bootstrap.Modal(document.getElementById('barangFormModal'));
     modal.show();
 }

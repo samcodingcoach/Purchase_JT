@@ -65,12 +65,12 @@ require_once __DIR__ . '/../../components/navbar.php';
 <!-- Modal Form Tambah / Edit Divisi dengan Layout 2-Kolom Lapang -->
 <div class="modal fade" id="divisiFormModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 640px;">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-primary text-white py-3">
-                <h5 class="modal-title fs-6 fw-bold" id="divisiFormModalTitle">
-                    <i class="bi bi-diagram-3-fill me-2"></i>Tambah Divisi Baru
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <div class="modal-header bg-white px-4 py-3 border-bottom">
+                <h5 class="modal-title fw-bold text-dark mb-0 d-flex align-items-center gap-2" id="divisiFormModalTitle">
+                    <i class="bi bi-diagram-3-fill text-primary"></i> Tambah Divisi Baru
                 </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="divisiForm" onsubmit="handleSaveDivisi(event)">
                 <input type="hidden" id="formIdDivisi" name="id_divisi">
@@ -220,7 +220,7 @@ function openTambahDivisiModal() {
     document.getElementById('divisiForm').reset();
     document.getElementById('formIdDivisi').value = '';
     document.getElementById('formLevel').value = 1;
-    document.getElementById('divisiFormModalTitle').innerHTML = '<i class="bi bi-diagram-3-fill me-2"></i>Tambah Divisi Baru';
+    document.getElementById('divisiFormModalTitle').innerHTML = '<i class="bi bi-diagram-3-fill text-primary"></i> Tambah Divisi Baru';
     const modal = new bootstrap.Modal(document.getElementById('divisiFormModal'));
     modal.show();
 }
@@ -234,7 +234,7 @@ function openEditDivisiModal(idx) {
     document.getElementById('formNamaDivisi').value = item.nama_divisi;
     document.getElementById('formLevel').value = item.level;
     
-    document.getElementById('divisiFormModalTitle').innerHTML = '<i class="bi bi-pencil-square me-2"></i>Edit Data Divisi';
+    document.getElementById('divisiFormModalTitle').innerHTML = '<i class="bi bi-pencil-square text-primary"></i> Edit Data Divisi';
     const modal = new bootstrap.Modal(document.getElementById('divisiFormModal'));
     modal.show();
 }

@@ -69,27 +69,28 @@ require_once __DIR__ . '/../../components/navbar.php';
 <!-- Modal Form Tambah / Edit Site dengan Tab Terfokus (2-Kolom) -->
 <div class="modal fade" id="siteFormModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-primary text-white py-3">
-                <h5 class="modal-title fs-6 fw-bold" id="siteFormModalTitle">
-                    <i class="bi bi-geo-alt-fill me-2"></i>Tambah Site Baru
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
+        <div class="modal-content border-0 shadow-lg rounded-3">
             <form id="siteForm" onsubmit="handleSaveSite(event)">
                 <input type="hidden" id="formIdSite" name="id_site">
                 
-                <!-- Nav Tabs Modal Form -->
-                <div class="bg-light px-4 pt-3 border-bottom">
-                    <ul class="nav nav-tabs border-bottom-0" id="siteFormTabs" role="tablist">
+                <!-- Modal Header dengan Nav Tabs Terpadu -->
+                <div class="modal-header bg-white pt-3 pb-0 px-4 border-bottom flex-column align-items-stretch">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="modal-title fw-bold text-dark mb-0 d-flex align-items-center gap-2" id="siteFormModalTitle">
+                            <i class="bi bi-geo-alt-fill text-primary"></i> Tambah Site Baru
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    
+                    <ul class="nav nav-tabs border-bottom-0 flex-nowrap" id="siteFormTabs" role="tablist">
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link active fw-semibold small" id="sform-tab-1" data-bs-toggle="tab" data-bs-target="#sform-pane-1" type="button" role="tab">
-                                <i class="bi bi-building me-1 text-primary"></i> Utama
+                            <button class="nav-link active fw-bold text-dark small py-2 px-3" id="sform-tab-1" data-bs-toggle="tab" data-bs-target="#sform-pane-1" type="button" role="tab">
+                                <i class="bi bi-building me-1 text-primary"></i> 1. Utama
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link fw-semibold small" id="sform-tab-2" data-bs-toggle="tab" data-bs-target="#sform-pane-2" type="button" role="tab">
-                                <i class="bi bi-geo-alt me-1 text-primary"></i> Lokasi
+                            <button class="nav-link fw-bold text-dark small py-2 px-3" id="sform-tab-2" data-bs-toggle="tab" data-bs-target="#sform-pane-2" type="button" role="tab">
+                                <i class="bi bi-geo-alt me-1 text-primary"></i> 2. Lokasi
                             </button>
                         </li>
                     </ul>
@@ -179,25 +180,25 @@ require_once __DIR__ . '/../../components/navbar.php';
 <!-- Modal Detail Lengkap Site (2 Tab, 2-Kolom) -->
 <div class="modal fade" id="siteDetailModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-primary text-white py-3">
-                <h5 class="modal-title fs-6 fw-bold">
-                    <i class="bi bi-geo-alt-fill me-2"></i>Rincian Lokasi Site &amp; Bengkel
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <!-- Modal Header dengan Nav Tabs Terpadu -->
+            <div class="modal-header bg-white pt-3 pb-0 px-4 border-bottom flex-column align-items-stretch">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="modal-title fw-bold text-dark mb-0 d-flex align-items-center gap-2" id="siteDetailModalTitle">
+                        <i class="bi bi-geo-alt-fill text-primary"></i> Rincian Lokasi Site &amp; Bengkel
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
 
-            <!-- Nav Tabs Modal Detail -->
-            <div class="bg-light px-4 pt-3 border-bottom">
-                <ul class="nav nav-tabs border-bottom-0" id="siteDetailTabs" role="tablist">
+                <ul class="nav nav-tabs border-bottom-0 flex-nowrap" id="siteDetailTabs" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active fw-semibold small" id="sdetail-tab-1" data-bs-toggle="tab" data-bs-target="#sdetail-pane-1" type="button" role="tab">
-                            <i class="bi bi-building me-1 text-primary"></i> Utama
+                        <button class="nav-link active fw-bold text-dark small py-2 px-3" id="sdetail-tab-1" data-bs-toggle="tab" data-bs-target="#sdetail-pane-1" type="button" role="tab">
+                            <i class="bi bi-building me-1 text-primary"></i> 1. Utama
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link fw-semibold small" id="sdetail-tab-2" data-bs-toggle="tab" data-bs-target="#sdetail-pane-2" type="button" role="tab">
-                            <i class="bi bi-geo-alt me-1 text-primary"></i> Lokasi
+                        <button class="nav-link fw-bold text-dark small py-2 px-3" id="sdetail-tab-2" data-bs-toggle="tab" data-bs-target="#sdetail-pane-2" type="button" role="tab">
+                            <i class="bi bi-geo-alt me-1 text-primary"></i> 2. Lokasi
                         </button>
                     </li>
                 </ul>
@@ -409,7 +410,7 @@ function openTambahSiteModal() {
     document.getElementById('formHeadOf').value = '';
     document.getElementById('stokSiteYes').checked = true;
     bootstrap.Tab.getOrCreateInstance(document.getElementById('sform-tab-1')).show();
-    document.getElementById('siteFormModalTitle').innerHTML = '<i class="bi bi-geo-alt-fill me-2"></i>Tambah Site Baru';
+    document.getElementById('siteFormModalTitle').innerHTML = '<i class="bi bi-geo-alt-fill text-primary"></i> Tambah Site Baru';
     const modal = new bootstrap.Modal(document.getElementById('siteFormModal'));
     modal.show();
 }
@@ -435,7 +436,7 @@ function openEditSiteModal(idx) {
     document.getElementById('formAlamatSite').value = item.alamat !== '-' ? item.alamat : '';
     
     bootstrap.Tab.getOrCreateInstance(document.getElementById('sform-tab-1')).show();
-    document.getElementById('siteFormModalTitle').innerHTML = '<i class="bi bi-pencil-square me-2"></i>Edit Data Site';
+    document.getElementById('siteFormModalTitle').innerHTML = '<i class="bi bi-pencil-square text-primary"></i> Edit Data Site';
     const modal = new bootstrap.Modal(document.getElementById('siteFormModal'));
     modal.show();
 }

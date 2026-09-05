@@ -67,12 +67,12 @@ require_once __DIR__ . '/../../components/navbar.php';
 <!-- Modal Form Tambah / Edit Jabatan (2 Kolom) -->
 <div class="modal fade" id="jabatanFormModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-primary text-white py-3">
-                <h5 class="modal-title fs-6 fw-bold" id="jabatanFormModalTitle">
-                    <i class="bi bi-briefcase-fill me-2"></i>Tambah Jabatan Baru
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <div class="modal-header bg-white px-4 py-3 border-bottom">
+                <h5 class="modal-title fw-bold text-dark mb-0 d-flex align-items-center gap-2" id="jabatanFormModalTitle">
+                    <i class="bi bi-briefcase-fill text-primary"></i> Tambah Jabatan Baru
                 </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="jabatanForm" onsubmit="handleSaveJabatan(event)">
                 <input type="hidden" id="formIdJabatan" name="id_jabatan">
@@ -264,7 +264,7 @@ function openTambahJabatanModal() {
     document.getElementById('formIdJabatan').value = '';
     document.getElementById('formDivisi').value = '';
     document.getElementById('formLevel').value = '3';
-    document.getElementById('jabatanFormModalTitle').innerHTML = '<i class="bi bi-briefcase-fill me-2"></i>Tambah Jabatan Baru';
+    document.getElementById('jabatanFormModalTitle').innerHTML = '<i class="bi bi-briefcase-fill text-primary"></i> Tambah Jabatan Baru';
     const modal = new bootstrap.Modal(document.getElementById('jabatanFormModal'));
     modal.show();
 }
@@ -279,7 +279,7 @@ function openEditJabatanModal(idx) {
     document.getElementById('formDivisi').value = item.id_divisi || '';
     document.getElementById('formLevel').value = item.level || 3;
     
-    document.getElementById('jabatanFormModalTitle').innerHTML = '<i class="bi bi-pencil-square me-2"></i>Edit Data Jabatan';
+    document.getElementById('jabatanFormModalTitle').innerHTML = '<i class="bi bi-pencil-square text-primary"></i> Edit Data Jabatan';
     const modal = new bootstrap.Modal(document.getElementById('jabatanFormModal'));
     modal.show();
 }

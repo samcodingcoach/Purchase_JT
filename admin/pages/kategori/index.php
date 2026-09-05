@@ -65,12 +65,12 @@ require_once __DIR__ . '/../../components/navbar.php';
 <!-- Modal Form Tambah / Edit Kategori dengan Tab 2-Kolom -->
 <div class="modal fade" id="kategoriFormModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 640px;">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-primary text-white py-3">
-                <h5 class="modal-title fs-6 fw-bold" id="kategoriFormModalTitle">
-                    <i class="bi bi-tags-fill me-2"></i>Tambah Kategori Baru
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <div class="modal-header bg-white px-4 py-3 border-bottom">
+                <h5 class="modal-title fw-bold text-dark mb-0 d-flex align-items-center gap-2" id="kategoriFormModalTitle">
+                    <i class="bi bi-tags-fill text-primary"></i> Tambah Kategori Baru
                 </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="kategoriForm" onsubmit="handleSaveKategori(event)">
                 <input type="hidden" id="formIdKategori" name="id_kategori">
@@ -223,7 +223,7 @@ function openTambahKategoriModal() {
     document.getElementById('kategoriForm').reset();
     document.getElementById('formIdKategori').value = '';
     document.getElementById('formAktif').value = 1;
-    document.getElementById('kategoriFormModalTitle').innerHTML = '<i class="bi bi-tags-fill me-2"></i>Tambah Kategori Baru';
+    document.getElementById('kategoriFormModalTitle').innerHTML = '<i class="bi bi-tags-fill text-primary"></i> Tambah Kategori Baru';
     const modal = new bootstrap.Modal(document.getElementById('kategoriFormModal'));
     modal.show();
 }
@@ -237,7 +237,7 @@ function openEditKategoriModal(idx) {
     document.getElementById('formNamaKategori').value = item.nama_kategori;
     document.getElementById('formAktif').value = item.aktif;
     
-    document.getElementById('kategoriFormModalTitle').innerHTML = '<i class="bi bi-pencil-square me-2"></i>Edit Data Kategori';
+    document.getElementById('kategoriFormModalTitle').innerHTML = '<i class="bi bi-pencil-square text-primary"></i> Edit Data Kategori';
     const modal = new bootstrap.Modal(document.getElementById('kategoriFormModal'));
     modal.show();
 }

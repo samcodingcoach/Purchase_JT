@@ -65,12 +65,12 @@ require_once __DIR__ . '/../../components/navbar.php';
 <!-- Modal Form Tambah / Edit Merk dengan Tab 2-Kolom -->
 <div class="modal fade" id="merkFormModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 640px;">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-primary text-white py-3">
-                <h5 class="modal-title fs-6 fw-bold" id="merkFormModalTitle">
-                    <i class="bi bi-bookmark-star-fill me-2"></i>Tambah Merk Baru
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <div class="modal-header bg-white px-4 py-3 border-bottom">
+                <h5 class="modal-title fw-bold text-dark mb-0 d-flex align-items-center gap-2" id="merkFormModalTitle">
+                    <i class="bi bi-bookmark-star-fill text-primary"></i> Tambah Merk Baru
                 </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="merkForm" onsubmit="handleSaveMerk(event)">
                 <input type="hidden" id="formIdMerk" name="id_merk">
@@ -223,7 +223,7 @@ function openTambahMerkModal() {
     document.getElementById('merkForm').reset();
     document.getElementById('formIdMerk').value = '';
     document.getElementById('formAktif').value = 1;
-    document.getElementById('merkFormModalTitle').innerHTML = '<i class="bi bi-bookmark-star-fill me-2"></i>Tambah Merk Baru';
+    document.getElementById('merkFormModalTitle').innerHTML = '<i class="bi bi-bookmark-star-fill text-primary"></i> Tambah Merk Baru';
     const modal = new bootstrap.Modal(document.getElementById('merkFormModal'));
     modal.show();
 }
@@ -237,7 +237,7 @@ function openEditMerkModal(idx) {
     document.getElementById('formNamaMerk').value = item.nama_merk;
     document.getElementById('formAktif').value = item.aktif;
     
-    document.getElementById('merkFormModalTitle').innerHTML = '<i class="bi bi-pencil-square me-2"></i>Edit Data Merk';
+    document.getElementById('merkFormModalTitle').innerHTML = '<i class="bi bi-pencil-square text-primary"></i> Edit Data Merk';
     const modal = new bootstrap.Modal(document.getElementById('merkFormModal'));
     modal.show();
 }
