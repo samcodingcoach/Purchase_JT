@@ -41,7 +41,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link fw-bold text-dark" id="tab-daftar-kebutuhan" data-bs-toggle="tab" data-bs-target="#pane-daftar-kebutuhan" type="button" role="tab">
-                            <i class="bi bi-boxes me-2 text-primary"></i>2. Daftar Kebutuhan Material 
+                            <i class="bi bi-boxes me-2 text-primary"></i>2. Daftar Barang 
                             <span class="badge bg-primary text-white ms-2" id="tabItemCountBadge">1</span>
                         </button>
                     </li>
@@ -165,12 +165,12 @@ require_once __DIR__ . '/../../components/navbar.php';
                         <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                             <div>
                                 <h6 class="fw-bold text-dark mb-0">
-                                    <i class="bi bi-boxes text-primary me-2"></i>Daftar Kebutuhan Material / Barang
+                                    <i class="bi bi-boxes text-primary me-2"></i>Daftar Kebutuhan Barang
                                 </h6>
                                 
                             </div>
                             <button type="button" class="btn btn-outline-primary btn-sm fw-semibold" onclick="addNewItemRow()">
-                                <i class="bi bi-plus-circle-fill me-1"></i> Tambah Baris Material
+                                <i class="bi bi-plus-circle-fill me-1"></i> Tambah Baris Barang
                             </button>
                         </div>
 
@@ -553,7 +553,7 @@ function addNewItemRow(data = {}) {
                 <input type="hidden" class="item-id-barang" value="${data.id_barang || ''}">
                 <input type="hidden" class="item-harga" value="0">
                 <input type="text" class="form-control form-control-sm item-nama-barang" 
-                       placeholder="Ketik / cari nama material..." 
+                       placeholder="Ketik / cari nama barang..." 
                        value="${data.nama_barang || ''}" 
                        autocomplete="off" 
                        onfocus="openItemDropdown('${rowId}')" 
@@ -608,7 +608,7 @@ function addNewItemRow(data = {}) {
 function removeItemRow(rowId) {
     const rows = document.querySelectorAll('.ro-item-row');
     if (rows.length <= 1) {
-        showToast('Minimal harus ada 1 baris material dalam Request Order.', 'warning');
+        showToast('Minimal harus ada 1 baris barang dalam Request Order.', 'warning');
         return;
     }
     const tr = document.getElementById(rowId);
@@ -638,7 +638,7 @@ function openItemDropdown(rowId) {
     if (!dropdown) return;
 
     if (query.length < 3) {
-        dropdown.innerHTML = `<div class="p-3 text-center text-muted small"><i class="bi bi-search me-1 text-primary"></i>Ketik minimal 3 karakter untuk mencari material...</div>`;
+        dropdown.innerHTML = `<div class="p-3 text-center text-muted small"><i class="bi bi-search me-1 text-primary"></i>Ketik minimal 3 karakter untuk mencari barang...</div>`;
         dropdown.classList.remove('d-none');
         return;
     }
@@ -653,12 +653,12 @@ function handleItemSearch(rowId) {
     if (!dropdown) return;
 
     if (query.length < 3) {
-        dropdown.innerHTML = `<div class="p-3 text-center text-muted small"><i class="bi bi-search me-1 text-primary"></i>Ketik minimal 3 karakter untuk mencari material...</div>`;
+        dropdown.innerHTML = `<div class="p-3 text-center text-muted small"><i class="bi bi-search me-1 text-primary"></i>Ketik minimal 3 karakter untuk mencari barang...</div>`;
         dropdown.classList.remove('d-none');
         return;
     }
 
-    dropdown.innerHTML = `<div class="p-3 text-center text-muted small"><span class="spinner-border spinner-border-sm text-primary me-2"></span>Mencari material "${query}"...</div>`;
+    dropdown.innerHTML = `<div class="p-3 text-center text-muted small"><span class="spinner-border spinner-border-sm text-primary me-2"></span>Mencari barang "${query}"...</div>`;
     dropdown.classList.remove('d-none');
 
     itemSearchTimeout = setTimeout(async () => {
@@ -709,7 +709,7 @@ function renderItemDropdown(rowId, items, query = '') {
     if (cleanQ) {
         html += `
             <div class="ro-item-dropdown-item text-primary bg-primary-subtle border-top border-primary-subtle py-2 px-3 d-flex align-items-center justify-content-between" onclick="useCustomItemName('${rowId}', '${query.replace(/'/g, "\\'")}')">
-                <span class="small"><i class="bi bi-pencil-square me-1"></i> Gunakan Material Kustom: <strong>"${query}"</strong></span>
+                <span class="small"><i class="bi bi-pencil-square me-1"></i> Gunakan Barang Kustom: <strong>"${query}"</strong></span>
                 <span class="badge bg-primary text-white" style="font-size: 0.68rem;">Input Manual</span>
             </div>
         `;
@@ -741,7 +741,7 @@ function selectMasterBarang(rowId, idBarang, kode, nama, satuan) {
 
     // CEK VALIDASI GANDA
     if (isBarangAlreadySelected(idBarang, nama, rowId)) {
-        showToast(`Material "${nama}" sudah dipilih pada baris lain. Silakan ubah kuantitas pada baris yang sudah ada.`, 'warning');
+        showToast(`Barang "${nama}" sudah dipilih pada baris lain. Silakan ubah kuantitas pada baris yang sudah ada.`, 'warning');
         row.querySelector('.item-id-barang').value = '';
         row.querySelector('.item-nama-barang').value = '';
         row.querySelector('.item-kode-barang').value = '';
@@ -769,7 +769,7 @@ function useCustomItemName(rowId, customName) {
     if (!row) return;
 
     if (isBarangAlreadySelected(null, customName, rowId)) {
-        showToast(`Material "${customName}" sudah ada pada baris lain. Silakan ubah kuantitas pada baris yang sudah ada.`, 'warning');
+        showToast(`Barang "${customName}" sudah ada pada baris lain. Silakan ubah kuantitas pada baris yang sudah ada.`, 'warning');
         row.querySelector('.item-id-barang').value = '';
         row.querySelector('.item-nama-barang').value = '';
         row.querySelector('.item-kode-barang').value = '';
@@ -976,14 +976,14 @@ async function submitRequestOrder(targetStatus = 'TERKIRIM') {
         // Validasi Duplikasi pada payload
         if (idBarang) {
             if (items.some(it => it.id_barang === parseInt(idBarang, 10))) {
-                showToast(`Material "${namaBarang}" dipilih ganda. Harap satukan kuantitasnya dalam satu baris.`, 'warning');
+                showToast(`Barang "${namaBarang}" dipilih ganda. Harap satukan kuantitasnya dalam satu baris.`, 'warning');
                 goToTab('tab-daftar-kebutuhan');
                 hasError = true;
                 break;
             }
         } else {
             if (items.some(it => it.nama_barang.toLowerCase() === namaBarang.toLowerCase())) {
-                showToast(`Material "${namaBarang}" diinput ganda. Harap satukan kuantitasnya dalam satu baris.`, 'warning');
+                showToast(`Barang "${namaBarang}" diinput ganda. Harap satukan kuantitasnya dalam satu baris.`, 'warning');
                 goToTab('tab-daftar-kebutuhan');
                 hasError = true;
                 break;
