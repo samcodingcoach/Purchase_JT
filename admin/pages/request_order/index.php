@@ -120,10 +120,6 @@ require_once __DIR__ . '/../../components/navbar.php';
         margin: 0 !important;
         padding: 0 !important;
     }
-    .table-container {
-        overflow: visible !important;
-        position: relative;
-    }
     .cursor-pointer {
         cursor: pointer;
     }
@@ -132,18 +128,18 @@ require_once __DIR__ . '/../../components/navbar.php';
     <!-- TABEL DATA REQUEST ORDER -->
     <div class="card border-0 shadow-sm rounded-3">
         <div class="card-body p-0">
-            <div class="table-container" style="overflow: visible; position: relative;">
-                <table class="table table-hover align-middle mb-0" id="roTable">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="roTable" style="min-width: 950px;">
                     <thead class="table-light text-muted small text-uppercase">
                         <tr>
                             <th style="width: 45px;" class="text-center">No</th>
-                            <th style="min-width: 140px;">Nomor RO</th>
-                            <th style="width: 120px;">Tanggal</th>
-                            <th style="width: 100px;">Waktu</th>
-                            <th style="min-width: 160px;">Pemohon</th>
+                            <th style="min-width: 150px;">Nomor RO</th>
+                            <th style="min-width: 120px;">Tanggal</th>
+                            <th style="min-width: 90px;">Waktu</th>
+                            <th style="min-width: 170px;">Pemohon</th>
                             <th style="min-width: 140px;">Site</th>
-                            <th style="width: 160px;" class="text-center">Status</th>
-                            <th style="width: 140px;" class="text-center">Aksi</th>
+                            <th style="min-width: 160px;" class="text-center">Status</th>
+                            <th style="min-width: 130px;" class="text-center">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="roTableBody">
@@ -534,20 +530,20 @@ function renderTableRows(items, offset) {
         html += `
             <tr>
                 <td class="text-center text-muted fw-semibold small">${no}</td>
-                <td>
+                <td class="text-nowrap">
                     <span class="fw-bold text-dark font-monospace">${ro.nomor}</span>
                 </td>
-                <td class="small text-dark font-monospace">${tanggalStr}</td>
-                <td class="small text-muted font-monospace">${waktuStr}</td>
+                <td class="small text-dark font-monospace text-nowrap">${tanggalStr}</td>
+                <td class="small text-muted font-monospace text-nowrap">${waktuStr}</td>
                 <td>
                     <div class="fw-semibold text-dark small">${ro.nama_karyawan}</div>
                     <div class="text-muted" style="font-size: 0.73rem;">${ro.nama_jabatan || '-'}</div>
                 </td>
-                <td>
+                <td class="text-nowrap">
                     <span class="badge bg-light text-dark border font-monospace small">${ro.nama_site || '-'}</span>
                 </td>
-                <td class="text-center">${statusBadge}</td>
-                <td class="text-center">
+                <td class="text-center text-nowrap">${statusBadge}</td>
+                <td class="text-center text-nowrap">
                     <div class="d-flex justify-content-center gap-1">
                         <button type="button" class="btn btn-outline-secondary btn-sm px-2 py-1" onclick="openDetailModal(${ro.id_request})" title="Lihat Detail RO">
                             <i class="bi bi-eye"></i>

@@ -3,6 +3,9 @@
  * Konfigurasi Aplikasi & Helper Terpusat - PT Jaya Teknis
  */
 
+// Set Default Timezone Aplikasi (WITA / UTC+8 - PT Jaya Teknis)
+date_default_timezone_set('Asia/Makassar');
+
 // Base URL definition (Kompatibel dengan Localhost & Cloudflare Tunnel HTTPS)
 if (!defined('BASE_URL')) {
     $isHttps = (

@@ -920,7 +920,14 @@ function calculateGrandTotal() {
 // -------------------------------------------------------------
 async function submitRequestOrder(targetStatus = 'TERKIRIM') {
     const nomor = document.getElementById('roNomor')?.value.trim() || '';
-    const tanggalRo = document.getElementById('roTanggal')?.value || '';
+    let tanggalRo = document.getElementById('roTanggal')?.value || '';
+    if (tanggalRo && tanggalRo.length === 10) {
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        const ss = String(now.getSeconds()).padStart(2, '0');
+        tanggalRo = `${tanggalRo} ${hh}:${mm}:${ss}`;
+    }
     const idKaryawan = document.getElementById('roIdKaryawan')?.value || null;
     const idSite = document.getElementById('roIdSite')?.value || '';
     const idVendor = document.getElementById('roIdVendor')?.value || null;

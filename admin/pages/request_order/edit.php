@@ -1073,7 +1073,14 @@ function removeItemRow(rowId) {
 async function submitEditRequestOrder(targetStatus = 'DRAFT') {
     const idKaryawan = document.getElementById('roIdKaryawan')?.value;
     const idSite = parseInt(document.getElementById('roIdSite').value || '0');
-    const tanggalRo = document.getElementById('roTanggal').value;
+    let tanggalRo = document.getElementById('roTanggal').value;
+    if (tanggalRo && tanggalRo.length === 10) {
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        const ss = String(now.getSeconds()).padStart(2, '0');
+        tanggalRo = `${tanggalRo} ${hh}:${mm}:${ss}`;
+    }
     const prioritas = document.querySelector('input[name="roPrioritas"]:checked')?.value || 'NORMAL';
     const idVendor = document.getElementById('roIdVendor').value || null;
     const keterangan = document.getElementById('roKeterangan').value.trim();
