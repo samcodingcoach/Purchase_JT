@@ -235,7 +235,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                         <div class="row g-4">
                             <div class="col-md-6">
                                 <div class="card bg-light border-0 rounded-3 p-3 h-100">
-                                    <h6 class="fw-bold text-dark mb-3">Informasi Vendor Rekanan</h6>
+                                    <h6 class="fw-bold text-dark mb-3">Informasi Vendor</h6>
                                     <div class="mb-2">
                                         <span class="text-muted small d-block">Nama Vendor:</span>
                                         <strong class="text-dark fs-6" id="detailVendor">-</strong>

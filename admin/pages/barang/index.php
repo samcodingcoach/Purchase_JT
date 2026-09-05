@@ -192,7 +192,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                         <div class="tab-pane fade" id="bform-pane-vendor" role="tabpanel">
                             <div class="row g-3">
                                 <div class="col-12">
-                                    <label class="form-label small fw-bold">Default Vendor Rekanan (Searchable)</label>
+                                    <label class="form-label small fw-bold">Default Vendor</label>
                                     <div class="searchable-select-wrapper" id="vendorSearchWrapper">
                                         <div class="input-group">
                                             <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
@@ -223,7 +223,7 @@ require_once __DIR__ . '/../../components/navbar.php';
 
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <div>
-                                    <span class="fw-bold small text-dark">Daftar Harga per Vendor Rekanan</span>
+                                    <span class="fw-bold small text-dark">Daftar Harga per Vendor</span>
                                     <div class="text-muted small">Atur referensi harga satuan dan tanggal berlakunya per vendor</div>
                                 </div>
                                 <button type="button" class="btn btn-outline-primary btn-sm fw-semibold" onclick="addHargaRow()">
@@ -234,7 +234,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                                 <table class="table table-sm table-bordered align-middle mb-0" id="tableHargaForm">
                                     <thead class="table-light">
                                         <tr>
-                                            <th>Vendor Rekanan</th>
+                                            <th>Vendor</th>
                                             <th style="width: 190px;">Harga Satuan (Rp)</th>
                                             <th style="width: 170px;">Berlaku Mulai</th>
                                             <th class="text-center" style="width: 50px;">Aksi</th>
@@ -479,13 +479,13 @@ require_once __DIR__ . '/../../components/navbar.php';
                     <!-- TAB 3: HARGA VENDOR DETAIL -->
                     <div class="tab-pane fade" id="bdetail-pane-harga" role="tabpanel">
                         <div class="mb-2">
-                            <span class="fw-bold text-dark small">Daftar Referensi Harga per Vendor Rekanan</span>
+                            <span class="fw-bold text-dark small">Daftar Referensi Harga per Vendor</span>
                         </div>
                         <div class="table-responsive border rounded-3 bg-white">
                             <table class="table table-hover align-middle mb-0">
                                 <thead class="table-light small text-muted text-uppercase align-middle">
                                     <tr class="align-middle">
-                                        <th>Vendor Rekanan</th>
+                                        <th>Vendor</th>
                                         <th>Harga Satuan (Rp)</th>
                                         <th>Tanggal Berlaku</th>
                                     </tr>
@@ -653,7 +653,7 @@ function addHargaRow(idVendor = '', hargaSet = '', berlaku = '') {
     const rowId = 'hrow_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
     const today = new Date().toISOString().split('T')[0];
 
-    let options = '<option value="">-- Pilih Vendor Rekanan --</option>';
+    let options = '<option value="">-- Pilih Vendor --</option>';
     vendorListCache.forEach(v => {
         const sel = (v.id_vendor == idVendor) ? 'selected' : '';
         options += `<option value="${v.id_vendor}" ${sel}>${v.nama_perusahaan} (${v.kode_vendor || 'VND'})</option>`;

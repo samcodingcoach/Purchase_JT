@@ -16,7 +16,7 @@ require_once __DIR__ . '/../../components/navbar.php';
 
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
-        <h2 class="fs-4 fw-bold text-dark mb-0">Daftar Rekanan Vendor &amp; Supplier</h2>
+        <h2 class="fs-4 fw-bold text-dark mb-0">Daftar Vendor</h2>
     </div>
     <!-- Search di kiri, Tombol Tambah di paling kanan -->
     <div class="d-flex gap-2 align-items-stretch flex-wrap">
@@ -38,7 +38,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                     <th style="width: 50px;">No</th>
                     <th>Kode</th>
                     <th>Nama Perusahaan</th>
-                    <th>Telepon</th>
+                    <th class="text-center" style="width: 90px;">C.Person</th>
                     <th>Kota</th>
                     <th>Jenis</th>
                     <th>Status</th>
@@ -69,37 +69,39 @@ require_once __DIR__ . '/../../components/navbar.php';
 <!-- Modal Form Tambah / Edit Vendor dengan 4 Tab Terfokus (2-Kolom) -->
 <div class="modal fade" id="vendorFormModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-primary text-white py-3">
-                <h5 class="modal-title fs-6 fw-bold" id="vendorFormModalTitle">
-                    <i class="bi bi-buildings-fill me-2"></i>Tambah Vendor Baru
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
+        <div class="modal-content border-0 shadow-lg rounded-3">
             <form id="vendorForm" onsubmit="handleSaveVendor(event)">
                 <input type="hidden" id="formIdVendor" name="id_vendor">
                 
-                <!-- Nav Tabs Modal Form (4 Tab Rapi) -->
-                <div class="bg-light px-4 pt-3 border-bottom">
-                    <ul class="nav nav-tabs border-bottom-0" id="vendorFormTabs" role="tablist">
+                <!-- MODAL HEADER DENGAN NAV TABS TERPADU (SERAGAM DENGAN RO / MODUL LAIN) -->
+                <div class="modal-header bg-white pt-3 pb-0 px-4 border-bottom flex-column align-items-stretch">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="modal-title fw-bold text-dark mb-0 d-flex align-items-center gap-2" id="vendorFormModalTitle">
+                            <i class="bi bi-buildings-fill text-primary"></i> Tambah Vendor Baru
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    
+                    <!-- Nav Tabs Modal Form (4 Tab Rapi & Seragam) -->
+                    <ul class="nav nav-tabs border-bottom-0 flex-nowrap" id="vendorFormTabs" role="tablist">
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link active fw-semibold small" id="vform-tab-1" data-bs-toggle="tab" data-bs-target="#vform-pane-1" type="button" role="tab">
-                                <i class="bi bi-building me-1 text-primary"></i> Utama
+                            <button class="nav-link active fw-bold text-dark small py-2 px-3" id="vform-tab-1" data-bs-toggle="tab" data-bs-target="#vform-pane-1" type="button" role="tab">
+                                <i class="bi bi-building me-1 text-primary"></i> 1. Utama
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link fw-semibold small" id="vform-tab-2" data-bs-toggle="tab" data-bs-target="#vform-pane-2" type="button" role="tab">
-                                <i class="bi bi-telephone me-1 text-primary"></i> Kontak
+                            <button class="nav-link fw-bold text-dark small py-2 px-3" id="vform-tab-2" data-bs-toggle="tab" data-bs-target="#vform-pane-2" type="button" role="tab">
+                                <i class="bi bi-telephone me-1 text-primary"></i> 2. Kontak
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link fw-semibold small" id="vform-tab-3" data-bs-toggle="tab" data-bs-target="#vform-pane-3" type="button" role="tab">
-                                <i class="bi bi-geo-alt me-1 text-primary"></i> Lokasi
+                            <button class="nav-link fw-bold text-dark small py-2 px-3" id="vform-tab-3" data-bs-toggle="tab" data-bs-target="#vform-pane-3" type="button" role="tab">
+                                <i class="bi bi-geo-alt me-1 text-primary"></i> 3. Lokasi
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link fw-semibold small" id="vform-tab-4" data-bs-toggle="tab" data-bs-target="#vform-pane-4" type="button" role="tab">
-                                <i class="bi bi-cash-coin me-1 text-primary"></i> Keuangan
+                            <button class="nav-link fw-bold text-dark small py-2 px-3" id="vform-tab-4" data-bs-toggle="tab" data-bs-target="#vform-pane-4" type="button" role="tab">
+                                <i class="bi bi-cash-coin me-1 text-primary"></i> 4. Keuangan
                             </button>
                         </li>
                     </ul>
@@ -225,35 +227,39 @@ require_once __DIR__ . '/../../components/navbar.php';
 <!-- Modal Detail Lengkap Vendor dengan 4 Tab Terfokus (2-Kolom) -->
 <div class="modal fade" id="vendorDetailModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-primary text-white py-3">
-                <h5 class="modal-title fs-6 fw-bold">
-                    <i class="bi bi-building-check me-2"></i>Rincian Data Vendor Rekanan
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <!-- MODAL HEADER DENGAN NAV TABS TERPADU (SERAGAM DENGAN RO / MODUL LAIN) -->
+            <div class="modal-header bg-white pt-3 pb-0 px-4 border-bottom flex-column align-items-stretch">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-building-check text-primary fs-5"></i>
+                        <h5 class="modal-title fw-bold text-dark mb-0" id="vendorDetailModalTitle">
+                            Rincian Data Vendor
+                        </h5>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
 
-            <!-- Nav Tabs Modal Detail (4 Tab Rapi) -->
-            <div class="bg-light px-4 pt-3 border-bottom">
-                <ul class="nav nav-tabs border-bottom-0" id="vendorDetailTabs" role="tablist">
+                <!-- Nav Tabs Modal Detail (4 Tab Rapi & Seragam) -->
+                <ul class="nav nav-tabs border-bottom-0 flex-nowrap" id="vendorDetailTabs" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active fw-semibold small" id="vdetail-tab-1" data-bs-toggle="tab" data-bs-target="#vdetail-pane-1" type="button" role="tab">
-                            <i class="bi bi-building me-1 text-primary"></i> Utama
+                        <button class="nav-link active fw-bold text-dark small py-2 px-3" id="vdetail-tab-1" data-bs-toggle="tab" data-bs-target="#vdetail-pane-1" type="button" role="tab">
+                            <i class="bi bi-building me-1 text-primary"></i> 1. Utama
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link fw-semibold small" id="vdetail-tab-2" data-bs-toggle="tab" data-bs-target="#vdetail-pane-2" type="button" role="tab">
-                            <i class="bi bi-telephone me-1 text-primary"></i> Kontak
+                        <button class="nav-link fw-bold text-dark small py-2 px-3" id="vdetail-tab-2" data-bs-toggle="tab" data-bs-target="#vdetail-pane-2" type="button" role="tab">
+                            <i class="bi bi-telephone me-1 text-primary"></i> 2. Kontak
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link fw-semibold small" id="vdetail-tab-3" data-bs-toggle="tab" data-bs-target="#vdetail-pane-3" type="button" role="tab">
-                            <i class="bi bi-geo-alt me-1 text-primary"></i> Lokasi
+                        <button class="nav-link fw-bold text-dark small py-2 px-3" id="vdetail-tab-3" data-bs-toggle="tab" data-bs-target="#vdetail-pane-3" type="button" role="tab">
+                            <i class="bi bi-geo-alt me-1 text-primary"></i> 3. Lokasi
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link fw-semibold small" id="vdetail-tab-4" data-bs-toggle="tab" data-bs-target="#vdetail-pane-4" type="button" role="tab">
-                            <i class="bi bi-cash-coin me-1 text-primary"></i> Keuangan
+                        <button class="nav-link fw-bold text-dark small py-2 px-3" id="vdetail-tab-4" data-bs-toggle="tab" data-bs-target="#vdetail-pane-4" type="button" role="tab">
+                            <i class="bi bi-cash-coin me-1 text-primary"></i> 4. Keuangan
                         </button>
                     </li>
                 </ul>
@@ -370,6 +376,20 @@ const fixedLimit = 50;
 let searchTimeout = null;
 let vendorDataStore = [];
 
+function formatWaNumber(raw) {
+    if (!raw) return '';
+    let digits = String(raw).replace(/\D/g, '');
+    if (!digits) return '';
+    if (digits.startsWith('08')) {
+        digits = '628' + digits.substring(2);
+    } else if (digits.startsWith('0')) {
+        digits = '62' + digits.substring(1);
+    } else if (digits.startsWith('8')) {
+        digits = '628' + digits.substring(1);
+    }
+    return digits;
+}
+
 function debounceSearch() {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
@@ -408,12 +428,28 @@ async function loadVendor() {
         let html = '';
         vendorDataStore.forEach((item, idx) => {
             const rowNumber = pag.from + idx;
+            const rawContact = item.kontak_person || item.no_telepon || '';
+            const waNum = formatWaNumber(rawContact);
+            const contactTooltip = (item.person ? `${item.person} - ` : '') + (item.kontak_person || item.no_telepon || 'WhatsApp');
+
+            let waButtonHtml = '<span class="text-muted small">-</span>';
+            if (waNum && waNum.length >= 8) {
+                waButtonHtml = `
+                    <a href="https://wa.me/${waNum}" target="_blank" rel="noopener noreferrer" 
+                       class="btn btn-sm btn-light text-success border border-success-subtle shadow-sm rounded-circle d-inline-flex align-items-center justify-content-center" 
+                       style="width: 32px; height: 32px;" 
+                       title="Hubungi WhatsApp: ${contactTooltip.replace(/"/g, '&quot;')}">
+                        <i class="bi bi-whatsapp fs-6"></i>
+                    </a>
+                `;
+            }
+
             html += `
                 <tr>
                     <td class="text-muted">${rowNumber}</td>
                     <td><span class="badge bg-light text-dark border font-monospace">${item.kode_vendor || '-'}</span></td>
                     <td class="fw-bold text-dark">${item.nama_perusahaan}</td>
-                    <td>${item.no_telepon || '-'}</td>
+                    <td class="text-center">${waButtonHtml}</td>
                     <td><span class="badge bg-secondary-subtle text-secondary">${item.kota || '-'}</span></td>
                     <td><span class="badge bg-info-subtle text-info">${item.jenis_vendor || 'Umum'}</span></td>
                     <td>
@@ -619,7 +655,18 @@ function showVendorDetail(idx) {
     document.getElementById('modalEmail').textContent = item.email || '-';
     document.getElementById('modalWebsite').innerHTML = item.website && item.website !== '-' ? `<a href="${item.website}" target="_blank" class="text-primary text-decoration-none">${item.website} <i class="bi bi-box-arrow-up-right small"></i></a>` : '-';
     document.getElementById('modalPerson').textContent = item.person || '-';
-    document.getElementById('modalKontakPerson').textContent = item.kontak_person || '-';
+    
+    const kpWa = formatWaNumber(item.kontak_person || item.no_telepon);
+    if (kpWa && kpWa.length >= 8) {
+        document.getElementById('modalKontakPerson').innerHTML = `
+            <span>${item.kontak_person || item.no_telepon || '-'}</span>
+            <a href="https://wa.me/${kpWa}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-success text-white py-0 px-2 ms-2 rounded-2 small d-inline-flex align-items-center gap-1">
+                <i class="bi bi-whatsapp"></i> Chat WA
+            </a>
+        `;
+    } else {
+        document.getElementById('modalKontakPerson').textContent = item.kontak_person || '-';
+    }
 
     // Tab 3: Lokasi
     document.getElementById('modalKota').textContent = item.kota || '-';

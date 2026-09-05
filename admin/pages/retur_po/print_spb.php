@@ -248,7 +248,7 @@ $autoPrint = isset($_GET['autoprint']) && $_GET['autoprint'] == '1';
                         <td>: <?= date('d/m/Y') ?></td>
                     </tr>
                     <tr>
-                        <td class="label-col">Vendor Rekanan</td>
+                        <td class="label-col">Vendor</td>
                         <td>: <strong><?= htmlspecialchars($retur['nama_vendor'] ?: '-') ?></strong></td>
                     </tr>
                     <tr>
@@ -268,7 +268,7 @@ $autoPrint = isset($_GET['autoprint']) && $_GET['autoprint'] == '1';
         </div>
 
         <div class="mt-3 mb-1 small text-muted">
-            Telah diterima barang pengganti kondisi baru / bagus dari vendor rekanan sesuai rincian klaim retur sebagai berikut:
+            Telah diterima barang pengganti kondisi baru / bagus dari vendor sesuai rincian klaim retur sebagai berikut:
         </div>
 
         <!-- Tabel Rincian Barang Pengganti Diterima -->

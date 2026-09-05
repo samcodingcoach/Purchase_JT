@@ -192,9 +192,9 @@ require_once __DIR__ . '/../../components/navbar.php';
                     <!-- TAB 2: VENDOR -->
                     <div class="tab-pane fade" id="tab-vendor" role="tabpanel">
                         <div class="row g-4">
-                            <!-- Kolom Kiri: Info Vendor Rekanan -->
+                            <!-- Kolom Kiri: Info Vendor -->
                             <div class="col-lg-6">
-                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-building text-primary me-2"></i>Identitas Vendor Rekanan</h6>
+                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-building text-primary me-2"></i>Identitas Vendor</h6>
 
                                 <div class="mb-3">
                                     <label class="form-label small fw-semibold text-muted">Nama Perusahaan Vendor</label>
@@ -284,7 +284,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                                         <span class="input-group-text bg-light fw-bold text-muted">Rp</span>
                                         <input type="number" class="form-control form-control-sm" id="inputBiayaRetur" value="0" min="0" step="500" placeholder="0">
                                     </div>
-                                    <div class="form-text small text-muted">Isi 0 jika ongkos kirim ditanggung oleh pihak vendor rekanan.</div>
+                                    <div class="form-text small text-muted">Isi 0 jika ongkos kirim ditanggung oleh pihak vendor.</div>
                                 </div>
                             </div>
 

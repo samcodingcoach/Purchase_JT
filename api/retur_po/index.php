@@ -351,7 +351,7 @@ if ($method === 'POST') {
     }
 
     if ($idPo <= 0 || $idVendor <= 0) {
-        sendJson(false, 'Dokumen PO dan Vendor rekanan tidak valid.', null, 422);
+        sendJson(false, 'Dokumen PO dan Vendor tidak valid.', null, 422);
     }
     if (empty($items)) {
         sendJson(false, 'Harap sertakan minimal 1 baris item barang yang diretur.', null, 422);

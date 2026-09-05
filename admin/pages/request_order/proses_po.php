@@ -883,7 +883,7 @@ function handleApproveToPo(e) {
 
     const idVendor = document.getElementById('inputVendorId').value;
     if (!idVendor) {
-        showToast('Vendor Rekanan belum ditentukan pada permohonan Request Order.', 'warning');
+        showToast('Vendor belum ditentukan pada permohonan Request Order.', 'warning');
         return;
     }
 
@@ -1062,7 +1062,7 @@ async function submitFinalApprovedPo() {
 async function handleSaveDraftPo() {
     const idVendor = document.getElementById('inputVendorId').value;
     if (!idVendor) {
-        showToast('Vendor Rekanan belum ditentukan pada permohonan Request Order.', 'warning');
+        showToast('Vendor belum ditentukan pada permohonan Request Order.', 'warning');
         return;
     }
 

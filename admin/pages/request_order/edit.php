@@ -145,12 +145,12 @@ require_once __DIR__ . '/../../components/navbar.php';
 
                                     <!-- Searchable Vendor Selector -->
                                     <div class="mb-3">
-                                        <label class="form-label small fw-bold text-dark">Referensi Vendor Rekanan (Opsional)</label>
+                                        <label class="form-label small fw-bold text-dark">Referensi Vendor</label>
                                         <div class="ro-vendor-search-wrapper position-relative" id="roVendorSearchWrapper">
                                             <input type="hidden" id="roIdVendor" value="">
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text bg-white"><i class="bi bi-truck"></i></span>
-                                                <input type="text" class="form-control form-control-sm" id="roVendorSearchInput" placeholder="Cari / pilih vendor rekanan..." autocomplete="off" onfocus="openRoVendorDropdown()" onclick="openRoVendorDropdown()" oninput="debounceRoVendorSearch()">
+                                                <input type="text" class="form-control form-control-sm" id="roVendorSearchInput" placeholder="Cari / pilih vendor..." autocomplete="off" onfocus="openRoVendorDropdown()" onclick="openRoVendorDropdown()" oninput="debounceRoVendorSearch()">
                                                 <button type="button" class="btn btn-outline-secondary" onclick="clearRoVendorSelection()" title="Hapus Pilihan">
                                                     <i class="bi bi-x-lg"></i>
                                                 </button>

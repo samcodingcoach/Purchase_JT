@@ -159,7 +159,7 @@ if ($action === 'approve' || $action === 'draft') {
 
     $idVendor = isset($input['id_vendor']) && is_numeric($input['id_vendor']) ? (int)$input['id_vendor'] : null;
     if (!$idVendor) {
-        jsonResponse(false, 'Vendor Rekanan belum ditentukan pada Request Order.', null, 422);
+        jsonResponse(false, 'Vendor belum ditentukan pada Request Order.', null, 422);
     }
 
     // Nomor PO

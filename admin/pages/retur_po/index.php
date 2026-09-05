@@ -151,7 +151,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                             <th style="min-width: 140px;">Nomor Retur</th>
                             <th style="min-width: 120px;">Tanggal</th>
                             <th style="min-width: 130px;">Ref PO</th>
-                            <th style="min-width: 160px;">Vendor Rekanan</th>
+                            <th style="min-width: 160px;">Vendor</th>
                             <th style="min-width: 130px;" class="text-center">Kompensasi</th>
                             <th style="min-width: 130px;" class="text-end pe-3">Total Nilai</th>
                             <th style="min-width: 140px;" class="text-center">Status</th>

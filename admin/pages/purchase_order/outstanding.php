@@ -142,7 +142,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                         <tr>
                             <th class="text-center" style="width: 50px;">NO</th>
                             <th style="width: 180px;">NOMOR PO</th>
-                            <th>VENDOR REKANAN</th>
+                            <th>VENDOR</th>
                             <th>SITE TUJUAN</th>
                             <th style="width: 210px;" class="text-center">ESTIMASI TIBA &amp; AGING</th>
                             <th class="text-end pe-4" style="width: 180px;">TOTAL BIAYA</th>

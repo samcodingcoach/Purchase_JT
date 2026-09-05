@@ -34,7 +34,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                 <h4 class="fw-bold text-dark font-monospace mb-0" id="headerNomorRetur">-</h4>
                 <span id="headerStatusBadge"></span>
             </div>
-            <p class="text-muted small mb-0">Dokumen Pengembalian Barang Rusak / Cacat ke Vendor Rekanan</p>
+            <p class="text-muted small mb-0">Dokumen Pengembalian Barang Rusak / Cacat ke Vendor</p>
         </div>
         <div class="d-flex gap-2 align-items-center flex-wrap">
             <a href="<?= BASE_URL ?>/admin/pages/retur_po/index.php" class="btn btn-outline-secondary btn-sm px-3 shadow-sm">
@@ -147,7 +147,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                             <div class="border rounded-3 p-3 h-100 bg-white">
                                 <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-building text-primary me-2"></i>Perusahaan Vendor</h6>
                                 <div class="mb-3">
-                                    <span class="text-muted small d-block">Nama Vendor Rekanan:</span>
+                                    <span class="text-muted small d-block">Nama Vendor :</span>
                                     <span class="fw-bold text-dark fs-6" id="infoVendor">-</span>
                                 </div>
                                 <div class="mb-3">
@@ -170,7 +170,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                                 </div>
                                 <div>
                                     <span class="text-muted small d-block">Keterangan Vendor:</span>
-                                    <span class="text-muted small">Pihak perwakilan vendor rekanan yang telah dihubungi dan mengonfirmasi proses klaim pengembalian barang.</span>
+                                    <span class="text-muted small">Pihak perwakilan vendor yang telah dihubungi dan mengonfirmasi proses klaim pengembalian barang.</span>
                                 </div>
                             </div>
                         </div>
@@ -397,7 +397,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                         <div class="tab-pane fade" id="tab-modal-catatan" role="tabpanel">
                             <div class="card bg-white border-0 shadow-sm rounded-3 p-3">
                                 <label class="form-label small fw-semibold text-dark mb-1">Catatan Perkembangan Klaim / Respon Vendor</label>
-                                <textarea class="form-control form-control-sm" id="updateKeterangan" rows="6" placeholder="Tuliskan catatan perkembangan tindak lanjut, kesepakatan kompensasi, atau respon vendor rekanan..."></textarea>
+                                <textarea class="form-control form-control-sm" id="updateKeterangan" rows="6" placeholder="Tuliskan catatan perkembangan tindak lanjut, kesepakatan kompensasi, atau respon vendor..."></textarea>
                             </div>
                         </div>
 

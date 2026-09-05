@@ -1,7 +1,7 @@
 <?php
 /**
  * API Master: Barang Harga Vendor Endpoint - PT Jaya Teknik
- * Mengelola relasi histori & daftar harga barang per vendor rekanan
+ * Mengelola relasi histori & daftar harga barang per vendor
  */
 
 header('Content-Type: application/json; charset=utf-8');

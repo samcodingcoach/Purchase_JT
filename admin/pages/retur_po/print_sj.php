@@ -271,7 +271,7 @@ $nomorSj = !empty($retur['nomor_sj_retur']) ? $retur['nomor_sj_retur'] : ('SJ-RE
     </div>
 
     <div class="p-2 mb-3 bg-light border rounded" style="font-size: 0.83rem;">
-        <strong>Catatan Pengiriman:</strong> Harap diperiksa kondisi fisik barang retur sesuai rincian di bawah ini. Dokumen ini sah sebagai tanda terima serah terima fisik barang rusak/cacat yang dikembalikan ke pihak Vendor Rekanan.
+        <strong>Catatan Pengiriman:</strong> Harap diperiksa kondisi fisik barang retur sesuai rincian di bawah ini. Dokumen ini sah sebagai tanda terima serah terima fisik barang rusak/cacat yang dikembalikan ke pihak Vendor.
     </div>
 
     <!-- TABEL BARANG YANG DIRETUR -->
