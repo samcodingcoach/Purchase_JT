@@ -13,27 +13,50 @@ $db_pass = '1234';
 $db_name = 'jaya_teknis';
 $db_port = 3306;
 
+if (!function_exists('applyAppTimezone')) {
+    function applyAppTimezone(mysqli $db): void {
+        $tz = 'Asia/Makassar';
+        try {
+            $res = $db->query("SELECT timezone FROM profile LIMIT 1");
+            if ($res && ($row = $res->fetch_assoc()) && !empty($row['timezone'])) {
+                $tz = $row['timezone'];
+            }
+        } catch (\Throwable $e) {
+            // Fallback
+        }
+
+        try {
+            @date_default_timezone_set($tz);
+            $dt = new DateTime('now', new DateTimeZone($tz));
+            $offset = $dt->format('P');
+            $db->query("SET time_zone = '" . $db->real_escape_string($offset) . "'");
+        } catch (\Throwable $e) {
+            $db->query("SET time_zone = '+08:00'");
+        }
+    }
+}
+
 try {
     $conn = new mysqli($db_host, $db_user, $db_pass, $db_name, $db_port);
     $conn->set_charset("utf8mb4");
-    $conn->query("SET time_zone = '+08:00'");
+    applyAppTimezone($conn);
 } catch (mysqli_sql_exception $e) {
     // Coba fallback jika nama database di server adalah jaya_teknik
     try {
         $conn = new mysqli($db_host, $db_user, $db_pass, 'jaya_teknik', $db_port);
         $conn->set_charset("utf8mb4");
-        $conn->query("SET time_zone = '+08:00'");
+        applyAppTimezone($conn);
     } catch (mysqli_sql_exception $e2) {
         // Coba fallback user root tanpa password jika default XAMPP aktif untuk kemudahan testing
         try {
             $conn = new mysqli($db_host, 'root', '', 'jaya_teknis', $db_port);
             $conn->set_charset("utf8mb4");
-            $conn->query("SET time_zone = '+08:00'");
+            applyAppTimezone($conn);
         } catch (mysqli_sql_exception $e3) {
             try {
                 $conn = new mysqli($db_host, 'root', '', 'jaya_teknik', $db_port);
                 $conn->set_charset("utf8mb4");
-                $conn->query("SET time_zone = '+08:00'");
+                applyAppTimezone($conn);
             } catch (mysqli_sql_exception $e4) {
                 error_log("Database Connection Error: " . $e->getMessage());
                 if (basename($_SERVER['PHP_SELF']) === 'koneksi.php' || (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], '/api/') !== false)) {
@@ -51,3 +74,4 @@ try {
         }
     }
 }
+

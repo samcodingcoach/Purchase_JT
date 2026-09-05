@@ -43,6 +43,10 @@ if ($method === 'POST' || $method === 'PUT') {
     $npwp = trim($input['npwp'] ?? '');
     $klu = trim($input['KLU'] ?? '');
     $nitku = trim($input['NITKU'] ?? '');
+    $timezone = trim($input['timezone'] ?? 'Asia/Makassar');
+    if (empty($timezone) || !in_array($timezone, DateTimeZone::listIdentifiers())) {
+        $timezone = 'Asia/Makassar';
+    }
     $pajak12 = isset($input['pajak12']) ? (int)$input['pajak12'] : 1;
     $picture = trim($input['picture'] ?? '');
 
@@ -57,17 +61,20 @@ if ($method === 'POST' || $method === 'PUT') {
         $idPerusahaan = $row['id_perusahaan'];
         
         $stmt = $conn->prepare("UPDATE profile SET nama = ?, telepon1 = ?, whatsapp = ?, email = ?, alamat = ?, alamat_gps = ?, 
-                                kota = ?, provinsi = ?, npwp = ?, KLU = ?, NITKU = ?, pajak12 = ?, picture = ? 
+                                kota = ?, provinsi = ?, npwp = ?, KLU = ?, NITKU = ?, timezone = ?, pajak12 = ?, picture = ? 
                                 WHERE id_perusahaan = ?");
-        $stmt->bind_param("sssssssssssisi", $nama, $telepon1, $whatsapp, $email, $alamat, $alamatGps, $kota, $provinsi, $npwp, $klu, $nitku, $pajak12, $picture, $idPerusahaan);
+        $stmt->bind_param("ssssssssssssisi", $nama, $telepon1, $whatsapp, $email, $alamat, $alamatGps, $kota, $provinsi, $npwp, $klu, $nitku, $timezone, $pajak12, $picture, $idPerusahaan);
     } else {
-        $stmt = $conn->prepare("INSERT INTO profile (nama, telepon1, whatsapp, email, alamat, alamat_gps, kota, provinsi, npwp, KLU, NITKU, pajak12, picture) 
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("sssssssssssis", $nama, $telepon1, $whatsapp, $email, $alamat, $alamatGps, $kota, $provinsi, $npwp, $klu, $nitku, $pajak12, $picture);
+        $stmt = $conn->prepare("INSERT INTO profile (nama, telepon1, whatsapp, email, alamat, alamat_gps, kota, provinsi, npwp, KLU, NITKU, timezone, pajak12, picture) 
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssssssssssssis", $nama, $telepon1, $whatsapp, $email, $alamat, $alamatGps, $kota, $provinsi, $npwp, $klu, $nitku, $timezone, $pajak12, $picture);
     }
 
     if ($stmt->execute()) {
         $stmt->close();
+        if (function_exists('applyAppTimezone')) {
+            applyAppTimezone($conn);
+        }
         jsonResponse(true, 'Profil perusahaan berhasil diperbarui.', [
             'profile' => getCompanyProfile($conn)
         ], 200);

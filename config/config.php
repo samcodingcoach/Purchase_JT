@@ -59,6 +59,10 @@ function getCompanyProfile(?mysqli $dbConn = null): array {
         'kota' => '',
         'provinsi' => '',
         'npwp' => '',
+        'KLU' => '',
+        'NITKU' => '',
+        'timezone' => 'Asia/Makassar',
+        'pajak12' => 1,
         'picture' => ''
     ];
     

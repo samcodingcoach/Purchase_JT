@@ -203,3 +203,4 @@ async function handleSaveCompanyProfile(e) {
 </script>
 
 <?php require_once __DIR__ . '/../../components/footer.php'; ?>
+
