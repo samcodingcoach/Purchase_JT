@@ -2,20 +2,31 @@
 /**
  * Halaman Cetak Surat Penerimaan Barang (Receiving Report untuk Vendor)
  * Path: admin/pages/receiving/print.php
- * Format: Siap Print / PDF resmi perusahaan
+ * Desain: 100% Sesuai Template Standar Resmi Perusahaan dengan Data Profil Dinamis
  */
 
+require_once __DIR__ . '/../../../config/config.php';
 require_once __DIR__ . '/../../../config/koneksi.php';
 require_once __DIR__ . '/../../../config/session.php';
 
 $user = requireAuth([ROLE_ADMIN, ROLE_LOGISTIK, ROLE_PURCHASING, ROLE_MANAGER]);
 $idRcv = isset($_GET['id']) && is_numeric($_GET['id']) ? (int)$_GET['id'] : 0;
+$useKop = !isset($_GET['kop']) || (int)$_GET['kop'] === 1;
 
 if ($idRcv <= 0) {
     die("ID Penerimaan Barang tidak valid.");
 }
 
-// Ambil Data Header
+// Ambil Data Profil Perusahaan
+$profile = getCompanyProfile($conn);
+$companyName = !empty($profile['nama']) ? $profile['nama'] : 'PT Jaya Teknis Indonesia';
+$companyAddr = !empty($profile['alamat']) ? $profile['alamat'] : 'Jl. Prabukan Utara No. 88, Kawasan Industri Deltamas - Cikarang';
+$companyCity = trim((!empty($profile['kota']) ? $profile['kota'] : '') . (!empty($profile['provinsi']) ? ', ' . $profile['provinsi'] : ''));
+$companyPhone = !empty($profile['telepon1']) ? $profile['telepon1'] : (!empty($profile['whatsapp']) ? $profile['whatsapp'] : '(021) 555-6822');
+$companyEmail = !empty($profile['email']) ? $profile['email'] : 'logistik@jayateknis.co.id';
+$companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
+
+// Ambil Data Header Receiving
 $stmt = $conn->prepare("SELECT ro.id_rcv, ro.nomor_rcv, ro.nomor_sj, ro.tanggal_rcv, ro.tanggal_diterima,
                                ro.file_sj, ro.keterangan as catatan_rcv, ro.status as status_rcv,
                                ro.print, ro.print_date,
@@ -56,6 +67,30 @@ $stmtItems->bind_param("ii", $idPo, $idRcv);
 $stmtItems->execute();
 $items = $stmtItems->get_result()->fetch_all(MYSQLI_ASSOC);
 $stmtItems->close();
+
+function formatTanggalIndo($tanggal) {
+    if (!$tanggal || $tanggal === '0000-00-00') return '-';
+    $bulan = [
+        1 => 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    $time = strtotime($tanggal);
+    $d = date('j', $time);
+    $m = (int)date('n', $time);
+    $y = date('Y', $time);
+    return $d . ' ' . ($bulan[$m] ?? date('F', $time)) . ' ' . $y;
+}
+
+$tglTerima = $rcv['tanggal_diterima'] ?: $rcv['tanggal_rcv'];
+$tglIndo = formatTanggalIndo($tglTerima);
+$printTimestamp = date('d/m/Y H:i');
+
+$totalQtyPo = 0;
+$totalQtyRcv = 0;
+foreach ($items as $it) {
+    $totalQtyPo += (float)($it['qty_po'] ?? 0);
+    $totalQtyRcv += (float)($it['qty_diterima'] ?? 0);
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -67,209 +102,509 @@ $stmtItems->close();
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: #212529;
-            background-color: #f8f9fa;
+        @page {
+            size: A4 portrait;
+            margin: <?= $useKop ? '10mm 12mm 10mm 12mm' : '30mm 12mm 10mm 12mm' ?>;
         }
-        .print-container {
-            max-width: 900px;
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            color: #000000;
+            background-color: #f0f2f5;
+            font-size: 12px;
+            line-height: 1.4;
+            margin: 0;
+            padding: 0;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .print-wrapper {
+            max-width: 860px;
             margin: 20px auto;
             background: #ffffff;
-            padding: 35px 40px;
-            box-shadow: 0 4px 18px rgba(0,0,0,0.08);
-            border-radius: 6px;
+            padding: <?= $useKop ? '28px 36px 30px 36px' : '15px 36px 30px 36px' ?>;
+            box-shadow: 0 4px 22px rgba(0,0,0,0.1);
+            border-radius: 4px;
+            box-sizing: border-box;
         }
-        .header-kop {
-            border-bottom: 2.5px double #333333;
-            padding-bottom: 12px;
-            margin-bottom: 20px;
+
+        /* HEADER KOP SURAT */
+        .kop-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 8px;
+        }
+        .kop-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
         }
         .company-title {
-            font-size: 1.4rem;
-            font-weight: 800;
-            color: #0b4d75;
-            letter-spacing: 0.5px;
-            margin-bottom: 2px;
+            font-size: 19px;
+            font-weight: 900;
+            color: #000000;
+            letter-spacing: 0.3px;
+            line-height: 1.15;
+            margin-bottom: 3px;
+            text-transform: uppercase;
         }
         .company-sub {
-            font-size: 0.82rem;
-            color: #555;
-            line-height: 1.35;
-        }
-        .doc-title {
-            text-align: center;
-            font-size: 1.15rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin: 15px 0 20px 0;
-            text-decoration: underline;
-            color: #111;
-        }
-        .info-table td {
-            padding: 3px 6px;
-            font-size: 0.86rem;
-            vertical-align: top;
-        }
-        .info-table td.label-col {
+            font-size: 11px;
             font-weight: 600;
-            color: #444;
-            width: 140px;
+            color: #222222;
+            line-height: 1.3;
         }
-        .item-table {
+        .company-addr {
+            font-size: 11px;
+            color: #333333;
+            line-height: 1.3;
+        }
+        .company-contacts {
+            font-size: 10.5px;
+            color: #111111;
+            margin-top: 4px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .company-contacts i {
+            font-size: 10px;
+            margin-right: 3px;
+        }
+
+        .tagline-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-left: 15px;
+        }
+        .tagline-divider {
+            width: 1.5px;
+            height: 52px;
+            background-color: #000000;
+        }
+        .tagline-text {
+            font-size: 11.5px;
+            font-weight: 800;
+            font-style: italic;
+            line-height: 1.15;
+            color: #111111;
+            letter-spacing: 0.2px;
+            text-align: left;
+        }
+
+        .header-divider-line {
+            width: 100%;
+            height: 1px;
+            background-color: #222222;
+            margin-top: 2px;
+            margin-bottom: 15px;
+        }
+
+        /* SECTION JUDUL & KOTAK DOKUMEN */
+        .title-box-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .title-area {
+            flex-grow: 1;
+            text-align: left;
+        }
+        .doc-title-main {
+            font-size: 21px;
+            font-weight: 900;
+            letter-spacing: 0.8px;
+            color: #000000;
+            line-height: 1.1;
+            text-transform: uppercase;
+        }
+        .doc-title-sub {
+            display: flex;
+            align-items: center;
+            margin-top: 5px;
+            width: 85%;
+        }
+        .doc-title-sub .line-side {
+            flex-grow: 1;
+            height: 1px;
+            background-color: #333333;
+        }
+        .doc-title-sub .sub-text {
+            padding: 0 12px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 4px;
+            color: #111111;
+        }
+
+        /* KOTAK NO DOKUMEN & TANGGAL */
+        .doc-meta-box {
+            width: 180px;
+            border: 1.5px solid #000000;
+            text-align: center;
+            background-color: #ffffff;
+            flex-shrink: 0;
+        }
+        .doc-meta-box .box-row-lbl {
+            font-size: 10.5px;
+            color: #333333;
+            padding: 3px 4px;
+            background-color: #ffffff;
+        }
+        .doc-meta-box .box-row-val {
+            font-size: 12.5px;
+            font-weight: 800;
+            padding: 2px 4px 4px 4px;
+            color: #000000;
+        }
+        .doc-meta-box .box-divider {
+            border-top: 1px solid #000000;
+        }
+
+        /* METADATA 2 KOLOM */
+        .info-grid {
+            display: flex;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        .info-col-left {
+            width: 50%;
+            padding-right: 15px;
+        }
+        .info-col-right {
+            width: 50%;
+            padding-left: 15px;
+            border-left: 1px solid #d0d0d0;
+        }
+        .table-meta-details {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.85rem;
-            margin-top: 15px;
-            margin-bottom: 20px;
         }
-        .item-table th {
-            background-color: #f1f4f8;
-            border: 1px solid #c2c9d1;
-            padding: 7px 8px;
-            font-weight: 700;
+        .table-meta-details td {
+            padding: 3px 0;
+            font-size: 11.5px;
+            vertical-align: top;
+        }
+        .table-meta-details td.lbl {
+            width: 135px;
+            font-weight: 600;
+            color: #111111;
+            white-space: nowrap;
+        }
+        .table-meta-details td.colon {
+            width: 12px;
             text-align: center;
-            font-size: 0.82rem;
+            font-weight: 600;
         }
-        .item-table td {
-            border: 1px solid #c2c9d1;
-            padding: 6px 8px;
+        .table-meta-details td.val {
+            color: #000000;
+        }
+
+        /* TABEL BARANG */
+        .table-items-main {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11.5px;
+            margin-bottom: 24px;
+        }
+        .table-items-main th {
+            background-color: #d9d9d9 !important;
+            border: 1px solid #555555;
+            padding: 7px 4px;
+            font-weight: 800;
+            text-align: center;
             vertical-align: middle;
+            font-size: 11.5px;
+            color: #000000;
+            text-transform: uppercase;
         }
-        .signature-box {
-            margin-top: 30px;
+        .table-items-main td {
+            border: 1px solid #555555;
+            padding: 6px 6px;
+            vertical-align: middle;
+            color: #000000;
+        }
+        .table-items-main .total-row td {
+            background-color: #e5e7eb !important;
+            font-weight: 800;
+            border: 1px solid #555555;
+            padding: 7px 6px;
+        }
+
+        /* KOTAK CATATAN PENERIMAAN */
+        .catatan-penerimaan-section {
+            margin-top: -12px;
+            margin-bottom: 22px;
+        }
+        .catatan-title {
+            font-size: 11px;
+            font-weight: 800;
+            color: #000000;
+            letter-spacing: 0.3px;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+        .catatan-box {
+            border: 1px solid #000000;
+            border-radius: 4px;
+            min-height: 52px;
+            height: 52px;
+            padding: 6px 10px;
+            font-size: 11px;
+            color: #111111;
+            background-color: #ffffff;
+            box-sizing: border-box;
+        }
+
+        /* TANDA TANGAN (3 KOLOM) */
+        .sig-section {
+            margin-top: 15px;
+            margin-bottom: 26px;
             page-break-inside: avoid;
         }
-        .signature-title {
-            font-size: 0.84rem;
-            font-weight: 600;
-            margin-bottom: 60px;
+        .sig-col {
+            text-align: center;
         }
-        .signature-line {
-            font-size: 0.85rem;
-            font-weight: 700;
-            border-top: 1px solid #333;
+        .sig-header-main {
+            font-size: 12px;
+            font-weight: 800;
+            color: #000000;
+            margin-bottom: 2px;
+        }
+        .sig-header-sub {
+            font-size: 11px;
+            color: #222222;
+            margin-bottom: 55px;
+        }
+        .sig-line-box {
             display: inline-block;
-            min-width: 170px;
-            padding-top: 4px;
+            min-width: 165px;
+            border-bottom: 1px solid #000000;
+            padding-bottom: 3px;
         }
+        .sig-person-name {
+            font-size: 11.5px;
+            font-weight: 800;
+            color: #000000;
+        }
+        .sig-footer-note {
+            font-size: 10px;
+            color: #333333;
+            margin-top: 4px;
+        }
+
+        /* FOOTER BAWAH */
+        .footer-line-container {
+            border-top: 1px solid #000000;
+            padding-top: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            font-size: 10px;
+            color: #444444;
+        }
+        .footer-motto {
+            font-style: italic;
+            font-weight: 600;
+            color: #555555;
+            font-size: 11px;
+        }
+        .footer-right {
+            text-align: right;
+            line-height: 1.35;
+        }
+
+        /* PRINT MEDIA RULES */
         @media print {
             body {
-                background: #ffffff;
+                background: #ffffff !important;
             }
             .no-print {
                 display: none !important;
             }
-            .print-container {
-                box-shadow: none;
-                margin: 0;
-                padding: 10px 0;
-                max-width: 100%;
+            .print-wrapper {
+                box-shadow: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                max-width: 100% !important;
+                border-radius: 0 !important;
+            }
+            .table-items-main th {
+                background-color: #d9d9d9 !important;
+            }
+            .table-items-main .total-row td {
+                background-color: #e5e7eb !important;
             }
         }
     </style>
 </head>
 <body>
 
-<!-- Toolbar Atas (Tidak ikut dicetak) -->
-<div class="container-fluid no-print py-2 bg-dark text-white mb-3">
-    <div class="container d-flex justify-content-between align-items-center">
-        <div class="fw-bold">
-            <i class="bi bi-printer me-2 text-info"></i> Cetak Surat Penerimaan Barang (SPB)
+<!-- TOOLBAR KONTROL CETAK (NO PRINT) -->
+<div class="container-fluid no-print py-2 bg-dark text-white mb-3 shadow-sm">
+    <div class="container d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-3">
+            <span class="fw-bold fs-6">
+                <i class="bi bi-printer text-info me-1"></i> Cetak Surat Penerimaan Barang (SPB)
+            </span>
+            <span class="badge bg-secondary font-monospace"><?= htmlspecialchars($rcv['nomor_rcv']) ?></span>
         </div>
-        <div class="d-flex gap-2">
+        
+        <div class="d-flex align-items-center gap-2">
+            <!-- Pilihan Switch Kop Surat -->
+            <div class="btn-group btn-group-sm me-2" role="group" aria-label="Format Kop Surat">
+                <a href="?id=<?= $idRcv ?>&kop=1" class="btn <?= $useKop ? 'btn-light fw-bold text-dark' : 'btn-outline-light' ?>">
+                    <i class="bi bi-file-earmark-richtext me-1"></i> Dengan Kop
+                </a>
+                <a href="?id=<?= $idRcv ?>&kop=0" class="btn <?= !$useKop ? 'btn-light fw-bold text-dark' : 'btn-outline-light' ?>">
+                    <i class="bi bi-file-earmark me-1"></i> Tanpa Kop
+                </a>
+            </div>
+
             <a href="<?= BASE_URL ?>/admin/pages/receiving/index.php" class="btn btn-outline-light btn-sm px-3">
-                <i class="bi bi-arrow-left me-1"></i> Kembali ke Daftar
+                <i class="bi bi-arrow-left me-1"></i> Kembali
             </a>
-            <button type="button" class="btn btn-primary btn-sm px-4 fw-bold" onclick="doPrintReceiving()">
+            
+            <button type="button" class="btn btn-primary btn-sm px-4 fw-bold shadow-sm" onclick="doPrintReceiving()">
                 <i class="bi bi-printer-fill me-1"></i> Cetak Dokumen (Print / PDF)
             </button>
         </div>
     </div>
 </div>
 
-<div class="print-container">
-    <!-- KOP PERUSAHAAN -->
-    <div class="header-kop d-flex justify-content-between align-items-center">
-        <div>
-            <div class="company-title">PT JAYA TEKNIS INDONESIA</div>
-            <div class="company-sub">
-                Marine &amp; Industrial Engineering Services, Procurement &amp; Logistics<br>
-                Jl. Pelabuhan Utama No. 88, Kawasan Industri Dok Maritim &bull; Telp: (021) 555-8822 &bull; Email: logistics@jayateknis.co.id
+<div class="print-wrapper">
+    
+    <?php if ($useKop): ?>
+    <!-- KOP SURAT (SESUAI PROFIL PERUSAHAAN) -->
+    <div class="kop-container">
+        <div class="kop-left">
+            <!-- LOGO: JIKA ADA GAMBAR PROFIL PAKAI GAMBAR, JIKA TIDAK PAKAI SVG KUBUS -->
+            <?php if (!empty($companyLogo) && file_exists(__DIR__ . '/../../../uploads/profile/' . $companyLogo)): ?>
+                <img src="<?= BASE_URL ?>/uploads/profile/<?= htmlspecialchars($companyLogo) ?>" alt="Logo" style="width: 54px; height: 54px; object-fit: contain; flex-shrink: 0;">
+            <?php else: ?>
+                <svg width="54" height="54" viewBox="0 0 100 100" style="flex-shrink: 0;">
+                    <polygon points="50,4 92,27 92,73 50,96 8,73 8,27" fill="none" stroke="#000" stroke-width="8" stroke-linejoin="round"/>
+                    <polyline points="8,27 50,50 92,27" fill="none" stroke="#000" stroke-width="8" stroke-linejoin="round"/>
+                    <line x1="50" y1="50" x2="50" y2="96" stroke="#000" stroke-width="8"/>
+                    <polygon points="50,22 74,35 50,48 26,35" fill="#000"/>
+                    <polygon points="26,41 46,51 46,76 26,65" fill="#000"/>
+                    <polygon points="74,41 54,51 54,76 74,65" fill="#000"/>
+                </svg>
+            <?php endif; ?>
+
+            <div>
+                <div class="company-title"><?= htmlspecialchars($companyName) ?></div>
+                <div class="company-addr"><?= htmlspecialchars($companyAddr) ?><?= $companyCity ? ' - ' . htmlspecialchars($companyCity) : '' ?></div>
+                <div class="company-contacts">
+                    <span><i class="bi bi-telephone-fill"></i> <?= htmlspecialchars($companyPhone) ?></span>
+                    <span><i class="bi bi-envelope-fill"></i> <?= htmlspecialchars($companyEmail) ?></span>
+                    <span><i class="bi bi-globe"></i> www.jayateknis.co.id</span>
+                </div>
             </div>
         </div>
-        <div class="text-end">
-            <div class="border border-dark px-3 py-1 text-center font-monospace fw-bold" style="font-size: 0.85rem;">
-                DOKUMEN LOGISTIK
-            </div>
-            <div class="small text-muted mt-1" style="font-size: 0.75rem;">
-                Dicetak: <?= date('d/m/Y H:i') ?>
+
+        <div class="tagline-container">
+            <div class="tagline-divider"></div>
+            <div class="tagline-text">
+                SOLUSI<br>LOGISTIK<br>UNTUK<br>INDUSTRI
             </div>
         </div>
     </div>
+    
+    <div class="header-divider-line"></div>
+    <?php else: ?>
+    <!-- MODE CETAK TANPA KOP (DIKOSONGKAN UNTUK KERTAS BERKOP RESMI) -->
+    <div class="no-print alert alert-secondary py-1 px-3 small text-center mb-3">
+        <i class="bi bi-info-circle me-1"></i> <strong>Mode Cetak Tanpa Kop Surat Aktif</strong>: Bagian atas dikosongkan untuk dicetak pada kertas berkop resmi perusahaan.
+    </div>
+    <?php endif; ?>
 
-    <!-- JUDUL DOKUMEN -->
-    <div class="doc-title">
-        SURAT PENERIMAAN BARANG (RECEIVING REPORT)
+    <!-- JUDUL DOKUMEN & KOTAK NOMOR DOKUMEN -->
+    <div class="title-box-row">
+        <div class="title-area">
+            <div class="doc-title-main">SURAT PENERIMAAN BARANG</div>
+            <div class="doc-title-sub">
+                <span class="line-side"></span>
+                <span class="sub-text">RECEIVING &nbsp; REPORT</span>
+                <span class="line-side"></span>
+            </div>
+        </div>
+
+        <div class="doc-meta-box">
+            <div class="box-row-lbl">No. Dokumen</div>
+            <div class="box-row-val font-monospace"><?= htmlspecialchars($rcv['nomor_rcv']) ?></div>
+            <div class="box-divider"></div>
+            <div class="box-row-lbl">Tanggal</div>
+            <div class="box-row-val"><?= $tglIndo ?></div>
+        </div>
     </div>
 
-    <!-- INFORMASI UTAMA PENERIMAAN -->
-    <div class="row g-2 mb-3">
-        <div class="col-6">
-            <table class="info-table">
+    <!-- METADATA 2 KOLOM -->
+    <div class="info-grid">
+        <!-- Kolom Kiri -->
+        <div class="info-col-left">
+            <table class="table-meta-details">
                 <tr>
-                    <td class="label-col">No. Receiving (RCV)</td>
-                    <td>: <strong class="font-monospace text-primary"><?= htmlspecialchars($rcv['nomor_rcv']) ?></strong></td>
+                    <td class="lbl">No. Purchase Order</td>
+                    <td class="colon">:</td>
+                    <td class="val font-monospace fw-bold"><?= htmlspecialchars($rcv['nomor_po'] ?: '-') ?></td>
                 </tr>
                 <tr>
-                    <td class="label-col">No. Purchase Order</td>
-                    <td>: <span class="font-monospace fw-bold"><?= htmlspecialchars($rcv['nomor_po'] ?: '-') ?></span></td>
+                    <td class="lbl">No. Surat Jalan</td>
+                    <td class="colon">:</td>
+                    <td class="val font-monospace"><?= htmlspecialchars($rcv['nomor_sj'] ?: '-') ?></td>
                 </tr>
                 <tr>
-                    <td class="label-col">No. Surat Jalan Vendor</td>
-                    <td>: <span class="font-monospace fw-bold"><?= htmlspecialchars($rcv['nomor_sj'] ?: '-') ?></span></td>
+                    <td class="lbl">Vendor / Pengirim</td>
+                    <td class="colon">:</td>
+                    <td class="val fw-bold"><?= htmlspecialchars($rcv['nama_vendor'] ?: '-') ?></td>
                 </tr>
                 <tr>
-                    <td class="label-col">Tanggal Penerimaan</td>
-                    <td>: <?= $rcv['tanggal_diterima'] ? date('d F Y', strtotime($rcv['tanggal_diterima'])) : date('d F Y', strtotime($rcv['tanggal_rcv'])) ?></td>
+                    <td class="lbl">Alamat Vendor</td>
+                    <td class="colon">:</td>
+                    <td class="val"><?= nl2br(htmlspecialchars($rcv['alamat_vendor'] ?: '-')) ?></td>
                 </tr>
             </table>
         </div>
-        <div class="col-6">
-            <table class="info-table">
+
+        <!-- Kolom Kanan -->
+        <div class="info-col-right">
+            <table class="table-meta-details">
                 <tr>
-                    <td class="label-col">Vendor Pengirim</td>
-                    <td>: <strong><?= htmlspecialchars($rcv['nama_vendor'] ?: '-') ?></strong></td>
+                    <td class="lbl">Lokasi Tujuan</td>
+                    <td class="colon">:</td>
+                    <td class="val"><?= htmlspecialchars($rcv['nama_site'] ?: '-') ?> (<?= htmlspecialchars($rcv['kode_site'] ?: 'SIT03') ?>)</td>
                 </tr>
                 <tr>
-                    <td class="label-col">Site / Lokasi Tujuan</td>
-                    <td>: <?= htmlspecialchars($rcv['nama_site'] ?: '-') ?> (<?= htmlspecialchars($rcv['kode_site'] ?: 'SITE') ?>)</td>
+                    <td class="lbl">Petugas Logistik</td>
+                    <td class="colon">:</td>
+                    <td class="val fw-bold"><?= htmlspecialchars($rcv['nama_penerima'] ?: 'Agus Logistik') ?></td>
                 </tr>
                 <tr>
-                    <td class="label-col">Petugas Logistik</td>
-                    <td>: <?= htmlspecialchars($rcv['nama_penerima'] ?: 'Petugas Logistik') ?></td>
-                </tr>
-                <tr>
-                    <td class="label-col">Catatan Penerimaan</td>
-                    <td>: <?= htmlspecialchars($rcv['catatan_rcv'] ?: '-') ?></td>
+                    <td class="lbl">Tanggal Penerimaan</td>
+                    <td class="colon">:</td>
+                    <td class="val"><?= $tglIndo ?></td>
                 </tr>
             </table>
         </div>
     </div>
 
-    <!-- TABEL RINCIAN FISIK BARANG (MURNI FISIK & QC, TANPA HARGA) -->
-    <table class="item-table">
+    <!-- TABEL DAFTAR BARANG / MATERIAL -->
+    <table class="table-items-main">
         <thead>
             <tr>
-                <th style="width: 35px;">No</th>
-                <th style="width: 100px;">Kode Barang</th>
-                <th>Deskripsi Barang / Material</th>
-                <th style="width: 75px;">Qty PO</th>
-                <th style="width: 85px;">Qty Diterima</th>
-                <th style="width: 65px;">Satuan</th>
-                <th style="width: 95px;">Status QC</th>
-                <th style="width: 160px;">Keterangan / Kondisi Fisik</th>
+                <th style="width: 40px;">NO.</th>
+                <th style="width: 85px;">KODE</th>
+                <th>NM BARANG</th>
+                <th style="width: 60px;">PO</th>
+                <th style="width: 60px;">RCV</th>
+                <th style="width: 75px;">SATUAN</th>
+                <th style="width: 60px;">QC</th>
+                <th style="width: 185px;">KET</th>
             </tr>
         </thead>
         <tbody>
@@ -281,61 +616,98 @@ $stmtItems->close();
                 <?php foreach ($items as $idx => $it): ?>
                     <?php 
                         $statusQc = (int)($it['status_qc'] ?? 1);
-                        $qcText = ($statusQc === 1) ? 'BAIK (Passed)' : 'CACAT / RUSAK';
-                        $qcClass = ($statusQc === 1) ? 'text-success fw-bold' : 'text-danger fw-bold';
+                        $qcText = ($statusQc === 1) ? 'BAIK' : 'CACAT';
+                        $qtyPoVal = (float)$it['qty_po'];
+                        $qtyRcvVal = (float)$it['qty_diterima'];
+                        $ketText = !empty($it['keterangan_item']) ? $it['keterangan_item'] : '-';
                     ?>
                     <tr>
-                        <td class="text-center font-monospace"><?= $idx + 1 ?></td>
-                        <td class="font-monospace text-center small"><?= htmlspecialchars($it['kode_barang'] ?: '-') ?></td>
-                        <td>
-                            <strong><?= htmlspecialchars($it['nama_barang'] ?: '') ?></strong>
-                            <?php if ($it['nama_kategori'] || $it['nama_merk']): ?>
-                                <div class="text-muted small" style="font-size: 0.75rem;">
-                                    <?= htmlspecialchars($it['nama_kategori'] ?: '') ?> <?= $it['nama_merk'] ? ' &bull; ' . htmlspecialchars($it['nama_merk']) : '' ?>
-                                </div>
-                            <?php endif; ?>
-                        </td>
-                        <td class="text-center font-monospace"><?= (float)$it['qty_po'] ?></td>
-                        <td class="text-center font-monospace fw-bold fs-6"><?= (float)$it['qty_diterima'] ?></td>
-                        <td class="text-center small"><?= htmlspecialchars($it['satuan'] ?: 'PCS') ?></td>
-                        <td class="text-center small <?= $qcClass ?>"><?= $qcText ?></td>
-                        <td class="small"><?= htmlspecialchars($it['keterangan_item'] ?: '-') ?></td>
+                        <td class="text-center"><?= $idx + 1 ?></td>
+                        <td class="text-center font-monospace"><?= htmlspecialchars($it['kode_barang'] ?: '-') ?></td>
+                        <td><?= htmlspecialchars($it['nama_barang'] ?: '') ?></td>
+                        <td class="text-center font-monospace"><?= $qtyPoVal ?></td>
+                        <td class="text-center font-monospace fw-bold"><?= $qtyRcvVal ?></td>
+                        <td class="text-center"><?= strtoupper(htmlspecialchars($it['satuan'] ?: 'PCS')) ?></td>
+                        <td class="text-center fw-bold"><?= $qcText ?></td>
+                        <td><?= htmlspecialchars($ketText) ?></td>
                     </tr>
                 <?php endforeach; ?>
             <?php endif; ?>
+            
+            <!-- BARIS TOTAL -->
+            <tr class="total-row">
+                <td colspan="3" class="text-center fw-bold">TOTAL</td>
+                <td class="text-center font-monospace fw-bold"><?= $totalQtyPo ?></td>
+                <td class="text-center font-monospace fw-bold"><?= $totalQtyRcv ?></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
         </tbody>
     </table>
 
-    <!-- LEMBAR PENGESAHAN & TANDA TANGAN -->
-    <div class="signature-box">
-        <div class="row text-center">
-            <div class="col-4">
-                <div class="signature-title">Diserahkan Oleh,<br><span class="text-muted fw-normal">(Vendor / Ekspedisi)</span></div>
-                <div class="signature-line">
-                    (&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)
+    <!-- KOTAK CATATAN PENERIMAAN (UNTUK TULISAN TANGAN / KETERANGAN RESMI) -->
+    <div class="catatan-penerimaan-section">
+        <div class="catatan-title">CATATAN PENERIMAAN :</div>
+        <div class="catatan-box">
+            <?= !empty($rcv['catatan_rcv']) ? nl2br(htmlspecialchars($rcv['catatan_rcv'])) : '' ?>
+        </div>
+    </div>
+
+    <!-- LEMBAR PENGESAHAN / TANDA TANGAN (3 KOLOM) -->
+    <div class="sig-section">
+        <div class="row">
+            <!-- 1. Diserahkan Oleh -->
+            <div class="col-4 sig-col">
+                <div class="sig-header-main">Diserahkan Oleh</div>
+                <div class="sig-header-sub">(Vendor / Ekspedisi)</div>
+                <div class="sig-line-box">
+                    ( &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; )
                 </div>
+                <div class="sig-footer-note">Nama &amp; Tanda Tangan</div>
             </div>
-            <div class="col-4">
-                <div class="signature-title">Diterima Oleh,<br><span class="text-muted fw-normal">(Petugas Logistik)</span></div>
-                <div class="signature-line">
-                    ( <?= htmlspecialchars($rcv['nama_penerima'] ?: 'Petugas Logistik') ?> )
+
+            <!-- 2. Diterima Oleh -->
+            <div class="col-4 sig-col">
+                <div class="sig-header-main">Diterima Oleh</div>
+                <div class="sig-header-sub">(Petugas Logistik)</div>
+                <div class="sig-line-box">
+                    ( &nbsp; <span class="sig-person-name"><?= htmlspecialchars($rcv['nama_penerima'] ?: 'Agus Logistik') ?></span> &nbsp; )
                 </div>
+                <div class="sig-footer-note">Nama &amp; Tanda Tangan</div>
             </div>
-            <div class="col-4">
-                <div class="signature-title">Mengetahui,<br><span class="text-muted fw-normal">(Kepala Gudang / Site Manager)</span></div>
-                <div class="signature-line">
-                    (&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)
+
+            <!-- 3. Mengetahui -->
+            <div class="col-4 sig-col">
+                <div class="sig-header-main">Mengetahui</div>
+                <div class="sig-header-sub">(Kepala Gudang / Site Manager)</div>
+                <div class="sig-line-box">
+                    ( &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; )
                 </div>
+                <div class="sig-footer-note">Nama &amp; Tanda Tangan</div>
             </div>
         </div>
     </div>
+
+    <!-- FOOTER BAWAH -->
+    <div class="footer-line-container">
+        <div class="footer-motto">
+            Good Material. Stronger Tomorrow.
+        </div>
+        <div class="footer-right">
+            <div class="fw-bold">Halaman 1 dari 1</div>
+            <div>Dicetak: <?= $printTimestamp ?></div>
+            <div>Purchasing Management System - <?= htmlspecialchars($companyName) ?></div>
+        </div>
+    </div>
+
 </div>
 
 <script>
 const ID_RCV = <?= $idRcv ?>;
 
 async function doPrintReceiving() {
-    // 1. Update status print di database (kunci dokumen dari edit)
+    // 1. Update status print di database (kunci dokumen dan migrasikan stok)
     try {
         await fetch('<?= BASE_URL ?>/api/receiving/mark_print.php', {
             method: 'POST',

@@ -238,10 +238,64 @@ require_once __DIR__ . '/../../components/navbar.php';
 
             <!-- MODAL FOOTER -->
             <div class="modal-footer bg-light py-2 px-3 d-flex justify-content-between">
-                <a href="#" id="modalBtnPrint" target="_blank" class="btn btn-outline-primary btn-sm px-3 fw-semibold">
+                <button type="button" id="modalBtnPrint" class="btn btn-outline-primary btn-sm px-3 fw-semibold">
                     <i class="bi bi-printer me-1"></i> Cetak Surat Penerimaan Barang
-                </a>
+                </button>
                 <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL PILIHAN CETAK SPB (DENGAN KOP / TANPA KOP) -->
+<div class="modal fade" id="modalPrintOption" tabindex="-1" aria-labelledby="modalPrintOptionLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 460px;">
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <div class="modal-header bg-light py-3 px-4 border-bottom">
+                <h6 class="modal-title fw-bold text-dark mb-0 d-flex align-items-center gap-2" id="modalPrintOptionLabel">
+                    <i class="bi bi-printer-fill text-primary"></i> Pilihan Cetak Dokumen
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="text-center mb-3">
+                    <div class="small text-muted mb-1">Surat Penerimaan Barang (SPB)</div>
+                    <div class="fw-bold fs-6 font-monospace text-primary" id="printOptionDocNum">RCV-XXXX-XXXX</div>
+                </div>
+                <p class="text-muted small text-center mb-4">Silakan tentukan apakah Anda ingin menyertakan <strong>Kop Surat</strong> resmi perusahaan:</p>
+                
+                <div class="d-grid gap-3">
+                    <!-- Opsi 1: Dengan Kop Surat -->
+                    <button type="button" class="btn btn-outline-primary p-3 text-start d-flex align-items-center justify-content-between rounded-3 border-2" onclick="executePrint(1)">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-3 bg-primary-subtle text-primary p-2 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                                <i class="bi bi-file-earmark-richtext-fill fs-4"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold text-dark">Pakai Kop Surat</div>
+                                <div class="small text-muted" style="font-size: 0.78rem;">Sertakan logo, identitas PT Jaya Teknis, & dokumen info</div>
+                            </div>
+                        </div>
+                        <i class="bi bi-chevron-right text-muted"></i>
+                    </button>
+
+                    <!-- Opsi 2: Tanpa Kop Surat -->
+                    <button type="button" class="btn btn-outline-secondary p-3 text-start d-flex align-items-center justify-content-between rounded-3 border-2" onclick="executePrint(0)">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-3 bg-secondary-subtle text-secondary p-2 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                                <i class="bi bi-file-earmark-text fs-4"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold text-dark">Tanpa Kop Surat</div>
+                                <div class="small text-muted" style="font-size: 0.78rem;">Format kosong atas untuk cetak di kertas berkop resmi</div>
+                            </div>
+                        </div>
+                        <i class="bi bi-chevron-right text-muted"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer bg-light py-2 px-3">
+                <button type="button" class="btn btn-sm btn-secondary px-3" data-bs-dismiss="modal">Batal</button>
             </div>
         </div>
     </div>
@@ -253,9 +307,13 @@ require_once __DIR__ . '/../../components/navbar.php';
 let currentPage = 1;
 let currentLimit = 10;
 let modalDetailInstance = null;
+let modalPrintOptionInstance = null;
+let currentPrintId = 0;
+let currentPrintNomor = '';
 
 document.addEventListener('DOMContentLoaded', async () => {
     modalDetailInstance = new bootstrap.Modal(document.getElementById('modalDetailReceiving'));
+    modalPrintOptionInstance = new bootstrap.Modal(document.getElementById('modalPrintOption'));
 
     await loadSiteOptions();
 
@@ -392,9 +450,9 @@ async function loadReceivingList(page = 1) {
                             <i class="bi bi-eye-fill"></i>
                         </button>
                         <!-- Cetak Surat Penerimaan Barang -->
-                        <a href="<?= BASE_URL ?>/admin/pages/receiving/print.php?id=${item.id_rcv}" target="_blank" class="btn btn-outline-dark btn-sm px-2 py-1 shadow-xs" title="Cetak Surat Penerimaan Barang">
+                        <button type="button" class="btn btn-outline-dark btn-sm px-2 py-1 shadow-xs" onclick="openPrintModal(${item.id_rcv}, '${noRcv}')" title="Cetak Surat Penerimaan Barang">
                             <i class="bi bi-printer-fill"></i>
-                        </a>
+                        </button>
                         <!-- Unduh Surat Jalan Vendor -->
                         ${downloadSjBtn}
                         <!-- Edit Penerimaan -->
@@ -483,7 +541,7 @@ async function openDetailModal(idRcv) {
     document.getElementById('detailAlamatSite').textContent = '-';
     document.getElementById('detailCatatan').textContent = '-';
     document.getElementById('modalItemCountBadge').textContent = '0';
-    document.getElementById('modalBtnPrint').href = `<?= BASE_URL ?>/admin/pages/receiving/print.php?id=${idRcv}`;
+    document.getElementById('modalBtnPrint').onclick = () => openPrintModal(idRcv, 'RCV');
 
     document.getElementById('detailReceivingItemsBody').innerHTML = `
         <tr>
@@ -504,6 +562,7 @@ async function openDetailModal(idRcv) {
 
     document.getElementById('detailNomorReceiving').textContent = rcv.nomor_rcv || '-';
     document.getElementById('detailNomorSpb').textContent = rcv.nomor_sj || '-';
+    document.getElementById('modalBtnPrint').onclick = () => openPrintModal(idRcv, rcv.nomor_rcv || 'RCV');
     
     // Set Surat Jalan File Link
     const sjContainer = document.getElementById('detailFileSjContainer');
@@ -567,6 +626,23 @@ async function openDetailModal(idRcv) {
     });
 
     document.getElementById('detailReceivingItemsBody').innerHTML = itemsHtml;
+}
+
+// -------------------------------------------------------------
+// PILIHAN CETAK SPB (DENGAN KOP / TANPA KOP)
+// -------------------------------------------------------------
+function openPrintModal(idRcv, nomorRcv = '') {
+    currentPrintId = idRcv;
+    currentPrintNomor = nomorRcv;
+    document.getElementById('printOptionDocNum').textContent = nomorRcv || 'RCV-XXXX';
+    modalPrintOptionInstance.show();
+}
+
+function executePrint(kop = 1) {
+    if (!currentPrintId) return;
+    modalPrintOptionInstance.hide();
+    const url = `<?= BASE_URL ?>/admin/pages/receiving/print.php?id=${currentPrintId}&kop=${kop}`;
+    window.open(url, '_blank');
 }
 
 // -------------------------------------------------------------
