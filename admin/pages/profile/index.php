@@ -335,30 +335,54 @@ async function handleUploadLogo() {
     }
 
     const formData = new FormData();
-    formData.append('logo', currentSelectedLogoFile);
+    formData.append('image', currentSelectedLogoFile);
+    formData.append('type', 'company');
 
     try {
-        const response = await fetch('<?= BASE_URL ?>/api/master/profile.php?action=upload_logo', {
+        // 1. Upload file gambar ke endpoint upload API
+        const uploadRes = await fetch('<?= BASE_URL ?>/api/master/upload_image.php', {
             method: 'POST',
             body: formData,
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
-        const result = await response.json();
+        const uploadResult = await uploadRes.json();
+
+        if (!uploadResult || !uploadResult.success || !uploadResult.data) {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-cloud-arrow-up-fill me-1"></i> Upload &amp; Simpan Logo';
+            }
+            showToast(uploadResult ? uploadResult.message : 'Gagal mengunggah berkas logo.', 'danger');
+            return;
+        }
+
+        const relativeLogoPath = uploadResult.data.url || uploadResult.data.file_path;
+
+        // 2. Simpan path logo baru ke data profil perusahaan via Profile API
+        const profilePayload = {
+            nama: document.getElementById('profNama').value.trim() || 'PT Jaya Teknis',
+            picture: relativeLogoPath
+        };
+
+        const saveRes = await apiRequest('/api/master/profile.php', {
+            method: 'POST',
+            body: JSON.stringify(profilePayload)
+        });
 
         if (btn) {
             btn.disabled = false;
             btn.innerHTML = '<i class="bi bi-cloud-arrow-up-fill me-1"></i> Upload &amp; Simpan Logo';
         }
 
-        if (result && result.success) {
+        if (saveRes && saveRes.success) {
             showToast('Logo perusahaan berhasil diperbarui.', 'success');
             currentSelectedLogoFile = null;
             document.getElementById('inputLogoFile').value = '';
             if (btn) btn.classList.add('d-none');
             document.getElementById('selectedFileName').textContent = '';
-            renderLogoDisplay(result.data.picture);
+            renderLogoDisplay(relativeLogoPath);
         } else {
-            showToast(result ? result.message : 'Gagal mengunggah logo.', 'danger');
+            showToast(saveRes ? saveRes.message : 'Gagal menyimpan perubahan logo pada profil.', 'danger');
         }
     } catch (err) {
         console.error('Error uploading logo:', err);

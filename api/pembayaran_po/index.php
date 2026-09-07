@@ -43,7 +43,7 @@ function generateKodePembayaran($conn) {
 // 1. GET: Daftar Riwayat Pembayaran & Ringkasan Metrik Finansial
 // -------------------------------------------------------------
 if ($method === 'GET') {
-    $idDetail = isset($_GET['id_detail']) ? intval($_GET['id_detail']) : 0;
+    $idDetail = isset($_GET['id_detail']) ? intval($_GET['id_detail']) : (isset($_GET['id']) ? intval($_GET['id']) : 0);
     $idFaktur = isset($_GET['id_faktur']) ? intval($_GET['id_faktur']) : 0;
 
     // Single Detail View
@@ -58,8 +58,11 @@ if ($method === 'GET') {
                              v.id_vendor, v.nama_perusahaan AS nama_vendor,
                              s.nama_site,
                              k.nama_karyawan AS nama_pembuat,
+                             jk.nama_jabatan AS jabatan_pembuat,
+                             dk.nama_divisi AS divisi_pembuat,
                              ka.nama_karyawan AS nama_approver,
-                             ja.nama_jabatan AS jabatan_approver
+                             ja.nama_jabatan AS jabatan_approver,
+                             da.nama_divisi AS divisi_approver
                       FROM payment_purchase_detail ppd
                       JOIN payment_purchase pp ON ppd.id_pembayaran = pp.id_pembayaran
                       JOIN faktur_po fp ON pp.id_faktur = fp.id_faktur
@@ -67,8 +70,11 @@ if ($method === 'GET') {
                       JOIN vendor v ON fp.id_vendor = v.id_vendor
                       JOIN site s ON fp.id_site = s.id_site
                       LEFT JOIN karyawan k ON ppd.id_karyawan = k.id_karyawan
+                      LEFT JOIN jabatan jk ON k.id_jabatan = jk.id_jabatan
+                      LEFT JOIN divisi dk ON k.id_divisi = dk.id_divisi
                       LEFT JOIN karyawan ka ON ppd.id_karyawan_approved = ka.id_karyawan
                       LEFT JOIN jabatan ja ON ka.id_jabatan = ja.id_jabatan
+                      LEFT JOIN divisi da ON ka.id_divisi = da.id_divisi
                       WHERE ppd.id_pembayaran_detail = ? LIMIT 1";
         $stmtS = $conn->prepare($sqlSingle);
         $stmtS->bind_param("i", $idDetail);

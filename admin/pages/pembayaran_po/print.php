@@ -1,349 +1,426 @@
 <?php
 /**
- * Halaman Cetak Bukti Pengeluaran Kas / Pembayaran Faktur PO
+ * Halaman Cetak Bukti Pembayaran Faktur PO (Payment Voucher)
  * Path: admin/pages/pembayaran_po/print.php
- * Format: Siap Print / PDF Resmi
+ * Format: Terintegrasi API & External CSS (styles/print_document.css)
  */
 
 require_once __DIR__ . '/../../../config/config.php';
-require_once __DIR__ . '/../../../config/session.php';
 require_once __DIR__ . '/../../../config/koneksi.php';
+require_once __DIR__ . '/../../../config/session.php';
 
 $user = requireAuth([ROLE_FINANCE, ROLE_PURCHASING, ROLE_ADMIN, ROLE_MANAGER]);
-$idDetail = isset($_GET['id']) && is_numeric($_GET['id']) ? (int)$_GET['id'] : 0;
+$idDetail = isset($_GET['id']) && is_numeric($_GET['id']) ? (int)$_GET['id'] : (isset($_GET['id_detail']) ? (int)$_GET['id_detail'] : 0);
+$useKop = !isset($_GET['kop']) || (int)$_GET['kop'] === 1;
 
 if ($idDetail <= 0) {
     die("ID Pembayaran tidak valid.");
 }
 
-$sql = "SELECT ppd.*,
-               pp.id_faktur, pp.status_pembayaran, pp.jenis_pembayaran,
-               fp.nomor_faktur, fp.nomor_faktur_vendor, fp.tanggal_faktur_vendor,
-               fp.tanggal_jatuh_tempo, fp.total_tagihan, fp.terbayar AS total_terbayar_faktur,
-               fp.sisa_tagihan AS sisa_tagihan_faktur, fp.nama_bank AS bank_vendor,
-               fp.nomor_rekening AS norek_vendor, fp.atas_nama_rekening AS an_vendor,
-               po.nomor_po, po.tanggal_po,
-               v.id_vendor, v.kode_vendor, v.nama_perusahaan AS nama_vendor, v.no_telepon AS telepon_vendor, v.alamat AS alamat_vendor,
-               s.nama_site,
-               k.nama_karyawan AS nama_pembuat,
-               ka.nama_karyawan AS nama_approver,
-               ja.nama_jabatan AS jabatan_approver
-        FROM payment_purchase_detail ppd
-        JOIN payment_purchase pp ON ppd.id_pembayaran = pp.id_pembayaran
-        JOIN faktur_po fp ON pp.id_faktur = fp.id_faktur
-        JOIN purchase_order po ON fp.id_po = po.id_po
-        JOIN vendor v ON fp.id_vendor = v.id_vendor
-        JOIN site s ON fp.id_site = s.id_site
-        LEFT JOIN karyawan k ON ppd.id_karyawan = k.id_karyawan
-        LEFT JOIN karyawan ka ON ppd.id_karyawan_approved = ka.id_karyawan
-        LEFT JOIN jabatan ja ON ka.id_jabatan = ja.id_jabatan
-        WHERE ppd.id_pembayaran_detail = ? LIMIT 1";
-
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("i", $idDetail);
-$stmt->execute();
-$pay = $stmt->get_result()->fetch_assoc();
-$stmt->close();
-
-if (!$pay) {
-    die("Data pembayaran tidak ditemukan.");
-}
-
-$companyProfile = getCompanyProfile();
-$companyName = !empty($companyProfile['nama']) ? $companyProfile['nama'] : 'PT Jaya Teknik';
-$companyAddress = !empty($companyProfile['alamat']) ? $companyProfile['alamat'] : 'Bengkel Las & Bubut Kapal';
-$companyCity = !empty($companyProfile['kota']) ? $companyProfile['kota'] : 'Surabaya';
-$companyPhone = !empty($companyProfile['telepon']) ? $companyProfile['telepon'] : '';
-
-function terbilang($angka) {
-    $angka = abs((float)$angka);
-    $baca = array("", "Satu", "Dua", "Tiga", "Empat", "Lima", "Enam", "Tujuh", "Delapan", "Sembilan", "Sepuluh", "Sebelas");
-    $terbilang = "";
-
-    if ($angka < 12) {
-        $terbilang = " " . $baca[(int)$angka];
-    } else if ($angka < 20) {
-        $terbilang = terbilang($angka - 10) . " Belas";
-    } else if ($angka < 100) {
-        $terbilang = terbilang($angka / 10) . " Puluh" . terbilang($angka % 10);
-    } else if ($angka < 200) {
-        $terbilang = " Seratus" . terbilang($angka - 100);
-    } else if ($angka < 1000) {
-        $terbilang = terbilang($angka / 100) . " Ratus" . terbilang($angka % 100);
-    } else if ($angka < 2000) {
-        $terbilang = " Seribu" . terbilang($angka - 1000);
-    } else if ($angka < 1000000) {
-        $terbilang = terbilang($angka / 1000) . " Ribu" . terbilang($angka % 1000);
-    } else if ($angka < 1000000000) {
-        $terbilang = terbilang($angka / 1000000) . " Juta" . terbilang($angka % 1000000);
-    } else if ($angka < 1000000000000) {
-        $terbilang = terbilang($angka / 1000000000) . " Milyar" . terbilang(fmod($angka, 1000000000));
-    } else if ($angka < 1000000000000000) {
-        $terbilang = terbilang($angka / 1000000000000) . " Triliun" . terbilang(fmod($angka, 1000000000000));
-    }
-    return $terbilang;
-}
-
-$terbilangNominal = trim(terbilang($pay['nominal_pengiriman'])) . " Rupiah";
+// Ambil Data Profil Perusahaan
+$profile = getCompanyProfile($conn);
+$companyName = !empty($profile['nama']) ? $profile['nama'] : 'PT Jaya Teknis Indonesia';
+$companyAddr = !empty($profile['alamat']) ? $profile['alamat'] : 'Jl. Perak Timur No. 100, Surabaya';
+$companyCity = trim((!empty($profile['kota']) ? $profile['kota'] : '') . (!empty($profile['provinsi']) ? ', ' . $profile['provinsi'] : ''));
+$companyPhone = !empty($profile['telepon1']) ? $profile['telepon1'] : '';
+$companyWa = !empty($profile['whatsapp']) ? $profile['whatsapp'] : '';
+$companyEmail = !empty($profile['email']) ? $profile['email'] : 'finance@jayateknis.co.id';
+$companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
 ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bukti Pembayaran - <?= htmlspecialchars($pay['kode_pembayaran']) ?></title>
-    <!-- Bootstrap CSS -->
+    <title>Bukti Pembayaran Faktur PO</title>
+    <!-- Bootstrap CSS & Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: #212529;
-            background-color: #f8f9fa;
-        }
-        .print-container {
-            max-width: 850px;
-            margin: 20px auto;
-            background: #ffffff;
-            padding: 35px 40px;
-            box-shadow: 0 4px 18px rgba(0,0,0,0.08);
-            border-radius: 6px;
-        }
-        .header-kop {
-            border-bottom: 2.5px double #333333;
-            padding-bottom: 12px;
-            margin-bottom: 20px;
-        }
-        .company-title {
-            font-size: 1.35rem;
-            font-weight: 800;
-            color: #0b4d75;
-            letter-spacing: 0.5px;
-            margin-bottom: 2px;
-        }
-        .company-sub {
-            font-size: 0.82rem;
-            color: #555;
-            line-height: 1.35;
-        }
-        .doc-title {
-            font-size: 1.25rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #111;
-            text-align: center;
-            margin-bottom: 3px;
-        }
-        .doc-number {
-            font-size: 0.95rem;
-            font-weight: 700;
-            font-family: monospace;
-            text-align: center;
-            color: #0284c7;
-            margin-bottom: 25px;
-        }
-        .table-info td {
-            padding: 4px 6px;
-            font-size: 0.86rem;
-        }
-        .amount-box {
-            background-color: #f1f5f9;
-            border: 1.5px solid #cbd5e1;
-            border-radius: 8px;
-            padding: 15px 20px;
-            margin: 20px 0;
-        }
-        .signature-box {
-            margin-top: 40px;
-        }
-        .sig-col {
-            text-align: center;
-        }
-        .sig-line {
-            border-bottom: 1px solid #333;
-            width: 80%;
-            margin: 60px auto 4px auto;
-        }
-        @media print {
-            body {
-                background: #ffffff !important;
-                color: #000000 !important;
-            }
-            .print-container {
-                box-shadow: none !important;
-                padding: 0 !important;
-                margin: 0 !important;
-                max-width: 100% !important;
-            }
-            .no-print {
-                display: none !important;
-            }
-        }
-    </style>
+    <!-- External Print Stylesheet -->
+    <link href="<?= BASE_URL ?>/styles/print_document.css" rel="stylesheet">
 </head>
-<body>
+<body class="print-mode">
 
-<!-- FLOATING PRINT TOOLBAR -->
-<div class="no-print text-center py-3 bg-white border-bottom shadow-sm sticky-top mb-3">
-    <button onclick="window.print()" class="btn btn-primary btn-sm px-4 fw-semibold shadow-sm me-2">
-        <i class="bi bi-printer me-1"></i> Cetak Bukti Pembayaran
-    </button>
-    <button onclick="window.close()" class="btn btn-outline-secondary btn-sm px-3">
-        Tutup Jendela
-    </button>
+<!-- TOOLBAR KONTROL CETAK (NO PRINT) -->
+<div class="container-fluid no-print py-2 bg-dark text-white mb-3 shadow-sm">
+    <div class="container d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-3">
+            <span class="fw-bold fs-6">
+                <i class="bi bi-printer text-info me-1"></i> Cetak Bukti Pembayaran (Voucher Kas)
+            </span>
+            <span class="badge bg-secondary font-monospace" id="toolbarKodeBayar">...</span>
+        </div>
+        
+        <div class="d-flex align-items-center gap-2">
+            <!-- Pilihan Switch Kop Surat -->
+            <div class="btn-group btn-group-sm me-2" role="group" aria-label="Format Kop Surat">
+                <a href="?id=<?= $idDetail ?>&kop=1" class="btn <?= $useKop ? 'btn-light fw-bold text-dark' : 'btn-outline-light' ?>">
+                    <i class="bi bi-file-earmark-richtext me-1"></i> Dengan Kop
+                </a>
+                <a href="?id=<?= $idDetail ?>&kop=0" class="btn <?= !$useKop ? 'btn-light fw-bold text-dark' : 'btn-outline-light' ?>">
+                    <i class="bi bi-file-earmark me-1"></i> Tanpa Kop
+                </a>
+            </div>
+
+            <a href="<?= BASE_URL ?>/admin/pages/pembayaran_po/index.php" class="btn btn-outline-light btn-sm px-3">
+                <i class="bi bi-arrow-left me-1"></i> Kembali
+            </a>
+            
+            <button type="button" class="btn btn-primary btn-sm px-4 fw-bold shadow-sm" onclick="window.print()">
+                <i class="bi bi-printer-fill me-1"></i> Cetak Dokumen (Print / PDF)
+            </button>
+        </div>
+    </div>
 </div>
 
-<div class="print-container">
-    <!-- KOP PERUSAHAAN -->
-    <div class="header-kop d-flex justify-content-between align-items-center">
-        <div>
-            <div class="company-title"><?= htmlspecialchars($companyName) ?></div>
-            <div class="company-sub">
-                <?= htmlspecialchars($companyAddress) ?><br>
-                <?= htmlspecialchars($companyCity) ?> <?= $companyPhone ? ' | Telp: ' . htmlspecialchars($companyPhone) : '' ?>
-            </div>
-        </div>
-        <div class="text-end">
-            <span class="badge bg-light text-dark border px-3 py-2 fs-6">VOUCHER KAS KELUAR</span>
-        </div>
-    </div>
+<!-- CONTAINER UTAMA DOKUMEN -->
+<div class="print-wrapper <?= !$useKop ? 'no-kop' : '' ?>" id="printContainer">
+    
+    <?php if ($useKop): ?>
+    <!-- KOP SURAT (SESUAI PROFIL PERUSAHAAN) -->
+    <div class="kop-container">
+        <div class="kop-left">
+            <?php if (!empty($companyLogo) && file_exists(__DIR__ . '/../../../' . $companyLogo)): ?>
+                <img src="<?= BASE_URL ?>/<?= htmlspecialchars($companyLogo) ?>" alt="Logo" style="width: 54px; height: 54px; object-fit: contain; flex-shrink: 0;">
+            <?php else: ?>
+                <svg width="54" height="54" viewBox="0 0 100 100" style="flex-shrink: 0;">
+                    <polygon points="50,4 92,27 92,73 50,96 8,73 8,27" fill="none" stroke="#000" stroke-width="8" stroke-linejoin="round"/>
+                    <polyline points="8,27 50,50 92,27" fill="none" stroke="#000" stroke-width="8" stroke-linejoin="round"/>
+                    <line x1="50" y1="50" x2="50" y2="96" stroke="#000" stroke-width="8"/>
+                    <polygon points="50,22 74,35 50,48 26,35" fill="#000"/>
+                    <polygon points="26,41 46,51 46,76 26,65" fill="#000"/>
+                    <polygon points="74,41 54,51 54,76 74,65" fill="#000"/>
+                </svg>
+            <?php endif; ?>
 
-    <!-- JUDUL DOKUMEN -->
-    <div class="doc-title">BUKTI PEMBAYARAN FAKTUR PO</div>
-    <div class="doc-number"><?= htmlspecialchars($pay['kode_pembayaran']) ?></div>
-
-    <!-- INFO DOKUMEN & VENDOR -->
-    <div class="row g-3 mb-3">
-        <div class="col-6">
-            <table class="table-info w-100">
-                <tr>
-                    <td class="text-muted" style="width: 130px;">Tanggal Bayar</td>
-                    <td>: <strong><?= date('d/m/Y H:i', strtotime($pay['tanggal_bayar'])) ?></strong></td>
-                </tr>
-                <tr>
-                    <td class="text-muted">No. Faktur Sistem</td>
-                    <td>: <strong class="font-monospace text-primary"><?= htmlspecialchars($pay['nomor_faktur']) ?></strong></td>
-                </tr>
-                <tr>
-                    <td class="text-muted">No. Invoice Vendor</td>
-                    <td>: <span class="font-monospace"><?= htmlspecialchars($pay['nomor_faktur_vendor'] ?: '-') ?></span></td>
-                </tr>
-                <tr>
-                    <td class="text-muted">No. Purchase Order</td>
-                    <td>: <span class="font-monospace"><?= htmlspecialchars($pay['nomor_po']) ?></span></td>
-                </tr>
-                <tr>
-                    <td class="text-muted">Skema Pembayaran</td>
-                    <td>: <?= (int)$pay['jenis_pembayaran'] === 1 ? '<span class="badge bg-success">1x Lunas</span>' : '<span class="badge bg-warning text-dark">Kredit / Termin</span>' ?></td>
-                </tr>
-            </table>
-        </div>
-
-        <div class="col-6">
-            <table class="table-info w-100">
-                <tr>
-                    <td class="text-muted" style="width: 130px;">Dibayarkan Kepada</td>
-                    <td>: <strong><?= htmlspecialchars($pay['nama_vendor']) ?></strong></td>
-                </tr>
-                <?php
-                $destBank = !empty($pay['bank_tujuan']) ? $pay['bank_tujuan'] : ($pay['bank_vendor'] ?: '-');
-                $destNorek = !empty($pay['norek_tujuan']) ? $pay['norek_tujuan'] : ($pay['norek_vendor'] ?: '-');
-                $destAn = !empty($pay['an_pengiriman']) ? $pay['an_pengiriman'] : ($pay['an_vendor'] ?: $pay['nama_vendor']);
-                ?>
-                <tr>
-                    <td class="text-muted">Bank &amp; No. Rekening</td>
-                    <td>: <?= htmlspecialchars($destBank) ?> &bull; <strong class="font-monospace"><?= htmlspecialchars($destNorek) ?></strong></td>
-                </tr>
-                <tr>
-                    <td class="text-muted">Atas Nama Rekening</td>
-                    <td>: <?= htmlspecialchars($destAn) ?></td>
-                </tr>
-                <tr>
-                    <td class="text-muted">Site Operasional</td>
-                    <td>: <?= htmlspecialchars($pay['nama_site']) ?></td>
-                </tr>
-                <tr>
-                    <td class="text-muted">Disetujui Oleh</td>
-                    <td>: <strong><?= htmlspecialchars($pay['nama_approver'] ?: '-') ?></strong></td>
-                </tr>
-            </table>
-        </div>
-    </div>
-
-    <!-- KOTAK NOMINAL -->
-    <div class="amount-box">
-        <div class="d-flex justify-content-between align-items-center">
             <div>
-                <div class="small text-muted fw-bold text-uppercase">Jumlah Uang Yang Ditransfer</div>
-                <div class="fs-4 fw-bold text-dark font-monospace">Rp <?= number_format($pay['nominal_pengiriman'], 0, ',', '.') ?></div>
+                <div class="company-title"><?= htmlspecialchars($companyName) ?></div>
+                <div class="company-addr"><?= htmlspecialchars($companyAddr) ?><?= $companyCity ? ' - ' . htmlspecialchars($companyCity) : '' ?></div>
+                <div class="company-contacts">
+                    <?php if (!empty($companyPhone)): ?>
+                        <span><i class="bi bi-telephone-fill"></i> <?= htmlspecialchars($companyPhone) ?></span>
+                    <?php endif; ?>
+                    <?php if (!empty($companyWa)): ?>
+                        <span><i class="bi bi-whatsapp"></i> <?= htmlspecialchars($companyWa) ?></span>
+                    <?php endif; ?>
+                    <?php if (!empty($companyEmail)): ?>
+                        <span><i class="bi bi-envelope-fill"></i> <?= htmlspecialchars($companyEmail) ?></span>
+                    <?php endif; ?>
+                </div>
             </div>
-            <div class="text-end">
-                <div class="small text-muted">Bank Asal: <strong><?= htmlspecialchars($pay['bank_pengirim']) ?></strong> (No. Ref: <?= htmlspecialchars($pay['no_ref'] ?: '-') ?>)</div>
-                <div class="small text-muted">Biaya Admin: Rp <?= number_format($pay['biaya_admin'], 0, ',', '.') ?></div>
+        </div>
+
+        <div class="tagline-container">
+            <div class="tagline-divider"></div>
+            <div class="tagline-text">
+                VOUCHER<br>PENGELUARAN<br>KAS / BANK
+            </div>
+        </div>
+    </div>
+    
+    <div class="header-divider-line"></div>
+    <?php else: ?>
+    <!-- MODE CETAK TANPA KOP -->
+    <div class="no-print alert alert-secondary py-1 px-3 small text-center mb-3">
+        <i class="bi bi-info-circle me-1"></i> <strong>Mode Cetak Tanpa Kop Surat Aktif</strong>: Bagian atas dikosongkan untuk dicetak pada kertas berkop resmi perusahaan.
+    </div>
+    <?php endif; ?>
+
+    <!-- JUDUL DOKUMEN & KOTAK NOMOR DOKUMEN -->
+    <div class="title-box-row">
+        <div class="title-area">
+            <div class="doc-title-main">BUKTI PEMBAYARAN FAKTUR PO</div>
+            <div class="doc-title-sub">
+                <span class="line-side"></span>
+                <span class="sub-text">PAYMENT &nbsp; VOUCHER</span>
+                <span class="line-side"></span>
+            </div>
+        </div>
+
+        <div class="doc-meta-box">
+            <div class="box-row-lbl">No. Transaksi</div>
+            <div class="box-row-val font-monospace" id="docKodeBayar">-</div>
+            <div class="box-divider"></div>
+            <div class="box-row-lbl">Tanggal Bayar</div>
+            <div class="box-row-val" id="docTanggalBayar">-</div>
+        </div>
+    </div>
+
+    <!-- METADATA 2 KOLOM -->
+    <div class="info-grid">
+        <!-- Kolom Kiri -->
+        <div class="info-col-left">
+            <table class="table-meta-details">
+                <tr>
+                    <td class="lbl">No. Faktur Sistem</td>
+                    <td class="colon">:</td>
+                    <td class="val font-monospace fw-bold text-primary" id="docNomorFaktur">-</td>
+                </tr>
+                <tr>
+                    <td class="lbl">No. Invoice Vendor</td>
+                    <td class="colon">:</td>
+                    <td class="val font-monospace" id="docInvoiceVendor">-</td>
+                </tr>
+                <tr>
+                    <td class="lbl">No. Purchase Order</td>
+                    <td class="colon">:</td>
+                    <td class="val font-monospace" id="docNomorPo">-</td>
+                </tr>
+                <tr>
+                    <td class="lbl">Skema Pembayaran</td>
+                    <td class="colon">:</td>
+                    <td class="val" id="docJenisBayar">-</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Kolom Kanan -->
+        <div class="info-col-right">
+            <table class="table-meta-details">
+                <tr>
+                    <td class="lbl">Dibayarkan Kepada</td>
+                    <td class="colon">:</td>
+                    <td class="val fw-bold" id="docNamaVendor">-</td>
+                </tr>
+                <tr>
+                    <td class="lbl">Rekening Tujuan</td>
+                    <td class="colon">:</td>
+                    <td class="val" id="docRekeningTujuan">-</td>
+                </tr>
+                <tr>
+                    <td class="lbl">Site Operasional</td>
+                    <td class="colon">:</td>
+                    <td class="val fw-semibold" id="docSite">-</td>
+                </tr>
+                <tr>
+                    <td class="lbl">Status Pembayaran</td>
+                    <td class="colon">:</td>
+                    <td class="val" id="docStatusBayar">-</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- BOX JUMLAH TRANSFER -->
+    <div class="p-3 border rounded-3 bg-light mb-3">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <div class="text-muted small text-uppercase fw-bold" style="font-size: 10px;">Jumlah Uang Yang Ditransfer</div>
+                <div class="fs-4 fw-bold text-primary font-monospace" id="docNominalTransfer">Rp 0</div>
+            </div>
+            <div class="text-end small text-muted">
+                <div>Bank Asal: <strong class="text-dark" id="docBankAsal">-</strong> (No. Ref: <span class="font-monospace text-dark" id="docNoRef">-</span>)</div>
+                <div>Biaya Admin Bank: <span class="font-monospace text-dark" id="docBiayaAdmin">Rp 0</span></div>
             </div>
         </div>
         <div class="mt-2 pt-2 border-top small text-secondary">
-            <strong>Terbilang:</strong> <em># <?= htmlspecialchars($terbilangNominal) ?> #</em>
+            <strong>Terbilang:</strong> <em id="docTerbilang"># Nol Rupiah #</em>
         </div>
     </div>
 
-    <!-- RINCIAN FINANSIAL FAKTUR -->
-    <table class="table table-bordered table-sm small mb-4">
-        <thead class="table-light text-center">
+    <!-- TABEL RINCIAN FINANSIAL FAKTUR -->
+    <table class="table-items-main mb-3">
+        <thead>
             <tr>
-                <th>Total Tagihan Faktur</th>
-                <th>Transfer Pembayaran Ini</th>
-                <th>Biaya Admin Bank</th>
-                <th>Sisa Hutang Faktur</th>
+                <th style="width: 25%;">TOTAL TAGIHAN FAKTUR</th>
+                <th style="width: 25%;">TRANSFER PEMBAYARAN INI</th>
+                <th style="width: 25%;">BIAYA ADMIN BANK</th>
+                <th style="width: 25%;">SISA HUTANG FAKTUR</th>
             </tr>
         </thead>
         <tbody class="text-center font-monospace">
             <tr>
-                <td>Rp <?= number_format($pay['total_tagihan'], 0, ',', '.') ?></td>
-                <td class="fw-bold text-primary">Rp <?= number_format($pay['nominal_pengiriman'], 0, ',', '.') ?></td>
-                <td>Rp <?= number_format($pay['biaya_admin'], 0, ',', '.') ?></td>
-                <td class="fw-bold <?= (float)$pay['sisa_piutang'] <= 0 ? 'text-success' : 'text-danger' ?>">
-                    Rp <?= number_format($pay['sisa_piutang'], 0, ',', '.') ?>
-                </td>
+                <td id="docTabelTagihan">Rp 0</td>
+                <td class="fw-bold text-primary" id="docTabelBayar">Rp 0</td>
+                <td id="docTabelAdmin">Rp 0</td>
+                <td class="fw-bold" id="docTabelSisa">Rp 0</td>
             </tr>
         </tbody>
     </table>
 
-    <?php if (!empty($pay['keterangan'])): ?>
-    <div class="small text-muted mb-4">
-        <strong>Catatan Transaksi:</strong> <?= nl2br(htmlspecialchars($pay['keterangan'])) ?>
-    </div>
-    <?php endif; ?>
-
-    <!-- TANDA TANGAN -->
-    <div class="signature-box row">
-        <div class="col-4 sig-col">
-            <div class="small text-muted">Dibuat Oleh (Finance),</div>
-            <div class="sig-line"></div>
-            <div class="small fw-bold text-dark"><?= htmlspecialchars($pay['nama_pembuat'] ?: 'Staff Finance') ?></div>
-        </div>
-
-        <div class="col-4 sig-col">
-            <div class="small text-muted">Disetujui Oleh (Pimpinan),</div>
-            <div class="sig-line"></div>
-            <div class="small fw-bold text-dark"><?= htmlspecialchars($pay['nama_approver'] ?: 'Manager Finance') ?></div>
-            <div class="text-muted" style="font-size: 0.72rem;"><?= htmlspecialchars($pay['jabatan_approver'] ?: 'Manajemen') ?></div>
-        </div>
-
-        <div class="col-4 sig-col">
-            <div class="small text-muted">Diterima Oleh (Vendor),</div>
-            <div class="sig-line"></div>
-            <div class="small fw-bold text-dark"><?= htmlspecialchars($pay['nama_vendor']) ?></div>
+    <!-- CATATAN TRANSAKSI -->
+    <div id="docCatatanContainer" class="d-none mb-3">
+        <div class="catatan-penerimaan-section mb-0">
+            <div class="notes-title">Catatan Transaksi:</div>
+            <div class="catatan-box" id="docCatatanTransaksi"></div>
         </div>
     </div>
+
+    <!-- LEMBAR PENGESAHAN / TANDA TANGAN (3 KOLOM) -->
+    <div class="sig-section">
+        <div class="row">
+            <!-- 1. Dibuat Oleh (Finance) -->
+            <div class="col-4 sig-col">
+                <div class="sig-header-main">Dibuat Oleh</div>
+                <div class="sig-header-sub" id="docSigRolePembuat">(Staff Finance)</div>
+                <div class="sig-line-box">
+                    ( &nbsp; <span class="sig-person-name" id="docSigPembuat">-</span> &nbsp; )
+                </div>
+            </div>
+
+            <!-- 2. Disetujui Oleh (Approval) -->
+            <div class="col-4 sig-col">
+                <div class="sig-header-main">Disetujui Oleh</div>
+                <div class="sig-header-sub" id="docSigRoleApprover">(Manager Finance)</div>
+                <div class="sig-line-box">
+                    ( &nbsp; <span class="sig-person-name" id="docSigApprover">-</span> &nbsp; )
+                </div>
+            </div>
+
+            <!-- 3. Diterima Oleh (Vendor) -->
+            <div class="col-4 sig-col">
+                <div class="sig-header-main">Diterima Oleh</div>
+                <div class="sig-header-sub">(Pihak Rekanan Vendor)</div>
+                <div class="sig-line-box">
+                    ( &nbsp; <span class="sig-person-name" id="docSigVendor">-</span> &nbsp; )
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER BAWAH -->
+    <div class="footer-line-container">
+        <div class="footer-right">
+            <div class="fw-bold">Halaman 1 dari 1</div>
+            <div>Dicetak: <?= date('d/m/Y H:i') ?></div>
+            <div>Purchasing Management System - <?= htmlspecialchars($companyName) ?></div>
+        </div>
+    </div>
+
 </div>
 
+<!-- SCRIPT LOGIC MEMUAT DATA DARI API PEMBAYARAN PO -->
 <script>
-window.addEventListener('DOMContentLoaded', () => {
-    // Auto-trigger print jika dibuka langsung
-    if (window.location.search.includes('autoprint=1')) {
-        window.print();
+const ID_DETAIL = <?= $idDetail ?>;
+const BASE_URL = '<?= BASE_URL ?>';
+
+function formatRupiah(num) {
+    return 'Rp ' + (parseFloat(num) || 0).toLocaleString('id-ID');
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+    return String(text).replace(/[&<>"']/g, m => map[m]);
+}
+
+function terbilangIndo(angka) {
+    angka = Math.abs(parseFloat(angka) || 0);
+    const satuan = ["", "Satu", "Dua", "Tiga", "Empat", "Lima", "Enam", "Tujuh", "Delapan", "Sembilan", "Sepuluh", "Sebelas"];
+    
+    if (angka < 12) return " " + satuan[Math.floor(angka)];
+    if (angka < 20) return terbilangIndo(angka - 10) + " Belas";
+    if (angka < 100) return terbilangIndo(Math.floor(angka / 10)) + " Puluh" + terbilangIndo(angka % 10);
+    if (angka < 200) return " Seratus" + terbilangIndo(angka - 100);
+    if (angka < 1000) return terbilangIndo(Math.floor(angka / 100)) + " Ratus" + terbilangIndo(angka % 100);
+    if (angka < 2000) return " Seribu" + terbilangIndo(angka - 1000);
+    if (angka < 1000000) return terbilangIndo(Math.floor(angka / 1000)) + " Ribu" + terbilangIndo(angka % 1000);
+    if (angka < 1000000000) return terbilangIndo(Math.floor(angka / 1000000)) + " Juta" + terbilangIndo(angka % 1000000);
+    if (angka < 1000000000000) return terbilangIndo(Math.floor(angka / 1000000000)) + " Miliar" + terbilangIndo(angka % 1000000000);
+    if (angka < 1000000000000000) return terbilangIndo(Math.floor(angka / 1000000000000)) + " Triliun" + terbilangIndo(angka % 1000000000000);
+    return "";
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const response = await fetch(`${BASE_URL}/api/pembayaran_po/index.php?id=${ID_DETAIL}`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        const result = await response.json();
+
+        if (!result || !result.success || !result.data) {
+            alert(result ? result.message : 'Gagal memuat data pembayaran dari API.');
+            return;
+        }
+
+        const pay = result.data;
+
+        // Toolbar
+        document.getElementById('toolbarKodeBayar').textContent = pay.kode_pembayaran || '-';
+        document.title = `Bukti Pembayaran - ${pay.kode_pembayaran || 'VOUCHER'}`;
+
+        // Header Metadata
+        document.getElementById('docKodeBayar').textContent = pay.kode_pembayaran || '-';
+        document.getElementById('docTanggalBayar').textContent = pay.tanggal_bayar ? pay.tanggal_bayar.replace('T', ' ').substring(0, 16) : '-';
+
+        // Details
+        document.getElementById('docNomorFaktur').textContent = pay.nomor_faktur || '-';
+        document.getElementById('docInvoiceVendor').textContent = pay.nomor_faktur_vendor || '-';
+        document.getElementById('docNomorPo').textContent = pay.nomor_po || '-';
+        document.getElementById('docJenisBayar').innerHTML = (parseInt(pay.jenis_pembayaran) === 1) 
+            ? '<span class="badge bg-success-subtle text-success border border-success-subtle">1x Lunas</span>' 
+            : '<span class="badge bg-warning-subtle text-warning border border-warning-subtle text-dark">Kredit / Termin</span>';
+
+        document.getElementById('docNamaVendor').textContent = pay.nama_vendor || '-';
+        
+        const destBank = pay.bank_tujuan || pay.bank_vendor || '-';
+        const destNorek = pay.norek_tujuan || pay.norek_vendor || '-';
+        const destAn = pay.an_pengiriman || pay.an_vendor || pay.nama_vendor || '-';
+        document.getElementById('docRekeningTujuan').innerHTML = `${escapeHtml(destBank)} &bull; <strong class="font-monospace">${escapeHtml(destNorek)}</strong><br><span class="text-muted small">a.n. ${escapeHtml(destAn)}</span>`;
+
+        document.getElementById('docSite').textContent = pay.nama_site || '-';
+        document.getElementById('docStatusBayar').innerHTML = `<span class="badge bg-primary-subtle text-primary border">${escapeHtml(pay.status_pembayaran || 'SELESAI')}</span>`;
+
+        // Amount Box
+        const nominal = parseFloat(pay.nominal_pengiriman) || 0;
+        const biayaAdmin = parseFloat(pay.biaya_admin) || 0;
+        const totalTagihan = parseFloat(pay.total_tagihan) || 0;
+        const sisaPiutang = parseFloat(pay.sisa_piutang) || 0;
+
+        document.getElementById('docNominalTransfer').textContent = formatRupiah(nominal);
+        document.getElementById('docBankAsal').textContent = pay.bank_pengirim || '-';
+        document.getElementById('docNoRef').textContent = pay.no_ref || '-';
+        document.getElementById('docBiayaAdmin').textContent = formatRupiah(biayaAdmin);
+        
+        const terbilangStr = terbilangIndo(nominal).trim() + " Rupiah";
+        document.getElementById('docTerbilang').textContent = `# ${terbilangStr} #`;
+
+        // Financial Table
+        document.getElementById('docTabelTagihan').textContent = formatRupiah(totalTagihan);
+        document.getElementById('docTabelBayar').textContent = formatRupiah(nominal);
+        document.getElementById('docTabelAdmin').textContent = formatRupiah(biayaAdmin);
+        
+        const sisaEl = document.getElementById('docTabelSisa');
+        sisaEl.textContent = formatRupiah(sisaPiutang);
+        sisaEl.className = `fw-bold ${sisaPiutang <= 0 ? 'text-success' : 'text-danger'}`;
+
+        // Catatan Transaksi
+        if (pay.keterangan && pay.keterangan.trim() !== '') {
+            document.getElementById('docCatatanContainer').classList.remove('d-none');
+            document.getElementById('docCatatanTransaksi').innerHTML = escapeHtml(pay.keterangan).replace(/\n/g, '<br>');
+        }
+
+        // Signatures (Nama, Jabatan & Divisi Dinamis)
+        const jabatanPembuat = pay.jabatan_pembuat || '';
+        const divisiPembuat = pay.divisi_pembuat || '';
+        let rolePembuatText = '';
+        if (jabatanPembuat && divisiPembuat) {
+            rolePembuatText = `(${jabatanPembuat} - ${divisiPembuat})`;
+        } else if (jabatanPembuat) {
+            rolePembuatText = `(${jabatanPembuat})`;
+        } else {
+            rolePembuatText = `(Staff Finance)`;
+        }
+        document.getElementById('docSigRolePembuat').textContent = rolePembuatText;
+
+        const jabatanApprover = pay.jabatan_approver || '';
+        const divisiApprover = pay.divisi_approver || '';
+        let roleApproverText = '';
+        if (jabatanApprover && divisiApprover) {
+            roleApproverText = `(${jabatanApprover} - ${divisiApprover})`;
+        } else if (jabatanApprover) {
+            roleApproverText = `(${jabatanApprover})`;
+        } else {
+            roleApproverText = `(Pimpinan / Direksi)`;
+        }
+        document.getElementById('docSigRoleApprover').textContent = roleApproverText;
+
+        document.getElementById('docSigPembuat').textContent = pay.nama_pembuat || 'Staff Finance';
+        document.getElementById('docSigApprover').textContent = pay.nama_approver || 'Manager Finance';
+        document.getElementById('docSigVendor').textContent = pay.nama_vendor || 'Pihak Rekanan Vendor';
+
+    } catch (e) {
+        console.error('Error fetching payment print data:', e);
     }
 });
 </script>
