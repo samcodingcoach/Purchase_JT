@@ -353,7 +353,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link fw-bold text-dark small py-2 px-3" id="tab-modal-items-btn" data-bs-toggle="tab" data-bs-target="#tab-modal-items" type="button" role="tab">
-                            <i class="bi bi-box-seam me-1 text-primary"></i> 3. Rincian Retur
+                            <i class="bi bi-box-seam me-1 text-primary" id="iconTabModalItems"></i> <span id="labelTabModalItems">3. Rincian Retur</span>
                         </button>
                     </li>
                 </ul>
@@ -411,7 +411,7 @@ require_once __DIR__ . '/../../components/navbar.php';
 
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <div>
-                                        <label class="form-label small fw-bold text-dark mb-0">
+                                        <label class="form-label small fw-bold text-dark mb-0" id="labelSectionKompensasi">
                                             <i class="bi bi-box-arrow-in-down text-primary me-1"></i> Rincian Barang &amp; Unit Pengganti
                                         </label>
                                     </div>
@@ -427,7 +427,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                                                 <th style="width: 40px;" class="text-center">No</th>
                                                 <th>Nama Barang</th>
                                                 <th style="width: 110px;" class="text-center">KTS Retur</th>
-                                                <th style="width: 140px;" class="text-center">KTS Diganti</th>
+                                                <th style="width: 140px;" class="text-center" id="headerKolomKompensasi">KTS Diganti</th>
                                             </tr>
                                         </thead>
                                         <tbody id="updateUnitPenggantiList">
@@ -769,7 +769,11 @@ function openItemActionModal(idx) {
     }
 
     // Unit Pengganti
-    const isTukarUnit = (returDetailData && returDetailData.kompensasi == 1);
+    const isTukarUnit = (returDetailData && parseInt(returDetailData.kompensasi) === 1);
+    const tabGantiNav = document.getElementById('tabItemGantiNav');
+    if (tabGantiNav) {
+        tabGantiNav.style.display = isTukarUnit ? 'block' : 'none';
+    }
     if (isTukarUnit) {
         document.getElementById('gantiTukarUnitSection').style.display = 'block';
         document.getElementById('gantiPotongTagihanSection').style.display = 'none';
@@ -860,12 +864,41 @@ function openUpdateStatusModal() {
     document.getElementById('updateNoNotaPajak').value = returDetailData.nomor_nota_retur_pajak || '';
     document.getElementById('updateKeterangan').value = returDetailData.keterangan || '';
 
+    const isTukarUnit = (parseInt(returDetailData.kompensasi) === 1);
+    
+    // Sesuaikan Label Tab & Header Kolom berdasarkan Skema
+    const labelTab = document.getElementById('labelTabModalItems');
+    const iconTab = document.getElementById('iconTabModalItems');
+    const headerKolom4 = document.getElementById('headerKolomKompensasi');
+    const btnFillAll = document.getElementById('btnFillAllQtyGanti');
+    const labelSectionTitle = document.getElementById('labelSectionKompensasi');
+
+    if (labelTab) {
+        labelTab.textContent = isTukarUnit ? '3. Unit Pengganti' : '3. Potongan Faktur';
+    }
+    if (iconTab) {
+        iconTab.className = isTukarUnit ? 'bi bi-box-seam me-1 text-primary' : 'bi bi-receipt me-1 text-primary';
+    }
+    if (headerKolom4) {
+        headerKolom4.textContent = isTukarUnit ? 'KTS Diganti' : 'Nilai Potongan';
+    }
+    if (labelSectionTitle) {
+        labelSectionTitle.innerHTML = isTukarUnit 
+            ? '<i class="bi bi-box-arrow-in-down text-primary me-1"></i> Rincian Barang &amp; Unit Pengganti'
+            : '<i class="bi bi-receipt text-primary me-1"></i> Rincian Pemotongan Tagihan Faktur';
+    }
+    if (btnFillAll) {
+        btnFillAll.style.display = isTukarUnit ? 'inline-block' : 'none';
+    }
+
     // Render tabel rincian barang pada Tab 3
     const unitList = document.getElementById('updateUnitPenggantiList');
     if (returDetailData.items && returDetailData.items.length > 0 && unitList) {
         let listHtml = '';
         returDetailData.items.forEach((it, idx) => {
             const currentQtyGanti = (it.qty_diganti !== null && it.qty_diganti !== undefined && parseFloat(it.qty_diganti) > 0) ? it.qty_diganti : 0;
+            const subtotalNilai = parseFloat(it.subtotal) || ((parseFloat(it.qty_retur) || 0) * (parseFloat(it.harga_satuan) || 0));
+
             listHtml += `
             <tr>
                 <td class="text-center text-muted fw-semibold">${idx + 1}</td>
@@ -875,11 +908,16 @@ function openUpdateStatusModal() {
                 </td>
                 <td class="text-center font-monospace fw-bold">${it.qty_retur} ${it.satuan}</td>
                 <td class="text-center">
-                    <input type="number" step="any" min="0" max="${it.qty_retur}" 
-                           class="form-control form-control-sm text-center fw-bold font-monospace update-item-qty-diganti" 
-                           data-id-detail="${it.id_po_retur_detail}" 
-                           data-max="${it.qty_retur}"
-                           value="${currentQtyGanti}">
+                    ${isTukarUnit ? `
+                        <input type="number" step="any" min="0" max="${it.qty_retur}" 
+                               class="form-control form-control-sm text-center fw-bold font-monospace update-item-qty-diganti" 
+                               data-id-detail="${it.id_po_retur_detail}" 
+                               data-max="${it.qty_retur}"
+                               value="${currentQtyGanti}">
+                    ` : `
+                        <span class="fw-bold font-monospace text-success">${formatRupiah(subtotalNilai)}</span>
+                        <input type="hidden" class="update-item-qty-diganti" data-id-detail="${it.id_po_retur_detail}" data-max="0" value="0">
+                    `}
                 </td>
             </tr>`;
         });
@@ -910,14 +948,17 @@ function onUpdateStatusChange() {
         sjInput.value = `SJ-RET-${yy}${mm}-${idPad}`;
     }
 
-    // Penyesuaian Tab 3: Terisi otomatis jika dipilih DITERIMA
+    const isTukarUnit = returDetailData ? (parseInt(returDetailData.kompensasi) === 1) : true;
     const isDiterima = (st === 'DITERIMA');
     const alertInfo = document.getElementById('alertTabRincianInfo');
     const btnFillAll = document.getElementById('btnFillAllQtyGanti');
-    const itemInputs = document.querySelectorAll('.update-item-qty-diganti');
+    const itemInputs = document.querySelectorAll('input[type="number"].update-item-qty-diganti');
 
     if (alertInfo) {
-        if (isDiterima) {
+        if (!isTukarUnit) {
+            alertInfo.className = 'alert alert-info d-flex align-items-center py-2 px-3 mb-3 small border-0 shadow-none';
+            alertInfo.innerHTML = '<i class="bi bi-info-circle-fill me-2 fs-6 text-primary"></i><div>Skema retur adalah <strong>Potong Tagihan (Credit Note)</strong>. Nilai retur otomatis memotong tagihan pada Faktur PO. <strong>Tidak ada barang pengganti dan stok fisik gudang tidak bertambah</strong>.</div>';
+        } else if (isDiterima) {
             alertInfo.className = 'alert alert-success d-flex align-items-center py-2 px-3 mb-3 small border-0 shadow-none';
             alertInfo.innerHTML = '<i class="bi bi-check-circle-fill me-2 fs-6 text-success"></i><div>Status <strong>DITERIMA / SELESAI</strong> aktif. Unit pengganti telah terisi otomatis dan stok fisik gudang akan bertambah saat disimpan.</div>';
         } else {
@@ -926,20 +967,21 @@ function onUpdateStatusChange() {
         }
     }
 
-    if (btnFillAll) {
+    if (btnFillAll && isTukarUnit) {
         btnFillAll.disabled = !isDiterima;
     }
 
-    itemInputs.forEach(inp => {
-        inp.disabled = !isDiterima;
-        if (isDiterima) {
-            const maxVal = inp.getAttribute('data-max') || 0;
-            // Jika nilai saat ini masih 0, otomatis isi penuh dengan nilai max (qty_retur)
-            if (parseFloat(inp.value) <= 0) {
-                inp.value = maxVal;
+    if (isTukarUnit) {
+        itemInputs.forEach(inp => {
+            inp.disabled = !isDiterima;
+            if (isDiterima) {
+                const maxVal = inp.getAttribute('data-max') || 0;
+                if (parseFloat(inp.value) <= 0) {
+                    inp.value = maxVal;
+                }
             }
-        }
-    });
+        });
+    }
 }
 
 function fillAllQtyGantiMax() {
@@ -953,13 +995,14 @@ async function submitStatusUpdate(e) {
     const currentId = returId || (returDetailData ? returDetailData.id_po_retur : parseInt(new URLSearchParams(window.location.search).get('id')));
     const selectedStatus = document.getElementById('updateStatusSelect').value;
     const nomorSjInput = document.getElementById('updateNoSjRetur').value.trim();
+    const isTukarUnit = returDetailData ? (parseInt(returDetailData.kompensasi) === 1) : true;
 
     // Kumpulkan item unit pengganti
     const itemsPayload = [];
     document.querySelectorAll('.update-item-qty-diganti').forEach(inp => {
         const idDet = parseInt(inp.getAttribute('data-id-detail'));
-        let qtyGanti = parseFloat(inp.value);
-        if (isNaN(qtyGanti) || (selectedStatus === 'DITERIMA' && qtyGanti <= 0)) {
+        let qtyGanti = isTukarUnit ? parseFloat(inp.value) : 0;
+        if (isTukarUnit && (isNaN(qtyGanti) || (selectedStatus === 'DITERIMA' && qtyGanti <= 0))) {
             qtyGanti = parseFloat(inp.getAttribute('data-max')) || 0;
             inp.value = qtyGanti;
         }
@@ -975,7 +1018,8 @@ async function submitStatusUpdate(e) {
         pic_vendor: document.getElementById('updatePicVendor').value.trim(),
         nomor_sj_retur: nomorSjInput,
         nomor_nota_retur_pajak: document.getElementById('updateNoNotaPajak').value.trim(),
-        keterangan: document.getElementById('updateKeterangan').value.trim()
+        keterangan: document.getElementById('updateKeterangan').value.trim(),
+        items: itemsPayload
     };
 
     if (itemsPayload.length > 0) {

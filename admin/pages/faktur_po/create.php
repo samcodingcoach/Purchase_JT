@@ -14,7 +14,10 @@ $user = requireAuth([ROLE_PURCHASING, ROLE_ADMIN, ROLE_MANAGER]);
 $pageTitle = 'Buat Faktur PO';
 $pageHeading = 'Formulir Faktur Pembelian';
 
-// Ambil Dokumen Penerimaan RCV yang belum pernah difakturkan (status = 1 dan belum ada di faktur_po aktif)
+// Ambil Dokumen Penerimaan RCV yang siap difakturkan:
+// 1. Penerimaan kondisi lengkap/baik (status = 1) ATAU
+// 2. Penerimaan yang memiliki barang cacat tapi Retur PO sudah disetujui / selesai (Potong Tagihan / Tukar Unit)
+// 3. Belum pernah dibuatkan Faktur PO aktif
 $rcvOptions = [];
 $qRcv = "SELECT r.id_rcv, r.nomor_rcv, r.nomor_sj, r.tanggal_diterima, r.tanggal_rcv,
                 po.id_po, po.nomor_po, po.tanggal_po, po.term_of_payment,
@@ -24,10 +27,15 @@ $qRcv = "SELECT r.id_rcv, r.nomor_rcv, r.nomor_sj, r.tanggal_diterima, r.tanggal
          JOIN purchase_order po ON r.id_po = po.id_po
          JOIN vendor v ON po.id_vendor = v.id_vendor
          JOIN site s ON po.id_site = s.id_site
-         WHERE r.status = 1
+         WHERE (
+             r.status = 1 
+             OR EXISTS (
+                 SELECT 1 FROM retur_po rp 
+                 WHERE rp.id_rcv = r.id_rcv AND rp.status IN ('DISETUJUI VENDOR', 'DITERIMA')
+             )
+         )
            AND NOT EXISTS (SELECT 1 FROM faktur_po fp WHERE fp.id_rcv = r.id_rcv AND fp.status != 'BATAL')
-         ORDER BY r.tanggal_diterima ASC, r.id_rcv ASC
-         LIMIT 10";
+         ORDER BY r.tanggal_diterima ASC, r.id_rcv ASC";
 $resRcv = $conn->query($qRcv);
 if ($resRcv) {
     while ($row = $resRcv->fetch_assoc()) {

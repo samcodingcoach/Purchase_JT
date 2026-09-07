@@ -315,6 +315,13 @@ require_once __DIR__ . '/../../components/navbar.php';
 
                     <!-- TAB 4: RINCIAN BARANG -->
                     <div class="tab-pane fade" id="tab-items" role="tabpanel">
+                        <div class="alert alert-info py-2 px-3 small border-0 shadow-sm rounded-3 mb-3 d-flex align-items-center">
+                            <i class="bi bi-info-circle-fill fs-5 text-primary me-2"></i>
+                            <div>
+                                <strong>Petunjuk Kuantitas Retur:</strong> Masukkan jumlah fisik barang rusak/cacat yang dikembalikan ke vendor (misal: <strong>1</strong>). Jumlah inilah yang akan menjadi dasar nilai klaim dan otomatis <strong>memotong tagihan Faktur PO menjadi Rp 0</strong> (tidak perlu dibayar).
+                            </div>
+                        </div>
+
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h6 class="fw-bold text-dark mb-0"><i class="bi bi-list-check text-primary me-2"></i>Daftar Barang yang Diretur</h6>
                             <button type="button" class="btn btn-outline-primary btn-sm" onclick="openAddItemModal()">
@@ -935,7 +942,7 @@ function renderItemsTable() {
                 </div>
             </td>
             <td>
-                <input type="number" step="any" min="0.01" max="${item.qty_max}" class="form-control form-control-sm text-center fw-bold font-monospace" value="${item.qty_retur}" onchange="updateItemQty(${idx}, this.value)">
+                <input type="number" step="any" min="0" max="${item.qty_max}" class="form-control form-control-sm text-center fw-bold font-monospace" value="${item.qty_retur}" onchange="updateItemQty(${idx}, this.value)">
                 <div class="text-muted text-center" style="font-size: 0.72rem;">Maks: ${item.qty_max}</div>
             </td>
             <td class="text-center fw-semibold text-muted small">${escapeHtml(item.satuan)}</td>
@@ -1082,7 +1089,7 @@ function updateItemQty(idx, val) {
         showToast(`Qty retur tidak boleh melebihi kuantitas penerimaan (${returItems[idx].qty_max})`, 'warning');
         returItems[idx].qty_retur = returItems[idx].qty_max;
     } else {
-        returItems[idx].qty_retur = Math.max(0.01, num);
+        returItems[idx].qty_retur = Math.max(0, num);
     }
     renderItemsTable();
 }

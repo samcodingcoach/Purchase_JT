@@ -651,32 +651,57 @@ if ($method === 'PUT') {
         $idPo = (int)($retur['id_po'] ?? 0);
         $nomorPoRetur = $retur['nomor_po_retur'] ?? '';
 
-        if ($newStatus === 'DITERIMA' && $isTukarUnit) {
-            // A. Update receiving_order_detail yang sebelumnya rusak/cacat (status_qc = 0) menjadi pass karena sudah diganti unit baru
-            if ($idRcv > 0) {
-                foreach ($existingItems as $exItem) {
-                    $idBarangItem = (int)$exItem['id_barang'];
-                    $stmtUpdRod = $conn->prepare("UPDATE receiving_order_detail 
-                                                 SET status_qc = 1, 
-                                                     keterangan = CONCAT(COALESCE(keterangan, ''), ' [Tukar Unit Selesai via Retur ', ?, ']') 
-                                                 WHERE id_rcv = ? AND id_barang = ? AND status_qc = 0");
-                    if ($stmtUpdRod) {
-                        $stmtUpdRod->bind_param("sii", $nomorPoRetur, $idRcv, $idBarangItem);
-                        $stmtUpdRod->execute();
-                        $stmtUpdRod->close();
+        if ($newStatus === 'DITERIMA') {
+            if ($isTukarUnit) {
+                // A. Tukar Unit: Update receiving_order_detail yang sebelumnya rusak/cacat (status_qc = 0) menjadi pass karena sudah diganti unit baru
+                if ($idRcv > 0) {
+                    foreach ($existingItems as $exItem) {
+                        $idBarangItem = (int)$exItem['id_barang'];
+                        $stmtUpdRod = $conn->prepare("UPDATE receiving_order_detail 
+                                                     SET status_qc = 1, 
+                                                         keterangan = CONCAT(COALESCE(keterangan, ''), ' [Tukar Unit Selesai via Retur ', ?, ']') 
+                                                     WHERE id_rcv = ? AND id_barang = ? AND status_qc = 0");
+                        if ($stmtUpdRod) {
+                            $stmtUpdRod->bind_param("sii", $nomorPoRetur, $idRcv, $idBarangItem);
+                            $stmtUpdRod->execute();
+                            $stmtUpdRod->close();
+                        }
+                    }
+
+                    // Update status receiving_order menjadi 1 (Diterima Lengkap / Selesai)
+                    $stmtUpdRcv = $conn->prepare("UPDATE receiving_order SET status = 1 WHERE id_rcv = ?");
+                    if ($stmtUpdRcv) {
+                        $stmtUpdRcv->bind_param("i", $idRcv);
+                        $stmtUpdRcv->execute();
+                        $stmtUpdRcv->close();
                     }
                 }
+            } else {
+                // B. Potong Tagihan: Catat keterangan bahwa diselesaikan via Potong Tagihan Faktur dan selesaikan RCV
+                if ($idRcv > 0) {
+                    foreach ($existingItems as $exItem) {
+                        $idBarangItem = (int)$exItem['id_barang'];
+                        $stmtUpdRod = $conn->prepare("UPDATE receiving_order_detail 
+                                                     SET keterangan = CONCAT(COALESCE(keterangan, ''), ' [Potong Tagihan Faktur via Retur ', ?, ']') 
+                                                     WHERE id_rcv = ? AND id_barang = ? AND status_qc = 0");
+                        if ($stmtUpdRod) {
+                            $stmtUpdRod->bind_param("sii", $nomorPoRetur, $idRcv, $idBarangItem);
+                            $stmtUpdRod->execute();
+                            $stmtUpdRod->close();
+                        }
+                    }
 
-                // Update status receiving_order menjadi 1 (Diterima Lengkap / Tidak ada sisa cacat)
-                $stmtUpdRcv = $conn->prepare("UPDATE receiving_order SET status = 1 WHERE id_rcv = ?");
-                if ($stmtUpdRcv) {
-                    $stmtUpdRcv->bind_param("i", $idRcv);
-                    $stmtUpdRcv->execute();
-                    $stmtUpdRcv->close();
+                    // Update status receiving_order menjadi 1 (Tuntas Diselesaikan via Potong Tagihan)
+                    $stmtUpdRcv = $conn->prepare("UPDATE receiving_order SET status = 1 WHERE id_rcv = ?");
+                    if ($stmtUpdRcv) {
+                        $stmtUpdRcv->bind_param("i", $idRcv);
+                        $stmtUpdRcv->execute();
+                        $stmtUpdRcv->close();
+                    }
                 }
             }
 
-            // B. Update request_order status menjadi 'DITERIMA FULL'
+            // Update request_order status menjadi 'DITERIMA FULL'
             if ($idPo > 0) {
                 $stmtUpdRo = $conn->prepare("UPDATE request_order SET status = 'DITERIMA FULL', tanggal_status = NOW() WHERE id_po = ? AND status = 'DITERIMA SEBAGIAN'");
                 if ($stmtUpdRo) {
