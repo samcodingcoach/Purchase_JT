@@ -28,7 +28,7 @@ $idPo = isset($_GET['id_po']) ? intval($_GET['id_po']) : 0;
 if ($idRcv > 0) {
     // 1. Ambil Header RCV, PO, Vendor, Site
     $sqlH = "SELECT r.id_rcv, r.nomor_rcv, r.nomor_sj, r.tanggal_rcv, r.tanggal_diterima, r.file_sj,
-                    po.id_po, po.nomor_po, po.tanggal_po, po.pajak AS rate_pajak, po.diskon AS diskon_po, po.term_of_payment,
+                    po.id_po, po.nomor_po, po.tanggal_po, po.pajak AS rate_pajak, po.total_termasuk_pajak, po.diskon AS diskon_po, po.term_of_payment,
                     v.id_vendor, v.kode_vendor, v.nama_perusahaan AS nama_vendor, v.nama_bank, v.nomor_rekening,
                     COALESCE(NULLIF(v.kontak_person, ''), NULLIF(v.person, ''), '-') AS kontak_person,
                     v.no_telepon, v.email,

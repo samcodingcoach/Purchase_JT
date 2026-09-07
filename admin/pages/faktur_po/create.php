@@ -154,7 +154,7 @@ textarea.form-control {
                                     <!-- Trigger Search Box (Searchable UI) -->
                                     <div class="rcv-custom-select d-flex align-items-center justify-content-between p-2 px-3 border rounded-3 bg-white cursor-pointer shadow-sm" id="rcvTriggerBox" onclick="toggleRcvDropdown(event)" style="cursor: pointer;">
                                         <div id="rcvSelectedDisplay" class="text-truncate me-2">
-                                            <span class="text-muted"><i class="bi bi-search me-2 text-primary"></i>Cari Dokumen Penerimaan (No. RCV, PO, Vendor)...</span>
+                                            <span class="text-muted"><i class="bi bi-search me-2 text-primary"></i>Pilih Dokumen Penerimaan Belum Difakturkan (No. RCV, PO, Vendor)...</span>
                                         </div>
                                         <div class="d-flex align-items-center gap-1">
                                             <button type="button" class="btn btn-sm btn-link text-danger p-0 me-1" id="rcvClearBtn" onclick="clearRcvSelection(event)" style="display: none;" title="Hapus Pilihan">
@@ -162,6 +162,10 @@ textarea.form-control {
                                             </button>
                                             <i class="bi bi-chevron-down text-muted small transition-chevron" id="rcvChevronIcon"></i>
                                         </div>
+                                    </div>
+
+                                    <div class="form-text small text-muted mt-1">
+                                        <i class="bi bi-info-circle me-1"></i>Hanya menampilkan dokumen RCV yang sudah selesai dan belum pernah diterbitkan faktur PO.
                                     </div>
 
                                     <!-- Searchable Dropdown Menu -->
@@ -429,6 +433,7 @@ textarea.form-control {
                                         <option value="11">11%</option>
                                         <option value="12" selected>12%</option>
                                     </select>
+                                    <span id="badgePajakInclusive" class="badge bg-info-subtle text-info-emphasis border" style="font-size:0.68rem; display:none;">Termasuk Pajak</span>
                                 </div>
                                 <span class="font-monospace fw-semibold" id="displayNominalPajak">Rp 0</span>
                             </div>
@@ -587,7 +592,10 @@ function populateRcvDropdownOptions(items) {
              style="cursor: pointer;"
              onclick="selectRcvDoc(${it.id_rcv})">
             <div class="d-flex justify-content-between align-items-center">
-                <strong class="text-primary font-monospace small">${it.nomor_rcv}</strong>
+                <div class="d-flex align-items-center gap-2">
+                    <strong class="text-primary font-monospace small">${it.nomor_rcv}</strong>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle px-1 py-0" style="font-size: 0.65rem;">Belum Difakturkan</span>
+                </div>
                 <span class="badge bg-light text-secondary border px-2 py-1 small fw-normal">${tglDisplay}</span>
             </div>
             <div class="d-flex justify-content-between align-items-center mt-1">
@@ -670,6 +678,14 @@ function apply3WayDataToForm(d) {
     if (d.rate_pajak !== undefined && d.rate_pajak !== null) {
         document.getElementById('selectRatePajak').value = d.rate_pajak;
     }
+    
+    // Status Termasuk Pajak (Inklusif)
+    const isTermasukPajak = (parseInt(d.total_termasuk_pajak) === 1);
+    const badgeInclusive = document.getElementById('badgePajakInclusive');
+    if (badgeInclusive) {
+        badgeInclusive.style.display = isTermasukPajak ? 'inline-block' : 'none';
+    }
+
     calculateDueDate();
 
     // Tab 4 Table Items
@@ -822,10 +838,29 @@ function calculateFinancials() {
     const diskon = parseFloat(document.getElementById('inputDiskon').value) || 0;
     const biayaLain = parseFloat(document.getElementById('inputBiayaLain').value) || 0;
     const ratePajak = parseInt(document.getElementById('selectRatePajak').value) || 0;
+    const isTermasukPajak = (parseInt(active3WayData.total_termasuk_pajak) === 1);
 
-    const dpp = Math.max(0, subRcv - nilaiRetur - diskon);
-    const nominalPajak = dpp * (ratePajak / 100);
-    const grandTotal = dpp + nominalPajak + biayaLain;
+    let dpp = 0;
+    let nominalPajak = 0;
+    let grandTotal = 0;
+
+    const dasarSetelahDiskon = Math.max(0, subRcv - nilaiRetur - diskon);
+
+    if (ratePajak > 0) {
+        if (isTermasukPajak) {
+            dpp = Math.round(dasarSetelahDiskon / (1 + (ratePajak / 100)));
+            nominalPajak = dasarSetelahDiskon - dpp;
+            grandTotal = dasarSetelahDiskon + biayaLain;
+        } else {
+            dpp = dasarSetelahDiskon;
+            nominalPajak = Math.round(dpp * (ratePajak / 100));
+            grandTotal = dpp + nominalPajak + biayaLain;
+        }
+    } else {
+        dpp = dasarSetelahDiskon;
+        nominalPajak = 0;
+        grandTotal = dpp + biayaLain;
+    }
 
     document.getElementById('displaySubtotalPo').textContent = formatRupiah(subPo);
     document.getElementById('displaySubtotalDiterima').textContent = formatRupiah(subRcv);
@@ -883,9 +918,29 @@ async function submitFaktur(statusDokumen) {
     const subRcv = parseFloat(active3WayData.subtotal_diterima) || 0;
     const subPo = parseFloat(active3WayData.subtotal_po) || 0;
     const nilaiRetur = parseFloat(active3WayData.nilai_retur) || 0;
-    const dpp = Math.max(0, subRcv - nilaiRetur - diskon);
-    const nominalPajak = dpp * (ratePajak / 100);
-    const grandTotal = dpp + nominalPajak + biayaLain;
+    const isTermasukPajak = (parseInt(active3WayData.total_termasuk_pajak) === 1);
+
+    let dpp = 0;
+    let nominalPajak = 0;
+    let grandTotal = 0;
+
+    const dasarSetelahDiskon = Math.max(0, subRcv - nilaiRetur - diskon);
+
+    if (ratePajak > 0) {
+        if (isTermasukPajak) {
+            dpp = Math.round(dasarSetelahDiskon / (1 + (ratePajak / 100)));
+            nominalPajak = dasarSetelahDiskon - dpp;
+            grandTotal = dasarSetelahDiskon + biayaLain;
+        } else {
+            dpp = dasarSetelahDiskon;
+            nominalPajak = Math.round(dpp * (ratePajak / 100));
+            grandTotal = dpp + nominalPajak + biayaLain;
+        }
+    } else {
+        dpp = dasarSetelahDiskon;
+        nominalPajak = 0;
+        grandTotal = dpp + biayaLain;
+    }
 
     const payload = {
         id_rcv: parseInt(idRcv),

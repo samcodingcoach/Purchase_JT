@@ -37,6 +37,11 @@ require_once __DIR__ . '/../../components/navbar.php';
     font-size: 0.875rem !important;
     line-height: 1.5 !important;
 }
+.filter-select {
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+}
 .filter-item-control {
     display: flex;
     align-items: center;
@@ -73,17 +78,17 @@ require_once __DIR__ . '/../../components/navbar.php';
                     </div>
                 </div>
                 <!-- Site Filter -->
-                <div style="min-width: 220px;">
-                    <select class="form-select filter-select" id="filterSite" onchange="loadFakturList(1)">
+                <div style="width: 210px; max-width: 210px;">
+                    <select class="form-select filter-select text-truncate" id="filterSite" onchange="loadFakturList(1)" style="width: 100%; max-width: 100%;" title="Filter Site">
                         <option value="">Semua Site / Gudang</option>
                         <?php foreach ($sites as $s): ?>
-                            <option value="<?= $s['id_site'] ?>"><?= htmlspecialchars($s['nama_site']) ?></option>
+                            <option value="<?= $s['id_site'] ?>" title="<?= htmlspecialchars($s['nama_site']) ?>"><?= htmlspecialchars($s['nama_site']) ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
                 <!-- Status Filter -->
-                <div style="min-width: 200px;">
-                    <select class="form-select filter-select" id="filterStatus" onchange="loadFakturList(1)">
+                <div style="width: 195px; max-width: 195px;">
+                    <select class="form-select filter-select text-truncate" id="filterStatus" onchange="loadFakturList(1)" style="width: 100%; max-width: 100%;" title="Filter Status">
                         <option value="">Semua Status Tagihan</option>
                         <option value="DRAFT">DRAFT</option>
                         <option value="BELUM DIBAYAR">BELUM DIBAYAR</option>

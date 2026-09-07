@@ -52,7 +52,7 @@ require_once __DIR__ . '/../../components/navbar.php';
 
                 <!-- Dropdown Filter Site -->
                 <div class="col-md-4 col-10">
-                    <select class="form-select" id="filterSite" style="height: 38px;">
+                    <select class="form-select text-truncate" id="filterSite" style="height: 38px; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;" title="Filter Site">
                         <option value="">Semua Site / Lokasi</option>
                     </select>
                 </div>

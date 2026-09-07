@@ -59,7 +59,7 @@ require_once __DIR__ . '/../../components/navbar.php';
 
                 <!-- Site Filter -->
                 <div class="col-md-2 col-lg-2">
-                    <select class="form-select form-select-sm" id="filterSite">
+                    <select class="form-select form-select-sm text-truncate" id="filterSite" style="text-overflow: ellipsis; white-space: nowrap; overflow: hidden;" title="Filter Site">
                         <option value="">Semua Site / Lokasi</option>
                     </select>
                 </div>

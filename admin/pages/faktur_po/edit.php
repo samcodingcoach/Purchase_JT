@@ -23,7 +23,7 @@ if ($idFaktur <= 0) {
 
 // Ambil Detail Faktur PO
 $sql = "SELECT fp.*,
-               po.nomor_po, po.tanggal_po,
+               po.nomor_po, po.tanggal_po, po.total_termasuk_pajak,
                rcv.nomor_rcv, rcv.nomor_sj AS nomor_sj_rcv, rcv.tanggal_diterima AS tanggal_rcv_diterima,
                rp.nomor_po_retur, rp.kompensasi AS retur_kompensasi, rp.total AS retur_total,
                v.kode_vendor, v.nama_perusahaan AS nama_vendor, v.no_telepon AS telepon_vendor, v.email AS email_vendor,
@@ -438,6 +438,9 @@ textarea.form-control {
                                         <option value="11" <?= ((int)$faktur['rate_pajak'] === 11) ? 'selected' : '' ?>>11%</option>
                                         <option value="12" <?= ((int)$faktur['rate_pajak'] === 12) ? 'selected' : '' ?>>12%</option>
                                     </select>
+                                    <?php if (!empty($faktur['total_termasuk_pajak'])): ?>
+                                        <span class="badge bg-info-subtle text-info-emphasis border" style="font-size:0.68rem;">Termasuk Pajak</span>
+                                    <?php endif; ?>
                                 </div>
                                 <span class="font-monospace fw-semibold" id="displayNominalPajak">Rp <?= number_format((float)$faktur['nominal_pajak'], 0, ',', '.') ?></span>
                             </div>
@@ -563,10 +566,29 @@ function calculateFinancials() {
     const diskon = parseFloat(document.getElementById('inputDiskon').value) || 0;
     const biayaLain = parseFloat(document.getElementById('inputBiayaLain').value) || 0;
     const ratePajak = parseInt(document.getElementById('selectRatePajak').value) || 0;
+    const isTermasukPajak = (parseInt(initialFakturData.total_termasuk_pajak) === 1);
 
-    const dpp = Math.max(0, subRcv - nilaiRetur - diskon);
-    const nominalPajak = dpp * (ratePajak / 100);
-    const grandTotal = dpp + nominalPajak + biayaLain;
+    let dpp = 0;
+    let nominalPajak = 0;
+    let grandTotal = 0;
+
+    const dasarSetelahDiskon = Math.max(0, subRcv - nilaiRetur - diskon);
+
+    if (ratePajak > 0) {
+        if (isTermasukPajak) {
+            dpp = Math.round(dasarSetelahDiskon / (1 + (ratePajak / 100)));
+            nominalPajak = dasarSetelahDiskon - dpp;
+            grandTotal = dasarSetelahDiskon + biayaLain;
+        } else {
+            dpp = dasarSetelahDiskon;
+            nominalPajak = Math.round(dpp * (ratePajak / 100));
+            grandTotal = dpp + nominalPajak + biayaLain;
+        }
+    } else {
+        dpp = dasarSetelahDiskon;
+        nominalPajak = 0;
+        grandTotal = dpp + biayaLain;
+    }
 
     document.getElementById('displaySubtotalPo').textContent = formatRupiah(subPo);
     document.getElementById('displaySubtotalDiterima').textContent = formatRupiah(subRcv);
@@ -613,9 +635,29 @@ async function submitEditFaktur(statusDokumen) {
     const subRcv = parseFloat(initialFakturData.subtotal_diterima) || 0;
     const subPo = parseFloat(initialFakturData.subtotal_po) || 0;
     const nilaiRetur = parseFloat(initialFakturData.nilai_retur) || 0;
-    const dpp = Math.max(0, subRcv - nilaiRetur - diskon);
-    const nominalPajak = dpp * (ratePajak / 100);
-    const grandTotal = dpp + nominalPajak + biayaLain;
+    const isTermasukPajak = (parseInt(initialFakturData.total_termasuk_pajak) === 1);
+
+    let dpp = 0;
+    let nominalPajak = 0;
+    let grandTotal = 0;
+
+    const dasarSetelahDiskon = Math.max(0, subRcv - nilaiRetur - diskon);
+
+    if (ratePajak > 0) {
+        if (isTermasukPajak) {
+            dpp = Math.round(dasarSetelahDiskon / (1 + (ratePajak / 100)));
+            nominalPajak = dasarSetelahDiskon - dpp;
+            grandTotal = dasarSetelahDiskon + biayaLain;
+        } else {
+            dpp = dasarSetelahDiskon;
+            nominalPajak = Math.round(dpp * (ratePajak / 100));
+            grandTotal = dpp + nominalPajak + biayaLain;
+        }
+    } else {
+        dpp = dasarSetelahDiskon;
+        nominalPajak = 0;
+        grandTotal = dpp + biayaLain;
+    }
 
     const payload = {
         id_faktur: parseInt(document.getElementById('editIdFaktur').value),
