@@ -2,7 +2,7 @@
 /**
  * Halaman Cetak Bukti Pembayaran Faktur PO (Payment Voucher)
  * Path: admin/pages/pembayaran_po/print.php
- * Format: Terintegrasi API & External CSS (styles/print_document.css)
+ * Format: Siap Print B/W (Hitam Putih Resmi) Terintegrasi API & External CSS
  */
 
 require_once __DIR__ . '/../../../config/config.php';
@@ -129,10 +129,10 @@ $companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
     <!-- JUDUL DOKUMEN & KOTAK NOMOR DOKUMEN -->
     <div class="title-box-row">
         <div class="title-area">
-            <div class="doc-title-main">BUKTI PEMBAYARAN FAKTUR PO</div>
+            <div class="doc-title-main">BUKTI PENGELUARAN KAS / BANK</div>
             <div class="doc-title-sub">
                 <span class="line-side"></span>
-                <span class="sub-text">PAYMENT &nbsp; VOUCHER</span>
+                <span class="sub-text">PAYMENT &nbsp; VOUCHER &nbsp; (FAKTUR &nbsp; PO)</span>
                 <span class="line-side"></span>
             </div>
         </div>
@@ -142,19 +142,19 @@ $companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
             <div class="box-row-val font-monospace" id="docKodeBayar">-</div>
             <div class="box-divider"></div>
             <div class="box-row-lbl">Tanggal Bayar</div>
-            <div class="box-row-val" id="docTanggalBayar">-</div>
+            <div class="box-row-val font-monospace" id="docTanggalBayar">-</div>
         </div>
     </div>
 
-    <!-- METADATA 2 KOLOM -->
+    <!-- METADATA 2 KOLOM (BERSIH & FORMAL B/W) -->
     <div class="info-grid">
-        <!-- Kolom Kiri -->
+        <!-- Kolom Kiri: Referensi Dokumen -->
         <div class="info-col-left">
             <table class="table-meta-details">
                 <tr>
                     <td class="lbl">No. Faktur Sistem</td>
                     <td class="colon">:</td>
-                    <td class="val font-monospace fw-bold text-primary" id="docNomorFaktur">-</td>
+                    <td class="val font-monospace fw-bold" id="docNomorFaktur">-</td>
                 </tr>
                 <tr>
                     <td class="lbl">No. Invoice Vendor</td>
@@ -169,12 +169,12 @@ $companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
                 <tr>
                     <td class="lbl">Skema Pembayaran</td>
                     <td class="colon">:</td>
-                    <td class="val" id="docJenisBayar">-</td>
+                    <td class="val fw-semibold" id="docJenisBayar">-</td>
                 </tr>
             </table>
         </div>
 
-        <!-- Kolom Kanan -->
+        <!-- Kolom Kanan: Pihak Vendor & Rekening -->
         <div class="info-col-right">
             <table class="table-meta-details">
                 <tr>
@@ -190,63 +190,71 @@ $companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
                 <tr>
                     <td class="lbl">Site Operasional</td>
                     <td class="colon">:</td>
-                    <td class="val fw-semibold" id="docSite">-</td>
+                    <td class="val" id="docSite">-</td>
                 </tr>
                 <tr>
-                    <td class="lbl">Status Pembayaran</td>
+                    <td class="lbl">Status Faktur</td>
                     <td class="colon">:</td>
-                    <td class="val" id="docStatusBayar">-</td>
+                    <td class="val fw-bold" id="docStatusBayar">-</td>
                 </tr>
             </table>
         </div>
     </div>
 
-    <!-- BOX JUMLAH TRANSFER -->
-    <div class="p-3 border rounded-3 bg-light mb-3">
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <!-- KOTAK JUMLAH PEMBAYARAN SAAT INI (PENEKANAN UTAMA) -->
+    <div class="amount-box-bw my-3 p-3 border rounded-2" style="border: 1.5px solid #000 !important; background: #fafafa;">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
             <div>
-                <div class="text-muted small text-uppercase fw-bold" style="font-size: 10px;">Jumlah Uang Yang Ditransfer</div>
-                <div class="fs-4 fw-bold text-primary font-monospace" id="docNominalTransfer">Rp 0</div>
+                <div class="text-uppercase fw-bold text-dark" style="font-size: 10.5px; letter-spacing: 0.5px;">
+                    Jumlah Uang Yang Dibayarkan (Transaksi Ini) :
+                </div>
+                <div class="fs-4 fw-bold text-dark font-monospace mt-1" id="docNominalTransfer">Rp 0</div>
             </div>
-            <div class="text-end small text-muted">
-                <div>Bank Asal: <strong class="text-dark" id="docBankAsal">-</strong> (No. Ref: <span class="font-monospace text-dark" id="docNoRef">-</span>)</div>
-                <div>Biaya Admin Bank: <span class="font-monospace text-dark" id="docBiayaAdmin">Rp 0</span></div>
+            <div class="text-end" style="font-size: 11.5px;">
+                <div>Kas / Bank Pengirim: <strong class="font-monospace text-dark" id="docBankAsal">-</strong> (No. Rek: <span class="font-monospace text-dark" id="docNorekAsal">-</span>)</div>
+                <div>No. Referensi / Ref: <strong class="font-monospace text-dark" id="docNoRef">-</strong> | Biaya Admin: <span class="font-monospace text-dark" id="docBiayaAdmin">Rp 0</span></div>
             </div>
         </div>
-        <div class="mt-2 pt-2 border-top small text-secondary">
+        <div class="mt-2 pt-2 border-top border-dark small text-dark" style="border-top: 1px dashed #333 !important;">
             <strong>Terbilang:</strong> <em id="docTerbilang"># Nol Rupiah #</em>
         </div>
     </div>
 
-    <!-- TABEL RINCIAN FINANSIAL FAKTUR -->
+    <!-- TABEL MUTASI & RIWAYAT PEMBAYARAN FAKTUR -->
+    <div class="table-title fw-bold text-dark mb-1" style="font-size: 11px; text-transform: uppercase;">
+        Rincian Mutasi &amp; Riwayat Pembayaran Tagihan Faktur :
+    </div>
     <table class="table-items-main mb-3">
         <thead>
             <tr>
-                <th style="width: 25%;">TOTAL TAGIHAN FAKTUR</th>
-                <th style="width: 25%;">TRANSFER PEMBAYARAN INI</th>
-                <th style="width: 25%;">BIAYA ADMIN BANK</th>
-                <th style="width: 25%;">SISA HUTANG FAKTUR</th>
+                <th style="width: 35px;">NO.</th>
+                <th style="width: 120px;">KODE BAYAR</th>
+                <th style="width: 100px;">TGL BAYAR</th>
+                <th style="width: 110px;">BANK ASAL</th>
+                <th style="width: 100px;">NO. REF</th>
+                <th style="width: 130px;" class="text-end">JUMLAH DIBAYAR</th>
+                <th style="width: 130px;" class="text-end">SISA HUTANG</th>
             </tr>
         </thead>
-        <tbody class="text-center font-monospace">
+        <tbody id="docHistoryTableBody">
             <tr>
-                <td id="docTabelTagihan">Rp 0</td>
-                <td class="fw-bold text-primary" id="docTabelBayar">Rp 0</td>
-                <td id="docTabelAdmin">Rp 0</td>
-                <td class="fw-bold" id="docTabelSisa">Rp 0</td>
+                <td colspan="7" class="text-center py-3 text-muted">Memuat data rincian pembayaran...</td>
             </tr>
         </tbody>
+        <tfoot id="docHistoryTableFoot">
+            <!-- Populated dynamically by JS -->
+        </tfoot>
     </table>
 
     <!-- CATATAN TRANSAKSI -->
     <div id="docCatatanContainer" class="d-none mb-3">
         <div class="catatan-penerimaan-section mb-0">
-            <div class="notes-title">Catatan Transaksi:</div>
+            <div class="notes-title">Catatan / Keterangan Pembayaran:</div>
             <div class="catatan-box" id="docCatatanTransaksi"></div>
         </div>
     </div>
 
-    <!-- LEMBAR PENGESAHAN / TANDA TANGAN (3 KOLOM) -->
+    <!-- LEMBAR PENGESAHAN / TANDA TANGAN (3 KOLOM RESMI B/W) -->
     <div class="sig-section">
         <div class="row">
             <!-- 1. Dibuat Oleh (Finance) -->
@@ -261,7 +269,7 @@ $companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
             <!-- 2. Disetujui Oleh (Approval) -->
             <div class="col-4 sig-col">
                 <div class="sig-header-main">Disetujui Oleh</div>
-                <div class="sig-header-sub" id="docSigRoleApprover">(Manager Finance)</div>
+                <div class="sig-header-sub" id="docSigRoleApprover">(Manager Finance / Direksi)</div>
                 <div class="sig-line-box">
                     ( &nbsp; <span class="sig-person-name" id="docSigApprover">-</span> &nbsp; )
                 </div>
@@ -302,6 +310,15 @@ function escapeHtml(text) {
     if (!text) return '';
     const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
     return String(text).replace(/[&<>"']/g, m => map[m]);
+}
+
+function formatTanggalIndo(tanggalStr) {
+    if (!tanggalStr || tanggalStr === '0000-00-00') return '-';
+    const parts = tanggalStr.split(' ')[0].split('-');
+    if (parts.length === 3) {
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return tanggalStr;
 }
 
 function terbilangIndo(angka) {
@@ -347,42 +364,116 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('docNomorFaktur').textContent = pay.nomor_faktur || '-';
         document.getElementById('docInvoiceVendor').textContent = pay.nomor_faktur_vendor || '-';
         document.getElementById('docNomorPo').textContent = pay.nomor_po || '-';
-        document.getElementById('docJenisBayar').innerHTML = (parseInt(pay.jenis_pembayaran) === 1) 
-            ? '<span class="badge bg-success-subtle text-success border border-success-subtle">1x Lunas</span>' 
-            : '<span class="badge bg-warning-subtle text-warning border border-warning-subtle text-dark">Kredit / Termin</span>';
+        document.getElementById('docJenisBayar').textContent = (parseInt(pay.jenis_pembayaran) === 1) 
+            ? '1x Bayar (Lunas)' 
+            : 'Kredit / Termin (Sebagian)';
 
         document.getElementById('docNamaVendor').textContent = pay.nama_vendor || '-';
         
         const destBank = pay.bank_tujuan || pay.bank_vendor || '-';
         const destNorek = pay.norek_tujuan || pay.norek_vendor || '-';
         const destAn = pay.an_pengiriman || pay.an_vendor || pay.nama_vendor || '-';
-        document.getElementById('docRekeningTujuan').innerHTML = `${escapeHtml(destBank)} &bull; <strong class="font-monospace">${escapeHtml(destNorek)}</strong><br><span class="text-muted small">a.n. ${escapeHtml(destAn)}</span>`;
+        document.getElementById('docRekeningTujuan').innerHTML = `${escapeHtml(destBank)} &bull; <strong class="font-monospace">${escapeHtml(destNorek)}</strong><br><span class="text-muted" style="font-size: 10.5px;">a.n. ${escapeHtml(destAn)}</span>`;
 
         document.getElementById('docSite').textContent = pay.nama_site || '-';
-        document.getElementById('docStatusBayar').innerHTML = `<span class="badge bg-primary-subtle text-primary border">${escapeHtml(pay.status_pembayaran || 'SELESAI')}</span>`;
 
-        // Amount Box
+        // Financials & Status
         const nominal = parseFloat(pay.nominal_pengiriman) || 0;
         const biayaAdmin = parseFloat(pay.biaya_admin) || 0;
         const totalTagihan = parseFloat(pay.total_tagihan) || 0;
         const sisaPiutang = parseFloat(pay.sisa_piutang) || 0;
+        const totalTerbayarFaktur = parseFloat(pay.total_terbayar_faktur) || 0;
+        const isLunas = sisaPiutang <= 0 || parseInt(pay.status_pembayaran) === 1 || pay.status_faktur === 'LUNAS';
 
+        document.getElementById('docStatusBayar').textContent = isLunas ? 'LUNAS' : 'SEBAGIAN DIBAYAR (BELUM LUNAS)';
+
+        // Box Penekanan Pembayaran Saat Ini
         document.getElementById('docNominalTransfer').textContent = formatRupiah(nominal);
         document.getElementById('docBankAsal').textContent = pay.bank_pengirim || '-';
+        document.getElementById('docNorekAsal').textContent = pay.norek_pengirim || '-';
         document.getElementById('docNoRef').textContent = pay.no_ref || '-';
         document.getElementById('docBiayaAdmin').textContent = formatRupiah(biayaAdmin);
         
         const terbilangStr = terbilangIndo(nominal).trim() + " Rupiah";
         document.getElementById('docTerbilang').textContent = `# ${terbilangStr} #`;
 
-        // Financial Table
-        document.getElementById('docTabelTagihan').textContent = formatRupiah(totalTagihan);
-        document.getElementById('docTabelBayar').textContent = formatRupiah(nominal);
-        document.getElementById('docTabelAdmin').textContent = formatRupiah(biayaAdmin);
-        
-        const sisaEl = document.getElementById('docTabelSisa');
-        sisaEl.textContent = formatRupiah(sisaPiutang);
-        sisaEl.className = `fw-bold ${sisaPiutang <= 0 ? 'text-success' : 'text-danger'}`;
+        // TABEL MUTASI & RIWAYAT PEMBAYARAN FAKTUR
+        const historyList = pay.history_pembayaran || [];
+        const tbody = document.getElementById('docHistoryTableBody');
+        const tfoot = document.getElementById('docHistoryTableFoot');
+
+        let rowsHtml = '';
+        let cumulativePaid = 0;
+
+        if (historyList.length === 0) {
+            // Jika tidak ada list, render transaksi saat ini
+            rowsHtml = `
+                <tr style="background-color: #f2f2f2; font-weight: bold;">
+                    <td class="text-center font-monospace">1</td>
+                    <td class="font-monospace">${escapeHtml(pay.kode_pembayaran)} <span style="font-size: 9.5px;">[SAAT INI]</span></td>
+                    <td class="text-center font-monospace">${formatTanggalIndo(pay.tanggal_bayar)}</td>
+                    <td class="font-monospace">${escapeHtml(pay.bank_pengirim || '-')}</td>
+                    <td class="font-monospace">${escapeHtml(pay.no_ref || '-')}</td>
+                    <td class="text-end font-monospace">${formatRupiah(nominal)}</td>
+                    <td class="text-end font-monospace">${formatRupiah(sisaPiutang)}</td>
+                </tr>
+            `;
+            cumulativePaid = nominal;
+        } else {
+            historyList.forEach((h, idx) => {
+                const isCurrent = (parseInt(h.id_pembayaran_detail) === ID_DETAIL);
+                const hNominal = parseFloat(h.nominal_pengiriman) || 0;
+                const hSisa = parseFloat(h.sisa_piutang) || 0;
+                cumulativePaid += hNominal;
+
+                if (isCurrent) {
+                    rowsHtml += `
+                        <tr style="background-color: #ededed; font-weight: bold; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000;">
+                            <td class="text-center font-monospace">${idx + 1}</td>
+                            <td class="font-monospace">
+                                <strong>${escapeHtml(h.kode_pembayaran)}</strong> 
+                                <span class="d-inline-block px-1 border border-dark rounded" style="font-size: 8.5px; background: #fff;">SAAT INI</span>
+                            </td>
+                            <td class="text-center font-monospace">${formatTanggalIndo(h.tanggal_bayar)}</td>
+                            <td class="font-monospace">${escapeHtml(h.bank_pengirim || '-')}</td>
+                            <td class="font-monospace">${escapeHtml(h.no_ref || '-')}</td>
+                            <td class="text-end font-monospace fs-6"><strong>${formatRupiah(hNominal)}</strong></td>
+                            <td class="text-end font-monospace"><strong>${formatRupiah(hSisa)}</strong></td>
+                        </tr>
+                    `;
+                } else {
+                    rowsHtml += `
+                        <tr>
+                            <td class="text-center font-monospace">${idx + 1}</td>
+                            <td class="font-monospace">${escapeHtml(h.kode_pembayaran)}</td>
+                            <td class="text-center font-monospace">${formatTanggalIndo(h.tanggal_bayar)}</td>
+                            <td class="font-monospace">${escapeHtml(h.bank_pengirim || '-')}</td>
+                            <td class="font-monospace">${escapeHtml(h.no_ref || '-')}</td>
+                            <td class="text-end font-monospace">${formatRupiah(hNominal)}</td>
+                            <td class="text-end font-monospace">${formatRupiah(hSisa)}</td>
+                        </tr>
+                    `;
+                }
+            });
+        }
+
+        tbody.innerHTML = rowsHtml;
+
+        // Footer Tabel Rincian Ringkasan
+        tfoot.innerHTML = `
+            <tr style="border-top: 2px solid #000; font-weight: bold; background: #fafafa;">
+                <td colspan="5" class="text-end font-monospace">TOTAL NILAI TAGIHAN FAKTUR :</td>
+                <td colspan="2" class="text-end font-monospace">${formatRupiah(totalTagihan)}</td>
+            </tr>
+            <tr style="font-weight: bold; background: #fafafa;">
+                <td colspan="5" class="text-end font-monospace">TOTAL TERBAYAR S.D. SAAT INI :</td>
+                <td colspan="2" class="text-end font-monospace">${formatRupiah(totalTerbayarFaktur || cumulativePaid)}</td>
+            </tr>
+            <tr style="border-top: 1px solid #333; font-weight: bold; background: #f0f0f0;">
+                <td colspan="5" class="text-end font-monospace">SISA TAGIHAN / HUTANG FAKTUR :</td>
+                <td colspan="2" class="text-end font-monospace fs-6">${formatRupiah(sisaPiutang)}</td>
+            </tr>
+        `;
 
         // Catatan Transaksi
         if (pay.keterangan && pay.keterangan.trim() !== '') {
@@ -411,7 +502,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else if (jabatanApprover) {
             roleApproverText = `(${jabatanApprover})`;
         } else {
-            roleApproverText = `(Pimpinan / Direksi)`;
+            roleApproverText = `(Manager Finance / Direksi)`;
         }
         document.getElementById('docSigRoleApprover').textContent = roleApproverText;
 

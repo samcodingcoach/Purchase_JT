@@ -52,7 +52,7 @@ if ($method === 'GET') {
                              pp.id_faktur, pp.status_pembayaran, pp.jenis_pembayaran,
                              fp.nomor_faktur, fp.nomor_faktur_vendor, fp.tanggal_faktur_vendor,
                              fp.tanggal_jatuh_tempo, fp.total_tagihan, fp.terbayar AS total_terbayar_faktur,
-                             fp.sisa_tagihan AS sisa_tagihan_faktur, fp.nama_bank AS bank_vendor,
+                             fp.sisa_tagihan AS sisa_tagihan_faktur, fp.status AS status_faktur, fp.nama_bank AS bank_vendor,
                              fp.nomor_rekening AS norek_vendor, fp.atas_nama_rekening AS an_vendor,
                              po.nomor_po,
                              v.id_vendor, v.nama_perusahaan AS nama_vendor,
@@ -85,6 +85,22 @@ if ($method === 'GET') {
         if (!$detail) {
             sendJson(false, 'Data pembayaran tidak ditemukan.', null, 404);
         }
+
+        // Ambil Riwayat Seluruh Pembayaran untuk Faktur Ini
+        $idFakturDoc = (int)$detail['id_faktur'];
+        $sqlHist = "SELECT ppd.id_pembayaran_detail, ppd.kode_pembayaran, ppd.tanggal_bayar,
+                           ppd.nominal_pengiriman, ppd.biaya_admin, ppd.sisa_piutang,
+                           ppd.bank_pengirim, ppd.no_ref, k.nama_karyawan AS nama_pembuat
+                    FROM payment_purchase_detail ppd
+                    JOIN payment_purchase pp ON ppd.id_pembayaran = pp.id_pembayaran
+                    LEFT JOIN karyawan k ON ppd.id_karyawan = k.id_karyawan
+                    WHERE pp.id_faktur = ?
+                    ORDER BY ppd.tanggal_bayar ASC, ppd.id_pembayaran_detail ASC";
+        $stmtH = $conn->prepare($sqlHist);
+        $stmtH->bind_param("i", $idFakturDoc);
+        $stmtH->execute();
+        $detail['history_pembayaran'] = $stmtH->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmtH->close();
 
         sendJson(true, 'Detail pembayaran berhasil dimuat.', $detail);
     }
@@ -290,12 +306,18 @@ if ($method === 'POST') {
         sendJson(false, "Nominal pembayaran (Rp " . number_format($nominalPengiriman, 0, ',', '.') . ") melebihi sisa tagihan faktur (Rp " . number_format($sisaTagihanExisting, 0, ',', '.') . ").", null, 422);
     }
 
-    // Default Fallback Rekening Tujuan jika kosong
+    // Default Fallback Rekening Tujuan: 1. Faktur PO, 2. Master Vendor
     if (empty($bankTujuan)) {
-        $bankTujuan = !empty($faktur['nama_bank']) ? $faktur['nama_bank'] : ($faktur['bank_vendor_master'] ?? '');
+        if (!empty($faktur['nama_bank'])) {
+            $bankTujuan = $faktur['nama_bank'];
+        } else if (!empty($faktur['bank_vendor_master'])) {
+            $bankTujuan = $faktur['bank_vendor_master'];
+        } else {
+            $bankTujuan = 'CASH';
+        }
     }
     if (empty($norekTujuan)) {
-        $norekTujuan = !empty($faktur['nomor_rekening']) ? $faktur['nomor_rekening'] : ($faktur['norek_vendor_master'] ?? '');
+        $norekTujuan = !empty($faktur['nomor_rekening']) ? $faktur['nomor_rekening'] : (!empty($faktur['norek_vendor_master']) ? $faktur['norek_vendor_master'] : '');
     }
     if (empty($anPengiriman)) {
         $anPengiriman = !empty($faktur['atas_nama_rekening']) ? $faktur['atas_nama_rekening'] : ($faktur['nama_vendor'] ?? '');

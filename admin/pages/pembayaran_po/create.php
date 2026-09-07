@@ -288,11 +288,16 @@ textarea.form-control {
                         <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom flex-wrap gap-2">
                             <div>
                                 <h6 class="fw-bold text-dark mb-0">Rekening Vendor (Tujuan Transfer Pembayaran)</h6>
-                                <div class="small text-muted">Secara default diambil dari master vendor dan dapat diubah secara manual jika ada rekening alternatif.</div>
+                                <div class="small text-muted">Secara default diambil dari data Faktur PO dan dapat dialihkan ke Rekening Master Vendor atau diubah manual.</div>
                             </div>
-                            <button type="button" class="btn btn-outline-primary btn-sm px-3" onclick="resetRekeningVendorToDefault()" title="Kembalikan ke rekening default master vendor">
-                                <i class="bi bi-arrow-counterclockwise me-1"></i> Reset ke Rekening Vendor
-                            </button>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-primary btn-sm px-3" onclick="applyRekeningFromFaktur()" title="Gunakan rekening yang tercatat pada Faktur PO">
+                                    <i class="bi bi-receipt me-1"></i> Rekening Faktur
+                                </button>
+                                <button type="button" class="btn btn-outline-success btn-sm px-3" onclick="applyRekeningFromMasterVendor()" title="Gunakan rekening default dari Master Vendor">
+                                    <i class="bi bi-building me-1"></i> Rekening Master Vendor
+                                </button>
+                            </div>
                         </div>
 
                         <div class="row g-3">
@@ -304,17 +309,7 @@ textarea.form-control {
                                     <button class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split px-3" type="button" onclick="toggleBankTujuanDropdown(event)" title="Pilih Bank"></button>
                                 </div>
                                 <div class="dropdown-menu shadow-sm w-100 p-1" id="bankTujuanMenu" style="max-height: 220px; overflow-y: auto; display: none; position: absolute; top: calc(100% + 2px); left: 0; z-index: 1050;">
-                                    <button type="button" class="dropdown-item py-1 small rounded bank-t-opt" onclick="selectBankTujuan('BCA')">BCA</button>
-                                    <button type="button" class="dropdown-item py-1 small rounded bank-t-opt" onclick="selectBankTujuan('Bank Mandiri')">Bank Mandiri</button>
-                                    <button type="button" class="dropdown-item py-1 small rounded bank-t-opt" onclick="selectBankTujuan('BRI')">BRI</button>
-                                    <button type="button" class="dropdown-item py-1 small rounded bank-t-opt" onclick="selectBankTujuan('BNI')">BNI</button>
-                                    <button type="button" class="dropdown-item py-1 small rounded bank-t-opt" onclick="selectBankTujuan('CIMB Niaga')">CIMB Niaga</button>
-                                    <button type="button" class="dropdown-item py-1 small rounded bank-t-opt" onclick="selectBankTujuan('BSI')">BSI</button>
-                                    <button type="button" class="dropdown-item py-1 small rounded bank-t-opt" onclick="selectBankTujuan('Bank Danamon')">Bank Danamon</button>
-                                    <button type="button" class="dropdown-item py-1 small rounded bank-t-opt" onclick="selectBankTujuan('Bank Permata')">Bank Permata</button>
-                                    <button type="button" class="dropdown-item py-1 small rounded bank-t-opt" onclick="selectBankTujuan('CASH')">CASH / TUNAI</button>
-                                    <button type="button" class="dropdown-item py-1 small rounded bank-t-opt" onclick="selectBankTujuan('QRIS')">QRIS</button>
-                                    <div id="noBankTujuanFound" class="text-muted small px-3 py-2 d-none">Gunakan nama bank yang diketik manual.</div>
+                                    <!-- Populated dynamically by updateBankTujuanOptions() -->
                                 </div>
                             </div>
 
@@ -469,6 +464,7 @@ async function loadLookupData() {
 
             renderFakturOptions(fakturList);
             renderApproverOptions(approverList);
+            updateBankTujuanOptions('');
 
             // Cek jika ada preselected id_faktur dari query parameter
             const preselectedId = parseInt(document.getElementById('selectedIdFaktur').value);
@@ -610,12 +606,44 @@ async function selectFaktur(idFaktur) {
     }
 }
 
-function resetRekeningVendorToDefault() {
+function applyRekeningFromFaktur() {
     if (!currentSelectedFaktur) return;
     const f = currentSelectedFaktur;
-    document.getElementById('bankTujuan').value = f.nama_bank || f.bank_vendor_master || '';
-    document.getElementById('norekTujuan').value = f.nomor_rekening || f.norek_vendor_master || '';
-    document.getElementById('anPengiriman').value = f.atas_nama_rekening || f.nama_vendor || '';
+
+    // Prioritas 1: Data dari Faktur PO
+    let vendorBank = f.nama_bank || '';
+    let vendorNorek = f.nomor_rekening || '';
+    let vendorAn = f.atas_nama_rekening || f.nama_vendor || '';
+
+    // Jika di faktur kosong, fallback ke master vendor
+    if (!vendorBank && f.bank_vendor_master) {
+        vendorBank = f.bank_vendor_master;
+        vendorNorek = f.norek_vendor_master || '';
+    }
+
+    updateBankTujuanOptions(f.nama_bank || '', f.bank_vendor_master || '');
+    document.getElementById('bankTujuan').value = vendorBank;
+    document.getElementById('norekTujuan').value = vendorNorek;
+    document.getElementById('anPengiriman').value = vendorAn;
+}
+
+function applyRekeningFromMasterVendor() {
+    if (!currentSelectedFaktur) return;
+    const f = currentSelectedFaktur;
+
+    // Prioritas 2: Data dari Master Vendor
+    let vendorBank = f.bank_vendor_master || f.nama_bank || '';
+    let vendorNorek = f.norek_vendor_master || f.nomor_rekening || '';
+    let vendorAn = f.atas_nama_rekening || f.nama_vendor || '';
+
+    updateBankTujuanOptions(f.nama_bank || '', f.bank_vendor_master || '');
+    document.getElementById('bankTujuan').value = vendorBank;
+    document.getElementById('norekTujuan').value = vendorNorek;
+    document.getElementById('anPengiriman').value = vendorAn;
+}
+
+function resetRekeningVendorToDefault() {
+    applyRekeningFromFaktur();
 }
 
 function clearFakturSelection(e) {
@@ -632,6 +660,7 @@ function clearFakturSelection(e) {
     document.getElementById('bankTujuan').value = '';
     document.getElementById('norekTujuan').value = '';
     document.getElementById('anPengiriman').value = '';
+    updateBankTujuanOptions('', '');
 
     document.getElementById('dispTotalTagihan').textContent = 'Rp 0';
     document.getElementById('dispTerbayar').textContent = 'Rp 0';
@@ -759,8 +788,50 @@ function selectBankPengirim(val) {
 }
 
 // -------------------------------------------------------------
-// BANK TUJUAN VENDOR COMBOBOX (PERSIS BANK PENGIRIM)
+// BANK TUJUAN VENDOR COMBOBOX (PERSIS BANK PENGIRIM & DINAMIS DARI VENDOR)
 // -------------------------------------------------------------
+const DEFAULT_BANK_LIST = [
+    'BCA', 'Bank Mandiri', 'BRI', 'BNI', 'CIMB Niaga', 
+    'BSI', 'Bank Danamon', 'Bank Permata', 'Bank Jatim', 'Bank BJB',
+    'Bank Mega', 'Bank Sinarmas', 'Bank BTN', 'Bank OCBC NISP',
+    'CASH', 'QRIS'
+];
+
+function updateBankTujuanOptions(fakturBank, masterBank) {
+    const menu = document.getElementById('bankTujuanMenu');
+    if (!menu) return;
+
+    let html = '';
+
+    // 1. Opsi dari Faktur PO (Prioritas 1)
+    if (fakturBank && fakturBank.trim() !== '') {
+        const fBankTrim = fakturBank.trim();
+        html += `<button type="button" class="dropdown-item py-1 small rounded bank-t-opt fw-bold text-primary bg-primary-subtle mb-1" onclick="selectBankTujuan('${escapeHtml(fBankTrim)}')">
+            <i class="bi bi-receipt me-1"></i> ${escapeHtml(fBankTrim)} <span class="badge bg-primary ms-1" style="font-size: 0.65rem;">Dari Faktur</span>
+        </button>`;
+    }
+
+    // 2. Opsi dari Master Vendor (Prioritas 2 / Pilihan Alternatif)
+    if (masterBank && masterBank.trim() !== '' && masterBank.trim().toLowerCase() !== (fakturBank || '').trim().toLowerCase()) {
+        const mBankTrim = masterBank.trim();
+        html += `<button type="button" class="dropdown-item py-1 small rounded bank-t-opt fw-bold text-success bg-success-subtle mb-1" onclick="selectBankTujuan('${escapeHtml(mBankTrim)}')">
+            <i class="bi bi-building me-1"></i> ${escapeHtml(mBankTrim)} <span class="badge bg-success ms-1" style="font-size: 0.65rem;">Master Vendor</span>
+        </button>`;
+    }
+
+    // 3. Daftar Bank Umum Standar
+    DEFAULT_BANK_LIST.forEach(b => {
+        const isFaktur = fakturBank && (b.toLowerCase() === fakturBank.trim().toLowerCase());
+        const isMaster = masterBank && (b.toLowerCase() === masterBank.trim().toLowerCase());
+        if (!isFaktur && !isMaster) {
+            html += `<button type="button" class="dropdown-item py-1 small rounded bank-t-opt" onclick="selectBankTujuan('${escapeHtml(b)}')">${escapeHtml(b)}</button>`;
+        }
+    });
+
+    html += `<div id="noBankTujuanFound" class="text-muted small px-3 py-2 d-none">Gunakan nama bank yang diketik manual.</div>`;
+    menu.innerHTML = html;
+}
+
 function showBankTujuanDropdown() {
     document.getElementById('bankTujuanMenu').style.display = 'block';
 }
