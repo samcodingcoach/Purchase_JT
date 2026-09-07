@@ -222,29 +222,27 @@ require_once __DIR__ . '/../../components/navbar.php';
                             </div>
 
                             <div class="col-md-6">
-                                <div class="card bg-light border-0 rounded-3 p-3 h-100 justify-content-between">
-                                    <h6 class="fw-bold text-dark mb-2"><i class="bi bi-receipt me-1 text-primary"></i> Ringkasan Total Pembayaran</h6>
-                                    
-                                    <div class="d-flex justify-content-between mb-2 small text-muted">
-                                        <span>Subtotal Barang:</span>
+                                <div class="p-3 border rounded-3 bg-white shadow-xs">
+                                    <div class="d-flex justify-content-between mb-2 small">
+                                        <span class="text-muted">Subtotal Barang:</span>
                                         <span class="fw-semibold text-dark font-monospace" id="displaySubtotalBarang">Rp 0</span>
                                     </div>
-
-                                    <div class="d-flex justify-content-between mb-2 small text-muted">
-                                        <span>Diskon Global PO:</span>
+                                    <div class="d-flex justify-content-between mb-2 small">
+                                        <span class="text-muted">Diskon Akhir:</span>
                                         <span class="fw-semibold text-danger font-monospace" id="displayDiskonPo">- Rp 0</span>
                                     </div>
-
-                                    <div class="d-flex justify-content-between mb-2 small text-muted">
-                                        <span>Nilai PPN (<span id="displayRatePajak">0</span>%):</span>
+                                    <div class="d-flex justify-content-between mb-2 small">
+                                        <span class="text-muted">DPP (Dasar Pengenaan Pajak):</span>
+                                        <span class="fw-semibold text-dark font-monospace" id="displayDpp">Rp 0</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2 small">
+                                        <span class="text-muted" id="displayLabelPpn">PPN (12%):</span>
                                         <span class="fw-semibold text-dark font-monospace" id="displayNominalPajak">Rp 0</span>
                                     </div>
-
                                     <hr class="my-2">
-
-                                    <div class="d-flex justify-content-between fs-5 fw-bold text-dark pt-1">
-                                        <span>Grand Total PO:</span>
-                                        <span class="text-primary font-monospace" id="displayGrandTotal">Rp 0</span>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="fw-bold text-dark">GRAND TOTAL:</span>
+                                        <span class="fs-5 fw-bold text-primary font-monospace" id="displayGrandTotal">Rp 0</span>
                                     </div>
                                 </div>
                             </div>
@@ -476,24 +474,31 @@ function calculateAllTotals() {
     const ratePajak = parseFloat(document.getElementById('editPajakRate').value) || 0;
     const isInclusive = document.getElementById('editTotalTermasukPajak').checked;
 
-    const dpp = maxZero(subtotalBarang - diskonPo);
+    const dasarSetelahDiskon = maxZero(subtotalBarang - diskonPo);
+    let dpp = 0;
     let nominalPajak = 0;
-    let grandTotal = dpp;
+    let grandTotal = 0;
 
     if (ratePajak > 0) {
         if (isInclusive) {
-            const dppReal = dpp / (1 + (ratePajak / 100));
-            nominalPajak = dpp - dppReal;
-            grandTotal = dpp;
+            dpp = dasarSetelahDiskon / (1 + (ratePajak / 100));
+            nominalPajak = dasarSetelahDiskon - dpp;
+            grandTotal = dasarSetelahDiskon;
         } else {
-            nominalPajak = dpp * (ratePajak / 100);
+            dpp = dasarSetelahDiskon;
+            nominalPajak = (dpp * ratePajak) / 100;
             grandTotal = dpp + nominalPajak;
         }
+    } else {
+        dpp = dasarSetelahDiskon;
+        nominalPajak = 0;
+        grandTotal = dpp;
     }
 
     document.getElementById('displaySubtotalBarang').textContent = formatRupiah(subtotalBarang);
     document.getElementById('displayDiskonPo').textContent = '- ' + formatRupiah(diskonPo);
-    document.getElementById('displayRatePajak').textContent = ratePajak;
+    document.getElementById('displayDpp').textContent = formatRupiah(dpp);
+    document.getElementById('displayLabelPpn').textContent = `PPN (${ratePajak}%)${isInclusive ? ' (Inklusif)' : ''}:`;
     document.getElementById('displayNominalPajak').textContent = formatRupiah(nominalPajak);
     document.getElementById('displayGrandTotal').textContent = formatRupiah(grandTotal);
 }

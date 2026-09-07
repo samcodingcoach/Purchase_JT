@@ -85,6 +85,7 @@ if ($method === 'GET') {
                 $dppReal = $dpp / (1 + ($ratePajak / 100));
                 $nominalPajak = $dpp - $dppReal;
                 $grandTotal = $dpp;
+                $dpp = $dppReal;
             } else {
                 $nominalPajak = $dpp * ($ratePajak / 100);
                 $grandTotal = $dpp + $nominalPajak;
@@ -95,9 +96,11 @@ if ($method === 'GET') {
         $po['total_item'] = count($items);
         $po['subtotal_barang'] = $subtotalBarang;
         $po['nominal_diskon'] = $diskonPo;
+        $po['dpp'] = $dpp;
         $po['rate_pajak'] = $ratePajak;
         $po['nominal_pajak'] = $nominalPajak;
         $po['grand_total'] = $grandTotal;
+        $po['total_termasuk_pajak'] = $isInclusive ? 1 : 0;
 
         jsonResponse(true, 'Detail Purchase Order berhasil diambil.', $po);
     }

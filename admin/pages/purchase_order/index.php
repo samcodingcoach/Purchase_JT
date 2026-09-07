@@ -137,6 +137,30 @@ require_once __DIR__ . '/../../components/navbar.php';
         overflow: visible !important;
         position: relative;
     }
+    #modalPoTabNav {
+        border-bottom: 0 !important;
+        margin-bottom: -1px !important;
+    }
+    #modalPoTabNav .nav-link {
+        border: 1px solid transparent !important;
+        border-top-left-radius: 6px !important;
+        border-top-right-radius: 6px !important;
+        color: #475569 !important;
+        background: transparent !important;
+        margin-bottom: -1px !important;
+        padding: 0.6rem 1rem !important;
+    }
+    #modalPoTabNav .nav-link:hover {
+        border-color: #e2e8f0 #e2e8f0 transparent !important;
+        color: #0d6efd !important;
+    }
+    #modalPoTabNav .nav-link.active {
+        color: #0f172a !important;
+        background-color: #ffffff !important;
+        border-color: #dee2e6 #dee2e6 #ffffff !important;
+        border-bottom: 1px solid #ffffff !important;
+        font-weight: 700 !important;
+    }
     </style>
 
     <!-- TABEL DATA PURCHASE ORDER -->
@@ -181,40 +205,33 @@ require_once __DIR__ . '/../../components/navbar.php';
 
 <!-- MODAL DETAIL PURCHASE ORDER (DILENGKAPI TAB PEMISAH FUNGSI) -->
 <div class="modal fade" id="modalDetailPo" tabindex="-1" aria-labelledby="modalDetailPoLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width: 830px; width: 100%;">
         <div class="modal-content border-0 shadow-lg rounded-3">
             <!-- MODAL HEADER DENGAN STATUS & TAB INTEGRASI -->
             <div class="modal-header bg-white pt-3 pb-0 px-4 border-bottom flex-column align-items-stretch">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <div>
-                        <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2 mb-0" id="modalDetailPoLabel">
-                            <i class="bi bi-cart-check-fill text-primary"></i>
-                            <span id="detailNomorPo">PO-XXXX-XXXX</span>
-                        </h5>
-                        <div class="text-muted small" style="font-size: 0.78rem;">Rincian Lengkap Dokumen Purchase Order</div>
-                    </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <div id="detailStatusBadgeHeader"></div>
-                        <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
+                    <h5 class="modal-title fw-bold text-dark font-monospace mb-0" id="modalDetailPoLabel">
+                        <span id="detailNomorPo">PO-XXXX-XXXX</span>
+                    </h5>
+                    <div id="detailStatusBadgeHeader"></div>
                 </div>
 
                 <!-- Nav Tabs Modal Sesuai Fungsi -->
-                <ul class="nav nav-tabs border-bottom-0 flex-nowrap" id="modalPoTabNav" role="tablist">
+                <ul class="nav nav-tabs border-bottom-0" id="modalPoTabNav" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active fw-bold text-dark small py-2 px-3" id="tab-m-info-btn" data-bs-toggle="tab" data-bs-target="#tab-m-info" type="button" role="tab">
+                        <button class="nav-link active fw-semibold" id="tab-m-info-btn" data-bs-toggle="tab" data-bs-target="#tab-m-info" type="button" role="tab">
                             <i class="bi bi-file-earmark-text me-1 text-primary"></i> 1. Informasi PO &amp; Vendor
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link fw-bold text-dark small py-2 px-3" id="tab-m-shipping-btn" data-bs-toggle="tab" data-bs-target="#tab-m-shipping" type="button" role="tab">
+                        <button class="nav-link fw-semibold" id="tab-m-shipping-btn" data-bs-toggle="tab" data-bs-target="#tab-m-shipping" type="button" role="tab">
                             <i class="bi bi-truck me-1 text-primary"></i> 2. Pengiriman &amp; Pembayaran
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link fw-bold text-dark small py-2 px-3" id="tab-m-items-btn" data-bs-toggle="tab" data-bs-target="#tab-m-items" type="button" role="tab">
+                        <button class="nav-link fw-semibold" id="tab-m-items-btn" data-bs-toggle="tab" data-bs-target="#tab-m-items" type="button" role="tab">
                             <i class="bi bi-boxes me-1 text-primary"></i> 3. Rincian Barang &amp; Biaya
-                            <span class="badge bg-primary text-white ms-1 font-monospace" id="modalItemCountBadge">0</span>
+                            <span class="badge bg-primary text-white ms-1" id="modalItemCountBadge">0</span>
                         </button>
                     </li>
                 </ul>
@@ -229,7 +246,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <div class="card bg-light border-0 rounded-3 p-3 h-100">
-                                    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-info-circle me-1 text-primary"></i> Data Purchase Order</h6>
+                                    <h6 class="fw-bold text-dark mb-3">Data Purchase Order</h6>
                                     
                                     <div class="mb-2">
                                         <span class="text-muted small d-block">Tanggal PO:</span>
@@ -256,7 +273,7 @@ require_once __DIR__ . '/../../components/navbar.php';
 
                             <div class="col-md-6">
                                 <div class="card bg-light border-0 rounded-3 p-3 h-100">
-                                    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-building me-1 text-primary"></i> Vendor</h6>
+                                    <h6 class="fw-bold text-dark mb-3">Vendor</h6>
                                     
                                     <div class="mb-2">
                                         <span class="text-muted small d-block">Nama Perusahaan:</span>
@@ -291,7 +308,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <div class="card bg-light border-0 rounded-3 p-3 h-100">
-                                    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-geo-alt me-1 text-primary"></i> Lokasi &amp; Pengiriman</h6>
+                                    <h6 class="fw-bold text-dark mb-3">Lokasi &amp; Pengiriman</h6>
                                     
                                     <div class="mb-2">
                                         <span class="text-muted small d-block">Site Tujuan:</span>
@@ -314,7 +331,7 @@ require_once __DIR__ . '/../../components/navbar.php';
 
                             <div class="col-md-6">
                                 <div class="card bg-light border-0 rounded-3 p-3 h-100">
-                                    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-credit-card me-1 text-primary"></i> Ketentuan Pembayaran</h6>
+                                    <h6 class="fw-bold text-dark mb-3">Ketentuan Pembayaran</h6>
                                     
                                     <div class="mb-3">
                                         <span class="text-muted small d-block">Term of Payment (T.O.P):</span>
@@ -329,15 +346,15 @@ require_once __DIR__ . '/../../components/navbar.php';
                     <div class="tab-pane fade" id="tab-m-items" role="tabpanel">
                         <!-- Tabel Item Barang PO -->
                         <div class="table-responsive mb-3 border rounded-3">
-                            <table class="table table-sm table-striped align-middle mb-0">
-                                <thead class="table-light small text-muted">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light small text-muted text-uppercase">
                                     <tr>
-                                        <th style="width: 40px;" class="text-center">No</th>
-                                        <th>Nama Barang &amp; Kode</th>
-                                        <th style="width: 90px;" class="text-center">Qty</th>
-                                        <th style="width: 120px;" class="text-end">Harga Satuan</th>
-                                        <th style="width: 100px;" class="text-end">Diskon</th>
-                                        <th style="width: 130px;" class="text-end">Subtotal</th>
+                                        <th style="width: 45px;" class="text-center">#</th>
+                                        <th>Barang</th>
+                                        <th style="width: 85px;" class="text-center">Kts</th>
+                                        <th style="width: 140px;" class="text-end">Harga Satuan</th>
+                                        <th style="width: 130px;" class="text-end">Diskon Item</th>
+                                        <th style="width: 140px;" class="text-end">Subtotal</th>
                                     </tr>
                                 </thead>
                                 <tbody id="detailItemsTableBody">
@@ -348,26 +365,30 @@ require_once __DIR__ . '/../../components/navbar.php';
                             </table>
                         </div>
 
-                        <!-- Financial Calculation Card -->
+                        <!-- Financial Calculation Card (Konsisten dengan Proses PO) -->
                         <div class="row justify-content-end">
-                            <div class="col-md-7">
-                                <div class="card bg-light border-0 rounded-3 p-3">
-                                    <div class="d-flex justify-content-between mb-1 small text-muted">
-                                        <span>Subtotal Barang:</span>
+                            <div class="col-md-6">
+                                <div class="p-3 border rounded-3 bg-white shadow-xs">
+                                    <div class="d-flex justify-content-between mb-2 small">
+                                        <span class="text-muted">Subtotal Barang:</span>
                                         <span class="fw-semibold text-dark font-monospace" id="calcSubtotalBarang">Rp 0</span>
                                     </div>
-                                    <div class="d-flex justify-content-between mb-1 small text-muted">
-                                        <span>Diskon Global PO:</span>
+                                    <div class="d-flex justify-content-between mb-2 small">
+                                        <span class="text-muted">Diskon Akhir:</span>
                                         <span class="fw-semibold text-danger font-monospace" id="calcDiskonPo">- Rp 0</span>
                                     </div>
-                                    <div class="d-flex justify-content-between mb-2 small text-muted">
-                                        <span>PPN (<span id="calcRatePajak">0</span>%):</span>
+                                    <div class="d-flex justify-content-between mb-2 small">
+                                        <span class="text-muted">DPP (Dasar Pengenaan Pajak):</span>
+                                        <span class="fw-semibold text-dark font-monospace" id="calcDpp">Rp 0</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2 small">
+                                        <span class="text-muted" id="calcLabelPpn">PPN (12%):</span>
                                         <span class="fw-semibold text-dark font-monospace" id="calcNominalPajak">Rp 0</span>
                                     </div>
                                     <hr class="my-2">
-                                    <div class="d-flex justify-content-between fs-6 fw-bold text-dark">
-                                        <span>Grand Total PO:</span>
-                                        <span class="text-primary font-monospace" id="calcGrandTotal">Rp 0</span>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="fw-bold text-dark">GRAND TOTAL:</span>
+                                        <span class="fs-5 fw-bold text-primary font-monospace" id="calcGrandTotal">Rp 0</span>
                                     </div>
                                 </div>
                             </div>
@@ -679,7 +700,8 @@ async function openDetailModal(idPo) {
 
     document.getElementById('calcSubtotalBarang').textContent = 'Rp 0';
     document.getElementById('calcDiskonPo').textContent = '- Rp 0';
-    document.getElementById('calcRatePajak').textContent = '0';
+    document.getElementById('calcDpp').textContent = 'Rp 0';
+    document.getElementById('calcLabelPpn').textContent = 'PPN (12%):';
     document.getElementById('calcNominalPajak').textContent = 'Rp 0';
     document.getElementById('calcGrandTotal').textContent = 'Rp 0';
     document.getElementById('modalItemCountBadge').textContent = '0';
@@ -733,16 +755,37 @@ async function openDetailModal(idPo) {
     const topNum = parseInt(po.term_of_payment) || 0;
     document.getElementById('detailTop').textContent = (topNum === 0) ? 'C.O.D (Cash On Delivery)' : `Tempo ${topNum} Hari`;
 
-    // Tab 3 Financial Calculation
+    // Tab 3 Financial Calculation (Konsisten dengan Perhitungan Proses PO)
     const subtotalBarang = parseFloat(po.subtotal_barang) || 0;
-    const diskonPo = parseFloat(po.nominal_diskon) || 0;
-    const ratePajak = parseFloat(po.rate_pajak) || 0;
-    const nominalPajak = parseFloat(po.nominal_pajak) || 0;
-    const grandTotal = parseFloat(po.grand_total) || 0;
+    const diskonPo = parseFloat(po.nominal_diskon || po.diskon) || 0;
+    const ratePajak = parseFloat(po.rate_pajak || po.pajak) || 0;
+    const isTermasukPajak = parseInt(po.total_termasuk_pajak) === 1;
+
+    let dpp = 0;
+    let nominalPajak = 0;
+    let grandTotal = 0;
+
+    const dasarSetelahDiskon = Math.max(0, subtotalBarang - diskonPo);
+    if (ratePajak > 0) {
+        if (isTermasukPajak) {
+            dpp = dasarSetelahDiskon / (1 + (ratePajak / 100));
+            nominalPajak = dasarSetelahDiskon - dpp;
+            grandTotal = dasarSetelahDiskon;
+        } else {
+            dpp = dasarSetelahDiskon;
+            nominalPajak = (dpp * ratePajak) / 100;
+            grandTotal = dpp + nominalPajak;
+        }
+    } else {
+        dpp = dasarSetelahDiskon;
+        nominalPajak = 0;
+        grandTotal = dpp;
+    }
 
     document.getElementById('calcSubtotalBarang').textContent = formatRupiah(subtotalBarang);
-    document.getElementById('calcDiskonPo').textContent = '- ' + formatRupiah(diskonPo);
-    document.getElementById('calcRatePajak').textContent = ratePajak;
+    document.getElementById('calcDiskonPo').textContent = `- ${formatRupiah(diskonPo)}`;
+    document.getElementById('calcDpp').textContent = formatRupiah(dpp);
+    document.getElementById('calcLabelPpn').textContent = `PPN (${ratePajak}%)${isTermasukPajak ? ' (Inklusif)' : ''}:`;
     document.getElementById('calcNominalPajak').textContent = formatRupiah(nominalPajak);
     document.getElementById('calcGrandTotal').textContent = formatRupiah(grandTotal);
 
