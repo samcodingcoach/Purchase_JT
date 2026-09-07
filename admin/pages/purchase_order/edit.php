@@ -176,9 +176,9 @@ require_once __DIR__ . '/../../components/navbar.php';
                                         <th style="width: 40px;" class="text-center">No</th>
                                         <th>Nama Barang &amp; Kode</th>
                                         <th style="width: 100px;" class="text-center">Qty</th>
-                                        <th style="width: 150px;">Harga Satuan (Rp)</th>
-                                        <th style="width: 130px;">Diskon Item (Rp)</th>
-                                        <th style="width: 160px;" class="text-end">Subtotal (Rp)</th>
+                                        <th style="width: 150px;">Harga Satuan</th>
+                                        <th style="width: 130px;">Diskon Item</th>
+                                        <th style="width: 160px;" class="text-end">Subtotal</th>
                                     </tr>
                                 </thead>
                                 <tbody id="tablePricingItemsBody">
@@ -193,10 +193,10 @@ require_once __DIR__ . '/../../components/navbar.php';
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <div class="card bg-light border-0 rounded-3 p-3 h-100">
-                                    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-sliders me-1 text-primary"></i> Pengaturan Pajak &amp; Diskon Global</h6>
+                                    <h6 class="fw-bold text-dark mb-3">Pengaturan Pajak &amp; Diskon Global</h6>
                                     
                                     <div class="mb-3">
-                                        <label class="form-label small fw-bold">Diskon Global PO (Rp)</label>
+                                        <label class="form-label small fw-bold">Diskon Global PO</label>
                                         <div class="input-group input-group-sm">
                                             <span class="input-group-text bg-white">Rp</span>
                                             <input type="text" class="form-control form-control-sm font-monospace text-end" id="editDiskonPo" value="0" oninput="handleGlobalDiskonInput(this)">

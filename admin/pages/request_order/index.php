@@ -98,6 +98,10 @@ require_once __DIR__ . '/../../components/navbar.php';
     .ro-filter-bar .form-select {
         padding-top: 0.15rem !important;
         padding-bottom: 0.35rem !important;
+        padding-right: 2rem !important;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow: hidden;
         line-height: 1.5 !important;
     }
     .ro-filter-bar .form-control {
@@ -346,7 +350,7 @@ async function loadMasterSites() {
         masterSiteList = res.data.items || [];
         const select = document.getElementById('filterSite');
         masterSiteList.forEach(s => {
-            select.innerHTML += `<option value="${s.id_site}">${s.nama_site} (${s.kode_site})</option>`;
+            select.innerHTML += `<option value="${s.id_site}">${escapeHtml(s.nama_site)}</option>`;
         });
     }
 }

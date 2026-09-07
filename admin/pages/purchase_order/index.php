@@ -108,6 +108,10 @@ require_once __DIR__ . '/../../components/navbar.php';
     .po-filter-bar .form-select {
         padding-top: 0.15rem !important;
         padding-bottom: 0.35rem !important;
+        padding-right: 2rem !important;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow: hidden;
         line-height: 1.5 !important;
     }
     .po-filter-bar .form-control {
@@ -444,7 +448,7 @@ async function loadSiteOptions() {
             let options = '<option value="">Semua Site / Lokasi</option>';
             if (Array.isArray(items)) {
                 items.forEach(site => {
-                    options += `<option value="${site.id_site}">${escapeHtml(site.nama_site)} (${escapeHtml(site.kode_site || 'SITE')})</option>`;
+                    options += `<option value="${site.id_site}">${escapeHtml(site.nama_site)}</option>`;
                 });
             }
             select.innerHTML = options;
