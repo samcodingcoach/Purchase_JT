@@ -310,7 +310,7 @@ async function loadReceivingData() {
     items.forEach((item, idx) => {
         const qtyPo = parseFloat(item.qty_po) || 0;
         const qtyRcv = parseFloat(item.qty_diterima) || 0;
-        const statusQc = parseInt(item.status_qc) || 1;
+        const statusQc = (item.status_qc !== undefined && item.status_qc !== null && item.status_qc !== '') ? parseInt(item.status_qc) : 1;
         const qtyBaik = (statusQc === 1) ? qtyRcv : 0;
         const qtyRusak = (statusQc === 0) ? qtyRcv : 0;
         const note = item.keterangan_item || '';

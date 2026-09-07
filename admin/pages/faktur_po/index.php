@@ -415,7 +415,10 @@ require_once __DIR__ . '/../../components/navbar.php';
             </div>
 
             <!-- MODAL FOOTER -->
-            <div class="modal-footer bg-light py-2 px-4 d-flex justify-content-end">
+            <div class="modal-footer bg-light py-2 px-4 d-flex justify-content-between">
+                <a href="#" id="modalBtnPrint" class="btn btn-outline-dark btn-sm px-3 fw-semibold" target="_blank">
+                    <i class="bi bi-printer me-1"></i> Cetak Faktur (Print / PDF)
+                </a>
                 <button type="button" class="btn btn-secondary btn-sm px-4" data-bs-dismiss="modal">Tutup</button>
             </div>
         </div>
@@ -556,6 +559,9 @@ function renderTable(rows, pagination) {
                     <button type="button" class="btn btn-outline-primary btn-sm px-2 py-1 shadow-none" onclick="viewFakturDetail(${r.id_faktur})" title="View Detail Faktur">
                         <i class="bi bi-eye"></i>
                     </button>
+                    <a href="<?= BASE_URL ?>/admin/pages/faktur_po/print.php?id=${r.id_faktur}" class="btn btn-outline-dark btn-sm px-2 py-1 shadow-none" target="_blank" title="Cetak Faktur Purchase Order">
+                        <i class="bi bi-printer"></i>
+                    </a>
                     ${payBtnHtml}
                     ${editBtnHtml}
                 </div>
@@ -658,6 +664,12 @@ function renderModalDetailContent(d) {
     const subtitleHtml = `No. Faktur: ${d.nomor_faktur || '-'} | Invoice Vendor: ${d.nomor_faktur_vendor || '-'}` +
         (isUpdated ? ` <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle py-1 px-1 ms-2 d-inline-flex align-items-center" title="Faktur telah diedit (Diperbarui: ${formatDate(d.updated_at)})"><i class="bi bi-pencil-fill" style="font-size: 0.65rem;"></i></span>` : '');
     document.getElementById('modalDetailSubtitle').innerHTML = subtitleHtml;
+
+    // Tombol Cetak Modal
+    const printBtn = document.getElementById('modalBtnPrint');
+    if (printBtn) {
+        printBtn.href = `<?= BASE_URL ?>/admin/pages/faktur_po/print.php?id=${d.id_faktur}`;
+    }
 
     // 1. Tab 1: Dokumen Asal
     document.getElementById('detailNomorRcv').textContent = d.nomor_rcv ? `RCV: ${d.nomor_rcv}` : '-';

@@ -347,14 +347,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             let totalQtyRcv = 0;
 
             items.forEach((it, idx) => {
-                const statusQc = parseInt(it.status_qc) || 1;
-                const qcText = (statusQc === 1) ? 'BAIK' : 'CACAT';
+                const statusQc = (it.status_qc !== undefined && it.status_qc !== null && it.status_qc !== '') ? parseInt(it.status_qc) : 1;
+                const isPassed = (statusQc === 1);
+                const qcText = isPassed ? 'BAIK' : 'CACAT';
                 const qtyPo = parseFloat(it.qty_po) || 0;
                 const qtyRcv = parseFloat(it.qty_diterima) || 0;
                 const ket = it.keterangan_item || '-';
 
                 totalQtyPo += qtyPo;
-                totalQtyRcv += qtyRcv;
+                if (isPassed) {
+                    totalQtyRcv += qtyRcv;
+                }
+
+                const rcvDisplay = isPassed ? `${qtyPo > 0 && qtyRcv === 0 ? '0' : qtyRcv}` : `-${qtyRcv}`;
 
                 itemsHtml += `
                     <tr>
@@ -362,9 +367,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <td class="text-center font-monospace" style="font-size: 10px;">${escapeHtml(it.kode_barang || '-')}</td>
                         <td>${escapeHtml(it.nama_barang || '')}</td>
                         <td class="text-center font-monospace">${qtyPo}</td>
-                        <td class="text-center font-monospace fw-bold">${qtyRcv}</td>
+                        <td class="text-center font-monospace fw-bold ${!isPassed ? 'text-danger' : ''}">${rcvDisplay}</td>
                         <td class="text-center" style="font-size: 10px;">${escapeHtml(it.satuan || 'PCS').toUpperCase()}</td>
-                        <td class="text-center fw-bold">${qcText}</td>
+                        <td class="text-center fw-bold ${!isPassed ? 'text-danger' : ''}">${qcText}</td>
                         <td>${escapeHtml(ket)}</td>
                     </tr>
                 `;
