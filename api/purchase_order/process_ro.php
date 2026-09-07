@@ -153,7 +153,7 @@ if ($action === 'approve' || $action === 'draft') {
         }
 
         if (!$isPwValid) {
-            jsonResponse(false, 'Password konfirmasi salah. Otorisasi penerbitan Purchase Order ditolak.', null, 401);
+            jsonResponse(false, 'Password konfirmasi salah. Otorisasi penerbitan Purchase Order ditolak.', null, 400);
         }
     }
 

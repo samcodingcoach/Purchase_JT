@@ -30,7 +30,7 @@ require_once __DIR__ . '/../../components/navbar.php';
     <!-- Header Title -->
     <div class="mb-4">
         <h4 class="fw-bold text-dark mb-0">
-            <i class="bi bi-pencil-square text-primary me-2"></i>Edit Purchase Order <span id="headerNomorPoDisplay" class="font-monospace text-primary">...</span>
+            Edit Purchase Order <span id="headerNomorPoDisplay" class="font-monospace text-primary">...</span>
         </h4>
     </div>
 
@@ -44,24 +44,24 @@ require_once __DIR__ . '/../../components/navbar.php';
     <form id="formEditPo" onsubmit="handleUpdatePo(event)" class="d-none" novalidate>
         <input type="hidden" id="editIdPo" value="<?= $idPo ?>">
 
-        <div class="card border-0 shadow-sm rounded-3 overflow-hidden mb-4">
+        <div class="card border-0 shadow-sm rounded-3 mb-4">
             <!-- TAB NAVIGATION HEADER -->
             <div class="card-header bg-white border-bottom p-0">
-                <ul class="nav nav-tabs card-header-tabs m-0 px-3 pt-2" id="poEditTabNav" role="tablist">
+                <ul class="nav nav-tabs card-header-tabs m-0 px-3" id="poEditTabNav" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active fw-semibold text-dark py-3 px-4" id="tab-info-btn" data-bs-toggle="tab" data-bs-target="#tab-info" type="button" role="tab">
-                            <i class="bi bi-file-earmark-text me-2 text-primary"></i>1. Data PO &amp; Vendor
+                        <button class="nav-link active fw-semibold py-3 px-3" id="tab-info-btn" data-bs-toggle="tab" data-bs-target="#tab-info" type="button" role="tab">
+                            <i class="bi bi-file-earmark-text me-1 text-primary"></i> 1. Data PO &amp; Vendor
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link fw-semibold text-dark py-3 px-4" id="tab-shipping-btn" data-bs-toggle="tab" data-bs-target="#tab-shipping" type="button" role="tab">
-                            <i class="bi bi-truck me-2 text-primary"></i>2. Pengiriman &amp; Pembayaran
+                        <button class="nav-link fw-semibold py-3 px-3" id="tab-shipping-btn" data-bs-toggle="tab" data-bs-target="#tab-shipping" type="button" role="tab">
+                            <i class="bi bi-truck me-1 text-primary"></i> 2. Pengiriman &amp; Pembayaran
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link fw-semibold text-dark py-3 px-4" id="tab-pricing-btn" data-bs-toggle="tab" data-bs-target="#tab-pricing" type="button" role="tab">
-                            <i class="bi bi-cash-stack me-2 text-primary"></i>3. Rincian Barang &amp; Biaya
-                            <span class="badge bg-primary ms-2 font-monospace" id="tabItemCountBadge">0</span>
+                        <button class="nav-link fw-semibold py-3 px-3" id="tab-pricing-btn" data-bs-toggle="tab" data-bs-target="#tab-pricing" type="button" role="tab">
+                            <i class="bi bi-boxes me-1 text-primary"></i> 3. Rincian Barang &amp; Biaya
+                            <span class="badge bg-primary ms-1" id="tabItemCountBadge">0</span>
                         </button>
                     </li>
                 </ul>
@@ -113,7 +113,6 @@ require_once __DIR__ . '/../../components/navbar.php';
                                     <option value="TIDAK DISETUJUI INTERNAL">Tidak Disetujui Internal</option>
                                     <option value="REVIEW VENDOR">Review Vendor</option>
                                     <option value="DIPROSES VENDOR">Diproses Vendor</option>
-                                    <option value="DITERIMA">Diterima</option>
                                     <option value="BATAL">Batal</option>
                                 </select>
                             </div>
@@ -200,7 +199,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                                         <label class="form-label small fw-bold">Diskon Global PO (Rp)</label>
                                         <div class="input-group input-group-sm">
                                             <span class="input-group-text bg-white">Rp</span>
-                                            <input type="number" class="form-control form-control-sm font-monospace" id="editDiskonPo" min="0" step="100" value="0" oninput="calculateAllTotals()">
+                                            <input type="text" class="form-control form-control-sm font-monospace text-end" id="editDiskonPo" value="0" oninput="handleGlobalDiskonInput(this)">
                                         </div>
                                     </div>
 
@@ -280,6 +279,54 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // -------------------------------------------------------------
+// HELPER THOUSAND SEPARATOR & NUMERIC PARSING
+// -------------------------------------------------------------
+function parseThousandNumber(val) {
+    if (typeof val === 'number') return Math.max(0, val);
+    if (!val) return 0;
+    const clean = String(val).replace(/\./g, '').replace(/,/g, '.').replace(/[^0-9.]/g, '');
+    const num = parseFloat(clean);
+    return isNaN(num) || num < 0 ? 0 : num;
+}
+
+function formatThousand(val) {
+    const num = Math.round(parseThousandNumber(val));
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+function handleThousandInput(el, onComplete) {
+    let cursorPos = el.selectionStart;
+    let originalLen = el.value.length;
+
+    let cleanVal = el.value.replace(/[^0-9]/g, '');
+    let num = parseInt(cleanVal, 10);
+    if (isNaN(num) || num < 0) num = 0;
+
+    el.value = num > 0 ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : '0';
+
+    let newLen = el.value.length;
+    cursorPos = cursorPos + (newLen - originalLen);
+    if (cursorPos < 0) cursorPos = 0;
+    try { el.setSelectionRange(cursorPos, cursorPos); } catch(e){}
+
+    if (typeof onComplete === 'function') {
+        onComplete();
+    }
+}
+
+function handlePriceInput(el) {
+    handleThousandInput(el, () => calculateRowSubtotal(el));
+}
+
+function handleDiscountInput(el) {
+    handleThousandInput(el, () => calculateRowSubtotal(el));
+}
+
+function handleGlobalDiskonInput(el) {
+    handleThousandInput(el, () => calculateAllTotals());
+}
+
+// -------------------------------------------------------------
 // LOAD EXISTING PO DATA
 // -------------------------------------------------------------
 async function loadExistingPoData() {
@@ -347,7 +394,7 @@ async function loadExistingPoData() {
     document.getElementById('editAlamat').value = po.alamat || (po.alamat_site || '');
 
     // Tab 3 Pricing Settings
-    document.getElementById('editDiskonPo').value = po.diskon || 0;
+    document.getElementById('editDiskonPo').value = formatThousand(po.diskon || 0);
     document.getElementById('editPajakRate').value = po.pajak || 0;
     document.getElementById('editTotalTermasukPajak').checked = (parseInt(po.total_termasuk_pajak) === 1);
 
@@ -382,13 +429,13 @@ async function loadExistingPoData() {
                 <td>
                     <div class="input-group input-group-sm">
                         <span class="input-group-text bg-light font-monospace" style="font-size: 0.75rem;">Rp</span>
-                        <input type="number" class="form-control form-control-sm font-monospace item-harga" value="${itemHarga}" min="0" step="100" oninput="calculateRowSubtotal(this)" required>
+                        <input type="text" class="form-control form-control-sm font-monospace text-end item-harga" value="${formatThousand(itemHarga)}" oninput="handlePriceInput(this)" placeholder="0" required>
                     </div>
                 </td>
                 <td>
                     <div class="input-group input-group-sm">
                         <span class="input-group-text bg-light font-monospace" style="font-size: 0.75rem;">Rp</span>
-                        <input type="number" class="form-control form-control-sm font-monospace item-diskon" value="${itemDiskon}" min="0" step="100" oninput="calculateRowSubtotal(this)">
+                        <input type="text" class="form-control form-control-sm font-monospace text-end item-diskon" value="${formatThousand(itemDiskon)}" oninput="handleDiscountInput(this)" placeholder="0">
                     </div>
                 </td>
                 <td class="text-end font-monospace fw-bold text-dark item-subtotal-display">
@@ -408,8 +455,8 @@ async function loadExistingPoData() {
 function calculateRowSubtotal(inputEl) {
     const row = inputEl.closest('tr');
     const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
-    const harga = parseFloat(row.querySelector('.item-harga').value) || 0;
-    const diskon = parseFloat(row.querySelector('.item-diskon').value) || 0;
+    const harga = parseThousandNumber(row.querySelector('.item-harga').value);
+    const diskon = parseThousandNumber(row.querySelector('.item-diskon').value);
 
     const subtotal = maxZero((qty * harga) - diskon);
     row.querySelector('.item-subtotal-display').textContent = formatRupiah(subtotal);
@@ -420,12 +467,12 @@ function calculateAllTotals() {
     let subtotalBarang = 0;
     document.querySelectorAll('#tablePricingItemsBody tr').forEach(row => {
         const qty = parseFloat(row.querySelector('.item-qty')?.value) || 0;
-        const harga = parseFloat(row.querySelector('.item-harga')?.value) || 0;
-        const diskon = parseFloat(row.querySelector('.item-diskon')?.value) || 0;
+        const harga = parseThousandNumber(row.querySelector('.item-harga')?.value);
+        const diskon = parseThousandNumber(row.querySelector('.item-diskon')?.value);
         subtotalBarang += maxZero((qty * harga) - diskon);
     });
 
-    const diskonPo = parseFloat(document.getElementById('editDiskonPo').value) || 0;
+    const diskonPo = parseThousandNumber(document.getElementById('editDiskonPo').value);
     const ratePajak = parseFloat(document.getElementById('editPajakRate').value) || 0;
     const isInclusive = document.getElementById('editTotalTermasukPajak').checked;
 
@@ -479,8 +526,8 @@ async function handleUpdatePo(event) {
     document.querySelectorAll('#tablePricingItemsBody tr').forEach(row => {
         const idDetail = parseInt(row.querySelector('.item-detail-id')?.value) || 0;
         const qty = parseFloat(row.querySelector('.item-qty')?.value) || 0;
-        const harga = parseFloat(row.querySelector('.item-harga')?.value) || 0;
-        const diskon = parseFloat(row.querySelector('.item-diskon')?.value) || 0;
+        const harga = parseThousandNumber(row.querySelector('.item-harga')?.value);
+        const diskon = parseThousandNumber(row.querySelector('.item-diskon')?.value);
         if (idDetail > 0) {
             items.push({
                 id_po_detail: idDetail,
@@ -501,7 +548,7 @@ async function handleUpdatePo(event) {
         tanggal_pengiriman: document.getElementById('editTanggalPengiriman').value,
         term_of_payment: parseInt(document.getElementById('editTop').value) || 0,
         alamat: document.getElementById('editAlamat').value,
-        diskon: parseFloat(document.getElementById('editDiskonPo').value) || 0,
+        diskon: parseThousandNumber(document.getElementById('editDiskonPo').value),
         pajak: parseInt(document.getElementById('editPajakRate').value) || 0,
         total_termasuk_pajak: document.getElementById('editTotalTermasukPajak').checked ? 1 : 0,
         items: items

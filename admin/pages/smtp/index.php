@@ -141,13 +141,13 @@ require_once __DIR__ . '/../../components/navbar.php';
 <!-- MODAL FORM TAMBAH / EDIT SERVER SMTP                    -->
 <!-- ======================================================== -->
 <div class="modal fade" id="smtpFormModal" tabindex="-1" aria-labelledby="smtpFormModalTitle" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-primary text-white py-3">
-                <h5 class="modal-title fs-6 fw-bold" id="smtpFormModalTitle">
-                    <i class="bi bi-envelope-plus me-2"></i>Tambah Server SMTP
+    <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 720px;">
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <div class="modal-header bg-white px-4 py-3 border-bottom">
+                <h5 class="modal-title fw-bold text-dark mb-0 d-flex align-items-center gap-2" id="smtpFormModalTitle">
+                    <i class="bi bi-envelope-plus text-primary"></i> Tambah Server SMTP
                 </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
             <form id="formSmtp" onsubmit="handleSaveSmtp(event)">
@@ -385,7 +385,7 @@ function renderSmtpTableRows(items) {
 // 2. MODAL CREATE & EDIT SMTP
 // -------------------------------------------------------------
 function openAddSmtpModal() {
-    document.getElementById('smtpFormModalTitle').innerHTML = '<i class="bi bi-envelope-plus me-2"></i>Tambah Server SMTP';
+    document.getElementById('smtpFormModalTitle').innerHTML = '<i class="bi bi-envelope-plus text-primary"></i> Tambah Server SMTP';
     document.getElementById('formSmtpId').value = '';
     document.getElementById('formNamaProvider').value = '';
     document.getElementById('formLinkProvider').value = '';
@@ -411,7 +411,7 @@ async function openEditSmtpModal(id) {
     }
 
     const d = res.data;
-    document.getElementById('smtpFormModalTitle').innerHTML = '<i class="bi bi-pencil-square me-2"></i>Edit Server SMTP';
+    document.getElementById('smtpFormModalTitle').innerHTML = '<i class="bi bi-pencil-square text-primary"></i> Edit Server SMTP';
     document.getElementById('formSmtpId').value = d.id_stmp;
     document.getElementById('formNamaProvider').value = d.nama_provider || '';
     document.getElementById('formLinkProvider').value = d.link_provider || '';

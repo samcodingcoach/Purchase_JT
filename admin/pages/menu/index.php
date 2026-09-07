@@ -89,36 +89,37 @@ require_once __DIR__ . '/../../components/navbar.php';
 </div>
 
 <!-- =============================================================
-     MODAL TAMBAH / EDIT MENU DINAMIS (3 TAB TERSTRUKTUR & BERSIH)
+     MODAL TAMBAH / EDIT MENU DINAMIS (SERAGAM & TERPADU)
      ============================================================= -->
 <div class="modal fade" id="menuFormModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 800px;">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-primary text-white py-3">
-                <h5 class="modal-title fs-6 fw-bold" id="menuFormModalTitle">
-                    <i class="bi bi-list-check me-2"></i>Tambah Menu Baru
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            
+        <div class="modal-content border-0 shadow-lg rounded-3">
             <form id="menuForm" onsubmit="handleSaveMenu(event)">
                 <input type="hidden" id="formIdMenu" name="id_levelmenu">
 
-                <!-- Nav Tabs Modal Form: 3 Tab Spesifik Berdasarkan Fungsi -->
-                <div class="bg-light px-4 pt-3 border-bottom">
-                    <ul class="nav nav-tabs border-bottom-0" role="tablist">
+                <!-- MODAL HEADER DENGAN NAV TABS TERPADU (SERAGAM DENGAN RO & MASTER LAIN) -->
+                <div class="modal-header bg-white pt-3 pb-0 px-4 border-bottom flex-column align-items-stretch">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="modal-title fw-bold text-dark mb-0 d-flex align-items-center gap-2" id="menuFormModalTitle">
+                            <i class="bi bi-list-check text-primary"></i> Tambah Menu Baru
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    
+                    <!-- Nav Tabs Modal Form: 3 Tab Spesifik -->
+                    <ul class="nav nav-tabs border-bottom-0 flex-nowrap" id="menuFormTabs" role="tablist">
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link active fw-semibold small" id="mtab-target" data-bs-toggle="tab" data-bs-target="#mpane-target" type="button" role="tab">
+                            <button class="nav-link active fw-bold text-dark small py-2 px-3" id="mtab-target" data-bs-toggle="tab" data-bs-target="#mpane-target" type="button" role="tab">
                                 <i class="bi bi-buildings me-1 text-primary"></i> 1. Target Jabatan &amp; Divisi
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link fw-semibold small" id="mtab-struktur" data-bs-toggle="tab" data-bs-target="#mpane-struktur" type="button" role="tab">
-                                <i class="bi bi-diagram-3 me-1 text-primary"></i> 2. Struktur &amp; Navigasi Menu
+                            <button class="nav-link fw-bold text-dark small py-2 px-3" id="mtab-struktur" data-bs-toggle="tab" data-bs-target="#mpane-struktur" type="button" role="tab">
+                                <i class="bi bi-diagram-3 me-1 text-primary"></i> 2. Struktur &amp; Navigasi
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link fw-semibold small" id="mtab-icon" data-bs-toggle="tab" data-bs-target="#mpane-icon" type="button" role="tab">
+                            <button class="nav-link fw-bold text-dark small py-2 px-3" id="mtab-icon" data-bs-toggle="tab" data-bs-target="#mpane-icon" type="button" role="tab">
                                 <i class="bi bi-palette me-1 text-primary"></i> 3. Icon &amp; Izin Akses
                             </button>
                         </li>
@@ -285,12 +286,12 @@ require_once __DIR__ . '/../../components/navbar.php';
      ============================================================= -->
 <div class="modal fade" id="copyMenuModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-secondary text-white py-3">
-                <h5 class="modal-title fs-6 fw-bold">
-                    <i class="bi bi-copy me-2"></i>Salin Template Menu Antar Jabatan
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <div class="modal-header bg-white px-4 py-3 border-bottom">
+                <h5 class="modal-title fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-copy text-primary"></i> Salin Template Menu Antar Jabatan
                 </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="copyMenuForm" onsubmit="handleCopyMenu(event)">
                 <div class="modal-body p-4">
@@ -543,12 +544,12 @@ function renderMenuTable(items) {
         if (isChild) typeBadge = `<span class="badge bg-info-subtle text-info border border-info-subtle"><i class="bi bi-arrow-return-right me-1"></i>Sub-Menu</span>`;
 
         const aksesBadge = m.akses === 1 
-            ? `<button class="btn btn-sm btn-outline-success py-0 px-2 fw-semibold" style="font-size:0.75rem;" onclick="toggleMenuField(${m.id_levelmenu}, 'akses', 0)" title="Klik untuk mematikan akses"><i class="bi bi-check-circle-fill me-1"></i>Aktif</button>`
-            : `<button class="btn btn-sm btn-outline-danger py-0 px-2 fw-semibold" style="font-size:0.75rem;" onclick="toggleMenuField(${m.id_levelmenu}, 'akses', 1)" title="Klik untuk memberikan akses"><i class="bi bi-x-circle-fill me-1"></i>Blokir</button>`;
+            ? `<button class="btn btn-sm btn-outline-success p-1 px-2" onclick="toggleMenuField(${m.id_levelmenu}, 'akses', 0)" title="Akses Aktif (Klik untuk mematikan)"><i class="bi bi-check-circle-fill"></i></button>`
+            : `<button class="btn btn-sm btn-outline-danger p-1 px-2" onclick="toggleMenuField(${m.id_levelmenu}, 'akses', 1)" title="Akses Diblokir (Klik untuk mengaktifkan)"><i class="bi bi-x-circle-fill"></i></button>`;
 
         const terlihatBadge = m.terlihat === 1
-            ? `<button class="btn btn-sm btn-outline-primary py-0 px-2 fw-semibold" style="font-size:0.75rem;" onclick="toggleMenuField(${m.id_levelmenu}, 'terlihat', 0)" title="Klik untuk menyembunyikan"><i class="bi bi-eye-fill me-1"></i>Muncul</button>`
-            : `<button class="btn btn-sm btn-outline-secondary py-0 px-2 fw-semibold" style="font-size:0.75rem;" onclick="toggleMenuField(${m.id_levelmenu}, 'terlihat', 1)" title="Klik untuk menampilkan"><i class="bi bi-eye-slash-fill me-1"></i>Hide</button>`;
+            ? `<button class="btn btn-sm btn-outline-primary p-1 px-2" onclick="toggleMenuField(${m.id_levelmenu}, 'terlihat', 0)" title="Tampil di Sidebar (Klik untuk menyembunyikan)"><i class="bi bi-eye-fill"></i></button>`
+            : `<button class="btn btn-sm btn-outline-secondary p-1 px-2" onclick="toggleMenuField(${m.id_levelmenu}, 'terlihat', 1)" title="Disembunyikan (Klik untuk menampilkan)"><i class="bi bi-eye-slash-fill"></i></button>`;
 
         const indentStyle = isChild ? 'padding-left: 2rem;' : '';
         const nameDisplay = isChild ? `<i class="bi bi-arrow-return-right me-2 text-muted"></i>${m.nama_menu}` : m.nama_menu;
@@ -675,7 +676,7 @@ function openTambahMenuModal() {
 
     // Switch ke Tab 1 (Target & Kategori)
     bootstrap.Tab.getOrCreateInstance(document.getElementById('mtab-target')).show();
-    document.getElementById('menuFormModalTitle').innerHTML = '<i class="bi bi-list-check me-2"></i>Tambah Menu Baru';
+    document.getElementById('menuFormModalTitle').innerHTML = '<i class="bi bi-list-check text-primary"></i> Tambah Menu Baru';
     const modal = new bootstrap.Modal(document.getElementById('menuFormModal'));
     modal.show();
 }
@@ -721,7 +722,7 @@ function openEditMenuModal(idx) {
 
     // Switch ke Tab 1 (Target & Kategori)
     bootstrap.Tab.getOrCreateInstance(document.getElementById('mtab-target')).show();
-    document.getElementById('menuFormModalTitle').innerHTML = '<i class="bi bi-pencil-square me-2"></i>Edit Konfigurasi Menu';
+    document.getElementById('menuFormModalTitle').innerHTML = '<i class="bi bi-pencil-square text-primary"></i> Edit Konfigurasi Menu';
     const modal = new bootstrap.Modal(document.getElementById('menuFormModal'));
     modal.show();
 }

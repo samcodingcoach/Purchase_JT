@@ -53,7 +53,6 @@ require_once __DIR__ . '/../../components/navbar.php';
                         <option value="REVIEW INTERNAL">Review Internal</option>
                         <option value="DISETUJUI INTERNAL">Disetujui Internal</option>
                         <option value="DIPROSES VENDOR">Diproses Vendor</option>
-                        <option value="DITERIMA">Diterima</option>
                         <option value="BATAL">Batal</option>
                     </select>
                 </div>
@@ -183,39 +182,39 @@ require_once __DIR__ . '/../../components/navbar.php';
 <!-- MODAL DETAIL PURCHASE ORDER (DILENGKAPI TAB PEMISAH FUNGSI) -->
 <div class="modal fade" id="modalDetailPo" tabindex="-1" aria-labelledby="modalDetailPoLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content border-0 shadow-lg rounded-3 overflow-hidden">
-            <!-- MODAL HEADER -->
-            <div class="modal-header bg-light py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
-                <div>
-                    <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2 mb-0" id="modalDetailPoLabel">
-                        <i class="bi bi-cart-check-fill text-primary"></i>
-                        <span id="detailNomorPo">PO-XXXX-XXXX</span>
-                    </h5>
-                    <div class="text-muted small" style="font-size: 0.78rem;">Rincian Lengkap Dokumen Purchase Order</div>
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <!-- MODAL HEADER DENGAN STATUS & TAB INTEGRASI -->
+            <div class="modal-header bg-white pt-3 pb-0 px-4 border-bottom flex-column align-items-stretch">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2 mb-0" id="modalDetailPoLabel">
+                            <i class="bi bi-cart-check-fill text-primary"></i>
+                            <span id="detailNomorPo">PO-XXXX-XXXX</span>
+                        </h5>
+                        <div class="text-muted small" style="font-size: 0.78rem;">Rincian Lengkap Dokumen Purchase Order</div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <div id="detailStatusBadgeHeader"></div>
+                        <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
                 </div>
-                <div class="d-flex align-items-center gap-3">
-                    <div id="detailStatusBadgeHeader"></div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-            </div>
 
-            <!-- MODAL NAV TABS HEADER -->
-            <div class="bg-white border-bottom px-3 pt-2">
-                <ul class="nav nav-tabs card-header-tabs m-0" id="modalPoTabNav" role="tablist">
+                <!-- Nav Tabs Modal Sesuai Fungsi -->
+                <ul class="nav nav-tabs border-bottom-0 flex-nowrap" id="modalPoTabNav" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active fw-semibold text-dark py-2 px-3 small" id="tab-m-info-btn" data-bs-toggle="tab" data-bs-target="#tab-m-info" type="button" role="tab">
-                            <i class="bi bi-file-earmark-text me-1 text-primary"></i>1. Informasi PO &amp; Vendor
+                        <button class="nav-link active fw-bold text-dark small py-2 px-3" id="tab-m-info-btn" data-bs-toggle="tab" data-bs-target="#tab-m-info" type="button" role="tab">
+                            <i class="bi bi-file-earmark-text me-1 text-primary"></i> 1. Informasi PO &amp; Vendor
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link fw-semibold text-dark py-2 px-3 small" id="tab-m-shipping-btn" data-bs-toggle="tab" data-bs-target="#tab-m-shipping" type="button" role="tab">
-                            <i class="bi bi-truck me-1 text-primary"></i>2. Pengiriman &amp; Pembayaran
+                        <button class="nav-link fw-bold text-dark small py-2 px-3" id="tab-m-shipping-btn" data-bs-toggle="tab" data-bs-target="#tab-m-shipping" type="button" role="tab">
+                            <i class="bi bi-truck me-1 text-primary"></i> 2. Pengiriman &amp; Pembayaran
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link fw-semibold text-dark py-2 px-3 small" id="tab-m-items-btn" data-bs-toggle="tab" data-bs-target="#tab-m-items" type="button" role="tab">
-                            <i class="bi bi-boxes me-1 text-primary"></i>3. Rincian Barang &amp; Biaya
-                            <span class="badge bg-primary ms-1 font-monospace" id="modalItemCountBadge">0</span>
+                        <button class="nav-link fw-bold text-dark small py-2 px-3" id="tab-m-items-btn" data-bs-toggle="tab" data-bs-target="#tab-m-items" type="button" role="tab">
+                            <i class="bi bi-boxes me-1 text-primary"></i> 3. Rincian Barang &amp; Biaya
+                            <span class="badge bg-primary text-white ms-1 font-monospace" id="modalItemCountBadge">0</span>
                         </button>
                     </li>
                 </ul>

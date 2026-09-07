@@ -273,7 +273,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                                                     <label class="form-label small fw-bold mb-1" id="labelNilaiDiskon">Nilai Diskon (Rp):</label>
                                                     <div class="input-group input-group-sm">
                                                         <span class="input-group-text bg-light font-monospace" id="addonDiskonPrefix">Rp</span>
-                                                        <input type="number" class="form-control font-monospace" id="inputDiskonNilai" value="0" min="0" step="any" oninput="calculateAllTotals()">
+                                                        <input type="text" class="form-control font-monospace text-end" id="inputDiskonNilai" value="0" oninput="handleDiskonNilaiInput(this)">
                                                         <span class="input-group-text bg-light font-monospace d-none" id="addonDiskonSuffix">%</span>
                                                     </div>
                                                 </div>
@@ -519,10 +519,16 @@ require_once __DIR__ . '/../../components/navbar.php';
                         <span class="input-group-text bg-light"><i class="bi bi-lock-fill text-muted"></i></span>
                         <input type="password" class="form-control" id="inputVerifyPassword" 
                                placeholder="Masukkan password login Anda untuk konfirmasi penerbitan..." 
-                               autocomplete="current-password" oninput="checkVerifyCompleteness()" required>
+                               autocomplete="current-password" 
+                               oninput="this.classList.remove('is-invalid'); checkVerifyCompleteness();" 
+                               onkeydown="if(event.key === 'Enter') { event.preventDefault(); if(!document.getElementById('btnFinalSubmitPo').disabled) submitFinalApprovedPo(); }"
+                               required>
                         <button class="btn btn-outline-secondary" type="button" onclick="toggleVerifyPasswordVisibility()" title="Lihat/Sembunyikan Password">
                             <i class="bi bi-eye" id="toggleVerifyEyeIcon"></i>
                         </button>
+                    </div>
+                    <div class="invalid-feedback d-block text-danger small mt-1 d-none" id="verifyPasswordErrorText">
+                        <i class="bi bi-exclamation-circle me-1"></i>Password otorisasi salah. Silakan coba lagi.
                     </div>
                     <div class="form-text text-muted" style="font-size: 0.78rem;">
                         Penerbitan PO adalah dokumen legal sah. Masukkan password akun login Anda sebagai verifikasi identitas resmi.
@@ -601,20 +607,83 @@ function onPajakRateChange() {
     calculateAllTotals();
 }
 
+// -------------------------------------------------------------
+// HELPER THOUSAND SEPARATOR & NUMERIC PARSING
+// -------------------------------------------------------------
+function parseThousandNumber(val) {
+    if (typeof val === 'number') return Math.max(0, val);
+    if (!val) return 0;
+    const clean = String(val).replace(/\./g, '').replace(/,/g, '.').replace(/[^0-9.]/g, '');
+    const num = parseFloat(clean);
+    return isNaN(num) || num < 0 ? 0 : num;
+}
+
+function formatThousand(val) {
+    const num = Math.round(parseThousandNumber(val));
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+function handleThousandInput(el, onComplete) {
+    let cursorPos = el.selectionStart;
+    let originalLen = el.value.length;
+
+    // Bersihkan karakter non-angka (sekaligus cegah tanda minus)
+    let cleanVal = el.value.replace(/[^0-9]/g, '');
+    let num = parseInt(cleanVal, 10);
+    if (isNaN(num) || num < 0) num = 0;
+
+    el.value = num > 0 ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : '0';
+
+    // Sesuaikan posisi kursor agar tetap natural saat mengetik
+    let newLen = el.value.length;
+    cursorPos = cursorPos + (newLen - originalLen);
+    if (cursorPos < 0) cursorPos = 0;
+    try { el.setSelectionRange(cursorPos, cursorPos); } catch(e){}
+
+    if (typeof onComplete === 'function') {
+        onComplete();
+    }
+}
+
+function handlePriceInput(el) {
+    handleThousandInput(el, () => calculateRowSubtotal(el));
+}
+
+function handleDiscountInput(el) {
+    handleThousandInput(el, () => calculateRowSubtotal(el));
+}
+
+function handleDiskonNilaiInput(el) {
+    const diskonType = document.getElementById('selectDiskonType').value;
+    if (diskonType === 'percent') {
+        let cleanVal = el.value.replace(/[^0-9.]/g, '');
+        let num = parseFloat(cleanVal);
+        if (isNaN(num) || num < 0) num = 0;
+        if (num > 100) num = 100;
+        el.value = num;
+        calculateAllTotals();
+    } else {
+        handleThousandInput(el, () => calculateAllTotals());
+    }
+}
+
 function onDiskonTypeChange() {
     const type = document.getElementById('selectDiskonType').value;
     const prefix = document.getElementById('addonDiskonPrefix');
     const suffix = document.getElementById('addonDiskonSuffix');
     const label = document.getElementById('labelNilaiDiskon');
+    const input = document.getElementById('inputDiskonNilai');
 
     if (type === 'percent') {
         prefix.classList.add('d-none');
         suffix.classList.remove('d-none');
         label.textContent = 'Nilai Diskon (%):';
+        input.value = '0';
     } else {
         prefix.classList.remove('d-none');
         suffix.classList.add('d-none');
         label.textContent = 'Nilai Diskon (Rp):';
+        input.value = '0';
     }
     calculateAllTotals();
 }
@@ -712,11 +781,11 @@ function renderRoData() {
                 <td>
                     <div class="input-group input-group-sm">
                         <span class="input-group-text bg-light font-monospace" style="font-size: 0.75rem;">Rp</span>
-                        <input type="number" class="form-control form-control-sm font-monospace item-harga" value="${defaultHarga}" min="0" step="100" oninput="calculateRowSubtotal(this)" required>
+                        <input type="text" class="form-control form-control-sm font-monospace text-end item-harga" value="${formatThousand(defaultHarga)}" oninput="handlePriceInput(this)" placeholder="0" required>
                     </div>
                 </td>
                 <td>
-                    <input type="number" class="form-control form-control-sm font-monospace item-diskon" value="0" min="0" step="100" oninput="calculateRowSubtotal(this)">
+                    <input type="text" class="form-control form-control-sm font-monospace text-end item-diskon" value="0" oninput="handleDiscountInput(this)" placeholder="0">
                 </td>
                 <td class="text-end font-monospace fw-bold text-dark item-subtotal-display">
                     ${formatRupiah(subtotal)}
@@ -800,8 +869,8 @@ async function fetchNextPoNumber() {
 function calculateRowSubtotal(inputEl) {
     const row = inputEl.closest('tr');
     const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
-    const harga = parseFloat(row.querySelector('.item-harga').value) || 0;
-    const diskon = parseFloat(row.querySelector('.item-diskon').value) || 0;
+    const harga = parseThousandNumber(row.querySelector('.item-harga').value);
+    const diskon = parseThousandNumber(row.querySelector('.item-diskon').value);
 
     let subtotal = (qty * harga) - diskon;
     if (subtotal < 0) subtotal = 0;
@@ -814,8 +883,8 @@ function calculateAllTotals() {
     let subtotalBarang = 0;
     document.querySelectorAll('#tablePricingItemsBody tr').forEach(row => {
         const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
-        const harga = parseFloat(row.querySelector('.item-harga').value) || 0;
-        const diskon = parseFloat(row.querySelector('.item-diskon').value) || 0;
+        const harga = parseThousandNumber(row.querySelector('.item-harga').value);
+        const diskon = parseThousandNumber(row.querySelector('.item-diskon').value);
         let rowSubtotal = (qty * harga) - diskon;
         if (rowSubtotal < 0) rowSubtotal = 0;
         subtotalBarang += rowSubtotal;
@@ -823,7 +892,8 @@ function calculateAllTotals() {
 
     // Kalkulasi Diskon Akhir (Nominal vs Persentase)
     const diskonType = document.getElementById('selectDiskonType').value;
-    const diskonInput = parseFloat(document.getElementById('inputDiskonNilai').value) || 0;
+    const diskonRaw = document.getElementById('inputDiskonNilai').value;
+    const diskonInput = (diskonType === 'percent') ? (parseFloat(diskonRaw) || 0) : parseThousandNumber(diskonRaw);
     let diskonAkhirNominal = 0;
     if (diskonType === 'percent') {
         diskonAkhirNominal = (subtotalBarang * diskonInput) / 100;
@@ -934,7 +1004,15 @@ function handleApproveToPo(e) {
 
     // 4. Reset Checkbox & Input Password
     document.querySelectorAll('.verify-check-item').forEach(cb => cb.checked = false);
-    document.getElementById('inputVerifyPassword').value = '';
+    const pwInput = document.getElementById('inputVerifyPassword');
+    if (pwInput) {
+        pwInput.value = '';
+        pwInput.classList.remove('is-invalid');
+    }
+    const errText = document.getElementById('verifyPasswordErrorText');
+    if (errText) {
+        errText.classList.add('d-none');
+    }
     document.getElementById('btnFinalSubmitPo').disabled = true;
 
     // 5. Buka Modal Verifikasi
@@ -1006,8 +1084,8 @@ async function submitFinalApprovedPo() {
     document.querySelectorAll('#tablePricingItemsBody tr').forEach(row => {
         const idBarang = parseInt(row.querySelector('.item-id-barang').value);
         const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
-        const harga = parseFloat(row.querySelector('.item-harga').value) || 0;
-        const diskon = parseFloat(row.querySelector('.item-diskon').value) || 0;
+        const harga = parseThousandNumber(row.querySelector('.item-harga').value);
+        const diskon = parseThousandNumber(row.querySelector('.item-diskon').value);
         items.push({
             id_barang: idBarang,
             qty: qty,
@@ -1051,8 +1129,19 @@ async function submitFinalApprovedPo() {
             window.location.href = `${BASE_URL}/admin/pages/request_order/index.php`;
         }, 1500);
     } else {
-        showToast(res ? res.message : 'Gagal memproses Purchase Order.', 'error');
-        document.getElementById('inputVerifyPassword').focus();
+        const errorMsg = res && res.message ? res.message : 'Gagal memproses Purchase Order.';
+        showToast(errorMsg, 'error');
+        const pwInput = document.getElementById('inputVerifyPassword');
+        const errText = document.getElementById('verifyPasswordErrorText');
+        if (pwInput) {
+            pwInput.classList.add('is-invalid');
+            pwInput.focus();
+            pwInput.select();
+        }
+        if (errText) {
+            errText.innerHTML = `<i class="bi bi-exclamation-circle me-1"></i>${escapeHtml(errorMsg)}`;
+            errText.classList.remove('d-none');
+        }
     }
 }
 
@@ -1085,8 +1174,8 @@ async function handleSaveDraftPo() {
     document.querySelectorAll('#tablePricingItemsBody tr').forEach(row => {
         const idBarang = parseInt(row.querySelector('.item-id-barang').value);
         const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
-        const harga = parseFloat(row.querySelector('.item-harga').value) || 0;
-        const diskon = parseFloat(row.querySelector('.item-diskon').value) || 0;
+        const harga = parseThousandNumber(row.querySelector('.item-harga').value);
+        const diskon = parseThousandNumber(row.querySelector('.item-diskon').value);
         items.push({
             id_barang: idBarang,
             qty: qty,
