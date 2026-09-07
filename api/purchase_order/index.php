@@ -33,14 +33,22 @@ if ($method === 'GET') {
                                        v.alamat as alamat_vendor,
                                        s.nama_site, s.kode_site, s.alamat as alamat_site,
                                        COALESCE(k.nama_karyawan, u.nama_users, 'Staff Purchasing') as nama_pembuat,
+                                       jk.nama_jabatan as jabatan_pembuat,
+                                       dk.nama_divisi as divisi_pembuat,
                                        ka.nama_karyawan as nama_approver,
+                                       jka.nama_jabatan as jabatan_approver,
+                                       dka.nama_divisi as divisi_approver,
                                        ro.id_request, ro.nomor as nomor_ro
                                 FROM purchase_order p
                                 LEFT JOIN vendor v ON p.id_vendor = v.id_vendor
                                 LEFT JOIN site s ON p.id_site = s.id_site
                                 LEFT JOIN karyawan k ON p.id_karyawan = k.id_karyawan
+                                LEFT JOIN jabatan jk ON k.id_jabatan = jk.id_jabatan
+                                LEFT JOIN divisi dk ON k.id_divisi = dk.id_divisi
                                 LEFT JOIN users u ON p.id_karyawan = u.id_users
                                 LEFT JOIN karyawan ka ON p.id_karyawan_approved = ka.id_karyawan
+                                LEFT JOIN jabatan jka ON ka.id_jabatan = jka.id_jabatan
+                                LEFT JOIN divisi dka ON ka.id_divisi = dka.id_divisi
                                 LEFT JOIN request_order ro ON ro.id_po = p.id_po
                                 WHERE p.id_po = ? LIMIT 1");
         $stmt->bind_param("i", $id);

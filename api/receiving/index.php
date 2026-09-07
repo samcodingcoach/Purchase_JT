@@ -34,12 +34,16 @@ if ($method === 'GET') {
                                        po.id_po, po.nomor_po, po.tanggal_po,
                                        v.id_vendor, v.kode_vendor, v.nama_perusahaan as nama_vendor, v.no_telepon as telepon_vendor, v.alamat as alamat_vendor,
                                        s.id_site, s.nama_site, s.kode_site, s.alamat as alamat_site,
-                                       k.nama_karyawan as nama_penerima
+                                       k.nama_karyawan as nama_penerima,
+                                       jk.nama_jabatan as jabatan_penerima,
+                                       dk.nama_divisi as divisi_penerima
                                 FROM receiving_order ro
                                 LEFT JOIN purchase_order po ON ro.id_po = po.id_po
                                 LEFT JOIN vendor v ON po.id_vendor = v.id_vendor
                                 LEFT JOIN site s ON po.id_site = s.id_site
                                 LEFT JOIN karyawan k ON ro.id_karyawan = k.id_karyawan
+                                LEFT JOIN jabatan jk ON k.id_jabatan = jk.id_jabatan
+                                LEFT JOIN divisi dk ON k.id_divisi = dk.id_divisi
                                 WHERE ro.id_rcv = ? LIMIT 1");
         $stmt->bind_param("i", $id);
         $stmt->execute();

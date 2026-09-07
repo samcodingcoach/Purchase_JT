@@ -403,7 +403,8 @@ require_once __DIR__ . '/../../components/navbar.php';
             </div>
 
             <!-- MODAL FOOTER -->
-            <div class="modal-footer bg-light py-2 px-3">
+            <div class="modal-footer bg-light py-2 px-3 d-flex justify-content-between align-items-center">
+                <div id="modalPrintPoContainer"></div>
                 <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">Tutup</button>
             </div>
         </div>
@@ -563,6 +564,15 @@ async function loadPoList(page = 1) {
             `;
         }
 
+        let printBtnHtml = '';
+        if (['DISETUJUI INTERNAL', 'DIPROSES VENDOR', 'DITERIMA', 'SELESAI'].includes(statusUpper)) {
+            printBtnHtml = `
+                <a href="${BASE_URL}/admin/pages/purchase_order/print.php?id=${item.id_po}" target="_blank" class="btn btn-outline-primary btn-sm px-2 py-1 shadow-xs" title="Cetak / Download Surat Pesanan Barang (PO)">
+                    <i class="bi bi-printer-fill"></i>
+                </a>
+            `;
+        }
+
         rowsHtml += `
             <tr>
                 <td class="text-center font-monospace text-muted small">${no}</td>
@@ -587,6 +597,7 @@ async function loadPoList(page = 1) {
                         <button type="button" class="btn btn-outline-primary btn-sm px-2 py-1 shadow-xs" onclick="openDetailModal(${item.id_po})" title="Lihat Rincian PO">
                             <i class="bi bi-eye-fill"></i>
                         </button>
+                        ${printBtnHtml}
                         ${editBtnHtml}
                         ${receiveBtnHtml}
                     </div>
@@ -792,6 +803,20 @@ async function openDetailModal(idPo) {
     document.getElementById('calcLabelPpn').textContent = `PPN (${ratePajak}%)${isTermasukPajak ? ' (Inklusif)' : ''}:`;
     document.getElementById('calcNominalPajak').textContent = formatRupiah(nominalPajak);
     document.getElementById('calcGrandTotal').textContent = formatRupiah(grandTotal);
+
+    // Tombol Cetak di Footer Modal
+    const printContainer = document.getElementById('modalPrintPoContainer');
+    if (printContainer) {
+        if (['DISETUJUI INTERNAL', 'DIPROSES VENDOR', 'DITERIMA', 'SELESAI'].includes((po.status || '').toUpperCase())) {
+            printContainer.innerHTML = `
+                <a href="${BASE_URL}/admin/pages/purchase_order/print.php?id=${po.id_po}" target="_blank" class="btn btn-primary btn-sm px-3 fw-semibold shadow-sm">
+                    <i class="bi bi-printer-fill me-1"></i> Cetak / Download PO
+                </a>
+            `;
+        } else {
+            printContainer.innerHTML = '';
+        }
+    }
 
     // Render Items
     const items = po.items || [];
