@@ -135,6 +135,7 @@ const AppTabs = {
             { id: 'retur_detail', title: 'Detail Retur PO', url: BASE_URL + '/admin/pages/retur_po/detail.php', icon: 'bi-file-earmark-diff-fill', closable: true },
             { id: 'faktur_po', title: 'Faktur PO', url: BASE_URL + '/admin/pages/faktur_po/index.php', icon: 'bi-receipt-cutoff', closable: true },
             { id: 'faktur_create', title: 'Buat Faktur PO', url: BASE_URL + '/admin/pages/faktur_po/create.php', icon: 'bi-file-earmark-plus', closable: true },
+            { id: 'tagihan_jatuh_tempo', title: 'Daftar Tagihan', url: BASE_URL + '/admin/pages/pembayaran_po/tagihan_jatuh_tempo.php', icon: 'bi-receipt-cutoff', closable: true },
             { id: 'pembayaran_po', title: 'Pembayaran Faktur PO', url: BASE_URL + '/admin/pages/pembayaran_po/index.php', icon: 'bi-cash-coin', closable: true },
             { id: 'pembayaran_create', title: 'Catat Pembayaran PO', url: BASE_URL + '/admin/pages/pembayaran_po/create.php', icon: 'bi-plus-circle-fill', closable: true },
             { id: 'pembayaran_edit', title: 'Edit Pembayaran PO', url: BASE_URL + '/admin/pages/pembayaran_po/edit.php', icon: 'bi-pencil-square', closable: true },
@@ -199,9 +200,10 @@ const AppTabs = {
                 (t.id === 'retur_po' && path.includes('/retur_po/')) ||
                 (t.id === 'faktur_create' && path.includes('/faktur_po/create.php')) ||
                 (t.id === 'faktur_po' && path.includes('/faktur_po/')) ||
+                (t.id === 'tagihan_jatuh_tempo' && (path.includes('/pembayaran_po/tagihan_jatuh_tempo.php') || path.includes('/pembayaran_po/jatuh_tempo.php'))) ||
                 (t.id === 'pembayaran_create' && path.includes('/pembayaran_po/create.php')) ||
                 (t.id === 'pembayaran_edit' && path.includes('/pembayaran_po/edit.php')) ||
-                (t.id === 'pembayaran_po' && path.includes('/pembayaran_po/')) ||
+                (t.id === 'pembayaran_po' && (path.includes('/pembayaran_po/index.php') || (path.includes('/pembayaran_po/') && !path.includes('tagihan_jatuh_tempo') && !path.includes('jatuh_tempo')))) ||
                 (t.id === 'po_outstanding' && path.includes('/purchase_order/outstanding.php')) ||
                 (t.id === 'purchase_order' && (path.includes('/purchase_order/index.php') || path.includes('/purchase_order/edit.php'))) || 
                 (t.id === 'request_order' && path.includes('/request_order/index.php')) || 

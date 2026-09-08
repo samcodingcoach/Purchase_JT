@@ -116,6 +116,9 @@ require_once __DIR__ . '/../../components/navbar.php';
             <div class="small text-muted mt-1">Kelola pelunasan, angsuran kredit/termin, serta bukti transfer pembayaran ke vendor</div>
         </div>
         <div class="d-flex gap-2">
+            <a href="<?= BASE_URL ?>/admin/pages/pembayaran_po/tagihan_jatuh_tempo.php" class="btn btn-outline-danger btn-sm px-3 shadow-sm" style="height: 38px; display: inline-flex; align-items: center;">
+                <i class="bi bi-receipt me-1"></i> Daftar Tagihan
+            </a>
             <a href="<?= BASE_URL ?>/admin/pages/pembayaran_po/create.php" class="btn btn-primary btn-sm px-3 shadow-sm" style="height: 38px; display: inline-flex; align-items: center;">
                 <i class="bi bi-plus-lg me-1"></i> Catat Pembayaran Baru
             </a>
