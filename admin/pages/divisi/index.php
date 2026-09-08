@@ -38,12 +38,13 @@ require_once __DIR__ . '/../../components/navbar.php';
                     <th>Kode Divisi</th>
                     <th>Nama Divisi / Bagian</th>
                     <th>Tingkatan (Level)</th>
+                    <th>Kepala Divisi (Head of)</th>
                     <th class="text-center" style="width: 160px;">Aksi</th>
                 </tr>
             </thead>
             <tbody id="divisiTableBody">
                 <tr>
-                    <td colspan="5" class="text-center py-4 text-muted">
+                    <td colspan="6" class="text-center py-4 text-muted">
                         <div class="spinner-border spinner-border-sm text-primary me-2"></div> Memuat data divisi...
                     </td>
                 </tr>
@@ -92,6 +93,15 @@ require_once __DIR__ . '/../../components/navbar.php';
                             <label class="form-label small fw-bold">Nama Divisi <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="formNamaDivisi" required placeholder="Contoh: Logistik / Mekanik / Purchasing">
                         </div>
+                        <div class="col-md-12">
+                            <label class="form-label small fw-bold">Kepala Divisi / Head of (Level 1)</label>
+                            <select class="form-select" id="formHeadOf">
+                                <option value="">-- Tanpa Kepala Divisi --</option>
+                            </select>
+                            <div class="form-text small text-muted" id="formHeadOfHelp">
+                                Menampilkan karyawan pada divisi ini dengan jabatan Level 1.
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer bg-light py-2">
@@ -110,6 +120,17 @@ let currentPage = 1;
 const fixedLimit = 50;
 let searchTimeout = null;
 let divisiDataStore = [];
+let karyawanLevel1Cache = [];
+
+function escapeHtml(text) {
+    if (!text) return '';
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
 
 function debounceSearch() {
     clearTimeout(searchTimeout);
@@ -124,13 +145,24 @@ function goToPage(page) {
     loadDivisi();
 }
 
+async function loadKaryawanLevel1() {
+    try {
+        const res = await apiRequest('/api/master/karyawan.php?levels=1&limit=100');
+        if (res && res.success) {
+            karyawanLevel1Cache = res.data.items || [];
+        }
+    } catch (e) {
+        console.error('Gagal memuat data karyawan level 1:', e);
+    }
+}
+
 async function loadDivisi() {
     const q = document.getElementById('searchInput').value.trim();
     const tbody = document.getElementById('divisiTableBody');
     const paginationInfo = document.getElementById('paginationInfo');
     const paginationControls = document.getElementById('paginationControls');
     
-    tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Memuat data...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Memuat data...</td></tr>`;
     
     const url = `/api/master/divisi.php?page=${currentPage}&limit=${fixedLimit}&q=${encodeURIComponent(q)}`;
     const res = await apiRequest(url);
@@ -140,7 +172,7 @@ async function loadDivisi() {
         const pag = res.data.pagination;
         
         if (divisiDataStore.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">Tidak ada data divisi ditemukan.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted">Tidak ada data divisi ditemukan.</td></tr>`;
             paginationInfo.textContent = 'Menampilkan 0 dari 0 data';
             paginationControls.innerHTML = '';
             return;
@@ -149,12 +181,17 @@ async function loadDivisi() {
         let html = '';
         divisiDataStore.forEach((item, idx) => {
             const rowNumber = pag.from + idx;
+            const headOfText = item.nama_headof && item.nama_headof !== '-' 
+                ? `<span class="fw-semibold text-dark">${escapeHtml(item.nama_headof)}</span>` 
+                : `<span class="text-muted fst-italic">-</span>`;
+
             html += `
                 <tr>
                     <td class="text-muted">${rowNumber}</td>
-                    <td><span class="badge bg-light text-dark border font-monospace">${item.kode_divisi || '-'}</span></td>
-                    <td class="fw-bold text-dark">${item.nama_divisi}</td>
+                    <td><span class="badge bg-light text-dark border font-monospace">${escapeHtml(item.kode_divisi || '-')}</span></td>
+                    <td class="fw-bold text-dark">${escapeHtml(item.nama_divisi)}</td>
                     <td><span class="badge bg-primary-subtle text-primary">Level ${item.level}</span></td>
+                    <td>${headOfText}</td>
                     <td class="text-center">
                         <div class="btn-group btn-group-sm">
                             <button class="btn btn-outline-secondary py-1 px-2" onclick="openEditDivisiModal(${idx})" title="Edit Data">
@@ -172,7 +209,7 @@ async function loadDivisi() {
         paginationInfo.textContent = `Menampilkan ${pag.from} - ${pag.to} dari ${pag.total_records} data (Total: ${pag.total_pages} Halaman)`;
         renderPagination(pag);
     } else {
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-danger">Gagal memuat data divisi.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger">Gagal memuat data divisi.</td></tr>`;
     }
 }
 
@@ -220,6 +257,21 @@ function openTambahDivisiModal() {
     document.getElementById('divisiForm').reset();
     document.getElementById('formIdDivisi').value = '';
     document.getElementById('formLevel').value = 1;
+    
+    const select = document.getElementById('formHeadOf');
+    select.innerHTML = '<option value="">-- Tanpa Kepala Divisi --</option>';
+    if (karyawanLevel1Cache.length === 0) {
+        select.innerHTML += '<option value="" disabled>-- Belum ada master karyawan Level 1 --</option>';
+    } else {
+        karyawanLevel1Cache.forEach(k => {
+            const divName = k.nama_divisi ? ` - Divisi ${k.nama_divisi}` : '';
+            const jabName = k.nama_jabatan ? ` (${k.nama_jabatan})` : '';
+            select.innerHTML += `<option value="${k.id_karyawan}">${escapeHtml(k.nama_karyawan)}${jabName}${divName}</option>`;
+        });
+    }
+    select.value = '';
+    document.getElementById('formHeadOfHelp').textContent = 'Pilih karyawan dengan jabatan Level 1 sebagai Kepala Divisi.';
+    
     document.getElementById('divisiFormModalTitle').innerHTML = '<i class="bi bi-diagram-3-fill text-primary"></i> Tambah Divisi Baru';
     const modal = new bootstrap.Modal(document.getElementById('divisiFormModal'));
     modal.show();
@@ -234,6 +286,52 @@ function openEditDivisiModal(idx) {
     document.getElementById('formNamaDivisi').value = item.nama_divisi;
     document.getElementById('formLevel').value = item.level;
     
+    // Filter karyawan yang memiliki divisi yang sama dan level jabatan = 1
+    const select = document.getElementById('formHeadOf');
+    select.innerHTML = '<option value="">-- Tanpa Kepala Divisi --</option>';
+    
+    const sameDivisiKaryawan = karyawanLevel1Cache.filter(k => 
+        Number(k.id_divisi) === Number(item.id_divisi) || 
+        (item.id_karyawan_headof && Number(k.id_karyawan) === Number(item.id_karyawan_headof))
+    );
+    
+    if (sameDivisiKaryawan.length > 0) {
+        sameDivisiKaryawan.forEach(k => {
+            const jabName = k.nama_jabatan ? ` (${k.nama_jabatan})` : '';
+            select.innerHTML += `<option value="${k.id_karyawan}">${escapeHtml(k.nama_karyawan)}${jabName}</option>`;
+        });
+        
+        const otherKaryawan = karyawanLevel1Cache.filter(k => 
+            Number(k.id_divisi) !== Number(item.id_divisi) && 
+            (!item.id_karyawan_headof || Number(k.id_karyawan) !== Number(item.id_karyawan_headof))
+        );
+        if (otherKaryawan.length > 0) {
+            let optgroup = '<optgroup label="Karyawan Level 1 Divisi Lain">';
+            otherKaryawan.forEach(k => {
+                const divName = k.nama_divisi ? ` - ${k.nama_divisi}` : '';
+                const jabName = k.nama_jabatan ? ` (${k.nama_jabatan})` : '';
+                optgroup += `<option value="${k.id_karyawan}">${escapeHtml(k.nama_karyawan)}${jabName}${divName}</option>`;
+            });
+            optgroup += '</optgroup>';
+            select.innerHTML += optgroup;
+        }
+    } else {
+        select.innerHTML += '<option value="" disabled>-- Tidak ada karyawan Level 1 di divisi ini --</option>';
+        if (karyawanLevel1Cache.length > 0) {
+            let optgroup = '<optgroup label="Pilih dari Karyawan Level 1 Lainnya">';
+            karyawanLevel1Cache.forEach(k => {
+                const divName = k.nama_divisi ? ` - ${k.nama_divisi}` : '';
+                const jabName = k.nama_jabatan ? ` (${k.nama_jabatan})` : '';
+                optgroup += `<option value="${k.id_karyawan}">${escapeHtml(k.nama_karyawan)}${jabName}${divName}</option>`;
+            });
+            optgroup += '</optgroup>';
+            select.innerHTML += optgroup;
+        }
+    }
+    
+    select.value = item.id_karyawan_headof || '';
+    document.getElementById('formHeadOfHelp').textContent = `Menampilkan personil jabatan Level 1 untuk Divisi ${item.nama_divisi}.`;
+    
     document.getElementById('divisiFormModalTitle').innerHTML = '<i class="bi bi-pencil-square text-primary"></i> Edit Data Divisi';
     const modal = new bootstrap.Modal(document.getElementById('divisiFormModal'));
     modal.show();
@@ -243,26 +341,38 @@ async function handleSaveDivisi(e) {
     e.preventDefault();
     const id = document.getElementById('formIdDivisi').value;
     const isEdit = id !== '';
+    const btnSave = document.getElementById('btnSaveDivisi');
     
     const payload = {
         id_divisi: id,
         kode_divisi: document.getElementById('formKodeDivisi').value.trim(),
         nama_divisi: document.getElementById('formNamaDivisi').value.trim(),
         level: document.getElementById('formLevel').value,
+        id_karyawan_headof: document.getElementById('formHeadOf').value || null,
         _method: isEdit ? 'PUT' : 'POST'
     };
     
-    const res = await apiRequest('/api/master/divisi.php', {
-        method: 'POST',
-        body: JSON.stringify(payload)
-    });
+    btnSave.disabled = true;
+    btnSave.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...';
     
-    if (res && res.success) {
-        showToast(res.message || 'Data divisi berhasil disimpan!', 'success');
-        bootstrap.Modal.getInstance(document.getElementById('divisiFormModal')).hide();
-        loadDivisi();
-    } else {
-        showToast(res.message || 'Gagal menyimpan data divisi.', 'error');
+    try {
+        const res = await apiRequest('/api/master/divisi.php', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+        
+        if (res && res.success) {
+            showToast(res.message || 'Data divisi berhasil disimpan!', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('divisiFormModal')).hide();
+            loadDivisi();
+        } else {
+            showToast(res.message || 'Gagal menyimpan data divisi.', 'error');
+        }
+    } catch (err) {
+        showToast('Terjadi kesalahan koneksi sistem.', 'error');
+    } finally {
+        btnSave.disabled = false;
+        btnSave.innerHTML = '<i class="bi bi-save me-1"></i> Simpan Data';
     }
 }
 
@@ -282,9 +392,13 @@ async function deleteDivisi(id, name) {
     }
 }
 
-document.addEventListener('DOMContentLoaded', loadDivisi);
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadKaryawanLevel1();
+    loadDivisi();
+});
 </script>
 
 <?php
 require_once __DIR__ . '/../../components/footer.php';
 ?>
+

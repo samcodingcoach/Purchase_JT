@@ -29,14 +29,15 @@ if ($method === 'GET') {
     $types = "";
 
     if (!empty($search)) {
-        $whereSql .= " AND (nama_divisi LIKE ? OR kode_divisi LIKE ?)";
+        $whereSql .= " AND (d.nama_divisi LIKE ? OR d.kode_divisi LIKE ? OR kry.nama_karyawan LIKE ?)";
         $searchWildcard = "%" . $search . "%";
         $params[] = $searchWildcard;
         $params[] = $searchWildcard;
-        $types .= "ss";
+        $params[] = $searchWildcard;
+        $types .= "sss";
     }
 
-    $countSql = "SELECT COUNT(*) as total FROM divisi" . $whereSql;
+    $countSql = "SELECT COUNT(*) as total FROM divisi d LEFT JOIN karyawan kry ON d.id_karyawan_headof = kry.id_karyawan" . $whereSql;
     $stmtCount = $conn->prepare($countSql);
     if (!empty($params)) {
         $stmtCount->bind_param($types, ...$params);
@@ -47,8 +48,11 @@ if ($method === 'GET') {
 
     $totalPages = $totalRecords > 0 ? (int)ceil($totalRecords / $limit) : 1;
 
-    $sql = "SELECT id_divisi, kode_divisi, nama_divisi, level FROM divisi"
-        . $whereSql . " ORDER BY id_divisi ASC LIMIT ? OFFSET ?";
+    $sql = "SELECT d.id_divisi, d.kode_divisi, d.nama_divisi, d.level, d.id_karyawan_headof,
+                   kry.nama_karyawan AS nama_headof
+            FROM divisi d
+            LEFT JOIN karyawan kry ON d.id_karyawan_headof = kry.id_karyawan"
+        . $whereSql . " ORDER BY d.id_divisi ASC LIMIT ? OFFSET ?";
 
     $paramsWithLimit = $params;
     $typesWithLimit = $types . "ii";
@@ -66,7 +70,9 @@ if ($method === 'GET') {
             'id_divisi' => (int)$row['id_divisi'],
             'kode_divisi' => $row['kode_divisi'] ?? '',
             'nama_divisi' => $row['nama_divisi'] ?? '',
-            'level' => (int)($row['level'] ?? 1)
+            'level' => (int)($row['level'] ?? 1),
+            'id_karyawan_headof' => $row['id_karyawan_headof'] ? (int)$row['id_karyawan_headof'] : null,
+            'nama_headof' => $row['nama_headof'] ?? '-'
         ];
     }
     $stmt->close();
@@ -96,6 +102,7 @@ if ($method === 'POST') {
     $namaDivisi = trim($input['nama_divisi'] ?? '');
     $kodeDivisi = trim($input['kode_divisi'] ?? '');
     $level = isset($input['level']) ? (int)$input['level'] : 1;
+    $idHeadOf = !empty($input['id_karyawan_headof']) ? (int)$input['id_karyawan_headof'] : null;
 
     if (empty($namaDivisi)) {
         jsonResponse(false, 'Nama divisi wajib diisi.', null, 422);
@@ -107,8 +114,8 @@ if ($method === 'POST') {
         $kodeDivisi = 'DIV' . str_pad($nextId, 3, '0', STR_PAD_LEFT);
     }
 
-    $stmt = $conn->prepare("INSERT INTO divisi (kode_divisi, nama_divisi, level) VALUES (?, ?, ?)");
-    $stmt->bind_param("ssi", $kodeDivisi, $namaDivisi, $level);
+    $stmt = $conn->prepare("INSERT INTO divisi (kode_divisi, nama_divisi, level, id_karyawan_headof) VALUES (?, ?, ?, ?)");
+    $stmt->bind_param("ssii", $kodeDivisi, $namaDivisi, $level, $idHeadOf);
     
     if ($stmt->execute()) {
         $newId = $conn->insert_id;
@@ -126,13 +133,14 @@ if ($method === 'PUT') {
     $namaDivisi = trim($input['nama_divisi'] ?? '');
     $kodeDivisi = trim($input['kode_divisi'] ?? '');
     $level = isset($input['level']) ? (int)$input['level'] : 1;
+    $idHeadOf = !empty($input['id_karyawan_headof']) ? (int)$input['id_karyawan_headof'] : null;
 
     if ($idDivisi <= 0 || empty($namaDivisi)) {
         jsonResponse(false, 'ID dan Nama divisi wajib diisi.', null, 422);
     }
 
-    $stmt = $conn->prepare("UPDATE divisi SET kode_divisi = ?, nama_divisi = ?, level = ? WHERE id_divisi = ?");
-    $stmt->bind_param("ssii", $kodeDivisi, $namaDivisi, $level, $idDivisi);
+    $stmt = $conn->prepare("UPDATE divisi SET kode_divisi = ?, nama_divisi = ?, level = ?, id_karyawan_headof = ? WHERE id_divisi = ?");
+    $stmt->bind_param("ssiii", $kodeDivisi, $namaDivisi, $level, $idHeadOf, $idDivisi);
     
     if ($stmt->execute()) {
         $stmt->close();
