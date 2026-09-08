@@ -223,9 +223,9 @@ try {
                 $mailRes = sendRoApprovalNotification($conn, $idRequest);
                 $emailSent = !empty($mailRes['success']);
             }
-        } elseif (in_array($status, ['DISETUJUI LOGISTIK', 'TIDAK DISETUJUI LOGISTIK'])) {
+        } elseif (in_array($status, ['DISETUJUI LOGISTIK', 'TIDAK DISETUJUI LOGISTIK', 'DISETUJUI PURCHASING', 'TIDAK DISETUJUI PURCHASING'])) {
             if (function_exists('sendRoStatusNotification')) {
-                $approverName = $currentUser['nama_users'] ?? ($currentUser['username'] ?? 'Logistik');
+                $approverName = $currentUser['nama_karyawan'] ?? ($currentUser['nama_users'] ?? ($currentUser['username'] ?? 'Approver'));
                 $mailRes = sendRoStatusNotification($conn, $idRequest, $status, $approverName, $keterangan);
                 $emailSent = !empty($mailRes['success']);
             }
@@ -234,7 +234,11 @@ try {
         error_log("Gagal mengirim notifikasi email update RO {$existingRo['nomor']}: " . $t->getMessage());
     }
 
-    if ($status === 'DISETUJUI LOGISTIK') {
+    if ($status === 'DISETUJUI PURCHASING') {
+        $actionMsg = "Request Order {$existingRo['nomor']} berhasil disetujui oleh Purchasing.";
+    } elseif ($status === 'TIDAK DISETUJUI PURCHASING') {
+        $actionMsg = "Request Order {$existingRo['nomor']} ditolak (tidak disetujui) oleh Purchasing.";
+    } elseif ($status === 'DISETUJUI LOGISTIK') {
         $actionMsg = "Request Order {$existingRo['nomor']} berhasil disetujui oleh Logistik.";
     } elseif ($status === 'TIDAK DISETUJUI LOGISTIK') {
         $actionMsg = "Request Order {$existingRo['nomor']} ditolak (tidak disetujui) oleh Logistik.";

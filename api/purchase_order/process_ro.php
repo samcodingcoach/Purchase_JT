@@ -71,14 +71,29 @@ if ($action === 'reject') {
 
     $ketBaru = !empty($ro['keterangan']) ? ($ro['keterangan'] . " | Catatan Purchasing (Ditolak): " . $alasan) : ("Catatan Purchasing (Ditolak): " . $alasan);
 
-    $up = $conn->prepare("UPDATE request_order SET status = 'TIDAK DISETUJUI', keterangan = ?, tanggal_status = NOW() WHERE id_request = ?");
+    $up = $conn->prepare("UPDATE request_order SET status = 'TIDAK DISETUJUI PURCHASING', keterangan = ?, tanggal_status = NOW() WHERE id_request = ?");
     $up->bind_param("si", $ketBaru, $idRequest);
     
     if ($up->execute()) {
         $up->close();
-        jsonResponse(true, "Request Order {$ro['nomor']} telah ditolak (Tidak Disetujui).", [
+
+        // Kirim Notifikasi Email ke Pemohon RO
+        $emailSent = false;
+        try {
+            require_once __DIR__ . '/../../config/mailer.php';
+            if (function_exists('sendRoStatusNotification')) {
+                $approverName = $currentUser['nama_karyawan'] ?? ($currentUser['nama_users'] ?? ($currentUser['username'] ?? 'Staff Purchasing'));
+                $mailRes = sendRoStatusNotification($conn, $idRequest, 'TIDAK DISETUJUI PURCHASING', $approverName, $alasan);
+                $emailSent = !empty($mailRes['success']);
+            }
+        } catch (Throwable $t) {
+            error_log("Gagal mengirim notifikasi tolak Purchasing RO {$ro['nomor']}: " . $t->getMessage());
+        }
+
+        jsonResponse(true, "Request Order {$ro['nomor']} telah ditolak (Tidak Disetujui Purchasing).", [
             'id_request' => $idRequest,
-            'status' => 'TIDAK DISETUJUI'
+            'status' => 'TIDAK DISETUJUI PURCHASING',
+            'email_sent' => $emailSent
         ]);
     } else {
         $err = $up->error;
@@ -300,6 +315,37 @@ if ($action === 'approve' || $action === 'draft') {
         // Commit transaksi
         $conn->commit();
 
+        // Kirim Notifikasi Email ke Pemohon RO saat PO Resmi Terbit (DISETUJUI PURCHASING)
+        $emailSent = false;
+        if (!$isDraft) {
+            try {
+                require_once __DIR__ . '/../../config/mailer.php';
+                if (function_exists('sendRoStatusNotification')) {
+                    // Dapatkan nama vendor untuk rincian email
+                    $namaVendor = '';
+                    $stmtV = $conn->prepare("SELECT nama_perusahaan FROM vendor WHERE id_vendor = ? LIMIT 1");
+                    $stmtV->bind_param("i", $idVendor);
+                    $stmtV->execute();
+                    $resV = $stmtV->get_result();
+                    if ($resV && $rowV = $resV->fetch_assoc()) {
+                        $namaVendor = $rowV['nama_perusahaan'];
+                    }
+                    $stmtV->close();
+
+                    $approverName = $currentUser['nama_karyawan'] ?? ($currentUser['nama_users'] ?? ($currentUser['username'] ?? 'Staff Purchasing'));
+                    $extraData = [
+                        'nomor_po' => $nomorPo,
+                        'id_po' => $newIdPo,
+                        'nama_vendor' => $namaVendor
+                    ];
+                    $mailRes = sendRoStatusNotification($conn, $idRequest, 'DISETUJUI PURCHASING', $approverName, $keteranganPo, $extraData);
+                    $emailSent = !empty($mailRes['success']);
+                }
+            } catch (Throwable $t) {
+                error_log("Gagal mengirim notifikasi PO Terbit untuk RO {$ro['nomor']}: " . $t->getMessage());
+            }
+        }
+
         $msg = $isDraft 
             ? "Purchase Order {$nomorPo} berhasil disimpan sebagai Draft."
             : "Purchase Order {$nomorPo} berhasil disetujui & diterbitkan dari Request Order {$ro['nomor']}.";
@@ -310,7 +356,8 @@ if ($action === 'approve' || $action === 'draft') {
             'id_request' => $idRequest,
             'nomor_ro' => $ro['nomor'],
             'is_draft' => $isDraft,
-            'status' => $statusPo
+            'status' => $statusPo,
+            'email_sent' => $emailSent
         ], 201);
 
     } catch (Exception $e) {

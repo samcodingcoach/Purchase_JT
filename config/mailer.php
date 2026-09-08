@@ -464,17 +464,84 @@ if (!function_exists('renderRoStatusEmailTemplate')) {
     /**
      * Template Email HTML Elegan untuk Pemberitahuan Status Persetujuan RO kepada Pemohon
      */
-    function renderRoStatusEmailTemplate($roData, $status, $approverName, $keterangan = '') {
+    function renderRoStatusEmailTemplate($roData, $status, $approverName, $keterangan = '', $extraData = []) {
         $nomorRo = htmlspecialchars($roData['nomor'] ?? '-');
         $namaPemohon = htmlspecialchars($roData['nama_pemohon'] ?? 'Karyawan');
-        $isApproved = (strpos(strtoupper($status), 'DISETUJUI') !== false && strpos(strtoupper($status), 'TIDAK') === false);
+        $statusUpper = strtoupper(trim($status));
+        $isApproved = (strpos($statusUpper, 'DISETUJUI') !== false && strpos($statusUpper, 'TIDAK') === false);
         $loginUrl = defined('BASE_URL') ? BASE_URL . '/admin/pages/request_order/index.php' : 'http://localhost/JT_Purchase/admin/pages/request_order/index.php';
 
-        $bannerBg = $isApproved ? '#dcfce7' : '#fee2e2';
-        $bannerBorder = $isApproved ? '#bbf7d0' : '#fecaca';
-        $bannerTextColor = $isApproved ? '#166534' : '#991b1b';
-        $statusTitle = $isApproved ? '✅ REQUEST ORDER TELAH DISETUJUI' : '❌ REQUEST ORDER TIDAK DISETUJUI';
-        $statusText = $isApproved ? 'DISETUJUI OLEH LOGISTIK' : 'TIDAK DISETUJUI / DITOLAK';
+        // Tentukan Banner, Judul, dan Pesan berdasarkan status spesifik
+        if ($statusUpper === 'DISETUJUI PURCHASING') {
+            $bannerBg = '#ecfdf5';
+            $bannerBorder = '#a7f3d0';
+            $bannerTextColor = '#065f46';
+            $statusTitle = '🎉 REQUEST ORDER TELAH DITERBITKAN MENJADI PO';
+            $statusText = 'DISETUJUI OLEH PURCHASING (PO RESMI TERBIT)';
+            $roleLabel = 'Purchasing / Pengadaan';
+            $introMsg = 'Kabar baik! Pengajuan <strong>Request Order (RO)</strong> Anda dengan nomor <strong style="font-family: monospace;">' . $nomorRo . '</strong> telah disetujui oleh tim Purchasing dan <strong>Purchase Order (PO)</strong> resmi telah diterbitkan.';
+        } elseif ($statusUpper === 'TIDAK DISETUJUI PURCHASING') {
+            $bannerBg = '#fef2f2';
+            $bannerBorder = '#fecaca';
+            $bannerTextColor = '#991b1b';
+            $statusTitle = '❌ REQUEST ORDER TIDAK DISETUJUI PURCHASING';
+            $statusText = 'TIDAK DISETUJUI / DITOLAK PURCHASING';
+            $roleLabel = 'Purchasing / Pengadaan';
+            $introMsg = 'Pengajuan <strong>Request Order (RO)</strong> Anda dengan nomor <strong style="font-family: monospace;">' . $nomorRo . '</strong> telah ditinjau oleh tim Purchasing dan dinyatakan <strong>tidak disetujui / ditolak</strong>.';
+        } elseif ($statusUpper === 'DISETUJUI LOGISTIK') {
+            $bannerBg = '#dcfce7';
+            $bannerBorder = '#bbf7d0';
+            $bannerTextColor = '#166534';
+            $statusTitle = '✅ REQUEST ORDER TELAH DISETUJUI LOGISTIK';
+            $statusText = 'DISETUJUI OLEH LOGISTIK (SIAP PROSES PO)';
+            $roleLabel = 'Logistik & Gudang';
+            $introMsg = 'Pengajuan <strong>Request Order (RO)</strong> Anda dengan nomor <strong style="font-family: monospace;">' . $nomorRo . '</strong> telah ditinjau dan <strong>disetujui oleh Logistik</strong>. Dokumen ini diteruskan ke tim Purchasing untuk penerbitan Purchase Order.';
+        } elseif ($statusUpper === 'TIDAK DISETUJUI LOGISTIK') {
+            $bannerBg = '#fee2e2';
+            $bannerBorder = '#fecaca';
+            $bannerTextColor = '#991b1b';
+            $statusTitle = '❌ REQUEST ORDER TIDAK DISETUJUI LOGISTIK';
+            $statusText = 'TIDAK DISETUJUI / DITOLAK LOGISTIK';
+            $roleLabel = 'Logistik & Gudang';
+            $introMsg = 'Pengajuan <strong>Request Order (RO)</strong> Anda dengan nomor <strong style="font-family: monospace;">' . $nomorRo . '</strong> telah ditinjau oleh tim Logistik dan dinyatakan <strong>tidak disetujui / ditolak</strong>.';
+        } else {
+            $bannerBg = $isApproved ? '#dcfce7' : '#fee2e2';
+            $bannerBorder = $isApproved ? '#bbf7d0' : '#fecaca';
+            $bannerTextColor = $isApproved ? '#166534' : '#991b1b';
+            $statusTitle = $isApproved ? '✅ REQUEST ORDER TELAH DISETUJUI' : '❌ REQUEST ORDER TIDAK DISETUJUI';
+            $statusText = htmlspecialchars($statusUpper);
+            $roleLabel = 'Pihak Berwenang';
+            $introMsg = 'Pengajuan <strong>Request Order (RO)</strong> Anda dengan nomor <strong style="font-family: monospace;">' . $nomorRo . '</strong> telah ditinjau dengan status terbaru: <strong>' . htmlspecialchars($statusUpper) . '</strong>.';
+        }
+
+        // Info Tambahan PO & Vendor jika ada
+        $nomorPo = htmlspecialchars($extraData['nomor_po'] ?? ($roData['nomor_po'] ?? ''));
+        $namaVendor = htmlspecialchars($extraData['nama_vendor'] ?? ($roData['nama_vendor'] ?? ''));
+        $poRowHtml = '';
+        if (!empty($nomorPo)) {
+            $poRowHtml .= '
+            <tr>
+                <td style="padding: 10px 14px; color: #64748b; border-bottom: 1px solid #e2e8f0;">Nomor PO Terbit</td>
+                <td style="padding: 10px 14px; font-weight: 700; color: #1d4ed8; font-family: monospace; font-size: 14px; border-bottom: 1px solid #e2e8f0;">' . $nomorPo . '</td>
+            </tr>';
+        }
+        if (!empty($namaVendor)) {
+            $poRowHtml .= '
+            <tr>
+                <td style="padding: 10px 14px; color: #64748b; border-bottom: 1px solid #e2e8f0;">Vendor Rekanan</td>
+                <td style="padding: 10px 14px; font-weight: 600; color: #1e293b; border-bottom: 1px solid #e2e8f0;">' . $namaVendor . '</td>
+            </tr>';
+        }
+
+        // Row Catatan/Alasan jika ada
+        $catatanRowHtml = '';
+        if (!empty($keterangan)) {
+            $catatanRowHtml = '
+            <tr>
+                <td style="padding: 10px 14px; color: #64748b; border-bottom: 1px solid #e2e8f0;">Catatan / Alasan</td>
+                <td style="padding: 10px 14px; color: #334155; font-style: italic; border-bottom: 1px solid #e2e8f0;">' . nl2br(htmlspecialchars($keterangan)) . '</td>
+            </tr>';
+        }
 
         return '
         <!DOCTYPE html>
@@ -513,7 +580,7 @@ if (!function_exists('renderRoStatusEmailTemplate')) {
                                         Halo <strong>' . $namaPemohon . '</strong>,
                                     </p>
                                     <p style="margin: 0 0 20px 0; font-size: 14px; line-height: 1.6; color: #475569;">
-                                        Pengajuan <strong>Request Order (RO)</strong> Anda dengan nomor <strong style="font-family: monospace;">' . $nomorRo . '</strong> telah ditinjau oleh pihak berwenang dengan hasil sebagai berikut:
+                                        ' . $introMsg . '
                                     </p>
 
                                     <!-- Summary Card -->
@@ -526,19 +593,21 @@ if (!function_exists('renderRoStatusEmailTemplate')) {
                                             <td style="padding: 10px 14px; color: #64748b; border-bottom: 1px solid #e2e8f0;">Status Terbaru</td>
                                             <td style="padding: 10px 14px; font-weight: 700; color: ' . $bannerTextColor . '; border-bottom: 1px solid #e2e8f0;">' . $statusText . '</td>
                                         </tr>
+                                        ' . $poRowHtml . '
                                         <tr>
                                             <td style="padding: 10px 14px; color: #64748b; border-bottom: 1px solid #e2e8f0;">Ditinjau Oleh</td>
-                                            <td style="padding: 10px 14px; color: #1e293b; font-weight: 600; border-bottom: 1px solid #e2e8f0;">' . htmlspecialchars($approverName) . '</td>
+                                            <td style="padding: 10px 14px; color: #1e293b; font-weight: 600; border-bottom: 1px solid #e2e8f0;">' . htmlspecialchars($approverName) . ' <span style="font-weight: normal; color: #64748b;">(' . $roleLabel . ')</span></td>
                                         </tr>
+                                        ' . $catatanRowHtml . '
                                         <tr>
-                                            <td style="padding: 10px 14px; color: #64748b;">Waktu Peninjauan</td>
+                                            <td style="padding: 10px 14px; color: #64748b;">Waktu Pembaruan</td>
                                             <td style="padding: 10px 14px; color: #1e293b;">' . date('d/m/Y H:i') . '</td>
                                         </tr>
                                     </table>
 
                                     <!-- Action Button CTA -->
                                     <div style="text-align: center; margin: 25px 0 10px 0;">
-                                        <a href="' . $loginUrl . '" target="_blank" style="background: linear-gradient(135deg, #0f2744 0%, #1e5288 100%); color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-size: 14px; font-weight: 700; display: inline-block;">
+                                        <a href="' . $loginUrl . '" target="_blank" style="background: linear-gradient(135deg, #0f2744 0%, #1e5288 100%); color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-size: 14px; font-weight: 700; display: inline-block; box-shadow: 0 4px 10px rgba(15,39,68,0.25);">
                                             📋 Lihat Rincian Request Order
                                         </a>
                                     </div>
@@ -883,25 +952,30 @@ if (!function_exists('sendRoReadyForPurchasingNotification')) {
 
 if (!function_exists('sendRoStatusNotification')) {
     /**
-     * Mengirim notifikasi status persetujuan RO kepada Karyawan Pemohon dan Tim Purchasing
+     * Mengirim notifikasi status persetujuan RO kepada Karyawan Pemohon dan Tim Purchasing (jika relevan)
      * 
      * @param mysqli $conn
      * @param int $idRequest
      * @param string $status
      * @param string $approverName
      * @param string $keterangan
+     * @param array $extraData
      * @return array [success => bool, message => string]
      */
-    function sendRoStatusNotification($conn, $idRequest, $status, $approverName, $keterangan = '') {
+    function sendRoStatusNotification($conn, $idRequest, $status, $approverName, $keterangan = '', $extraData = []) {
         $idRequest = (int)$idRequest;
         if ($idRequest <= 0) {
             return ['success' => false, 'message' => 'ID Request Order tidak valid.'];
         }
 
-        // 1. Ambil Data RO & Pemohon
-        $sqlRo = "SELECT ro.id_request, ro.nomor, ro.status, k.nama_karyawan as nama_pemohon, k.email as email_pemohon
+        // 1. Ambil Data RO & Pemohon beserta relasi PO & Vendor jika ada
+        $sqlRo = "SELECT ro.id_request, ro.nomor, ro.status, ro.id_po, ro.id_vendor,
+                         k.nama_karyawan as nama_pemohon, k.email as email_pemohon,
+                         po.nomor_po, v.nama_perusahaan as nama_vendor
                   FROM request_order ro
                   LEFT JOIN karyawan k ON ro.id_karyawan = k.id_karyawan
+                  LEFT JOIN purchase_order po ON ro.id_po = po.id_po
+                  LEFT JOIN vendor v ON (ro.id_vendor = v.id_vendor OR po.id_vendor = v.id_vendor)
                   WHERE ro.id_request = ? LIMIT 1";
         $stmt = $conn->prepare($sqlRo);
         $stmt->bind_param("i", $idRequest);
@@ -915,27 +989,50 @@ if (!function_exists('sendRoStatusNotification')) {
         $roData = $resRo->fetch_assoc();
         $stmt->close();
 
+        // Gabungkan extraData jika ada nomor_po atau vendor yang baru saja dibuat
+        if (!empty($extraData) && is_array($extraData)) {
+            foreach ($extraData as $k => $v) {
+                if (!empty($v)) {
+                    $roData[$k] = $v;
+                }
+            }
+        }
+
         $toEmail = trim($roData['email_pemohon'] ?? '');
         $toName = trim($roData['nama_pemohon'] ?? 'Karyawan');
 
+        $statusUpper = strtoupper(trim($status));
         $emailSentPemohon = false;
+
         if (!empty($toEmail) && filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
-            $htmlBody = renderRoStatusEmailTemplate($roData, $status, $approverName, $keterangan);
-            $statusTag = (strpos(strtoupper($status), 'DISETUJUI') !== false && strpos(strtoupper($status), 'TIDAK') === false) ? '[DISETUJUI]' : '[DITOLAK]';
-            $subject = "{$statusTag} Pembaruan Status Request Order: {$roData['nomor']}";
+            $htmlBody = renderRoStatusEmailTemplate($roData, $statusUpper, $approverName, $keterangan, $extraData);
+
+            if ($statusUpper === 'DISETUJUI PURCHASING') {
+                $poInfo = !empty($roData['nomor_po']) ? " (PO: {$roData['nomor_po']})" : "";
+                $subject = "[PO TERBIT] Request Order Telah Disetujui Purchasing: {$roData['nomor']}{$poInfo}";
+            } elseif ($statusUpper === 'TIDAK DISETUJUI PURCHASING') {
+                $subject = "[DITOLAK PURCHASING] Request Order Tidak Disetujui: {$roData['nomor']}";
+            } elseif ($statusUpper === 'DISETUJUI LOGISTIK') {
+                $subject = "[DISETUJUI LOGISTIK] Request Order Disetujui: {$roData['nomor']}";
+            } elseif ($statusUpper === 'TIDAK DISETUJUI LOGISTIK') {
+                $subject = "[DITOLAK LOGISTIK] Request Order Tidak Disetujui: {$roData['nomor']}";
+            } else {
+                $statusTag = (strpos($statusUpper, 'DISETUJUI') !== false && strpos($statusUpper, 'TIDAK') === false) ? '[DISETUJUI]' : '[DITOLAK]';
+                $subject = "{$statusTag} Pembaruan Status Request Order: {$roData['nomor']}";
+            }
 
             $resSend = sendSmtpEmail($conn, $toEmail, $toName, $subject, $htmlBody);
             $emailSentPemohon = !empty($resSend['success']);
         }
 
         // 2. Jika status adalah DISETUJUI LOGISTIK, kirim email notifikasi ke Tim Purchasing untuk proses PO
-        $isApproved = (strpos(strtoupper($status), 'DISETUJUI') !== false && strpos(strtoupper($status), 'TIDAK') === false);
-        if ($isApproved && function_exists('sendRoReadyForPurchasingNotification')) {
+        $isLogistikApproved = ($statusUpper === 'DISETUJUI LOGISTIK');
+        if ($isLogistikApproved && function_exists('sendRoReadyForPurchasingNotification')) {
             sendRoReadyForPurchasingNotification($conn, $idRequest, $approverName, $keterangan);
         }
 
         return [
-            'success' => $emailSentPemohon || $isApproved,
+            'success' => $emailSentPemohon || $isLogistikApproved,
             'message' => 'Notifikasi status RO berhasil diproses.'
         ];
     }
