@@ -218,15 +218,18 @@ try {
     $emailSent = false;
     try {
         require_once __DIR__ . '/../../config/mailer.php';
-        if ($existingRo['status'] !== 'TERKIRIM' && $status === 'TERKIRIM') {
-            if (function_exists('sendRoApprovalNotification')) {
-                $mailRes = sendRoApprovalNotification($conn, $idRequest);
+        if (function_exists('sendNotificationEvent')) {
+            if ($existingRo['status'] !== 'TERKIRIM' && $status === 'TERKIRIM') {
+                $mailRes = sendNotificationEvent($conn, 'ro_created', ['id_request' => $idRequest]);
                 $emailSent = !empty($mailRes['success']);
-            }
-        } elseif (in_array($status, ['DISETUJUI LOGISTIK', 'TIDAK DISETUJUI LOGISTIK', 'DISETUJUI PURCHASING', 'TIDAK DISETUJUI PURCHASING'])) {
-            if (function_exists('sendRoStatusNotification')) {
+            } elseif (in_array($status, ['DISETUJUI LOGISTIK', 'TIDAK DISETUJUI LOGISTIK', 'DISETUJUI PURCHASING', 'TIDAK DISETUJUI PURCHASING'])) {
                 $approverName = $currentUser['nama_karyawan'] ?? ($currentUser['nama_users'] ?? ($currentUser['username'] ?? 'Approver'));
-                $mailRes = sendRoStatusNotification($conn, $idRequest, $status, $approverName, $keterangan);
+                $mailRes = sendNotificationEvent($conn, 'ro_status_update', [
+                    'id_request' => $idRequest,
+                    'status' => $status,
+                    'actor_name' => $approverName,
+                    'keterangan' => $keterangan
+                ]);
                 $emailSent = !empty($mailRes['success']);
             }
         }

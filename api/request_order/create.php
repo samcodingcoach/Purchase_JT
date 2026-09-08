@@ -218,17 +218,16 @@ try {
     // Commit Transaction jika seluruh tahapan berhasil
     $conn->commit();
 
-    // Kirim Notifikasi Email ke Approver jika status TERKIRIM (Fault-Tolerant)
+    // Kirim Notifikasi Email ke Logistik jika status TERKIRIM (Fault-Tolerant)
     $emailSent = false;
     if ($status === 'TERKIRIM') {
         try {
             require_once __DIR__ . '/../../config/mailer.php';
-            if (function_exists('sendRoApprovalNotification')) {
-                $mailRes = sendRoApprovalNotification($conn, $idRequest);
+            if (function_exists('sendNotificationEvent')) {
+                $mailRes = sendNotificationEvent($conn, 'ro_created', ['id_request' => $idRequest]);
                 $emailSent = !empty($mailRes['success']);
             }
         } catch (Throwable $t) {
-            // Log silent error agar tidak mengganggu response pengguna
             error_log("Gagal mengirim notifikasi email RO {$nomorRo}: " . $t->getMessage());
         }
     }

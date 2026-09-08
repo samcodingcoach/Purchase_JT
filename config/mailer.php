@@ -1037,3 +1037,43 @@ if (!function_exists('sendRoStatusNotification')) {
         ];
     }
 }
+
+if (!function_exists('sendNotificationEvent')) {
+    /**
+     * Dispatcher Notifikasi Terpusat untuk backend API
+     * 
+     * @param mysqli $conn
+     * @param string $action 'ro_created' | 'ro_status_update' | 'ro_ready_purchasing' | 'custom_email'
+     * @param array $payload
+     * @return array [success => bool, message => string]
+     */
+    function sendNotificationEvent($conn, $action, $payload = []) {
+        $action = trim($action);
+        $idRequest = isset($payload['id_request']) ? (int)$payload['id_request'] : 0;
+        $status = trim($payload['status'] ?? '');
+        $actorName = trim($payload['actor_name'] ?? ($payload['approver_name'] ?? 'Petugas'));
+        $keterangan = trim($payload['keterangan'] ?? ($payload['alasan'] ?? ($payload['catatan'] ?? '')));
+        $extraData = isset($payload['extra_data']) && is_array($payload['extra_data']) ? $payload['extra_data'] : [];
+
+        switch ($action) {
+            case 'ro_created':
+                return sendRoApprovalNotification($conn, $idRequest);
+
+            case 'ro_status_update':
+                return sendRoStatusNotification($conn, $idRequest, $status, $actorName, $keterangan, $extraData);
+
+            case 'ro_ready_purchasing':
+                return sendRoReadyForPurchasingNotification($conn, $idRequest, $actorName, $keterangan);
+
+            case 'custom_email':
+                $toEmail = trim($payload['to_email'] ?? '');
+                $toName = trim($payload['to_name'] ?? 'Penerima');
+                $subject = trim($payload['subject'] ?? '');
+                $bodyHtml = trim($payload['body_html'] ?? '');
+                return sendSmtpEmail($conn, $toEmail, $toName, $subject, $bodyHtml);
+
+            default:
+                return ['success' => false, 'message' => "Action '{$action}' tidak dikenal."];
+        }
+    }
+}

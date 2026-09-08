@@ -60,10 +60,15 @@ $stmtUpdate->close();
 $emailSent = false;
 try {
     require_once __DIR__ . '/../../config/mailer.php';
-    if (function_exists('sendRoStatusNotification')) {
-        $approverName = $currentUser['nama_users'] ?? ($currentUser['username'] ?? 'Approver Logistik');
+    if (function_exists('sendNotificationEvent')) {
+        $approverName = $currentUser['nama_karyawan'] ?? ($currentUser['nama_users'] ?? ($currentUser['username'] ?? 'Approver Logistik'));
         $catatan = trim($input['catatan'] ?? ($input['keterangan'] ?? ''));
-        $mailRes = sendRoStatusNotification($conn, $idRequest, $newStatus, $approverName, $catatan);
+        $mailRes = sendNotificationEvent($conn, 'ro_status_update', [
+            'id_request' => $idRequest,
+            'status' => $newStatus,
+            'actor_name' => $approverName,
+            'keterangan' => $catatan
+        ]);
         $emailSent = !empty($mailRes['success']);
     }
 } catch (Throwable $t) {

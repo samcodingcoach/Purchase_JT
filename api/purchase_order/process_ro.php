@@ -81,9 +81,14 @@ if ($action === 'reject') {
         $emailSent = false;
         try {
             require_once __DIR__ . '/../../config/mailer.php';
-            if (function_exists('sendRoStatusNotification')) {
+            if (function_exists('sendNotificationEvent')) {
                 $approverName = $currentUser['nama_karyawan'] ?? ($currentUser['nama_users'] ?? ($currentUser['username'] ?? 'Staff Purchasing'));
-                $mailRes = sendRoStatusNotification($conn, $idRequest, 'TIDAK DISETUJUI PURCHASING', $approverName, $alasan);
+                $mailRes = sendNotificationEvent($conn, 'ro_status_update', [
+                    'id_request' => $idRequest,
+                    'status' => 'TIDAK DISETUJUI PURCHASING',
+                    'actor_name' => $approverName,
+                    'keterangan' => $alasan
+                ]);
                 $emailSent = !empty($mailRes['success']);
             }
         } catch (Throwable $t) {
@@ -320,7 +325,7 @@ if ($action === 'approve' || $action === 'draft') {
         if (!$isDraft) {
             try {
                 require_once __DIR__ . '/../../config/mailer.php';
-                if (function_exists('sendRoStatusNotification')) {
+                if (function_exists('sendNotificationEvent')) {
                     // Dapatkan nama vendor untuk rincian email
                     $namaVendor = '';
                     $stmtV = $conn->prepare("SELECT nama_perusahaan FROM vendor WHERE id_vendor = ? LIMIT 1");
@@ -333,12 +338,17 @@ if ($action === 'approve' || $action === 'draft') {
                     $stmtV->close();
 
                     $approverName = $currentUser['nama_karyawan'] ?? ($currentUser['nama_users'] ?? ($currentUser['username'] ?? 'Staff Purchasing'));
-                    $extraData = [
-                        'nomor_po' => $nomorPo,
-                        'id_po' => $newIdPo,
-                        'nama_vendor' => $namaVendor
-                    ];
-                    $mailRes = sendRoStatusNotification($conn, $idRequest, 'DISETUJUI PURCHASING', $approverName, $keteranganPo, $extraData);
+                    $mailRes = sendNotificationEvent($conn, 'ro_status_update', [
+                        'id_request' => $idRequest,
+                        'status' => 'DISETUJUI PURCHASING',
+                        'actor_name' => $approverName,
+                        'keterangan' => $keteranganPo,
+                        'extra_data' => [
+                            'nomor_po' => $nomorPo,
+                            'id_po' => $newIdPo,
+                            'nama_vendor' => $namaVendor
+                        ]
+                    ]);
                     $emailSent = !empty($mailRes['success']);
                 }
             } catch (Throwable $t) {
