@@ -377,173 +377,167 @@ require_once __DIR__ . '/../../components/navbar.php';
 </div>
 
 <!-- =============================================================
-     MODAL VERIFIKASI & OTORISASI PENERBITAN PURCHASE ORDER
+     MODAL VERIFIKASI & OTORISASI PENERBITAN PURCHASE ORDER (MINIMALIS)
      ============================================================= -->
 <div class="modal fade" id="modalVerifyPo" tabindex="-1" aria-labelledby="modalVerifyPoLabel" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow-lg rounded-3 overflow-hidden">
             <!-- Modal Header -->
-            <div class="modal-header bg-primary text-white py-3 px-4">
+            <div class="modal-header bg-primary text-white py-2 px-3">
                 <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-shield-check fs-4"></i>
-                    <div>
-                        <h5 class="modal-title fs-6 fw-bold mb-0" id="modalVerifyPoLabel">
-                            Verifikasi &amp; Konfirmasi Penerbitan Purchase Order
-                        </h5>
-                        <div class="small opacity-75">Periksa dan centang 6 poin parameter transaksi sebelum menerbitkan PO resmi</div>
-                    </div>
+                    <i class="bi bi-shield-check fs-5"></i>
+                    <h5 class="modal-title fs-6 fw-bold mb-0" id="modalVerifyPoLabel">
+                        Verifikasi &amp; Konfirmasi Penerbitan Purchase Order
+                    </h5>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
             <!-- Modal Body -->
-            <div class="modal-body p-4 bg-light">
+            <div class="modal-body p-3 bg-light">
                 
-                <!-- Ringkasan Dokumen & Nilai Transaksi -->
-                <div class="card border-0 shadow-xs rounded-3 p-3 bg-white mb-3">
-                    <div class="row g-2 align-items-center">
-                        <div class="col-sm-6">
-                            <span class="text-muted small d-block">Nomor Purchase Order (PO):</span>
-                            <strong class="text-dark font-monospace fs-6" id="verifyPoNumberDisplay">PO-XXXX-XXXX</strong>
-                            <div class="text-muted small mt-1">Vendor: <span class="fw-semibold text-dark" id="verifyVendorNameDisplay">-</span></div>
+                <!-- Ringkasan Singkat PO -->
+                <div class="d-flex flex-wrap align-items-center justify-content-between p-2 px-3 bg-white border rounded-2 mb-2 gap-2">
+                    <div class="d-flex align-items-center gap-3">
+                        <div>
+                            <span class="text-muted" style="font-size: 0.72rem; display: block;">Nomor PO:</span>
+                            <strong class="text-dark font-monospace small" id="verifyPoNumberDisplay">PO-XXXX-XXXX</strong>
                         </div>
-                        <div class="col-sm-6 text-sm-end">
-                            <span class="text-muted small d-block">Grand Total Transaksi:</span>
-                            <strong class="text-success font-monospace fs-5" id="verifyGrandTotalDisplay">Rp 0</strong>
+                        <div class="border-start ps-3">
+                            <span class="text-muted" style="font-size: 0.72rem; display: block;">Vendor Rekanan:</span>
+                            <span class="fw-semibold text-dark small" id="verifyVendorNameDisplay">-</span>
                         </div>
+                    </div>
+                    <div class="text-end">
+                        <span class="text-muted" style="font-size: 0.72rem; display: block;">Grand Total Transaksi:</span>
+                        <strong class="text-success font-monospace fs-6" id="verifyGrandTotalDisplay">Rp 0</strong>
                     </div>
                 </div>
 
-                <!-- 6 CHECKLIST VERIFIKASI PARAMETER -->
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h6 class="fw-bold text-dark small mb-0">
-                        <i class="bi bi-card-checklist text-primary me-1"></i> Checklist Verifikasi Wajib (6 Poin) <span class="text-danger">*</span>
-                    </h6>
-                    <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2 small" style="font-size: 0.75rem;" onclick="toggleCheckAllVerify(true)">Centang Semua</button>
+                <!-- 6 Checklist Header Bar -->
+                <div class="d-flex justify-content-between align-items-center mb-1 px-1">
+                    <span class="fw-bold text-dark" style="font-size: 0.8rem;">
+                        <i class="bi bi-card-checklist text-primary me-1"></i> Parameter Verifikasi Wajib (6 Poin):
+                    </span>
+                    <button type="button" class="btn btn-link text-decoration-none btn-sm p-0 fw-semibold" style="font-size: 0.75rem;" onclick="toggleCheckAllVerify(true)">
+                        <i class="bi bi-check-all me-1"></i>Centang Semua
+                    </button>
                 </div>
 
-                <div class="d-flex flex-column gap-2 mb-3">
-                    
-                    <!-- 1. T.O.P (Term of Payment) -->
-                    <div class="card border p-2 bg-white shadow-xs">
-                        <div class="form-check m-0 d-flex align-items-start gap-2">
-                            <input class="form-check-input verify-check-item mt-1" type="checkbox" id="checkVerifyTop" onchange="checkVerifyCompleteness()">
-                            <label class="form-check-label w-100 cursor-pointer" for="checkVerifyTop">
-                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-1">
-                                    <strong class="text-dark small">1. Term of Payment (T.O.P)</strong>
-                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace" id="verifyValTop">0 Hari</span>
-                                </div>
-                                <div class="text-muted" style="font-size: 0.78rem;">Jangka waktu dan termin pembayaran ke vendor sudah tepat sesuai kesepakatan.</div>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- 2. Metode Pengiriman -->
-                    <div class="card border p-2 bg-white shadow-xs">
-                        <div class="form-check m-0 d-flex align-items-start gap-2">
-                            <input class="form-check-input verify-check-item mt-1" type="checkbox" id="checkVerifyPengiriman" onchange="checkVerifyCompleteness()">
-                            <label class="form-check-label w-100 cursor-pointer" for="checkVerifyPengiriman">
-                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-1">
-                                    <strong class="text-dark small">2. Metode Pengiriman</strong>
-                                    <span class="badge bg-secondary-subtle text-secondary border font-monospace" id="verifyValPengiriman">Vendor</span>
-                                </div>
-                                <div class="text-muted" style="font-size: 0.78rem;">Metode logistik pengiriman barang (Vendor/Expedisi/Internal) dan alamat site tujuan sudah benar.</div>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- 3. Estimasi Tanggal Pengiriman -->
-                    <div class="card border p-2 bg-white shadow-xs">
-                        <div class="form-check m-0 d-flex align-items-start gap-2">
-                            <input class="form-check-input verify-check-item mt-1" type="checkbox" id="checkVerifyTanggalPengiriman" onchange="checkVerifyCompleteness()">
-                            <label class="form-check-label w-100 cursor-pointer" for="checkVerifyTanggalPengiriman">
-                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-1">
-                                    <strong class="text-dark small">3. Estimasi Tanggal Pengiriman oleh Vendor</strong>
-                                    <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle font-monospace" id="verifyValTanggalPengiriman">-</span>
-                                </div>
-                                <div class="text-muted" style="font-size: 0.78rem;">Estimasi kesanggupan tanggal pengiriman oleh vendor telah dikonfirmasi dan sesuai jadwal operasional.</div>
-                            </label>
+                <!-- 6 CHECKLIST VERIFIKASI (2-KOLOM KOMPAK) -->
+                <div class="row g-2 mb-2">
+                    <!-- 1. T.O.P -->
+                    <div class="col-md-6">
+                        <div class="p-2 bg-white border rounded-2 d-flex align-items-center justify-content-between h-100 shadow-xs">
+                            <div class="form-check m-0 d-flex align-items-center gap-2">
+                                <input class="form-check-input verify-check-item m-0" type="checkbox" id="checkVerifyTop" onchange="checkVerifyCompleteness()">
+                                <label class="form-check-label small fw-semibold text-dark cursor-pointer" for="checkVerifyTop">
+                                    1. Term of Payment (TOP)
+                                </label>
+                            </div>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace" style="font-size: 0.7rem;" id="verifyValTop">0 Hari</span>
                         </div>
                     </div>
 
                     <!-- 4. Total QTY -->
-                    <div class="card border p-2 bg-white shadow-xs">
-                        <div class="form-check m-0 d-flex align-items-start gap-2">
-                            <input class="form-check-input verify-check-item mt-1" type="checkbox" id="checkVerifyTotalQty" onchange="checkVerifyCompleteness()">
-                            <label class="form-check-label w-100 cursor-pointer" for="checkVerifyTotalQty">
-                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-1">
-                                    <strong class="text-dark small">4. Total QTY (Kuantitas &amp; Rincian Barang)</strong>
-                                    <span class="badge bg-dark-subtle text-dark border font-monospace" id="verifyValTotalQty">0 Qty (0 Item)</span>
-                                </div>
-                                <div class="text-muted" style="font-size: 0.78rem;">Kuantitas seluruh baris barang, satuan (PCS/UNIT), serta harga satuan dan diskon telah dihitung akurat.</div>
-                            </label>
+                    <div class="col-md-6">
+                        <div class="p-2 bg-white border rounded-2 d-flex align-items-center justify-content-between h-100 shadow-xs">
+                            <div class="form-check m-0 d-flex align-items-center gap-2">
+                                <input class="form-check-input verify-check-item m-0" type="checkbox" id="checkVerifyTotalQty" onchange="checkVerifyCompleteness()">
+                                <label class="form-check-label small fw-semibold text-dark cursor-pointer" for="checkVerifyTotalQty">
+                                    4. Total Kuantitas (Qty)
+                                </label>
+                            </div>
+                            <span class="badge bg-dark-subtle text-dark border font-monospace" style="font-size: 0.7rem;" id="verifyValTotalQty">0 Qty (0 Item)</span>
+                        </div>
+                    </div>
+
+                    <!-- 2. Pengiriman -->
+                    <div class="col-md-6">
+                        <div class="p-2 bg-white border rounded-2 d-flex align-items-center justify-content-between h-100 shadow-xs">
+                            <div class="form-check m-0 d-flex align-items-center gap-2">
+                                <input class="form-check-input verify-check-item m-0" type="checkbox" id="checkVerifyPengiriman" onchange="checkVerifyCompleteness()">
+                                <label class="form-check-label small fw-semibold text-dark cursor-pointer" for="checkVerifyPengiriman">
+                                    2. Metode Pengiriman
+                                </label>
+                            </div>
+                            <span class="badge bg-secondary-subtle text-secondary border font-monospace" style="font-size: 0.7rem;" id="verifyValPengiriman">Vendor</span>
                         </div>
                     </div>
 
                     <!-- 5. Kena Pajak (PPN) -->
-                    <div class="card border p-2 bg-white shadow-xs">
-                        <div class="form-check m-0 d-flex align-items-start gap-2">
-                            <input class="form-check-input verify-check-item mt-1" type="checkbox" id="checkVerifyKenaPajak" onchange="checkVerifyCompleteness()">
-                            <label class="form-check-label w-100 cursor-pointer" for="checkVerifyKenaPajak">
-                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-1">
-                                    <strong class="text-dark small">5. Status Kena Pajak (PPN)</strong>
-                                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle font-monospace" id="verifyValKenaPajak">PPN (12%)</span>
-                                </div>
-                                <div class="text-muted" style="font-size: 0.78rem;">Status pengenaan Pajak Pertambahan Nilai (PPN) dan tarif pajak per item telah diverifikasi.</div>
-                            </label>
+                    <div class="col-md-6">
+                        <div class="p-2 bg-white border rounded-2 d-flex align-items-center justify-content-between h-100 shadow-xs">
+                            <div class="form-check m-0 d-flex align-items-center gap-2">
+                                <input class="form-check-input verify-check-item m-0" type="checkbox" id="checkVerifyKenaPajak" onchange="checkVerifyCompleteness()">
+                                <label class="form-check-label small fw-semibold text-dark cursor-pointer" for="checkVerifyKenaPajak">
+                                    5. Status Kena Pajak (PPN)
+                                </label>
+                            </div>
+                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle font-monospace" style="font-size: 0.7rem;" id="verifyValKenaPajak">PPN (12%)</span>
                         </div>
                     </div>
 
-                    <!-- 6. Total Termasuk Pajak -->
-                    <div class="card border p-2 bg-white shadow-xs">
-                        <div class="form-check m-0 d-flex align-items-start gap-2">
-                            <input class="form-check-input verify-check-item mt-1" type="checkbox" id="checkVerifyTermasukPajak" onchange="checkVerifyCompleteness()">
-                            <label class="form-check-label w-100 cursor-pointer" for="checkVerifyTermasukPajak">
-                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-1">
-                                    <strong class="text-dark small">6. Total Termasuk Pajak (Include / Exclude)</strong>
-                                    <span class="badge bg-light text-dark border font-monospace" id="verifyValTermasukPajak">Belum Termasuk Pajak</span>
-                                </div>
-                                <div class="text-muted" style="font-size: 0.78rem;">Skema perhitungan DPP, Pajak, dan Grand Total (apakah harga include atau exclude pajak) sudah tepat.</div>
-                            </label>
+                    <!-- 3. Tanggal Pengiriman -->
+                    <div class="col-md-6">
+                        <div class="p-2 bg-white border rounded-2 d-flex align-items-center justify-content-between h-100 shadow-xs">
+                            <div class="form-check m-0 d-flex align-items-center gap-2">
+                                <input class="form-check-input verify-check-item m-0" type="checkbox" id="checkVerifyTanggalPengiriman" onchange="checkVerifyCompleteness()">
+                                <label class="form-check-label small fw-semibold text-dark cursor-pointer" for="checkVerifyTanggalPengiriman">
+                                    3. Estimasi Tiba / Kirim
+                                </label>
+                            </div>
+                            <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle font-monospace" style="font-size: 0.7rem;" id="verifyValTanggalPengiriman">-</span>
                         </div>
                     </div>
 
+                    <!-- 6. Skema Termasuk Pajak -->
+                    <div class="col-md-6">
+                        <div class="p-2 bg-white border rounded-2 d-flex align-items-center justify-content-between h-100 shadow-xs">
+                            <div class="form-check m-0 d-flex align-items-center gap-2">
+                                <input class="form-check-input verify-check-item m-0" type="checkbox" id="checkVerifyTermasukPajak" onchange="checkVerifyCompleteness()">
+                                <label class="form-check-label small fw-semibold text-dark cursor-pointer" for="checkVerifyTermasukPajak">
+                                    6. Skema Pajak Inklusif/Eksklusif
+                                </label>
+                            </div>
+                            <span class="badge bg-light text-dark border font-monospace" style="font-size: 0.7rem;" id="verifyValTermasukPajak">Eksklusif</span>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- INPUT PASSWORD KONFIRMASI OTORISASI -->
-                <div class="card border-0 shadow-xs rounded-3 p-3 bg-white">
-                    <label class="form-label small fw-bold text-dark mb-1">
-                        <i class="bi bi-key-fill text-warning me-1"></i> Input Password Akun Anda untuk Otorisasi <span class="text-danger">*</span>
-                    </label>
-                    <div class="input-group input-group-sm">
-                        <span class="input-group-text bg-light"><i class="bi bi-lock-fill text-muted"></i></span>
-                        <input type="password" class="form-control" id="inputVerifyPassword" 
-                               placeholder="Masukkan password login Anda untuk konfirmasi penerbitan..." 
-                               autocomplete="current-password" 
-                               oninput="this.classList.remove('is-invalid'); checkVerifyCompleteness();" 
-                               onkeydown="if(event.key === 'Enter') { event.preventDefault(); if(!document.getElementById('btnFinalSubmitPo').disabled) submitFinalApprovedPo(); }"
-                               required>
-                        <button class="btn btn-outline-secondary" type="button" onclick="toggleVerifyPasswordVisibility()" title="Lihat/Sembunyikan Password">
-                            <i class="bi bi-eye" id="toggleVerifyEyeIcon"></i>
-                        </button>
+                <!-- Input Password Otorisasi Kompak -->
+                <div class="p-2 px-3 bg-white border rounded-2 shadow-xs">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <label class="form-label small fw-bold text-dark mb-0" for="inputVerifyPassword">
+                            <i class="bi bi-key-fill text-warning me-1"></i> Password Akun Anda <span class="text-danger">*</span>:
+                        </label>
+                        <div class="input-group input-group-sm" style="max-width: 320px;">
+                            <span class="input-group-text bg-light"><i class="bi bi-lock-fill text-muted"></i></span>
+                            <input type="password" class="form-control" id="inputVerifyPassword" 
+                                   placeholder="Password login akun..." 
+                                   autocomplete="current-password" 
+                                   oninput="this.classList.remove('is-invalid'); checkVerifyCompleteness();" 
+                                   onkeydown="if(event.key === 'Enter') { event.preventDefault(); if(!document.getElementById('btnFinalSubmitPo').disabled) submitFinalApprovedPo(); }"
+                                   required>
+                            <button class="btn btn-outline-secondary" type="button" onclick="toggleVerifyPasswordVisibility()" title="Lihat/Sembunyikan Password">
+                                <i class="bi bi-eye" id="toggleVerifyEyeIcon"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="invalid-feedback d-block text-danger small mt-1 d-none" id="verifyPasswordErrorText">
                         <i class="bi bi-exclamation-circle me-1"></i>Password otorisasi salah. Silakan coba lagi.
-                    </div>
-                    <div class="form-text text-muted" style="font-size: 0.78rem;">
-                        Penerbitan PO adalah dokumen legal sah. Masukkan password akun login Anda sebagai verifikasi identitas resmi.
                     </div>
                 </div>
 
             </div>
 
             <!-- Modal Footer -->
-            <div class="modal-footer bg-white py-3 px-4 border-top d-flex justify-content-between align-items-center">
+            <div class="modal-footer bg-white py-2 px-3 border-top d-flex justify-content-between align-items-center">
                 <button type="button" class="btn btn-outline-secondary btn-sm px-3" data-bs-dismiss="modal">
                     <i class="bi bi-x-circle me-1"></i> Batal
                 </button>
-                <button type="button" class="btn btn-success btn-sm px-4 fw-bold shadow-sm" id="btnFinalSubmitPo" onclick="submitFinalApprovedPo()" disabled>
-                    <i class="bi bi-check2-circle me-1"></i> Konfirmasi &amp; Terbitkan PO Sekarang
+                <button type="button" class="btn btn-success btn-sm px-3 fw-bold shadow-sm" id="btnFinalSubmitPo" onclick="submitFinalApprovedPo()" disabled>
+                    <i class="bi bi-check2-circle me-1"></i> Konfirmasi &amp; Terbitkan PO
                 </button>
             </div>
         </div>
