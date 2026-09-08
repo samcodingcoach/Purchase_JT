@@ -186,20 +186,37 @@ textarea.form-control {
 
                                 <!-- RIWAYAT ANGSURAN SEBELUMNYA -->
                                 <div id="fakturHistoryContainer" class="mt-3" style="display: none;">
-                                    <div class="fw-semibold text-dark small mb-2">Riwayat Pembayaran Sebelumnya:</div>
-                                    <div class="table-responsive border rounded-3 bg-white">
-                                        <table class="table table-sm table-striped small mb-0">
-                                            <thead class="table-light text-secondary">
-                                                <tr>
-                                                    <th>Kode</th>
-                                                    <th>Tgl Bayar</th>
-                                                    <th class="text-end">Nominal</th>
-                                                    <th>Sisa Hutang</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="fakturHistoryTableBody">
-                                            </tbody>
-                                        </table>
+                                    <div class="card border border-light-subtle rounded-3 shadow-none overflow-hidden bg-white">
+                                        <div class="card-header bg-light-subtle py-2 px-3 border-bottom d-flex justify-content-between align-items-center">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="bi bi-clock-history text-primary"></i>
+                                                <span class="fw-bold text-dark small">Riwayat Pembayaran Sebelumnya</span>
+                                            </div>
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace px-2 py-1" id="fakturHistoryCount">0 Transaksi</span>
+                                        </div>
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.8125rem;">
+                                                <thead class="table-light text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">
+                                                    <tr>
+                                                        <th style="width: 32px;" class="text-center">No</th>
+                                                        <th style="min-width: 120px;">Kode Bayar</th>
+                                                        <th style="min-width: 90px;" class="text-center">Tgl Bayar</th>
+                                                        <th style="min-width: 90px;">Kas / Bank</th>
+                                                        <th style="min-width: 105px;" class="text-end">Nominal</th>
+                                                        <th style="min-width: 105px;" class="text-end">Sisa Tagihan</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="fakturHistoryTableBody">
+                                                </tbody>
+                                                <tfoot class="table-light border-top">
+                                                    <tr class="fw-bold">
+                                                        <td colspan="4" class="text-end text-muted small py-2">Total Terbayar:</td>
+                                                        <td class="text-end font-monospace text-success py-2" id="fakturHistoryTotalTerbayar">Rp 0</td>
+                                                        <td></td>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -581,21 +598,37 @@ async function selectFaktur(idFaktur) {
 
             // History Table
             const histBody = document.getElementById('fakturHistoryTableBody');
+            const histContainer = document.getElementById('fakturHistoryContainer');
+            const histCount = document.getElementById('fakturHistoryCount');
+            const histTotalTerbayar = document.getElementById('fakturHistoryTotalTerbayar');
+
             if (f.history_pembayaran && f.history_pembayaran.length > 0) {
                 let histHtml = '';
-                f.history_pembayaran.forEach(h => {
+                let totalNominal = 0;
+                f.history_pembayaran.forEach((h, idx) => {
+                    const nominal = parseFloat(h.nominal_pengiriman) || 0;
+                    const sisa = parseFloat(h.sisa_piutang) || 0;
+                    totalNominal += nominal;
+                    const bankKas = h.bank_pengirim ? `<span class="badge bg-light text-dark border font-monospace" style="font-size: 0.75rem;">${escapeHtml(h.bank_pengirim)}</span>` : '<span class="text-muted small">-</span>';
+                    
                     histHtml += `
                     <tr>
-                        <td class="font-monospace text-primary">${h.kode_pembayaran}</td>
-                        <td>${formatDate(h.tanggal_bayar)}</td>
-                        <td class="text-end font-monospace fw-semibold">${formatRupiah(h.nominal_pengiriman)}</td>
-                        <td class="font-monospace text-muted">${formatRupiah(h.sisa_piutang)}</td>
+                        <td class="text-center text-muted font-monospace small">${idx + 1}</td>
+                        <td>
+                            <span class="fw-bold font-monospace text-primary">${escapeHtml(h.kode_pembayaran)}</span>
+                        </td>
+                        <td class="text-center font-monospace text-secondary small">${formatDate(h.tanggal_bayar)}</td>
+                        <td>${bankKas}</td>
+                        <td class="text-end font-monospace fw-bold text-success">${formatRupiah(nominal)}</td>
+                        <td class="text-end font-monospace text-danger">${formatRupiah(sisa)}</td>
                     </tr>`;
                 });
                 histBody.innerHTML = histHtml;
-                document.getElementById('fakturHistoryContainer').style.display = 'block';
+                if (histCount) histCount.textContent = `${f.history_pembayaran.length} Transaksi`;
+                if (histTotalTerbayar) histTotalTerbayar.textContent = formatRupiah(totalNominal);
+                histContainer.style.display = 'block';
             } else {
-                document.getElementById('fakturHistoryContainer').style.display = 'none';
+                histContainer.style.display = 'none';
             }
 
             // Sync Nominal Pembayaran jika 1x Bayar (Lunas)
