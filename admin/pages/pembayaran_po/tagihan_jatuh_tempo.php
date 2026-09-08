@@ -183,7 +183,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                 <tfoot class="table-light border-top-2">
                     <tr class="fw-bold">
                         <td colspan="6" class="text-end text-uppercase text-secondary small py-3">
-                            <i class="bi bi-calculator me-1"></i> Grand Total Sisa Tagihan:
+                            Total Sisa Tagihan:
                         </td>
                         <td class="text-end font-monospace text-primary fs-6 py-3" id="tfootGrandTotal">
                             Rp 0
