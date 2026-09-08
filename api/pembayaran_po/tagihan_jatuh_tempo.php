@@ -28,6 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 
 try {
     $searchVendor = trim($_GET['vendor'] ?? ($_GET['search'] ?? ''));
+    $namaBank = trim($_GET['bank'] ?? ($_GET['nama_bank'] ?? ''));
     $bulan = isset($_GET['bulan']) ? intval($_GET['bulan']) : 0;
     $tahun = isset($_GET['tahun']) ? intval($_GET['tahun']) : 0;
 
@@ -48,14 +49,21 @@ try {
         $types .= "sss";
     }
 
-    // 2. Filter Bulan Jatuh Tempo (1 - 12)
+    // 2. Filter Nama Bank
+    if (!empty($namaBank)) {
+        $whereClause[] = "faktur_po.nama_bank = ?";
+        $params[] = $namaBank;
+        $types .= "s";
+    }
+
+    // 3. Filter Bulan Jatuh Tempo (1 - 12)
     if ($bulan >= 1 && $bulan <= 12) {
         $whereClause[] = "MONTH(faktur_po.tanggal_jatuh_tempo) = ?";
         $params[] = $bulan;
         $types .= "i";
     }
 
-    // 3. Filter Tahun Jatuh Tempo (contoh: 2026)
+    // 4. Filter Tahun Jatuh Tempo (contoh: 2026)
     if ($tahun > 0) {
         $whereClause[] = "YEAR(faktur_po.tanggal_jatuh_tempo) = ?";
         $params[] = $tahun;
@@ -163,6 +171,7 @@ try {
         'total_overdue'             => $countOverdue,
         'filter_applied'            => [
             'vendor' => $searchVendor,
+            'bank'   => $namaBank,
             'bulan'  => $bulan,
             'tahun'  => $tahun
         ]

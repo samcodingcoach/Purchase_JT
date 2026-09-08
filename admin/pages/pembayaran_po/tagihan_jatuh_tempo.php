@@ -29,6 +29,18 @@ if (!in_array($currentYear, $tahunList)) {
     array_unshift($tahunList, $currentYear);
 }
 
+// Daftar Bank Standar (sama dengan tab 4 Catat Pembayaran PO) & Bank yang ada di faktur
+$bankList = ['BCA', 'Bank Mandiri', 'BRI', 'BNI', 'CIMB Niaga', 'BSI', 'Bank Danamon', 'Bank Permata', 'CASH', 'QRIS'];
+$qBank = $conn->query("SELECT DISTINCT nama_bank FROM faktur_po WHERE nama_bank IS NOT NULL AND nama_bank != '' ORDER BY nama_bank ASC");
+if ($qBank) {
+    while ($rB = $qBank->fetch_assoc()) {
+        $bName = trim($rB['nama_bank']);
+        if (!empty($bName) && !in_array($bName, $bankList)) {
+            $bankList[] = $bName;
+        }
+    }
+}
+
 require_once __DIR__ . '/../../components/header.php';
 require_once __DIR__ . '/../../components/sidebar.php';
 require_once __DIR__ . '/../../components/navbar.php';
@@ -79,11 +91,11 @@ require_once __DIR__ . '/../../components/navbar.php';
         </div>
     </div>
 
-    <!-- FILTER BAR: HANYA SEARCH VENDOR & BULAN TAHUN -->
+    <!-- FILTER BAR: SEARCH VENDOR, NAMA BANK, BULAN & TAHUN -->
     <div class="filter-bar">
         <div class="row g-2 align-items-center">
             <!-- 1. Search Nama Vendor (Tanpa Icon) -->
-            <div class="col-12 col-md-5">
+            <div class="col-12 col-md-4">
                 <div class="input-group">
                     <input type="text" class="form-control" id="filterVendor" 
                            placeholder="Ketik nama perusahaan vendor..." oninput="handleSearchInput()">
@@ -93,8 +105,18 @@ require_once __DIR__ . '/../../components/navbar.php';
                 </div>
             </div>
 
-            <!-- 2. Filter Bulan -->
+            <!-- 2. Filter Bank (Sesuai Bank Asal / Kas Pengirim) -->
             <div class="col-6 col-md-3">
+                <select class="form-select" id="filterBank" onchange="loadTagihanData()">
+                    <option value="">Semua Bank</option>
+                    <?php foreach ($bankList as $bk): ?>
+                        <option value="<?= htmlspecialchars($bk) ?>"><?= htmlspecialchars($bk === 'CASH' ? 'CASH / TUNAI' : $bk) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <!-- 3. Filter Bulan -->
+            <div class="col-6 col-md-2">
                 <select class="form-select" id="filterBulan" onchange="loadTagihanData()">
                     <option value="">Semua Bulan</option>
                     <option value="1">Januari</option>
@@ -112,8 +134,8 @@ require_once __DIR__ . '/../../components/navbar.php';
                 </select>
             </div>
 
-            <!-- 3. Filter Tahun -->
-            <div class="col-6 col-md-3">
+            <!-- 4. Filter Tahun -->
+            <div class="col-6 col-md-2">
                 <select class="form-select" id="filterTahun" onchange="loadTagihanData()">
                     <option value="">Semua Tahun</option>
                     <?php foreach ($tahunList as $th): ?>
@@ -122,8 +144,8 @@ require_once __DIR__ . '/../../components/navbar.php';
                 </select>
             </div>
 
-            <!-- 4. Tombol Reset (Hanya Icon) -->
-            <div class="col-12 col-md-1">
+            <!-- 5. Tombol Reset (Hanya Icon) -->
+            <div class="col-6 col-md-1">
                 <button type="button" class="btn btn-outline-secondary btn-sm w-100 fw-semibold d-flex align-items-center justify-content-center" onclick="resetFilter()" title="Reset Filter" style="height: 38px;">
                     <i class="bi bi-arrow-counterclockwise fs-6"></i>
                 </button>
@@ -206,6 +228,7 @@ function clearVendorSearch() {
 function resetFilter() {
     document.getElementById('filterVendor').value = '';
     document.getElementById('btnClearSearch').style.display = 'none';
+    document.getElementById('filterBank').value = '';
     document.getElementById('filterBulan').value = '';
     document.getElementById('filterTahun').value = '<?= $currentYear ?>';
     loadTagihanData();
@@ -222,11 +245,13 @@ async function loadTagihanData() {
         </tr>`;
 
     const vendor = document.getElementById('filterVendor').value.trim();
+    const bank = document.getElementById('filterBank').value;
     const bulan = document.getElementById('filterBulan').value;
     const tahun = document.getElementById('filterTahun').value;
 
     const params = new URLSearchParams();
     if (vendor) params.append('vendor', vendor);
+    if (bank) params.append('bank', bank);
     if (bulan) params.append('bulan', bulan);
     if (tahun) params.append('tahun', tahun);
 
