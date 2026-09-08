@@ -19,12 +19,12 @@ require_once __DIR__ . '/../../components/navbar.php';
         <h2 class="fs-4 fw-bold text-dark mb-0">Daftar Lokasi Site &amp; Bengkel Workshop</h2>
     </div>
     <!-- Search di kiri, Tombol Tambah di paling kanan -->
-    <div class="d-flex gap-2 align-items-center flex-wrap">
+    <div class="d-flex gap-2 align-items-stretch flex-wrap">
         <div class="input-group input-group-sm" style="width: 260px;">
-            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-            <input type="text" id="searchInput" class="form-control" placeholder="Cari nama site / jenis..." oninput="debounceSearch()">
+            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" id="searchInput" class="form-control border-start-0 ps-0" placeholder="Cari nama site / jenis..." oninput="debounceSearch()">
         </div>
-        <button class="btn btn-primary btn-sm fw-semibold" onclick="openTambahSiteModal()">
+        <button class="btn btn-primary btn-sm px-3 fw-semibold shadow-sm d-inline-flex align-items-center" onclick="openTambahSiteModal()">
             <i class="bi bi-plus-circle-fill me-1"></i> Tambah Site
         </button>
     </div>
