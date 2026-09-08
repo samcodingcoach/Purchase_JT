@@ -56,9 +56,24 @@ if (!$stmtUpdate->execute()) {
 }
 $stmtUpdate->close();
 
+// Kirim Notifikasi Email ke Pemohon RO (Fault-Tolerant)
+$emailSent = false;
+try {
+    require_once __DIR__ . '/../../config/mailer.php';
+    if (function_exists('sendRoStatusNotification')) {
+        $approverName = $currentUser['nama_users'] ?? ($currentUser['username'] ?? 'Approver Logistik');
+        $catatan = trim($input['catatan'] ?? ($input['keterangan'] ?? ''));
+        $mailRes = sendRoStatusNotification($conn, $idRequest, $newStatus, $approverName, $catatan);
+        $emailSent = !empty($mailRes['success']);
+    }
+} catch (Throwable $t) {
+    error_log("Gagal mengirim notifikasi status RO {$ro['nomor']}: " . $t->getMessage());
+}
+
 jsonResponse(true, "Request Order {$ro['nomor']} berhasil {$msgAction} oleh Logistik.", [
     'id_request' => $idRequest,
     'status' => $newStatus,
     'id_karyawan_approved' => $idKaryawanApprover,
-    'nomor' => $ro['nomor']
+    'nomor' => $ro['nomor'],
+    'email_sent' => $emailSent
 ]);

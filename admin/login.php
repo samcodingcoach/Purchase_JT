@@ -4,6 +4,7 @@
  */
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/session.php';
+require_once __DIR__ . '/../config/koneksi.php';
 
 // Jika sudah login, langsung arahkan ke Dashboard
 if (isLoggedIn()) {
@@ -15,6 +16,77 @@ $companyProfile = getCompanyProfile();
 $companyName = $companyProfile['nama'] ?? 'PT Jaya Teknis';
 $companyAddress = $companyProfile['alamat'] ?? 'Bengkel Las & Bubut Kapal';
 $companyCity = $companyProfile['kota'] ?? 'Surabaya';
+
+// Ambil akun demo role cepat secara dinamis dari database (tabel users & karyawan)
+$demoRoles = [
+    'admin'      => ['label' => 'Admin', 'email' => 'admin', 'password' => 'admin123', 'name' => 'Administrator'],
+    'mekanik'    => ['label' => 'Mekanik', 'email' => 'mekanik@jayateknis.com', 'password' => 'admin123', 'name' => 'Mekanik'],
+    'logistik'   => ['label' => 'Logistik', 'email' => 'logistik@jayateknis.com', 'password' => 'admin123', 'name' => 'Logistik'],
+    'purchasing' => ['label' => 'Purchasing', 'email' => 'purchasing@jayateknis.com', 'password' => 'admin123', 'name' => 'Purchasing'],
+    'finance'    => ['label' => 'Finance', 'email' => 'finance@jayateknis.com', 'password' => 'admin123', 'name' => 'Finance'],
+    'manager'    => ['label' => 'Manager', 'email' => 'manager@jayateknis.com', 'password' => 'admin123', 'name' => 'Manager'],
+];
+
+try {
+    // 1. Cek Admin dari users table
+    $qUser = $conn->query("SELECT id_users, nama_users, email FROM users WHERE aktif = 1 ORDER BY id_users ASC LIMIT 1");
+    if ($qUser && $u = $qUser->fetch_assoc()) {
+        $demoRoles['admin']['email'] = !empty($u['email']) ? $u['email'] : 'admin';
+        $demoRoles['admin']['name'] = $u['nama_users'] ?? 'Administrator';
+    }
+
+    // 2. Cek Akun Dinamis dari tabel Karyawan
+    $sqlK = "SELECT k.id_karyawan, k.kode_karyawan, k.nama_karyawan, k.email, 
+                    k.id_jabatan, j.nama_jabatan, j.level as level_jabatan, 
+                    k.id_divisi, d.nama_divisi 
+             FROM karyawan k 
+             LEFT JOIN jabatan j ON k.id_jabatan = j.id_jabatan 
+             LEFT JOIN divisi d ON k.id_divisi = d.id_divisi 
+             WHERE k.aktif = 1 AND k.login_web = 1 AND k.email IS NOT NULL AND k.email != '' 
+             ORDER BY k.id_karyawan ASC";
+    $qK = $conn->query($sqlK);
+    if ($qK) {
+        $foundFinance = false;
+        while ($row = $qK->fetch_assoc()) {
+            $idDiv = !empty($row['id_divisi']) ? (int)$row['id_divisi'] : null;
+            $idJ = !empty($row['id_jabatan']) ? (int)$row['id_jabatan'] : null;
+            $divisiLower = strtolower($row['nama_divisi'] ?? '');
+            $jabatanLower = strtolower($row['nama_jabatan'] ?? '');
+            $emailLower = strtolower($row['email'] ?? '');
+            $lvl = isset($row['level_jabatan']) ? (int)$row['level_jabatan'] : null;
+            $emailK = $row['email'];
+            $namaK = $row['nama_karyawan'];
+
+            if ($idDiv === 4 || $idJ === 3 || strpos($divisiLower, 'mekanik') !== false || strpos($jabatanLower, 'mekanik') !== false || strpos($emailLower, 'mekanik') !== false) {
+                $demoRoles['mekanik']['email'] = $emailK;
+                $demoRoles['mekanik']['name'] = $namaK;
+            } elseif ($idDiv === 2 || $idJ === 2 || strpos($divisiLower, 'logistik') !== false || strpos($jabatanLower, 'logistik') !== false || strpos($emailLower, 'logistik') !== false) {
+                $demoRoles['logistik']['email'] = $emailK;
+                $demoRoles['logistik']['name'] = $namaK;
+            } elseif ($idDiv === 3 || $idJ === 5 || strpos($divisiLower, 'purchasing') !== false || strpos($jabatanLower, 'purchasing') !== false || strpos($emailLower, 'purchasing') !== false) {
+                $demoRoles['purchasing']['email'] = $emailK;
+                $demoRoles['purchasing']['name'] = $namaK;
+            } elseif ($idDiv === 6 || $idJ === 6 || $idJ === 7 || strpos($divisiLower, 'finance') !== false || strpos($jabatanLower, 'finance') !== false || strpos($emailLower, 'finance') !== false) {
+                if (!$foundFinance || $lvl !== 1) {
+                    $demoRoles['finance']['email'] = $emailK;
+                    $demoRoles['finance']['name'] = $namaK;
+                    $foundFinance = true;
+                }
+            } elseif ($idDiv === 5 || $idJ === 1 || strpos($divisiLower, 'admin') !== false || strpos($divisiLower, 'it') !== false || strpos($jabatanLower, 'admin') !== false || strpos($emailLower, 'admin') !== false) {
+                if (empty($demoRoles['admin']['email']) || $demoRoles['admin']['email'] === 'admin') {
+                    $demoRoles['admin']['email'] = $emailK;
+                    $demoRoles['admin']['name'] = $namaK;
+                }
+            } elseif ($idDiv === 1 || $idJ === 4 || $lvl === 1 || strpos($divisiLower, 'manajemen') !== false || strpos($jabatanLower, 'manager') !== false || strpos($jabatanLower, 'direktur') !== false) {
+                $identifier = (!empty($demoRoles['admin']['email']) && $demoRoles['admin']['email'] === $emailK && !empty($row['kode_karyawan'])) 
+                              ? $row['kode_karyawan'] 
+                              : $emailK;
+                $demoRoles['manager']['email'] = $identifier;
+                $demoRoles['manager']['name'] = $namaK;
+            }
+        }
+    }
+} catch (\Throwable $e) {}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -449,18 +521,20 @@ $companyCity = $companyProfile['kota'] ?? 'Surabaya';
                     </div>
                 </form>
 
-                <!-- Quick Demo Account Pills -->
+                <!-- Quick Demo Account Pills (Dinamis dari Database) -->
                 <div class="demo-roles-container">
                     <div class="text-center text-muted small mb-2 fw-bold" style="font-size: 0.72rem;">
                         UJI COBA ROLE CEPAT:
                     </div>
                     <div class="d-flex flex-wrap gap-1 justify-content-center">
-                        <button type="button" class="role-btn-chip" onclick="setDemoAccount('admin', 'admin123')">Admin</button>
-                        <button type="button" class="role-btn-chip" onclick="setDemoAccount('mekanik@jayateknis.com', 'admin123')">Mekanik</button>
-                        <button type="button" class="role-btn-chip" onclick="setDemoAccount('logistik@jayateknis.com', 'admin123')">Logistik</button>
-                        <button type="button" class="role-btn-chip" onclick="setDemoAccount('purchasing@jayateknis.com', 'admin123')">Purchasing</button>
-                        <button type="button" class="role-btn-chip" onclick="setDemoAccount('finance@jayateknis.com', 'admin123')">Finance</button>
-                        <button type="button" class="role-btn-chip" onclick="setDemoAccount('manager@jayateknis.com', 'admin123')">Manager</button>
+                        <?php foreach ($demoRoles as $key => $demo): ?>
+                            <button type="button" 
+                                    class="role-btn-chip" 
+                                    title="<?= htmlspecialchars($demo['name'] . ' (' . $demo['email'] . ')') ?>"
+                                    onclick="setDemoAccount('<?= htmlspecialchars($demo['email'], ENT_QUOTES) ?>', '<?= htmlspecialchars($demo['password'], ENT_QUOTES) ?>')">
+                                <?= htmlspecialchars($demo['label']) ?>
+                            </button>
+                        <?php endforeach; ?>
                     </div>
                 </div>
 

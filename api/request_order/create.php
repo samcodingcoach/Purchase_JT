@@ -218,6 +218,21 @@ try {
     // Commit Transaction jika seluruh tahapan berhasil
     $conn->commit();
 
+    // Kirim Notifikasi Email ke Approver jika status TERKIRIM (Fault-Tolerant)
+    $emailSent = false;
+    if ($status === 'TERKIRIM') {
+        try {
+            require_once __DIR__ . '/../../config/mailer.php';
+            if (function_exists('sendRoApprovalNotification')) {
+                $mailRes = sendRoApprovalNotification($conn, $idRequest);
+                $emailSent = !empty($mailRes['success']);
+            }
+        } catch (Throwable $t) {
+            // Log silent error agar tidak mengganggu response pengguna
+            error_log("Gagal mengirim notifikasi email RO {$nomorRo}: " . $t->getMessage());
+        }
+    }
+
     $actionMsg = ($status === 'TERKIRIM') 
         ? "Request Order {$nomorRo} berhasil dibuat dan dikirimkan ke Logistik." 
         : "Request Order {$nomorRo} berhasil disimpan sebagai Draft.";
@@ -227,7 +242,8 @@ try {
         'nomor_ro' => $nomorRo,
         'status' => $status,
         'prioritas' => $prioritas,
-        'total_items' => count($cleanItems)
+        'total_items' => count($cleanItems),
+        'email_sent' => $emailSent
     ], 201);
 
 } catch (Exception $e) {

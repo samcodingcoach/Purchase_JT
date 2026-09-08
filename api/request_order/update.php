@@ -214,6 +214,26 @@ try {
 
     $conn->commit();
 
+    // Kirim Notifikasi Email (Fault-Tolerant)
+    $emailSent = false;
+    try {
+        require_once __DIR__ . '/../../config/mailer.php';
+        if ($existingRo['status'] !== 'TERKIRIM' && $status === 'TERKIRIM') {
+            if (function_exists('sendRoApprovalNotification')) {
+                $mailRes = sendRoApprovalNotification($conn, $idRequest);
+                $emailSent = !empty($mailRes['success']);
+            }
+        } elseif (in_array($status, ['DISETUJUI LOGISTIK', 'TIDAK DISETUJUI LOGISTIK'])) {
+            if (function_exists('sendRoStatusNotification')) {
+                $approverName = $currentUser['nama_users'] ?? ($currentUser['username'] ?? 'Logistik');
+                $mailRes = sendRoStatusNotification($conn, $idRequest, $status, $approverName, $keterangan);
+                $emailSent = !empty($mailRes['success']);
+            }
+        }
+    } catch (Throwable $t) {
+        error_log("Gagal mengirim notifikasi email update RO {$existingRo['nomor']}: " . $t->getMessage());
+    }
+
     if ($status === 'DISETUJUI LOGISTIK') {
         $actionMsg = "Request Order {$existingRo['nomor']} berhasil disetujui oleh Logistik.";
     } elseif ($status === 'TIDAK DISETUJUI LOGISTIK') {
@@ -229,7 +249,8 @@ try {
     jsonResponse(true, $actionMsg, [
         'id_request' => $idRequest,
         'nomor' => $existingRo['nomor'],
-        'status' => $status
+        'status' => $status,
+        'email_sent' => $emailSent
     ]);
 
 } catch (Exception $e) {
