@@ -353,36 +353,27 @@ textarea.form-control {
 
                     <!-- TAB 4: KAS & REKENING PENGIRIM -->
                     <div class="tab-pane fade" id="tab-rekening" role="tabpanel">
-                        <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Informasi Rekening Asal Pengirim (Kas Perusahaan)</h6>
-                        
                         <div class="row g-3">
-                            <div class="col-sm-6 position-relative" id="bankPengirimWrapper">
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold text-dark">Pilih Rekening Bank Resmi Perusahaan <span class="text-danger">*</span></label>
+                                <select class="form-select fw-semibold" id="selectRekeningBankPengirim" onchange="handleSelectRekeningBankPengirim(this)" required>
+                                    <option value="">-- Pilih Rekening Bank Perusahaan --</option>
+                                </select>
+                            </div>
+
+                            <div class="col-sm-6">
                                 <label class="form-label small fw-semibold text-dark">Bank Asal / Kas Pengirim <span class="text-danger">*</span></label>
-                                <div class="input-group">
-                                    <input type="text" class="form-control font-monospace fw-semibold" id="bankPengirim" name="bank_pengirim" placeholder="Pilih atau ketik bank..." autocomplete="off" onfocus="showBankPengirimDropdown()" oninput="filterBankPengirimDropdown()" required>
-                                    <button class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split px-3" type="button" onclick="toggleBankPengirimDropdown(event)" title="Pilih Bank"></button>
-                                </div>
-                                <div class="dropdown-menu shadow-sm w-100 p-1" id="bankPengirimMenu" style="max-height: 220px; overflow-y: auto; display: none; position: absolute; top: calc(100% + 2px); left: 0; z-index: 1050;">
-                                    <button type="button" class="dropdown-item py-1 small rounded bank-p-opt" onclick="selectBankPengirim('BCA')">BCA</button>
-                                    <button type="button" class="dropdown-item py-1 small rounded bank-p-opt" onclick="selectBankPengirim('Bank Mandiri')">Bank Mandiri</button>
-                                    <button type="button" class="dropdown-item py-1 small rounded bank-p-opt" onclick="selectBankPengirim('BRI')">BRI</button>
-                                    <button type="button" class="dropdown-item py-1 small rounded bank-p-opt" onclick="selectBankPengirim('BNI')">BNI</button>
-                                    <button type="button" class="dropdown-item py-1 small rounded bank-p-opt" onclick="selectBankPengirim('CIMB Niaga')">CIMB Niaga</button>
-                                    <button type="button" class="dropdown-item py-1 small rounded bank-p-opt" onclick="selectBankPengirim('BSI')">BSI</button>
-                                    <button type="button" class="dropdown-item py-1 small rounded bank-p-opt" onclick="selectBankPengirim('CASH')">CASH / TUNAI</button>
-                                    <button type="button" class="dropdown-item py-1 small rounded bank-p-opt" onclick="selectBankPengirim('QRIS')">QRIS</button>
-                                    <div id="noBankPengirimFound" class="text-muted small px-3 py-2 d-none">Gunakan nama bank yang diketik manual.</div>
-                                </div>
+                                <input type="text" class="form-control font-monospace fw-semibold bg-light" id="bankPengirim" name="bank_pengirim" placeholder="Nama Bank Pengirim" readonly required>
                             </div>
 
                             <div class="col-sm-6">
                                 <label class="form-label small fw-semibold text-dark">Nomor Rekening Pengirim</label>
-                                <input type="text" class="form-control font-monospace fw-bold" id="norekPengirim" name="norek_pengirim" placeholder="Nomor Rekening Kas / Tabungan">
+                                <input type="text" class="form-control font-monospace fw-bold bg-light" id="norekPengirim" name="norek_pengirim" placeholder="Nomor Rekening Kas / Tabungan" readonly>
                             </div>
 
                             <div class="col-sm-6">
                                 <label class="form-label small fw-semibold text-dark">Atas Nama Rekening Pengirim</label>
-                                <input type="text" class="form-control fw-semibold" id="anPengirim" name="an_pengirim" placeholder="Nama Pemilik Rekening / PT Jaya Teknis">
+                                <input type="text" class="form-control fw-semibold bg-light" id="anPengirim" name="an_pengirim" placeholder="Nama Pemilik Rekening / PT Jaya Teknis" readonly>
                             </div>
 
                             <div class="col-sm-6">
@@ -454,11 +445,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (fakturWrapper && !fakturWrapper.contains(e.target)) {
             hideFakturDropdown();
         }
-
-        const bankWrapper = document.getElementById('bankPengirimWrapper');
-        if (bankWrapper && !bankWrapper.contains(e.target)) {
-            hideBankPengirimDropdown();
-        }
     });
 });
 
@@ -470,10 +456,17 @@ function goToTab(tabId) {
     }
 }
 
+let rekeningBankPerusahaanList = [];
+
 async function loadLookupData() {
     try {
-        const res = await fetch('<?= BASE_URL ?>/api/pembayaran_po/lookup_faktur.php');
-        const result = await res.json();
+        const [fakturRes, bankRes] = await Promise.all([
+            fetch('<?= BASE_URL ?>/api/pembayaran_po/lookup_faktur.php'),
+            fetch('<?= BASE_URL ?>/api/master/rekening_bank.php?all=1')
+        ]);
+        
+        const result = await fakturRes.json();
+        const bankResult = await bankRes.json();
 
         if (result && result.success && result.data) {
             fakturList = result.data.faktur_list || [];
@@ -489,9 +482,63 @@ async function loadLookupData() {
                 selectFaktur(preselectedId);
             }
         }
+
+        if (bankResult && bankResult.success && bankResult.data && bankResult.data.items) {
+            rekeningBankPerusahaanList = bankResult.data.items || [];
+            renderRekeningBankOptions(rekeningBankPerusahaanList);
+        } else {
+            renderRekeningBankOptions([]);
+        }
     } catch (e) {
-        console.error('Gagal memuat data lookup faktur:', e);
+        console.error('Gagal memuat data lookup faktur/rekening:', e);
     }
+}
+
+function renderRekeningBankOptions(banks) {
+    const sel = document.getElementById('selectRekeningBankPengirim');
+    if (!sel) return;
+
+    let html = '<option value="">-- Pilih Rekening Bank Perusahaan --</option>';
+    if (banks && banks.length > 0) {
+        banks.forEach((b) => {
+            const namaBank = escapeHtml(b.nama_bank || '');
+            const noRek = escapeHtml(b.no_rekening || '');
+            const anRek = escapeHtml(b.atasnama_rekening || 'PT JAYA TEKNIK');
+            html += `<option value="${b.id_bank}" data-bank="${namaBank}" data-norek="${noRek}" data-an="${anRek}">
+                ${namaBank} - ${noRek} (a.n ${anRek})
+            </option>`;
+        });
+    }
+    sel.innerHTML = html;
+
+    // Auto select first bank if available
+    if (banks && banks.length > 0) {
+        sel.selectedIndex = 1;
+        handleSelectRekeningBankPengirim(sel);
+    }
+}
+
+function handleSelectRekeningBankPengirim(sel) {
+    const val = sel.value;
+    const selectedOpt = sel.options[sel.selectedIndex];
+    const bankInput = document.getElementById('bankPengirim');
+    const norekInput = document.getElementById('norekPengirim');
+    const anInput = document.getElementById('anPengirim');
+
+    if (!val || !selectedOpt) {
+        bankInput.value = '';
+        norekInput.value = '';
+        anInput.value = '';
+        return;
+    }
+
+    const bankName = selectedOpt.getAttribute('data-bank') || '';
+    const noRek = selectedOpt.getAttribute('data-norek') || '';
+    const an = selectedOpt.getAttribute('data-an') || '';
+
+    bankInput.value = bankName;
+    norekInput.value = noRek;
+    anInput.value = an;
 }
 
 function renderApproverOptions(approvers) {
@@ -777,48 +824,7 @@ function validateDueDateLimit() {
     }
 }
 
-// -------------------------------------------------------------
-// BANK PENGIRIM COMBOBOX
-// -------------------------------------------------------------
-function showBankPengirimDropdown() {
-    document.getElementById('bankPengirimMenu').style.display = 'block';
-}
-function hideBankPengirimDropdown() {
-    document.getElementById('bankPengirimMenu').style.display = 'none';
-}
-function toggleBankPengirimDropdown(e) {
-    if (e) e.stopPropagation();
-    const m = document.getElementById('bankPengirimMenu');
-    m.style.display = m.style.display === 'block' ? 'none' : 'block';
-}
-function filterBankPengirimDropdown() {
-    const query = (document.getElementById('bankPengirim').value || '').toLowerCase().trim();
-    showBankPengirimDropdown();
-    const items = document.querySelectorAll('.bank-p-opt');
-    let count = 0;
-    items.forEach(el => {
-        const text = el.textContent.toLowerCase();
-        if (text.includes(query)) {
-            el.style.display = 'block';
-            count++;
-        } else {
-            el.style.display = 'none';
-        }
-    });
 
-    const noFound = document.getElementById('noBankPengirimFound');
-    if (noFound) {
-        if (count === 0) {
-            noFound.classList.remove('d-none');
-        } else {
-            noFound.classList.add('d-none');
-        }
-    }
-}
-function selectBankPengirim(val) {
-    document.getElementById('bankPengirim').value = val;
-    hideBankPengirimDropdown();
-}
 
 // -------------------------------------------------------------
 // BANK TUJUAN VENDOR COMBOBOX (PERSIS BANK PENGIRIM & DINAMIS DARI VENDOR)
@@ -906,7 +912,6 @@ function selectBankTujuan(val) {
 }
 
 document.addEventListener('click', (e) => {
-    if (!e.target.closest('#bankPengirimWrapper')) hideBankPengirimDropdown();
     if (!e.target.closest('#bankTujuanWrapper')) hideBankTujuanDropdown();
     if (!e.target.closest('#fakturSelectWrapper')) hideFakturDropdown();
 });

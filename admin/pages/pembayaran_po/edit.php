@@ -262,35 +262,27 @@ textarea.form-control {
 
                     <!-- TAB 4: KAS & REKENING PENGIRIM -->
                     <div class="tab-pane fade" id="tab-rekening" role="tabpanel">
-                        <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Informasi Rekening Asal Pengirim (Kas Perusahaan)</h6>
-                        
                         <div class="row g-3">
-                            <div class="col-sm-6 position-relative" id="bankPengirimWrapper">
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold text-dark">Pilih Rekening Bank Resmi Perusahaan <span class="text-danger">*</span></label>
+                                <select class="form-select fw-semibold" id="editSelectRekeningBankPengirim" onchange="handleSelectRekeningBankPengirimEdit(this)" required>
+                                    <option value="">-- Pilih Rekening Bank Perusahaan --</option>
+                                </select>
+                            </div>
+
+                            <div class="col-sm-6">
                                 <label class="form-label small fw-semibold text-dark">Bank Asal / Kas Pengirim <span class="text-danger">*</span></label>
-                                <div class="input-group">
-                                    <input type="text" class="form-control font-monospace fw-semibold" id="editBankPengirim" placeholder="Pilih atau ketik bank..." autocomplete="off" onfocus="showBankPengirimDropdown()" oninput="filterBankPengirimDropdown()" required>
-                                    <button class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split px-3" type="button" onclick="toggleBankPengirimDropdown(event)"></button>
-                                </div>
-                                <div class="dropdown-menu shadow-sm w-100 p-1" id="bankPengirimMenu" style="max-height: 220px; overflow-y: auto; display: none; position: absolute; top: calc(100% + 2px); left: 0; z-index: 1050;">
-                                    <button type="button" class="dropdown-item py-1 small rounded bank-p-opt" onclick="selectBankPengirim('BCA')">BCA</button>
-                                    <button type="button" class="dropdown-item py-1 small rounded bank-p-opt" onclick="selectBankPengirim('Bank Mandiri')">Bank Mandiri</button>
-                                    <button type="button" class="dropdown-item py-1 small rounded bank-p-opt" onclick="selectBankPengirim('BRI')">BRI</button>
-                                    <button type="button" class="dropdown-item py-1 small rounded bank-p-opt" onclick="selectBankPengirim('BNI')">BNI</button>
-                                    <button type="button" class="dropdown-item py-1 small rounded bank-p-opt" onclick="selectBankPengirim('CIMB Niaga')">CIMB Niaga</button>
-                                    <button type="button" class="dropdown-item py-1 small rounded bank-p-opt" onclick="selectBankPengirim('BSI')">BSI</button>
-                                    <button type="button" class="dropdown-item py-1 small rounded bank-p-opt" onclick="selectBankPengirim('CASH')">CASH / TUNAI</button>
-                                    <button type="button" class="dropdown-item py-1 small rounded bank-p-opt" onclick="selectBankPengirim('QRIS')">QRIS</button>
-                                </div>
+                                <input type="text" class="form-control font-monospace fw-semibold bg-light" id="editBankPengirim" placeholder="Nama Bank Pengirim" readonly required>
                             </div>
 
                             <div class="col-sm-6">
                                 <label class="form-label small fw-semibold text-dark">Nomor Rekening Pengirim</label>
-                                <input type="text" class="form-control font-monospace fw-bold" id="editNorekPengirim" placeholder="Nomor Rekening Kas / Tabungan">
+                                <input type="text" class="form-control font-monospace fw-bold bg-light" id="editNorekPengirim" placeholder="Nomor Rekening Kas / Tabungan" readonly>
                             </div>
 
                             <div class="col-sm-6">
                                 <label class="form-label small fw-semibold text-dark">Atas Nama Rekening Pengirim</label>
-                                <input type="text" class="form-control fw-semibold" id="editAnPengirim" placeholder="Nama Pemilik Rekening / PT Jaya Teknis">
+                                <input type="text" class="form-control fw-semibold bg-light" id="editAnPengirim" placeholder="Nama Pemilik Rekening / PT Jaya Teknis" readonly>
                             </div>
 
                             <div class="col-sm-6">
@@ -354,15 +346,10 @@ textarea.form-control {
 const idDetail = <?= $idDetail ?>;
 let paymentData = null;
 
+let rekeningBankPerusahaanList = [];
+
 document.addEventListener('DOMContentLoaded', () => {
     loadEditData();
-
-    document.addEventListener('click', (e) => {
-        const bankWrapper = document.getElementById('bankPengirimWrapper');
-        if (bankWrapper && !bankWrapper.contains(e.target)) {
-            hideBankPengirimDropdown();
-        }
-    });
 });
 
 function goToTab(tabId) {
@@ -375,16 +362,27 @@ function goToTab(tabId) {
 
 async function loadEditData() {
     try {
-        // Load Approvers first
-        const resLookup = await fetch('<?= BASE_URL ?>/api/pembayaran_po/lookup_faktur.php');
+        // Load Approvers, Banks, and Single Detail concurrently
+        const [resLookup, resBank, resDetail] = await Promise.all([
+            fetch('<?= BASE_URL ?>/api/pembayaran_po/lookup_faktur.php'),
+            fetch('<?= BASE_URL ?>/api/master/rekening_bank.php?all=1'),
+            fetch(`<?= BASE_URL ?>/api/pembayaran_po/index.php?id_detail=${idDetail}`)
+        ]);
+
         const resL = await resLookup.json();
+        const resB = await resBank.json();
+        const result = await resDetail.json();
+
         if (resL && resL.success && resL.data && resL.data.approvers) {
             renderApproverOptions(resL.data.approvers);
         }
 
-        // Load Single Detail
-        const res = await fetch(`<?= BASE_URL ?>/api/pembayaran_po/index.php?id_detail=${idDetail}`);
-        const result = await res.json();
+        if (resB && resB.success && resB.data && resB.data.items) {
+            rekeningBankPerusahaanList = resB.data.items || [];
+            renderRekeningBankOptions(rekeningBankPerusahaanList);
+        } else {
+            renderRekeningBankOptions([]);
+        }
 
         if (result && result.success && result.data) {
             paymentData = result.data;
@@ -395,6 +393,47 @@ async function loadEditData() {
     } catch (e) {
         showToast('Terjadi kesalahan: ' + e.message, 'danger');
     }
+}
+
+function renderRekeningBankOptions(banks) {
+    const sel = document.getElementById('editSelectRekeningBankPengirim');
+    if (!sel) return;
+
+    let html = '<option value="">-- Pilih Rekening Bank Perusahaan --</option>';
+    if (banks && banks.length > 0) {
+        banks.forEach((b) => {
+            const namaBank = escapeHtml(b.nama_bank || '');
+            const noRek = escapeHtml(b.no_rekening || '');
+            const anRek = escapeHtml(b.atasnama_rekening || 'PT JAYA TEKNIK');
+            html += `<option value="${b.id_bank}" data-bank="${namaBank}" data-norek="${noRek}" data-an="${anRek}">
+                ${namaBank} - ${noRek} (a.n ${anRek})
+            </option>`;
+        });
+    }
+    sel.innerHTML = html;
+}
+
+function handleSelectRekeningBankPengirimEdit(sel) {
+    const val = sel.value;
+    const selectedOpt = sel.options[sel.selectedIndex];
+    const bankInput = document.getElementById('editBankPengirim');
+    const norekInput = document.getElementById('editNorekPengirim');
+    const anInput = document.getElementById('editAnPengirim');
+
+    if (!val || !selectedOpt) {
+        bankInput.value = '';
+        norekInput.value = '';
+        anInput.value = '';
+        return;
+    }
+
+    const bankName = selectedOpt.getAttribute('data-bank') || '';
+    const noRek = selectedOpt.getAttribute('data-norek') || '';
+    const an = selectedOpt.getAttribute('data-an') || '';
+
+    bankInput.value = bankName;
+    norekInput.value = noRek;
+    anInput.value = an;
 }
 
 function renderApproverOptions(approvers) {
@@ -433,6 +472,20 @@ function populateForm(d) {
     document.getElementById('editAnPengirim').value = d.an_pengirim || '';
     document.getElementById('editNoRef').value = d.no_ref || '';
 
+    // Match Rekening Bank Pengirim
+    const selRek = document.getElementById('editSelectRekeningBankPengirim');
+    if (selRek) {
+        for (let i = 0; i < selRek.options.length; i++) {
+            const opt = selRek.options[i];
+            const optBank = opt.getAttribute('data-bank') || '';
+            const optNorek = opt.getAttribute('data-norek') || '';
+            if (d.bank_pengirim && optBank.toLowerCase() === d.bank_pengirim.toLowerCase() && (!optNorek || optNorek === '-' || optNorek === (d.norek_pengirim || ''))) {
+                selRek.selectedIndex = i;
+                break;
+            }
+        }
+    }
+
     if (d.id_karyawan_approved) {
         document.getElementById('editSelectApprover').value = d.id_karyawan_approved;
     }
@@ -462,28 +515,6 @@ function handleBiayaAdminInput(input) {
     input.value = raw > 0 ? raw.toLocaleString('id-ID') : '0';
 }
 
-// Bank Pengirim Combobox
-function showBankPengirimDropdown() { document.getElementById('bankPengirimMenu').style.display = 'block'; }
-function hideBankPengirimDropdown() { document.getElementById('bankPengirimMenu').style.display = 'none'; }
-function toggleBankPengirimDropdown(e) {
-    if (e) e.stopPropagation();
-    const m = document.getElementById('bankPengirimMenu');
-    m.style.display = m.style.display === 'block' ? 'none' : 'block';
-}
-function filterBankPengirimDropdown() {
-    const query = (document.getElementById('editBankPengirim').value || '').toLowerCase().trim();
-    showBankPengirimDropdown();
-    const items = document.querySelectorAll('.bank-p-opt');
-    items.forEach(el => {
-        const text = el.textContent.toLowerCase();
-        el.style.display = text.includes(query) ? 'block' : 'none';
-    });
-}
-function selectBankPengirim(val) {
-    document.getElementById('editBankPengirim').value = val;
-    hideBankPengirimDropdown();
-}
-
 // Bank Tujuan Combobox (Persis Bank Pengirim)
 function showBankTujuanDropdown() { document.getElementById('editBankTujuanMenu').style.display = 'block'; }
 function hideBankTujuanDropdown() { document.getElementById('editBankTujuanMenu').style.display = 'none'; }
@@ -507,7 +538,6 @@ function selectBankTujuan(val) {
 }
 
 document.addEventListener('click', (e) => {
-    if (!e.target.closest('#bankPengirimWrapper')) hideBankPengirimDropdown();
     if (!e.target.closest('#editBankTujuanWrapper')) hideBankTujuanDropdown();
 });
 
