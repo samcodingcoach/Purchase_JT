@@ -179,16 +179,21 @@ require_once __DIR__ . '/../../components/navbar.php';
                     </tr>
                 </tbody>
 
-                <!-- TFOOT: GRAND TOTAL SISA TAGIHAN DIBAWAH TABEL -->
+                <!-- TFOOT: GRAND TOTAL SISA TAGIHAN DIBAWAH TABEL DENGAN TOMBOL CETAK -->
                 <tfoot class="table-light border-top-2">
-                    <tr class="fw-bold">
-                        <td colspan="6" class="text-end text-uppercase text-secondary small py-3">
+                    <tr class="fw-bold align-middle">
+                        <td colspan="5" class="py-2.5 ps-3 text-start">
+                            <button type="button" class="btn btn-outline-primary btn-sm px-3 py-1.5 fw-semibold d-inline-flex align-items-center shadow-xs rounded-2" onclick="openPrintDaftarTagihan()" title="Cetak Lampiran Transfer Bank Daftar Tagihan">
+                                <i class="bi bi-printer me-2"></i>Cetak
+                            </button>
+                        </td>
+                        <td class="text-end text-uppercase text-secondary small py-2.5" style="white-space: nowrap;">
                             Total Sisa Tagihan:
                         </td>
-                        <td class="text-end font-monospace text-primary fs-6 py-3" id="tfootGrandTotal">
+                        <td class="text-end font-monospace text-primary fs-6 py-2.5" id="tfootGrandTotal">
                             Rp 0
                         </td>
-                        <td colspan="2" class="py-3 text-center small text-muted font-monospace" id="tfootCountText">
+                        <td colspan="2" class="py-2.5 text-center small text-muted font-monospace" id="tfootCountText">
                             0 Faktur
                         </td>
                     </tr>
@@ -381,6 +386,27 @@ function escapeHtml(text) {
     if (!text) return '';
     const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
     return String(text).replace(/[&<>"']/g, m => map[m]);
+}
+
+function getFilterQueryParams() {
+    const vendor = document.getElementById('filterVendor').value.trim();
+    const bank = document.getElementById('filterBank').value;
+    const bulan = document.getElementById('filterBulan').value;
+    const tahun = document.getElementById('filterTahun').value;
+
+    const params = new URLSearchParams();
+    if (vendor) params.append('vendor', vendor);
+    if (bank) params.append('bank', bank);
+    if (bulan) params.append('bulan', bulan);
+    if (tahun) params.append('tahun', tahun);
+
+    return params.toString();
+}
+
+function openPrintDaftarTagihan() {
+    const qs = getFilterQueryParams();
+    const url = `<?= BASE_URL ?>/admin/pages/pembayaran_po/print_daftar_tagihan.php?${qs}`;
+    window.open(url, '_blank');
 }
 </script>
 
