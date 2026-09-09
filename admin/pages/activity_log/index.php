@@ -101,7 +101,7 @@ input[type="date"] {
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
         <div>
             <h4 class="fw-bold text-dark mb-0">
-                <i class="bi bi-clock-history text-primary me-2"></i>Audit Trail & Log Aktivitas
+               Audit Trail & Log Aktivitas
             </h4>
         </div>
         <div class="d-flex gap-2">
