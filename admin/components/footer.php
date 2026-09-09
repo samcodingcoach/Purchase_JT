@@ -157,7 +157,8 @@ const AppTabs = {
             { id: 'menu', title: 'Manajemen Menu', url: BASE_URL + '/admin/pages/menu/index.php', icon: 'bi-list-check', closable: true },
             { id: 'activity_log', title: 'Log Aktivitas', url: BASE_URL + '/admin/pages/activity_log/index.php', icon: 'bi-clock-history', closable: true },
             { id: 'laporan_pengeluaran_bank', title: 'Pengeluaran Bank', url: BASE_URL + '/admin/pages/laporan/pengeluaran_bank.php', icon: 'bi-bank', closable: true },
-            { id: 'laporan_pembelian_vendor', title: 'Pembelian per Vendor', url: BASE_URL + '/admin/pages/laporan/pembelian_vendor.php', icon: 'bi-shop', closable: true }
+            { id: 'laporan_pembelian_vendor', title: 'Pembelian per Vendor', url: BASE_URL + '/admin/pages/laporan/pembelian_vendor.php', icon: 'bi-shop', closable: true },
+            { id: 'laporan_realisasi_kuantitas', title: 'Realisasi Kuantitas', url: BASE_URL + '/admin/pages/laporan/realisasi_kuantitas.php', icon: 'bi-bar-chart-fill', closable: true }
         ];
     },
 
@@ -227,6 +228,7 @@ const AppTabs = {
                 (t.id === 'ro_create' && path.includes('/request_order/create.php')) ||
                 (t.id === 'laporan_pengeluaran_bank' && path.includes('/laporan/pengeluaran_bank.php')) ||
                 (t.id === 'laporan_pembelian_vendor' && path.includes('/laporan/pembelian_vendor.php')) ||
+                (t.id === 'laporan_realisasi_kuantitas' && path.includes('/laporan/realisasi_kuantitas.php')) ||
                 (t.id === 'activity_log' && path.includes('/activity_log/')) ||
                 (t.id === 'rekening_bank' && path.includes('/rekening_bank/')) ||
                 (t.id === 'timezone' && path.includes('/timezone/'))
