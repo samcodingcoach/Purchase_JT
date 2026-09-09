@@ -82,7 +82,7 @@ require_once __DIR__ . '/../../components/navbar.php';
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
             <h4 class="fw-bold text-dark mb-1">Daftar Tagihan</h4>
-            <p class="text-muted small mb-0">Monitoring kewajiban faktur vendor yang memiliki sisa tagihan untuk rencana pembayaran.</p>
+            
         </div>
         <div class="d-flex align-items-center gap-2">
             <button type="button" class="btn btn-warning btn-sm shadow-sm fw-semibold" id="btnSendH3Reminder" onclick="triggerH3ReminderEmail()" title="Kirim Email Peringatan Tagihan Mendekati Jatuh Tempo (H-3) & Lewat Tempo ke Tim Finance">
