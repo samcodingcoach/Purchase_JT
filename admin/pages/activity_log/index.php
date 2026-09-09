@@ -106,7 +106,7 @@ input[type="date"] {
         </div>
         <div class="d-flex gap-2">
             <button class="btn btn-outline-secondary filter-btn px-3" onclick="loadActivityLogs()">
-                <i class="bi bi-arrow-clockwise me-1"></i> Segarkan Data
+                <i class="bi bi-arrow-clockwise me-1"></i> Refresh
             </button>
         </div>
     </div>

@@ -88,7 +88,7 @@ require_once __DIR__ . '/../../components/navbar.php';
             <button type="button" class="btn btn-warning btn-sm shadow-sm fw-semibold" id="btnSendH3Reminder" onclick="triggerH3ReminderEmail()" title="Kirim Email Peringatan Tagihan Mendekati Jatuh Tempo (H-3) & Lewat Tempo ke Tim Finance">
                 <i class="bi bi-envelope-exclamation me-1"></i> Kirim Peringatan (H-3 &amp; Lewat Tempo)
             </button>
-            <button type="button" class="btn btn-light border btn-sm shadow-sm" onclick="loadTagihanData()" title="Segarkan Data">
+            <button type="button" class="btn btn-light border btn-sm shadow-sm" onclick="loadTagihanData()" title="Refresh">
                 <i class="bi bi-arrow-clockwise me-1"></i> Refresh
             </button>
         </div>

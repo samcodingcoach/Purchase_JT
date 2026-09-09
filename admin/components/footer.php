@@ -123,11 +123,11 @@ const AppTabs = {
     getKnownTabs() {
         return [
             { id: 'dashboard', title: 'Dashboard', url: BASE_URL + '/admin/dashboard.php', icon: 'bi-grid-1x2-fill', closable: false },
-            { id: 'request_order', title: 'Daftar Request Order', url: BASE_URL + '/admin/pages/request_order/index.php', icon: 'bi-file-earmark-text', closable: true },
+            { id: 'request_order', title: 'Daftar Request Order', url: BASE_URL + '/admin/pages/request_order/index.php', icon: 'bi-file-earmark-text-fill', closable: true },
             { id: 'ro_edit', title: 'Detail RO', url: BASE_URL + '/admin/pages/request_order/edit.php', icon: 'bi-file-earmark-text-fill', closable: true },
-            { id: 'purchase_order', title: 'Purchase Order', url: BASE_URL + '/admin/pages/purchase_order/index.php', icon: 'bi-file-earmark-spreadsheet', closable: true },
+            { id: 'purchase_order', title: 'Purchase Order', url: BASE_URL + '/admin/pages/purchase_order/index.php', icon: 'bi-cart-check', closable: true },
             { id: 'po_outstanding', title: 'PO Outstanding', url: BASE_URL + '/admin/pages/purchase_order/outstanding.php', icon: 'bi-hourglass-split', closable: true },
-            { id: 'receiving', title: 'Penerimaan Barang', url: BASE_URL + '/admin/pages/receiving/index.php', icon: 'bi-box-seam-fill', closable: true },
+            { id: 'receiving', title: 'Penerimaan Barang', url: BASE_URL + '/admin/pages/receiving/index.php', icon: 'bi-box-seam', closable: true },
             { id: 'receiving_create', title: 'Terima Barang Baru', url: BASE_URL + '/admin/pages/receiving/create.php', icon: 'bi-box-arrow-in-down', closable: true },
             { id: 'receiving_edit', title: 'Edit Penerimaan', url: BASE_URL + '/admin/pages/receiving/edit.php', icon: 'bi-pencil-square', closable: true },
             { id: 'retur_po', title: 'Retur PO', url: BASE_URL + '/admin/pages/retur_po/index.php', icon: 'bi-arrow-return-left', closable: true },
@@ -135,29 +135,46 @@ const AppTabs = {
             { id: 'retur_detail', title: 'Detail Retur PO', url: BASE_URL + '/admin/pages/retur_po/detail.php', icon: 'bi-file-earmark-diff-fill', closable: true },
             { id: 'faktur_po', title: 'Faktur PO', url: BASE_URL + '/admin/pages/faktur_po/index.php', icon: 'bi-receipt-cutoff', closable: true },
             { id: 'faktur_create', title: 'Buat Faktur PO', url: BASE_URL + '/admin/pages/faktur_po/create.php', icon: 'bi-file-earmark-plus', closable: true },
-            { id: 'tagihan_jatuh_tempo', title: 'Daftar Tagihan', url: BASE_URL + '/admin/pages/pembayaran_po/tagihan_jatuh_tempo.php', icon: 'bi-receipt-cutoff', closable: true },
+            { id: 'tagihan_jatuh_tempo', title: 'Daftar Tagihan', url: BASE_URL + '/admin/pages/pembayaran_po/tagihan_jatuh_tempo.php', icon: 'bi-clock-history', closable: true },
             { id: 'pembayaran_po', title: 'Pembayaran Faktur PO', url: BASE_URL + '/admin/pages/pembayaran_po/index.php', icon: 'bi-cash-coin', closable: true },
             { id: 'pembayaran_create', title: 'Catat Pembayaran PO', url: BASE_URL + '/admin/pages/pembayaran_po/create.php', icon: 'bi-plus-circle-fill', closable: true },
             { id: 'pembayaran_edit', title: 'Edit Pembayaran PO', url: BASE_URL + '/admin/pages/pembayaran_po/edit.php', icon: 'bi-pencil-square', closable: true },
-            { id: 'ro_create', title: 'Buat RO Baru', url: BASE_URL + '/admin/pages/request_order/create.php', icon: 'bi-file-earmark-plus', closable: true },
+            { id: 'ro_create', title: 'Buat RO Baru', url: BASE_URL + '/admin/pages/request_order/create.php', icon: 'bi-plus-circle', closable: true },
             { id: 'proses_po', title: 'Proses PO', url: BASE_URL + '/admin/pages/request_order/proses_po.php', icon: 'bi-cart-check-fill', closable: true },
             { id: 'site', title: 'Master Site', url: BASE_URL + '/admin/pages/site/index.php', icon: 'bi-geo-alt-fill', closable: true },
-            { id: 'jabatan', title: 'Master Jabatan', url: BASE_URL + '/admin/pages/jabatan/index.php', icon: 'bi-person-badge', closable: true },
+            { id: 'jabatan', title: 'Master Jabatan', url: BASE_URL + '/admin/pages/jabatan/index.php', icon: 'bi-briefcase-fill', closable: true },
             { id: 'divisi', title: 'Master Divisi', url: BASE_URL + '/admin/pages/divisi/index.php', icon: 'bi-diagram-3-fill', closable: true },
             { id: 'karyawan', title: 'Master Karyawan', url: BASE_URL + '/admin/pages/user/index.php', icon: 'bi-people-fill', closable: true },
             { id: 'vendor', title: 'Master Vendor', url: BASE_URL + '/admin/pages/vendor/index.php', icon: 'bi-truck', closable: true },
             { id: 'kategori', title: 'Kategori Barang', url: BASE_URL + '/admin/pages/kategori/index.php', icon: 'bi-tags', closable: true },
             { id: 'merk', title: 'Merk Barang', url: BASE_URL + '/admin/pages/merk/index.php', icon: 'bi-bookmark-star', closable: true },
             { id: 'barang', title: 'Katalog Barang', url: BASE_URL + '/admin/pages/barang/index.php', icon: 'bi-box-seam', closable: true },
+            { id: 'rekening_bank', title: 'Rekening Bank', url: BASE_URL + '/admin/pages/rekening_bank/index.php', icon: 'bi-credit-card', closable: true },
+            { id: 'profile', title: 'Profil Perusahaan', url: BASE_URL + '/admin/pages/profile/index.php', icon: 'bi-buildings', closable: true },
+            { id: 'timezone', title: 'Atur Timezone', url: BASE_URL + '/admin/pages/timezone/index.php', icon: 'bi-clock-history', closable: true },
             { id: 'smtp', title: 'Server SMTP', url: BASE_URL + '/admin/pages/smtp/index.php', icon: 'bi-envelope-at-fill', closable: true },
             { id: 'info', title: 'Informasi & Pengumuman', url: BASE_URL + '/admin/pages/info/index.php', icon: 'bi-megaphone-fill', closable: true },
-            { id: 'menu', title: 'Manajemen Menu', url: BASE_URL + '/admin/pages/menu/index.php', icon: 'bi-list-check', closable: true }
+            { id: 'menu', title: 'Manajemen Menu', url: BASE_URL + '/admin/pages/menu/index.php', icon: 'bi-list-check', closable: true },
+            { id: 'activity_log', title: 'Log Aktivitas', url: BASE_URL + '/admin/pages/activity_log/index.php', icon: 'bi-clock-history', closable: true },
+            { id: 'laporan_pengeluaran_bank', title: 'Pengeluaran Bank', url: BASE_URL + '/admin/pages/laporan/pengeluaran_bank.php', icon: 'bi-bank', closable: true },
+            { id: 'laporan_pembelian_vendor', title: 'Pembelian per Vendor', url: BASE_URL + '/admin/pages/laporan/pembelian_vendor.php', icon: 'bi-shop', closable: true }
         ];
     },
 
     getCurrentTabInfo() {
         const path = window.location.pathname.replace(/\/+$/, '');
         const known = this.getKnownTabs();
+
+        // 1. Ambil icon dinamis dari menu link aktif di sidebar jika ada
+        let activeSidebarIcon = null;
+        const activeLink = document.querySelector('.sidebar-wrapper a.sidebar-link.active, .sidebar-wrapper a.sidebar-sublink.active');
+        if (activeLink) {
+            const iconI = activeLink.querySelector('i.bi');
+            if (iconI) {
+                const biClass = Array.from(iconI.classList).find(c => c.startsWith('bi-') && c !== 'bi');
+                if (biClass) activeSidebarIcon = biClass;
+            }
+        }
 
         if (path.includes('/request_order/edit.php')) {
             const urlParams = new URLSearchParams(window.location.search);
@@ -176,7 +193,7 @@ const AppTabs = {
                 id: 'ro_edit' + (roId ? '_' + roId : ''),
                 title: roTitle,
                 url: window.location.href,
-                icon: 'bi-file-earmark-text-fill',
+                icon: activeSidebarIcon || 'bi-file-earmark-text-fill',
                 closable: true
             };
         }
@@ -207,10 +224,16 @@ const AppTabs = {
                 (t.id === 'po_outstanding' && path.includes('/purchase_order/outstanding.php')) ||
                 (t.id === 'purchase_order' && (path.includes('/purchase_order/index.php') || path.includes('/purchase_order/edit.php'))) || 
                 (t.id === 'request_order' && path.includes('/request_order/index.php')) || 
-                (t.id === 'ro_create' && path.includes('/request_order/create.php'))
+                (t.id === 'ro_create' && path.includes('/request_order/create.php')) ||
+                (t.id === 'laporan_pengeluaran_bank' && path.includes('/laporan/pengeluaran_bank.php')) ||
+                (t.id === 'laporan_pembelian_vendor' && path.includes('/laporan/pembelian_vendor.php')) ||
+                (t.id === 'activity_log' && path.includes('/activity_log/')) ||
+                (t.id === 'rekening_bank' && path.includes('/rekening_bank/')) ||
+                (t.id === 'timezone' && path.includes('/timezone/'))
             ) {
                 return {
                     ...t,
+                    icon: activeSidebarIcon || t.icon,
                     url: window.location.href
                 };
             }
@@ -220,7 +243,7 @@ const AppTabs = {
             id: 'tab_' + Math.abs(path.split('').reduce((a,b)=>{a=((a<<5)-a)+b.charCodeAt(0);return a&a},0)),
             title: document.title.split('-')[0].trim() || 'Halaman',
             url: window.location.href,
-            icon: 'bi-window-sidebar',
+            icon: activeSidebarIcon || 'bi-window-sidebar',
             closable: true
         };
     },
@@ -231,6 +254,16 @@ const AppTabs = {
             let tabs = raw ? JSON.parse(raw) : [];
             if (!Array.isArray(tabs) || tabs.length === 0) {
                 tabs = [{ id: 'dashboard', title: 'Dashboard', url: BASE_URL + '/admin/dashboard.php', icon: 'bi-grid-1x2-fill', closable: false }];
+            } else {
+                // Refresh icon tab jika ada pembaruan di getKnownTabs
+                const known = this.getKnownTabs();
+                tabs = tabs.map(tab => {
+                    const match = known.find(k => k.id === tab.id || k.url === tab.url);
+                    if (match && match.icon) {
+                        tab.icon = match.icon;
+                    }
+                    return tab;
+                });
             }
             return tabs;
         } catch (e) {
@@ -259,6 +292,9 @@ const AppTabs = {
         if (existingIdx === -1) {
             openedTabs.push(currentTab);
         } else {
+            // Update icon & title tab aktif saat ini
+            openedTabs[existingIdx].icon = currentTab.icon;
+            openedTabs[existingIdx].title = currentTab.title;
             openedTabs[existingIdx].url = currentTab.url;
         }
         this.saveOpenedTabs(openedTabs);
