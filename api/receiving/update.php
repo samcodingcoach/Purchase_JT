@@ -17,6 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/../middleware/auth.php';
+require_once __DIR__ . '/../../config/activity_logger.php';
 
 $currentUser = apiAuth([ROLE_ADMIN, ROLE_LOGISTIK, ROLE_MANAGER]);
 
@@ -202,6 +203,25 @@ try {
     $stmtInsStok->close();
 
     $conn->commit();
+
+    logActivity($conn, [
+        'modul' => 'RECEIVING',
+        'aksi' => 'UPDATE',
+        'id_referensi' => $idRcv,
+        'nomor_referensi' => $currentRcv['nomor_rcv'],
+        'deskripsi' => "Memperbarui data dokumen Penerimaan Barang {$currentRcv['nomor_rcv']} (No SPB: {$nomorSj})",
+        'data_sebelumnya' => [
+            'id_rcv' => $currentRcv['id_rcv'],
+            'nomor_rcv' => $currentRcv['nomor_rcv'],
+            'file_sj' => $currentRcv['file_sj']
+        ],
+        'data_sesudahnya' => [
+            'nomor_sj' => $nomorSj,
+            'keterangan' => $keterangan,
+            'file_sj' => $filenameSj,
+            'total_items' => count($items)
+        ]
+    ]);
 
     jsonResponse(true, "Data Penerimaan Barang {$currentRcv['nomor_rcv']} berhasil diperbarui.", [
         'id_rcv' => $idRcv,

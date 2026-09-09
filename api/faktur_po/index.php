@@ -7,6 +7,7 @@
 
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../../config/config.php';
+require_once __DIR__ . '/../../config/activity_logger.php';
 require_once __DIR__ . '/../middleware/auth.php';
 
 $user = apiAuth([ROLE_PURCHASING, ROLE_ADMIN, ROLE_MANAGER]);
@@ -365,6 +366,25 @@ if ($method === 'POST') {
 
         $conn->commit();
 
+        logActivity($conn, [
+            'modul' => 'FAKTUR',
+            'aksi' => 'CREATE',
+            'id_referensi' => $idFaktur,
+            'nomor_referensi' => $nomorFaktur,
+            'deskripsi' => "Menerbitkan Faktur PO {$nomorFaktur} (Inv Vendor: {$nomorFakturVendor}) senilai Rp " . number_format($totalTagihan, 0, ',', '.'),
+            'data_sesudahnya' => [
+                'id_faktur' => $idFaktur,
+                'nomor_faktur' => $nomorFaktur,
+                'nomor_faktur_vendor' => $nomorFakturVendor,
+                'id_po' => $idPo,
+                'id_rcv' => $idRcv,
+                'id_vendor' => $idVendor,
+                'total_tagihan' => $totalTagihan,
+                'tanggal_jatuh_tempo' => $tanggalJatuhTempo,
+                'status' => $status
+            ]
+        ]);
+
         sendJson(true, "Dokumen Faktur PO {$nomorFaktur} berhasil diterbitkan!", [
             'id_faktur' => $idFaktur,
             'nomor_faktur' => $nomorFaktur,
@@ -536,6 +556,24 @@ if ($method === 'PUT') {
         }
 
         $conn->commit();
+
+        logActivity($conn, [
+            'modul' => 'FAKTUR',
+            'aksi' => 'UPDATE',
+            'id_referensi' => $idFaktur,
+            'nomor_referensi' => $currFaktur['nomor_faktur'],
+            'deskripsi' => "Memperbarui Faktur PO {$currFaktur['nomor_faktur']}",
+            'data_sebelumnya' => [
+                'nomor_faktur' => $currFaktur['nomor_faktur'],
+                'status' => $currFaktur['status'],
+                'terbayar' => $currFaktur['terbayar']
+            ],
+            'data_sesudahnya' => [
+                'nomor_faktur_vendor' => $nomorFakturVendor,
+                'total_tagihan' => $totalTagihan,
+                'status' => $statusTarget
+            ]
+        ]);
 
         sendJson(true, "Dokumen Faktur PO {$currFaktur['nomor_faktur']} berhasil diperbarui!", [
             'id_faktur' => $idFaktur,

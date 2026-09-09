@@ -19,6 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/../middleware/auth.php';
+require_once __DIR__ . '/../../config/activity_logger.php';
 
 // Wajib Login sebagai Logistik, Admin, atau Manager
 $currentUser = apiAuth([ROLE_ADMIN, ROLE_LOGISTIK, ROLE_MANAGER]);
@@ -191,6 +192,22 @@ try {
     $stmtDetail->close();
 
     $conn->commit();
+
+    logActivity($conn, [
+        'modul' => 'RECEIVING',
+        'aksi' => 'CREATE',
+        'id_referensi' => $idRcv,
+        'nomor_referensi' => $nomorRcv,
+        'deskripsi' => "Menerbitkan Penerimaan Barang {$nomorRcv} (No. SPB Vendor: {$nomorSj}) untuk PO: {$currentPo['nomor_po']}",
+        'data_sesudahnya' => [
+            'id_rcv' => $idRcv,
+            'nomor_rcv' => $nomorRcv,
+            'nomor_sj' => $nomorSj,
+            'id_po' => $idPo,
+            'nomor_po' => $currentPo['nomor_po'],
+            'total_items' => count($items)
+        ]
+    ]);
 
     jsonResponse(true, "Penerimaan barang {$nomorRcv} (No. SPB: {$nomorSj}) berhasil disimpan.", [
         'id_rcv' => $idRcv,

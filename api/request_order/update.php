@@ -24,7 +24,7 @@ if ($idRequest <= 0) {
 }
 
 // 1. Ambil data RO eksisting & validasi status
-$stmtCheck = $conn->prepare("SELECT id_request, nomor, id_karyawan, status, tanggal_ro FROM request_order WHERE id_request = ? LIMIT 1");
+$stmtCheck = $conn->prepare("SELECT id_request, nomor, id_karyawan, status, tanggal_ro, prioritas FROM request_order WHERE id_request = ? LIMIT 1");
 $stmtCheck->bind_param("i", $idRequest);
 $stmtCheck->execute();
 $resCheck = $stmtCheck->get_result();
@@ -252,6 +252,25 @@ try {
     } else {
         $actionMsg = "Perubahan Draft Request Order {$existingRo['nomor']} berhasil disimpan.";
     }
+
+    // Catat Log Aktivitas Pengguna
+    require_once __DIR__ . '/../../config/activity_logger.php';
+    $aksiLog = 'UPDATE';
+    if ($status === 'DISETUJUI PURCHASING') $aksiLog = 'APPROVE_PURCHASING';
+    elseif ($status === 'TIDAK DISETUJUI PURCHASING') $aksiLog = 'REJECT_PURCHASING';
+    elseif ($status === 'DISETUJUI LOGISTIK') $aksiLog = 'APPROVE_LOGISTIK';
+    elseif ($status === 'TIDAK DISETUJUI LOGISTIK') $aksiLog = 'REJECT_LOGISTIK';
+    elseif ($status === 'BATAL') $aksiLog = 'BATAL';
+
+    logActivity($conn, [
+        'modul'           => 'REQUEST_ORDER',
+        'aksi'            => $aksiLog,
+        'id_referensi'    => $idRequest,
+        'nomor_referensi' => $existingRo['nomor'],
+        'deskripsi'       => "Pembaruan dokumen Request Order {$existingRo['nomor']} (Status: {$existingRo['status']} -> {$status}). {$actionMsg}",
+        'data_sebelumnya' => ['status' => $existingRo['status'] ?? '', 'prioritas' => $existingRo['prioritas'] ?? 'NORMAL'],
+        'data_sesudahnya' => ['status' => $status, 'prioritas' => $prioritas, 'keterangan' => $keterangan]
+    ]);
 
     jsonResponse(true, $actionMsg, [
         'id_request' => $idRequest,

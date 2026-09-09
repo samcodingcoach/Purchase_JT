@@ -75,6 +75,24 @@ try {
     error_log("Gagal mengirim notifikasi status RO {$ro['nomor']}: " . $t->getMessage());
 }
 
+// Catat Log Aktivitas Pengguna
+require_once __DIR__ . '/../../config/activity_logger.php';
+$aksiLog = ($action === 'reject') ? 'REJECT_LOGISTIK' : 'APPROVE_LOGISTIK';
+$catatanLog = trim($input['catatan'] ?? ($input['keterangan'] ?? ''));
+$deskripsiLog = ($action === 'reject')
+    ? "Menolak Request Order {$ro['nomor']} pada tahap Logistik." . ($catatanLog ? " Alasan: {$catatanLog}" : "")
+    : "Menyetujui Request Order {$ro['nomor']} pada tahap Logistik (Stok gudang telah diverifikasi).";
+
+logActivity($conn, [
+    'modul'           => 'REQUEST_ORDER',
+    'aksi'            => $aksiLog,
+    'id_referensi'    => $idRequest,
+    'nomor_referensi' => $ro['nomor'],
+    'deskripsi'       => $deskripsiLog,
+    'data_sebelumnya' => ['status' => $ro['status'] ?? ''],
+    'data_sesudahnya' => ['status' => $newStatus, 'id_karyawan_approved' => $idKaryawanApprover, 'catatan' => $catatanLog]
+]);
+
 jsonResponse(true, "Request Order {$ro['nomor']} berhasil {$msgAction} oleh Logistik.", [
     'id_request' => $idRequest,
     'status' => $newStatus,

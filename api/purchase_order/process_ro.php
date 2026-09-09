@@ -356,6 +356,27 @@ if ($action === 'approve' || $action === 'draft') {
             }
         }
 
+        // Catat Log Aktivitas Pengguna
+        require_once __DIR__ . '/../../config/activity_logger.php';
+        logActivity($conn, [
+            'modul'           => 'PURCHASE_ORDER',
+            'aksi'            => $isDraft ? 'CREATE_DRAFT' : 'CREATE',
+            'id_referensi'    => $newIdPo,
+            'nomor_referensi' => $nomorPo,
+            'deskripsi'       => "Menerbitkan dokumen Purchase Order {$nomorPo} (Status: {$statusPo}) dari Request Order {$ro['nomor']}.",
+            'data_sesudahnya' => [
+                'id_po'        => $newIdPo,
+                'nomor_po'     => $nomorPo,
+                'id_request'   => $idRequest,
+                'nomor_ro'     => $ro['nomor'],
+                'id_vendor'    => $idVendor,
+                'status'       => $statusPo,
+                'pajak'        => $pajak,
+                'diskon'       => $diskonGlobal,
+                'total_items'  => count($roItems)
+            ]
+        ]);
+
         $msg = $isDraft 
             ? "Purchase Order {$nomorPo} berhasil disimpan sebagai Draft."
             : "Purchase Order {$nomorPo} berhasil disetujui & diterbitkan dari Request Order {$ro['nomor']}.";

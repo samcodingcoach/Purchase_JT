@@ -7,6 +7,7 @@
 
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../../config/config.php';
+require_once __DIR__ . '/../../config/activity_logger.php';
 require_once __DIR__ . '/../middleware/auth.php';
 
 $user = apiAuth([ROLE_FINANCE, ROLE_PURCHASING, ROLE_ADMIN, ROLE_MANAGER]);
@@ -408,6 +409,26 @@ if ($method === 'POST') {
 
         $conn->commit();
 
+        logActivity($conn, [
+            'modul' => 'PAYMENT',
+            'aksi' => ($statusFakturBaru === 'LUNAS' ? 'PELUNASAN' : 'PEMBAYARAN_SEBAGIAN'),
+            'id_referensi' => $idDetailBaru,
+            'nomor_referensi' => $kodePembayaran,
+            'deskripsi' => "Mencatat transaksi pembayaran {$kodePembayaran} senilai Rp " . number_format($nominalPengiriman, 0, ',', '.') . " untuk Faktur {$faktur['nomor_faktur']} (Status Faktur: {$statusFakturBaru})",
+            'data_sesudahnya' => [
+                'id_pembayaran_detail' => $idDetailBaru,
+                'kode_pembayaran' => $kodePembayaran,
+                'id_faktur' => $idFaktur,
+                'nomor_faktur' => $faktur['nomor_faktur'],
+                'nominal_pengiriman' => $nominalPengiriman,
+                'biaya_admin' => $biayaAdmin,
+                'sisa_piutang' => $sisaPiutangBaru,
+                'status_faktur' => $statusFakturBaru,
+                'bank_pengirim' => $bankPengirim,
+                'bank_tujuan' => $bankTujuan
+            ]
+        ]);
+
         sendJson(true, "Pembayaran {$kodePembayaran} sebesar Rp " . number_format($nominalPengiriman, 0, ',', '.') . " berhasil dicatat.", [
             'id_pembayaran_detail' => $idDetailBaru,
             'id_pembayaran' => $idPembayaran,
@@ -496,6 +517,28 @@ if ($method === 'PUT') {
     
     if ($stmtUp->execute()) {
         $stmtUp->close();
+
+        logActivity($conn, [
+            'modul' => 'PAYMENT',
+            'aksi' => 'UPDATE',
+            'id_referensi' => $idDetail,
+            'nomor_referensi' => $old['kode_pembayaran'],
+            'deskripsi' => "Memperbarui rincian transaksi pembayaran {$old['kode_pembayaran']}",
+            'data_sebelumnya' => [
+                'bank_pengirim' => $old['bank_pengirim'],
+                'norek_pengirim' => $old['norek_pengirim'],
+                'biaya_admin' => $old['biaya_admin'],
+                'no_ref' => $old['no_ref']
+            ],
+            'data_sesudahnya' => [
+                'bank_pengirim' => $bankPengirim,
+                'norek_pengirim' => $norekPengirim,
+                'biaya_admin' => $biayaAdmin,
+                'no_ref' => $noRef,
+                'keterangan' => $keterangan
+            ]
+        ]);
+
         sendJson(true, "Data pembayaran {$old['kode_pembayaran']} berhasil diperbarui.");
     } else {
         $err = $stmtUp->error;

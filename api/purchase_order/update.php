@@ -149,6 +149,33 @@ try {
 
     $conn->commit();
 
+    // Catat Log Aktivitas Pengguna
+    require_once __DIR__ . '/../../config/activity_logger.php';
+    $aksiLog = 'UPDATE';
+    if ($newStatus === 'BATAL') $aksiLog = 'BATAL';
+    elseif ($newStatus === 'REVIEW VENDOR') $aksiLog = 'STATUS_REVIEW';
+    elseif ($newStatus === 'DIPROSES VENDOR') $aksiLog = 'STATUS_DIPROSES';
+
+    logActivity($conn, [
+        'modul'           => 'PURCHASE_ORDER',
+        'aksi'            => $aksiLog,
+        'id_referensi'    => $idPo,
+        'nomor_referensi' => $currentPo['nomor_po'],
+        'deskripsi'       => "Memperbarui Purchase Order {$currentPo['nomor_po']} (Status: {$currentPo['status']} -> {$newStatus}).",
+        'data_sebelumnya' => [
+            'status'      => $currentPo['status'],
+            'pajak'       => $currentPo['pajak'] ?? null,
+            'diskon'      => $currentPo['diskon'] ?? null
+        ],
+        'data_sesudahnya' => [
+            'status'      => $newStatus,
+            'pajak'       => $pajak,
+            'diskon'      => $diskon,
+            'keterangan'  => $keterangan,
+            'total_items' => count($items)
+        ]
+    ]);
+
     jsonResponse(true, "Purchase Order {$currentPo['nomor_po']} berhasil diperbarui.", [
         'id_po' => $idPo,
         'nomor_po' => $currentPo['nomor_po'],

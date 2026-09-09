@@ -16,6 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/../middleware/auth.php';
+require_once __DIR__ . '/../../config/activity_logger.php';
 
 $currentUser = apiAuth([ROLE_LOGISTIK, ROLE_ADMIN, ROLE_MANAGER]);
 $method = $_SERVER['REQUEST_METHOD'];
@@ -488,6 +489,25 @@ if ($method === 'POST') {
         $stmtInsD->close();
 
         $conn->commit();
+
+        logActivity($conn, [
+            'modul' => 'RETUR',
+            'aksi' => 'CREATE',
+            'id_referensi' => $idPoRetur,
+            'nomor_referensi' => $nomorRetur,
+            'deskripsi' => "Menerbitkan dokumen Retur PO {$nomorRetur} (" . ($kompensasi === 1 ? 'Tukar Unit' : 'Potong Tagihan') . ") untuk PO ID: {$idPo}",
+            'data_sesudahnya' => [
+                'id_po_retur' => $idPoRetur,
+                'nomor_po_retur' => $nomorRetur,
+                'id_po' => $idPo,
+                'id_rcv' => $idRcv,
+                'id_vendor' => $idVendor,
+                'kompensasi' => $kompensasi === 1 ? 'Tukar Unit' : 'Potong Tagihan',
+                'total' => $totalSubtotal,
+                'status' => $status
+            ]
+        ]);
+
         sendJson(true, "Dokumen Retur PO {$nomorRetur} berhasil diterbitkan.", [
             'id_po_retur' => $idPoRetur,
             'nomor_po_retur' => $nomorRetur
@@ -720,6 +740,25 @@ if ($method === 'PUT') {
         }
 
         $conn->commit();
+
+        logActivity($conn, [
+            'modul' => 'RETUR',
+            'aksi' => 'UPDATE_STATUS',
+            'id_referensi' => $idRetur,
+            'nomor_referensi' => $retur['nomor_po_retur'],
+            'deskripsi' => "Memperbarui status Dokumen Retur {$retur['nomor_po_retur']} dari '{$retur['status']}' menjadi '{$newStatus}'",
+            'data_sebelumnya' => [
+                'status' => $retur['status'],
+                'pic_vendor' => $retur['pic_vendor'],
+                'nomor_sj_retur' => $retur['nomor_sj_retur']
+            ],
+            'data_sesudahnya' => [
+                'status' => $newStatus,
+                'pic_vendor' => $picVendor,
+                'nomor_sj_retur' => $nomorSjRetur
+            ]
+        ]);
+
         sendJson(true, "Status Dokumen Retur {$retur['nomor_po_retur']} berhasil diperbarui menjadi {$newStatus}.", [
             'id_po_retur' => $idRetur,
             'status' => $newStatus
@@ -771,6 +810,16 @@ if ($method === 'DELETE') {
         $stmtDelH->close();
 
         $conn->commit();
+
+        logActivity($conn, [
+            'modul' => 'RETUR',
+            'aksi' => 'DELETE',
+            'id_referensi' => $idRetur,
+            'nomor_referensi' => $retur['nomor_po_retur'],
+            'deskripsi' => "Menghapus draft dokumen Retur PO {$retur['nomor_po_retur']}",
+            'data_sebelumnya' => $retur
+        ]);
+
         sendJson(true, "Draft Retur PO {$retur['nomor_po_retur']} berhasil dihapus.");
 
     } catch (Exception $e) {

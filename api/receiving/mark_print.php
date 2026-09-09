@@ -22,6 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/../middleware/auth.php';
+require_once __DIR__ . '/../../config/activity_logger.php';
 
 $currentUser = apiAuth([ROLE_ADMIN, ROLE_LOGISTIK, ROLE_MANAGER]);
 
@@ -120,6 +121,22 @@ try {
     $stmtUpRo->close();
 
     $conn->commit();
+
+    logActivity($conn, [
+        'modul' => 'RECEIVING',
+        'aksi' => 'PRINT_MIGRASI_STOK',
+        'id_referensi' => $idRcv,
+        'nomor_referensi' => $rcv['nomor_rcv'],
+        'deskripsi' => "Mencetak SPB {$rcv['nomor_rcv']}, mengunci dokumen & memigrasikan stok barang ke Gudang (Site ID: {$idSite})",
+        'data_sesudahnya' => [
+            'id_rcv' => $idRcv,
+            'nomor_rcv' => $rcv['nomor_rcv'],
+            'id_po' => $idPo,
+            'nomor_po' => $rcv['nomor_po'] ?? null,
+            'id_site' => $idSite,
+            'status_ro' => $roStatus
+        ]
+    ]);
 
     jsonResponse(true, "Surat Penerimaan Barang berhasil dicetak. Stok barang resmi dimigrasikan ke gudang, status PO menjadi DITERIMA, dan status RO menjadi {$roStatus}.", [
         'id_rcv' => $idRcv,

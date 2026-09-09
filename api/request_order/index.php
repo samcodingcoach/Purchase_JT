@@ -433,6 +433,17 @@ if ($method === 'DELETE') {
         $delHeader->close();
 
         $conn->commit();
+
+        require_once __DIR__ . '/../../config/activity_logger.php';
+        logActivity($conn, [
+            'modul'           => 'REQUEST_ORDER',
+            'aksi'            => 'DELETE',
+            'id_referensi'    => $id,
+            'nomor_referensi' => $roData['nomor'],
+            'deskripsi'       => "Menghapus Draft Request Order {$roData['nomor']}.",
+            'data_sebelumnya' => $roData
+        ]);
+
         jsonResponse(true, "Draft Request Order {$roData['nomor']} berhasil dihapus.");
     } catch (Exception $e) {
         $conn->rollback();
@@ -473,6 +484,18 @@ if ($method === 'POST') {
         
         if ($up->execute()) {
             $up->close();
+
+            require_once __DIR__ . '/../../config/activity_logger.php';
+            logActivity($conn, [
+                'modul'           => 'REQUEST_ORDER',
+                'aksi'            => 'BATAL',
+                'id_referensi'    => $id,
+                'nomor_referensi' => $ro['nomor'],
+                'deskripsi'       => "Membatalkan Request Order {$ro['nomor']} (Status sebelumnya: {$ro['status']}).",
+                'data_sebelumnya' => ['status' => $ro['status']],
+                'data_sesudahnya' => ['status' => 'BATAL']
+            ]);
+
             jsonResponse(true, "Request Order {$ro['nomor']} berhasil dibatalkan.");
         } else {
             $up->close();

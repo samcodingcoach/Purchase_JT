@@ -232,6 +232,24 @@ try {
         }
     }
 
+    // Catat Log Aktivitas Pengguna
+    require_once __DIR__ . '/../../config/activity_logger.php';
+    logActivity($conn, [
+        'modul'           => 'REQUEST_ORDER',
+        'aksi'            => 'CREATE',
+        'id_referensi'    => $idRequest,
+        'nomor_referensi' => $nomorRo,
+        'deskripsi'       => "Membuat pengajuan Request Order {$nomorRo} (Status: {$status}, Prioritas: {$prioritas}) dengan " . count($cleanItems) . " item barang.",
+        'data_sesudahnya' => [
+            'nomor_ro'    => $nomorRo,
+            'status'      => $status,
+            'prioritas'   => $prioritas,
+            'id_site'     => $idSite,
+            'id_vendor'   => $idVendor,
+            'total_items' => count($cleanItems)
+        ]
+    ]);
+
     $actionMsg = ($status === 'TERKIRIM') 
         ? "Request Order {$nomorRo} berhasil dibuat dan dikirimkan ke Logistik." 
         : "Request Order {$nomorRo} berhasil disimpan sebagai Draft.";
