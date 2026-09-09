@@ -84,7 +84,10 @@ require_once __DIR__ . '/../../components/navbar.php';
             <h4 class="fw-bold text-dark mb-1">Daftar Tagihan</h4>
             <p class="text-muted small mb-0">Monitoring kewajiban faktur vendor yang memiliki sisa tagihan untuk rencana pembayaran.</p>
         </div>
-        <div>
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-warning btn-sm shadow-sm fw-semibold" id="btnSendH3Reminder" onclick="triggerH3ReminderEmail()" title="Kirim Email Peringatan Tagihan Mendekati Jatuh Tempo (H-3) & Lewat Tempo ke Tim Finance">
+                <i class="bi bi-envelope-exclamation me-1"></i> Kirim Peringatan (H-3 &amp; Lewat Tempo)
+            </button>
             <button type="button" class="btn btn-light border btn-sm shadow-sm" onclick="loadTagihanData()" title="Segarkan Data">
                 <i class="bi bi-arrow-clockwise me-1"></i> Refresh
             </button>
@@ -294,13 +297,21 @@ async function loadTagihanData() {
             let badgeSisaHari = '';
 
             if (sisaHari < 0) {
-                badgeSisaHari = `<span class="badge bg-danger-subtle text-danger border border-danger-subtle font-monospace px-2 py-1">${sisaHari}</span>`;
+                badgeSisaHari = `<span class="badge bg-danger text-white font-monospace px-2 py-1" title="Lewat ${Math.abs(sisaHari)} Hari">
+                                    <i class="bi bi-exclamation-octagon me-1"></i>${sisaHari}
+                                 </span>`;
             } else if (sisaHari === 0) {
-                badgeSisaHari = `<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle font-monospace px-2 py-1">0</span>`;
+                badgeSisaHari = `<span class="badge bg-danger text-white font-monospace px-2 py-1" title="Jatuh Tempo Hari Ini">
+                                    <i class="bi bi-exclamation-triangle me-1"></i>H-0 (Hari Ini)
+                                 </span>`;
+            } else if (sisaHari <= 3) {
+                badgeSisaHari = `<span class="badge bg-warning text-dark border border-warning font-monospace px-2 py-1" title="Mendekati Jatuh Tempo (H-${sisaHari})">
+                                    <i class="bi bi-hourglass-split me-1"></i>H-${sisaHari} (${sisaHari} Hari)
+                                 </span>`;
             } else if (sisaHari <= 7) {
-                badgeSisaHari = `<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle font-monospace px-2 py-1">${sisaHari}</span>`;
+                badgeSisaHari = `<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle font-monospace px-2 py-1">${sisaHari} Hari</span>`;
             } else {
-                badgeSisaHari = `<span class="badge bg-success-subtle text-success border border-success-subtle font-monospace px-2 py-1">${sisaHari}</span>`;
+                badgeSisaHari = `<span class="badge bg-success-subtle text-success border border-success-subtle font-monospace px-2 py-1">${sisaHari} Hari</span>`;
             }
 
             // Keterangan Status Pembayaran
@@ -407,6 +418,97 @@ function openPrintDaftarTagihan() {
     const qs = getFilterQueryParams();
     const url = `<?= BASE_URL ?>/admin/pages/pembayaran_po/print_daftar_tagihan.php?${qs}`;
     window.open(url, '_blank');
+}
+
+/**
+ * Memicu pengiriman email peringatan H-3 tagihan jatuh tempo ke Tim Finance
+ */
+async function triggerH3ReminderEmail() {
+    const btn = document.getElementById('btnSendH3Reminder');
+    
+    // Konfirmasi via SweetAlert2 jika ada, atau confirm default
+    if (typeof Swal !== 'undefined') {
+        const confirmRes = await Swal.fire({
+            title: 'Kirim Peringatan Email ke Finance?',
+            text: 'Sistem akan memeriksa seluruh tagihan vendor yang mendekati jatuh tempo (H-3 atau kurang) serta tagihan yang telah lewat jatuh tempo (Overdue), lalu mengirimkan notifikasi email kompilasi ke Tim Finance.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#0284c7',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: '<i class="bi bi-send me-1"></i> Ya, Kirim Email',
+            cancelButtonText: 'Batal'
+        });
+        if (!confirmRes.isConfirmed) return;
+    } else {
+        if (!confirm('Kirim email peringatan tagihan mendekati jatuh tempo (H-3) & lewat jatuh tempo ke Tim Finance?')) return;
+    }
+
+    const originalBtnHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Mengirim...';
+    }
+
+    try {
+        const response = await fetch('<?= BASE_URL ?>/api/notification/send.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                action: 'due_bills_reminder',
+                h_days: 3
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            const data = result.data || {};
+            const dueCount = data.due_count || 0;
+            const overdueCount = data.overdue_count || 0;
+            const approachingCount = data.approaching_count || 0;
+            const sentCount = data.sent_count || 0;
+
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Berhasil Terkirim!',
+                    text: result.message || `Peringatan berhasil dikirim ke ${sentCount} personil Finance (${approachingCount} mendekati tempo, ${overdueCount} lewat tempo).`,
+                    icon: 'success',
+                    confirmButtonColor: '#0284c7'
+                });
+            } else {
+                alert(result.message || 'Peringatan berhasil dikirim.');
+            }
+        } else {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Informasi / Perhatian',
+                    text: result.message || 'Gagal mengirim email pengingat.',
+                    icon: 'warning',
+                    confirmButtonColor: '#0284c7'
+                });
+            } else {
+                alert(result.message || 'Gagal mengirim email pengingat.');
+            }
+        }
+    } catch (err) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: 'Kesalahan Sistem',
+                text: 'Terjadi kegagalan jaringan: ' + err.message,
+                icon: 'error',
+                confirmButtonColor: '#0284c7'
+            });
+        } else {
+            alert('Terjadi kegagalan jaringan: ' + err.message);
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalBtnHtml;
+        }
+    }
 }
 </script>
 

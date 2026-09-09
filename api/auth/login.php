@@ -227,4 +227,29 @@ $responseData = [
     'redirect_url' => BASE_URL . '/admin/dashboard.php'
 ];
 
+// OTOMATISASI: Khusus saat user ber-role FINANCE login,
+// periksa & kirim pengingat tagihan vendor (H-3 & Overdue) jika belum diproses hari ini.
+if ($role === ROLE_FINANCE) {
+    try {
+        $reminderLogFile = __DIR__ . '/../../config/last_due_bills_reminder.json';
+        $todayStr = date('Y-m-d');
+        $alreadySentToday = false;
+
+        if (file_exists($reminderLogFile)) {
+            $logData = @json_decode(file_get_contents($reminderLogFile), true);
+            if (!empty($logData['last_sent_date']) && $logData['last_sent_date'] === $todayStr) {
+                $alreadySentToday = true;
+            }
+        }
+
+        if (!$alreadySentToday) {
+            require_once __DIR__ . '/../../config/mailer.php';
+            sendDueBillsReminderNotification($conn, 3);
+        }
+    } catch (\Throwable $e) {
+        // Log silently agar tidak menghalangi proses login pengguna
+        error_log("Auto Due Bills Reminder on Login Error: " . $e->getMessage());
+    }
+}
+
 jsonResponse(true, 'Login berhasil. Selamat datang, ' . $namaUser, $responseData, 200);

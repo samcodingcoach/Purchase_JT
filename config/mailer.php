@@ -1038,12 +1038,425 @@ if (!function_exists('sendRoStatusNotification')) {
     }
 }
 
+if (!function_exists('getFinanceEmails')) {
+    /**
+     * Mengambil daftar email dan nama tim Finance aktif untuk notifikasi jatuh tempo tagihan & pembayaran
+     * 
+     * @param mysqli $conn
+     * @return array Array of ['email' => string, 'nama' => string, 'role' => string]
+     */
+    function getFinanceEmails($conn) {
+        $recipients = [];
+        $addedEmails = [];
+
+        // 1. Ambil Karyawan aktif di Divisi Finance / Jabatan Finance
+        $sql = "SELECT k.id_karyawan, k.nama_karyawan, k.email, j.nama_jabatan, d.nama_divisi, k.id_divisi, k.id_jabatan
+                FROM karyawan k
+                LEFT JOIN jabatan j ON k.id_jabatan = j.id_jabatan
+                LEFT JOIN divisi d ON k.id_divisi = d.id_divisi
+                WHERE k.aktif = 1 AND k.email IS NOT NULL AND k.email != ''";
+        $res = $conn->query($sql);
+        if ($res) {
+            while ($row = $res->fetch_assoc()) {
+                $email = strtolower(trim($row['email']));
+                if (!filter_var($email, FILTER_VALIDATE_EMAIL) || in_array($email, $addedEmails)) {
+                    continue;
+                }
+
+                $idDiv = (int)($row['id_divisi'] ?? 0);
+                $idJab = (int)($row['id_jabatan'] ?? 0);
+                $divLower = strtolower($row['nama_divisi'] ?? '');
+                $jabLower = strtolower($row['nama_jabatan'] ?? '');
+
+                // Finance & Manajemen
+                $isFinance = (
+                    $idDiv === 6 ||
+                    $idJab === 6 ||
+                    $idJab === 7 ||
+                    strpos($divLower, 'finance') !== false ||
+                    strpos($jabLower, 'finance') !== false ||
+                    strpos($divLower, 'keuangan') !== false ||
+                    strpos($jabLower, 'keuangan') !== false
+                );
+
+                if ($isFinance) {
+                    $recipients[] = [
+                        'email' => $row['email'],
+                        'nama'  => $row['nama_karyawan'],
+                        'role'  => $row['nama_jabatan'] ?: 'Finance & Akuntansi'
+                    ];
+                    $addedEmails[] = $email;
+                }
+            }
+        }
+
+        return $recipients;
+    }
+}
+
+if (!function_exists('renderDueBillsReminderEmailTemplate')) {
+    /**
+     * Template Email HTML Elegan untuk Peringatan Tagihan Vendor Mendekati Jatuh Tempo (H-3) & Lewat Jatuh Tempo (Overdue)
+     */
+    function renderDueBillsReminderEmailTemplate($dueBills, $totalSisaTagihan, $hDays = 3) {
+        $totalFaktur = count($dueBills);
+        $totalNominalFmt = 'Rp ' . number_format($totalSisaTagihan, 0, ',', '.');
+        $tagihanUrl = defined('BASE_URL')
+            ? BASE_URL . '/admin/pages/pembayaran_po/tagihan_jatuh_tempo.php'
+            : 'http://localhost/JT_Purchase/admin/pages/pembayaran_po/tagihan_jatuh_tempo.php';
+
+        // Hitung breakdown overdue vs mendekati tempo
+        $countOverdue = 0;
+        $nominalOverdue = 0;
+        $countMendekati = 0;
+        $nominalMendekati = 0;
+
+        foreach ($dueBills as $b) {
+            $sHari = (int)($b['sisa_hari'] ?? 0);
+            $sisa = (float)($b['sisa_tagihan'] ?? 0);
+            if ($sHari < 0) {
+                $countOverdue++;
+                $nominalOverdue += $sisa;
+            } else {
+                $countMendekati++;
+                $nominalMendekati += $sisa;
+            }
+        }
+
+        $rowsHtml = '';
+        $no = 1;
+        foreach ($dueBills as $bill) {
+            $nomorFaktur = htmlspecialchars($bill['nomor_faktur'] ?? '-');
+            $nomorFakturVendor = !empty($bill['nomor_faktur_vendor']) ? htmlspecialchars($bill['nomor_faktur_vendor']) : '-';
+            $namaVendor = htmlspecialchars($bill['nama_vendor'] ?? '-');
+            $namaBank = htmlspecialchars($bill['nama_bank'] ?? 'Bank Transfer');
+            $rek = !empty($bill['nomor_rekening']) ? htmlspecialchars($bill['nomor_rekening']) : '';
+            $tglJatuhTempo = !empty($bill['tanggal_jatuh_tempo']) ? date('d/m/Y', strtotime($bill['tanggal_jatuh_tempo'])) : '-';
+            $sisaHari = (int)($bill['sisa_hari'] ?? 0);
+            $sisaTagihan = (float)($bill['sisa_tagihan'] ?? 0);
+            $sisaTagihanFmt = 'Rp ' . number_format($sisaTagihan, 0, ',', '.');
+
+            // Badge status sisa hari
+            if ($sisaHari < 0) {
+                $hariLabel = '🚨 Lewat ' . abs($sisaHari) . ' Hari (Overdue)';
+                $badgeBg = '#fee2e2';
+                $badgeColor = '#991b1b';
+                $rowBorder = 'border-left: 3px solid #dc2626;';
+            } elseif ($sisaHari === 0) {
+                $hariLabel = '⚠️ Hari Ini (H-0)';
+                $badgeBg = '#fee2e2';
+                $badgeColor = '#991b1b';
+                $rowBorder = 'border-left: 3px solid #ea580c;';
+            } elseif ($sisaHari === 1) {
+                $hariLabel = '⏱️ Besok (H-1)';
+                $badgeBg = '#fef3c7';
+                $badgeColor = '#92400e';
+                $rowBorder = 'border-left: 3px solid #d97706;';
+            } else {
+                $hariLabel = '⏱️ ' . $sisaHari . ' Hari Lagi (H-' . $sisaHari . ')';
+                $badgeBg = '#fef3c7';
+                $badgeColor = '#92400e';
+                $rowBorder = 'border-left: 3px solid #eab308;';
+            }
+
+            $bgRow = ($no % 2 === 0) ? '#f8fafc' : '#ffffff';
+            $rowsHtml .= '
+            <tr style="background-color: ' . $bgRow . '; ' . $rowBorder . '">
+                <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0; text-align: center; color: #64748b; font-size: 12px;">' . $no++ . '</td>
+                <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0; font-size: 13px;">
+                    <div style="font-weight: 700; color: #0f2744; font-family: monospace;">' . $nomorFaktur . '</div>
+                    <div style="font-size: 11px; color: #64748b;">Vendor: ' . $nomorFakturVendor . '</div>
+                </td>
+                <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0; font-size: 13px;">
+                    <div style="font-weight: 600; color: #1e293b;">' . $namaVendor . '</div>
+                    <div style="font-size: 11px; color: #64748b;">' . $namaBank . ($rek ? ' - ' . $rek : '') . '</div>
+                </td>
+                <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0; font-size: 12px; text-align: center;">
+                    <div style="font-weight: 600; color: #1e293b; margin-bottom: 4px;">' . $tglJatuhTempo . '</div>
+                    <span style="background-color: ' . $badgeBg . '; color: ' . $badgeColor . '; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; display: inline-block;">
+                        ' . $hariLabel . '
+                    </span>
+                </td>
+                <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0; text-align: right; font-size: 13px; font-weight: 700; color: #0284c7; font-family: monospace;">
+                    ' . $sisaTagihanFmt . '
+                </td>
+            </tr>';
+        }
+
+        // Tentukan Banner Utama
+        if ($countOverdue > 0 && $countMendekati > 0) {
+            $bannerBg = '#fef2f2';
+            $bannerBorder = '#fecaca';
+            $bannerText = '⚠️ PERINGATAN KEUANGAN: TAGIHAN MENDEKATI TEMPO (H-' . $hDays . ') &amp; LEWAT JATUH TEMPO';
+            $bannerTextColor = '#991b1b';
+        } elseif ($countOverdue > 0) {
+            $bannerBg = '#fef2f2';
+            $bannerBorder = '#fecaca';
+            $bannerText = '🚨 PERINGATAN KRITIS: TAGIHAN VENDOR TELAH LEWAT JATUH TEMPO';
+            $bannerTextColor = '#991b1b';
+        } else {
+            $bannerBg = '#fef3c7';
+            $bannerBorder = '#fde68a';
+            $bannerText = '⚠️ PERINGATAN JATUH TEMPO: TAGIHAN VENDOR MENDEKATI TEMPO (H-' . $hDays . ')';
+            $bannerTextColor = '#92400e';
+        }
+
+        return '
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Peringatan Jatuh Tempo Tagihan Vendor</title>
+        </head>
+        <body style="margin: 0; padding: 0; background-color: #f4f6f9; font-family: \'Segoe UI\', Tahoma, Geneva, Verdana, sans-serif;">
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="table-layout: fixed;">
+                <tr>
+                    <td align="center" style="padding: 30px 10px;">
+                        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 670px; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;">
+                            <!-- Header Brand -->
+                            <tr>
+                                <td align="center" style="background: linear-gradient(135deg, #0f2744 0%, #1e5288 100%); padding: 28px 20px; color: #ffffff;">
+                                    <h1 style="margin: 0; font-size: 20px; font-weight: 700; letter-spacing: 0.5px;">PT JAYA TEKNIS</h1>
+                                    <p style="margin: 4px 0 0 0; font-size: 12px; opacity: 0.85;">Pemberitahuan Jadwal Arus Kas &amp; Pembayaran Vendor</p>
+                                </td>
+                            </tr>
+
+                            <!-- Status Warning Banner -->
+                            <tr>
+                                <td style="background-color: ' . $bannerBg . '; padding: 14px 24px; border-bottom: 1px solid ' . $bannerBorder . ';">
+                                    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                                        <tr>
+                                            <td style="font-size: 13px; font-weight: 700; color: ' . $bannerTextColor . ';">
+                                                ' . $bannerText . '
+                                            </td>
+                                            <td style="text-align: right; font-size: 12px; font-weight: 700; color: ' . $bannerTextColor . ';">
+                                                ' . date('d F Y') . '
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+
+                            <!-- Body Content -->
+                            <tr>
+                                <td style="padding: 28px 24px; color: #1e293b;">
+                                    <p style="margin: 0 0 14px 0; font-size: 14px; line-height: 1.6; color: #334155;">
+                                        Yth. <strong>Tim Finance &amp; Manajemen</strong>,
+                                    </p>
+                                    <p style="margin: 0 0 20px 0; font-size: 14px; line-height: 1.6; color: #475569;">
+                                        Sistem mendeteksi terdapat <strong>' . $totalFaktur . ' tagihan faktur vendor</strong> yang <strong>mendekati jatuh tempo (&le; ' . $hDays . ' hari)</strong> maupun yang <strong>telah melewati jatuh tempo</strong>. Mohon segera tinjau dan siapkan realisasi pembayaran:
+                                    </p>
+
+                                    <!-- Summary Stat Boxes (Breakdown) -->
+                                    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 24px;">
+                                        <tr>
+                                            <td style="width: 50%; padding-right: 8px;">
+                                                <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 14px; text-align: center;">
+                                                    <div style="font-size: 11px; text-transform: uppercase; color: #991b1b; font-weight: 700; margin-bottom: 4px;">🚨 Lewat Jatuh Tempo</div>
+                                                    <div style="font-size: 18px; font-weight: 800; color: #991b1b; font-family: monospace;">' . $countOverdue . ' Faktur</div>
+                                                    <div style="font-size: 12px; color: #b91c1c; font-weight: 600;">Rp ' . number_format($nominalOverdue, 0, ',', '.') . '</div>
+                                                </div>
+                                            </td>
+                                            <td style="width: 50%; padding-left: 8px;">
+                                                <div style="background-color: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 14px; text-align: center;">
+                                                    <div style="font-size: 11px; text-transform: uppercase; color: #92400e; font-weight: 700; margin-bottom: 4px;">⏱️ Mendekati Tempo (H-' . $hDays . ')</div>
+                                                    <div style="font-size: 18px; font-weight: 800; color: #92400e; font-family: monospace;">' . $countMendekati . ' Faktur</div>
+                                                    <div style="font-size: 12px; color: #b45309; font-weight: 600;">Rp ' . number_format($nominalMendekati, 0, ',', '.') . '</div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </table>
+
+                                    <!-- Table Daftar Tagihan -->
+                                    <div style="font-size: 13px; font-weight: 700; color: #0f2744; margin-bottom: 8px;">
+                                        📋 Rincian Tagihan Vendor:
+                                    </div>
+                                    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-bottom: 25px;">
+                                        <thead>
+                                            <tr style="background-color: #f1f5f9;">
+                                                <th style="padding: 10px 12px; border-bottom: 2px solid #cbd5e1; font-size: 11px; text-transform: uppercase; color: #475569; width: 35px; text-align: center;">No</th>
+                                                <th style="padding: 10px 12px; border-bottom: 2px solid #cbd5e1; font-size: 11px; text-transform: uppercase; color: #475569; text-align: left;">No. Faktur</th>
+                                                <th style="padding: 10px 12px; border-bottom: 2px solid #cbd5e1; font-size: 11px; text-transform: uppercase; color: #475569; text-align: left;">Vendor &amp; Bank</th>
+                                                <th style="padding: 10px 12px; border-bottom: 2px solid #cbd5e1; font-size: 11px; text-transform: uppercase; color: #475569; text-align: center; width: 140px;">Jatuh Tempo</th>
+                                                <th style="padding: 10px 12px; border-bottom: 2px solid #cbd5e1; font-size: 11px; text-transform: uppercase; color: #475569; text-align: right; width: 130px;">Sisa Tagihan</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ' . $rowsHtml . '
+                                        </tbody>
+                                        <tfoot>
+                                            <tr style="background-color: #f8fafc; font-weight: 700;">
+                                                <td colspan="4" style="padding: 12px; text-align: right; font-size: 12px; color: #475569; text-transform: uppercase; border-top: 2px solid #e2e8f0;">
+                                                    Total Keseluruhan Kewajiban:
+                                                </td>
+                                                <td style="padding: 12px; text-align: right; font-size: 14px; color: #0f2744; font-family: monospace; border-top: 2px solid #e2e8f0;">
+                                                    ' . $totalNominalFmt . '
+                                                </td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+
+                                    <!-- Action Button CTA -->
+                                    <div style="text-align: center; margin: 25px 0 10px 0;">
+                                        <a href="' . $tagihanUrl . '" target="_blank" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #ffffff; text-decoration: none; padding: 13px 32px; border-radius: 8px; font-size: 14px; font-weight: 700; display: inline-block; box-shadow: 0 4px 10px rgba(2, 132, 199, 0.25);">
+                                            💳 Buka Monitoring Tagihan &amp; Catat Pembayaran
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- Footer -->
+                            <tr>
+                                <td style="background-color: #f8fafc; padding: 18px 24px; text-align: center; border-top: 1px solid #f1f5f9; font-size: 11px; color: #94a3b8;">
+                                    &copy; ' . date('Y') . ' PT Jaya Teknis. Seluruh hak cipta dilindungi undang-undang.<br>
+                                    Pemberitahuan otomatis dari Sistem Keuangan &amp; Pembelian PT Jaya Teknis.
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </body>
+        </html>
+        ';
+    }
+}
+
+if (!function_exists('sendDueBillsReminderNotification')) {
+    /**
+     * Mengirim notifikasi email pengingat tagihan vendor mendekati jatuh tempo (H-3) & lewat jatuh tempo (overdue) ke Tim Finance
+     * 
+     * @param mysqli $conn
+     * @param int $hDays Batas sisa hari (default: 3 hari)
+     * @return array [success => bool, due_count => int, sent_count => int, message => string, data => array]
+     */
+    function sendDueBillsReminderNotification($conn, $hDays = 3) {
+        $hDays = (int)$hDays;
+        if ($hDays < 0) $hDays = 3;
+
+        // 1. Ambil daftar faktur yang belum lunas dan mendekati jatuh tempo (sisa_hari <= hDays) atau telah lewat tempo
+        $sql = "SELECT fp.id_faktur, fp.nomor_faktur, fp.nomor_faktur_vendor, fp.tanggal_jatuh_tempo,
+                       DATEDIFF(fp.tanggal_jatuh_tempo, CURDATE()) AS sisa_hari,
+                       v.id_vendor, v.nama_perusahaan as nama_vendor,
+                       fp.nama_bank, fp.nomor_rekening, fp.atas_nama_rekening,
+                       fp.total_tagihan, fp.terbayar, fp.sisa_tagihan, fp.status
+                FROM faktur_po fp
+                INNER JOIN vendor v ON fp.id_vendor = v.id_vendor
+                WHERE fp.sisa_tagihan > 0 
+                  AND fp.status NOT IN ('LUNAS', 'BATAL')
+                  AND DATEDIFF(fp.tanggal_jatuh_tempo, CURDATE()) <= ?
+                ORDER BY fp.tanggal_jatuh_tempo ASC, fp.id_faktur ASC";
+
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("i", $hDays);
+        $stmt->execute();
+        $res = $stmt->get_result();
+
+        $dueBills = [];
+        $totalSisaTagihan = 0;
+        $countOverdue = 0;
+        $countMendekati = 0;
+
+        while ($row = $res->fetch_assoc()) {
+            $dueBills[] = $row;
+            $sisa = (float)$row['sisa_tagihan'];
+            $totalSisaTagihan += $sisa;
+            if ((int)$row['sisa_hari'] < 0) {
+                $countOverdue++;
+            } else {
+                $countMendekati++;
+            }
+        }
+        $stmt->close();
+
+        if (empty($dueBills)) {
+            return [
+                'success' => true,
+                'due_count' => 0,
+                'overdue_count' => 0,
+                'approaching_count' => 0,
+                'sent_count' => 0,
+                'total_sisa_tagihan' => 0,
+                'message' => "Tidak ada tagihan vendor yang mendekati jatuh tempo (H-{$hDays}) ataupun yang lewat jatuh tempo saat ini."
+            ];
+        }
+
+        // 2. Ambil daftar email Tim Finance
+        $financeList = getFinanceEmails($conn);
+        if (empty($financeList)) {
+            return [
+                'success' => false,
+                'due_count' => count($dueBills),
+                'overdue_count' => $countOverdue,
+                'approaching_count' => $countMendekati,
+                'sent_count' => 0,
+                'total_sisa_tagihan' => $totalSisaTagihan,
+                'message' => 'Ditemukan ' . count($dueBills) . ' tagihan jatuh tempo, namun tidak ada email tim Finance aktif yang terdaftar.'
+            ];
+        }
+
+        // 3. Render HTML Email
+        $htmlBody = renderDueBillsReminderEmailTemplate($dueBills, $totalSisaTagihan, $hDays);
+        $totalCount = count($dueBills);
+
+        // Subject Dinamis
+        if ($countOverdue > 0 && $countMendekati > 0) {
+            $subject = "⚠️ [PENGINGAT KEUANGAN] {$totalCount} Tagihan: {$countOverdue} Overdue & {$countMendekati} Mendekati Tempo (H-{$hDays}) - PT Jaya Teknis";
+        } elseif ($countOverdue > 0) {
+            $subject = "🚨 [PERINGATAN OVERDUE] {$countOverdue} Tagihan Vendor Telah Lewat Jatuh Tempo - PT Jaya Teknis";
+        } else {
+            $subject = "⚠️ [PENGINGAT H-{$hDays}] {$countMendekati} Tagihan Vendor Mendekati Jatuh Tempo - PT Jaya Teknis";
+        }
+
+        // 4. Kirim Email ke setiap anggota Tim Finance
+        $sentCount = 0;
+        $errors = [];
+        foreach ($financeList as $fin) {
+            $resSend = sendSmtpEmail($conn, $fin['email'], $fin['nama'], $subject, $htmlBody);
+            if (!empty($resSend['success'])) {
+                $sentCount++;
+            } else {
+                $errors[] = $fin['email'] . ': ' . ($resSend['message'] ?? 'Gagal');
+            }
+        }
+
+        $resultData = [
+            'success' => ($sentCount > 0),
+            'due_count' => $totalCount,
+            'overdue_count' => $countOverdue,
+            'approaching_count' => $countMendekati,
+            'sent_count' => $sentCount,
+            'total_sisa_tagihan' => $totalSisaTagihan,
+            'recipients' => array_column($financeList, 'email'),
+            'message' => "Peringatan berhasil dikirim ke {$sentCount} personil Tim Finance ({$countMendekati} mendekati tempo H-{$hDays}, {$countOverdue} lewat jatuh tempo)." . (!empty($errors) ? ' Errors: ' . implode('; ', $errors) : '')
+        ];
+
+        // Simpan log pengiriman harian untuk mencegah email ganda (anti-spam)
+        try {
+            $logFile = __DIR__ . '/last_due_bills_reminder.json';
+            $logPayload = [
+                'last_sent_date'    => date('Y-m-d'),
+                'timestamp'         => date('Y-m-d H:i:s'),
+                'due_count'         => $totalCount,
+                'overdue_count'     => $countOverdue,
+                'approaching_count' => $countMendekati,
+                'sent_count'        => $sentCount,
+                'total_sisa_tagihan'=> $totalSisaTagihan
+            ];
+            @file_put_contents($logFile, json_encode($logPayload, JSON_PRETTY_PRINT));
+        } catch (\Throwable $e) {}
+
+        return $resultData;
+    }
+}
+
 if (!function_exists('sendNotificationEvent')) {
     /**
      * Dispatcher Notifikasi Terpusat untuk backend API
      * 
      * @param mysqli $conn
-     * @param string $action 'ro_created' | 'ro_status_update' | 'ro_ready_purchasing' | 'custom_email'
+     * @param string $action 'ro_created' | 'ro_status_update' | 'ro_ready_purchasing' | 'due_bills_reminder' | 'custom_email'
      * @param array $payload
      * @return array [success => bool, message => string]
      */
@@ -1054,6 +1467,7 @@ if (!function_exists('sendNotificationEvent')) {
         $actorName = trim($payload['actor_name'] ?? ($payload['approver_name'] ?? 'Petugas'));
         $keterangan = trim($payload['keterangan'] ?? ($payload['alasan'] ?? ($payload['catatan'] ?? '')));
         $extraData = isset($payload['extra_data']) && is_array($payload['extra_data']) ? $payload['extra_data'] : [];
+        $hDays = isset($payload['h_days']) ? (int)$payload['h_days'] : 3;
 
         switch ($action) {
             case 'ro_created':
@@ -1064,6 +1478,10 @@ if (!function_exists('sendNotificationEvent')) {
 
             case 'ro_ready_purchasing':
                 return sendRoReadyForPurchasingNotification($conn, $idRequest, $actorName, $keterangan);
+
+            case 'due_bills_reminder':
+            case 'tagihan_jatuh_tempo':
+                return sendDueBillsReminderNotification($conn, $hDays);
 
             case 'custom_email':
                 $toEmail = trim($payload['to_email'] ?? '');
@@ -1077,3 +1495,4 @@ if (!function_exists('sendNotificationEvent')) {
         }
     }
 }
+

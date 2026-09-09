@@ -127,7 +127,29 @@ switch ($action) {
         ]);
         exit;
 
-    // 4. Pengiriman Custom Email (Direct Mailer API)
+    // 4. Peringatan Jatuh Tempo Tagihan Vendor (H-3) ke Tim Finance
+    case 'due_bills_reminder':
+    case 'tagihan_jatuh_tempo':
+        $hDays = isset($input['h_days']) && is_numeric($input['h_days']) ? (int)$input['h_days'] : 3;
+        $resNotify = sendDueBillsReminderNotification($conn, $hDays);
+        http_response_code($resNotify['success'] ? 200 : 500);
+        echo json_encode([
+            'success' => $resNotify['success'],
+            'message' => $resNotify['message'],
+            'data' => [
+                'action' => 'due_bills_reminder',
+                'h_days' => $hDays,
+                'due_count' => $resNotify['due_count'] ?? 0,
+                'overdue_count' => $resNotify['overdue_count'] ?? 0,
+                'approaching_count' => $resNotify['approaching_count'] ?? 0,
+                'sent_count' => $resNotify['sent_count'] ?? 0,
+                'total_sisa_tagihan' => $resNotify['total_sisa_tagihan'] ?? 0,
+                'recipients' => $resNotify['recipients'] ?? []
+            ]
+        ]);
+        exit;
+
+    // 5. Pengiriman Custom Email (Direct Mailer API)
     case 'custom_email':
         $toEmail = trim($input['to_email'] ?? '');
         $toName = trim($input['to_name'] ?? 'Penerima');
@@ -161,7 +183,7 @@ switch ($action) {
         http_response_code(422);
         echo json_encode([
             'success' => false,
-            'message' => "Action '{$action}' tidak dikenali. Pilihan valid: ro_created, ro_status_update, ro_ready_purchasing, custom_email."
+            'message' => "Action '{$action}' tidak dikenali. Pilihan valid: ro_created, ro_status_update, ro_ready_purchasing, due_bills_reminder, custom_email."
         ]);
         exit;
 }
