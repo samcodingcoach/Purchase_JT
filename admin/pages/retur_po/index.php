@@ -93,8 +93,8 @@ require_once __DIR__ . '/../../components/navbar.php';
                 </div>
 
                 <!-- Status Filter -->
-                <div class="col-md-2 col-lg-2">
-                    <select class="form-select form-select-sm" id="filterStatus">
+                <div class="col-6 col-md-2" style="min-width: 175px;">
+                    <select class="form-select form-select-sm text-truncate" id="filterStatus">
                         <option value="">Semua Status</option>
                         <option value="DRAFT">Draft</option>
                         <option value="MENUNGGU KONFIRMASI VENDOR">Menunggu Konfirmasi</option>
@@ -106,8 +106,8 @@ require_once __DIR__ . '/../../components/navbar.php';
                 </div>
 
                 <!-- Kompensasi Filter -->
-                <div class="col-md-2 col-lg-2">
-                    <select class="form-select form-select-sm" id="filterKompensasi">
+                <div class="col-6 col-md-2" style="min-width: 175px;">
+                    <select class="form-select form-select-sm text-truncate" id="filterKompensasi">
                         <option value="">Semua Kompensasi</option>
                         <option value="1">Tukar Unit</option>
                         <option value="0">Potong Tagihan</option>
@@ -249,6 +249,10 @@ require_once __DIR__ . '/../../components/navbar.php';
 .retur-filter-bar .form-select {
     padding-top: 0.15rem !important;
     padding-bottom: 0.35rem !important;
+    padding-right: 2.25rem !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
     line-height: 1.5 !important;
 }
 .retur-filter-bar .form-control {

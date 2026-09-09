@@ -40,11 +40,27 @@ require_once __DIR__ . '/../../components/navbar.php';
     <div class="card border-0 shadow-sm rounded-3 mb-4">
         <div class="card-header bg-white border-bottom p-3">
             <div class="d-flex flex-wrap align-items-center gap-2">
-                <!-- Vendor Filter -->
-                <div style="min-width: 200px; flex: 1 1 200px;">
-                    <select class="form-select filter-select" id="filterVendor" onchange="loadHutangReport()">
-                        <option value="">Semua Vendor</option>
-                    </select>
+                <!-- Searchable Vendor Filter Dropdown -->
+                <div class="position-relative" style="width: 320px; max-width: 100%;">
+                    <input type="hidden" id="filterVendor" value="">
+                    <div class="form-control filter-control d-flex align-items-center justify-content-between bg-white cursor-pointer px-3" 
+                         id="vendorDropdownBtn" 
+                         onclick="toggleVendorDropdown(event)" 
+                         style="height: 38px; cursor: pointer; user-select: none; background-image: none;">
+                        <span id="vendorDropdownLabel" class="text-truncate text-dark" style="max-width: calc(100% - 20px);">Semua Vendor</span>
+                        <i class="bi bi-chevron-down text-muted small ms-1" id="vendorDropdownIcon"></i>
+                    </div>
+                    <div class="dropdown-menu shadow border p-2 w-100" 
+                         id="vendorDropdownMenu" 
+                         style="display: none; position: absolute; top: 100%; left: 0; z-index: 1050; margin-top: 4px; max-height: 300px;">
+                        <div class="input-group input-group-sm mb-2">
+                            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control border-start-0" id="searchVendorInput" placeholder="Cari nama / kode vendor..." onkeyup="filterVendorList(this.value)" autocomplete="off">
+                        </div>
+                        <div class="overflow-auto" id="vendorOptionsList" style="max-height: 210px;">
+                            <!-- Options populated dynamically -->
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Status Faktur Filter -->
@@ -145,13 +161,95 @@ require_once __DIR__ . '/../../components/navbar.php';
 <script>
 let currentReportData = null;
 let currentVendorsMap = {};
+let allVendorsList = [];
 let breakdownModalInstance = null;
+
+function toggleVendorDropdown(e) {
+    if (e) e.stopPropagation();
+    const menu = document.getElementById('vendorDropdownMenu');
+    const isOpen = menu.style.display === 'block';
+    
+    if (isOpen) {
+        closeVendorDropdown();
+    } else {
+        menu.style.display = 'block';
+        document.getElementById('vendorDropdownBtn').classList.add('border-primary', 'shadow-sm');
+        const sInput = document.getElementById('searchVendorInput');
+        sInput.value = '';
+        filterVendorList('');
+        setTimeout(() => sInput.focus(), 50);
+    }
+}
+
+function closeVendorDropdown() {
+    const menu = document.getElementById('vendorDropdownMenu');
+    if (menu) menu.style.display = 'none';
+    const btn = document.getElementById('vendorDropdownBtn');
+    if (btn) btn.classList.remove('border-primary', 'shadow-sm');
+}
+
+document.addEventListener('click', function(e) {
+    const btn = document.getElementById('vendorDropdownBtn');
+    const menu = document.getElementById('vendorDropdownMenu');
+    if (menu && menu.style.display === 'block') {
+        if (!menu.contains(e.target) && !btn.contains(e.target)) {
+            closeVendorDropdown();
+        }
+    }
+});
+
+function filterVendorList(query) {
+    const q = (query || '').toLowerCase().trim();
+    const listContainer = document.getElementById('vendorOptionsList');
+    const currentVal = document.getElementById('filterVendor').value;
+    
+    let html = `
+        <div class="dropdown-item py-2 px-2 rounded-2 text-truncate cursor-pointer ${currentVal === '' ? 'active fw-bold' : ''}" 
+             onclick="selectVendor('', 'Semua Vendor')" 
+             style="cursor: pointer; font-size: 0.875rem;" title="Semua Vendor">
+            <i class="bi bi-people me-2"></i>Semua Vendor
+        </div>
+    `;
+    
+    let matchCount = 0;
+    allVendorsList.forEach(v => {
+        const text = (v.kode_vendor ? `[${v.kode_vendor}] ` : '') + (v.nama_perusahaan || '');
+        if (!q || text.toLowerCase().includes(q)) {
+            matchCount++;
+            const isSel = String(v.id_vendor) === String(currentVal);
+            html += `
+                <div class="dropdown-item py-2 px-2 rounded-2 text-truncate cursor-pointer ${isSel ? 'active fw-bold' : ''}" 
+                     onclick="selectVendor('${v.id_vendor}', '${escapeHtml(text)}')" 
+                     style="cursor: pointer; font-size: 0.875rem;" title="${escapeHtml(text)}">
+                    ${escapeHtml(text)}
+                </div>
+            `;
+        }
+    });
+    
+    if (matchCount === 0 && q !== '') {
+        html += `<div class="p-2 text-muted text-center small">Tidak ada vendor yang cocok.</div>`;
+    }
+    
+    listContainer.innerHTML = html;
+}
+
+function selectVendor(id, label) {
+    document.getElementById('filterVendor').value = id;
+    document.getElementById('vendorDropdownLabel').textContent = label;
+    document.getElementById('vendorDropdownLabel').title = label;
+    closeVendorDropdown();
+    loadHutangReport();
+}
 
 function resetFilters() {
     document.getElementById('filterVendor').value = '';
+    document.getElementById('vendorDropdownLabel').textContent = 'Semua Vendor';
+    document.getElementById('vendorDropdownLabel').title = 'Semua Vendor';
     document.getElementById('filterStatusFaktur').value = '';
     document.getElementById('filterStartDate').value = '';
     document.getElementById('filterEndDate').value = '';
+    closeVendorDropdown();
     loadHutangReport();
 }
 
@@ -215,16 +313,19 @@ async function loadHutangReport() {
 }
 
 function populateVendorDropdown(vendors, currentSelected) {
-    const sel = document.getElementById('filterVendor');
-    if (!vendors || sel.options.length > 1) return;
+    if (!vendors) return;
+    allVendorsList = vendors;
 
-    vendors.forEach(v => {
-        const opt = document.createElement('option');
-        opt.value = v.id_vendor;
-        opt.textContent = `${v.kode_vendor ? '[' + v.kode_vendor + '] ' : ''}${v.nama_perusahaan}`;
-        if (String(v.id_vendor) === String(currentSelected)) opt.selected = true;
-        sel.appendChild(opt);
-    });
+    let selectedLabel = 'Semua Vendor';
+    if (currentSelected) {
+        const found = vendors.find(v => String(v.id_vendor) === String(currentSelected));
+        if (found) {
+            selectedLabel = (found.kode_vendor ? `[${found.kode_vendor}] ` : '') + found.nama_perusahaan;
+        }
+    }
+    document.getElementById('vendorDropdownLabel').textContent = selectedLabel;
+    document.getElementById('vendorDropdownLabel').title = selectedLabel;
+    document.getElementById('filterVendor').value = currentSelected || '';
 }
 
 function renderSummaryTable(vendors, grand) {

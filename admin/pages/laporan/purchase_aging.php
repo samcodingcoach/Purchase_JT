@@ -1,7 +1,7 @@
 <?php
 /**
- * Halaman Laporan Realisasi Kuantitas PO vs Penerimaan & Retur
- * Path: admin/pages/laporan/realisasi_kuantitas.php
+ * Halaman Laporan Purchase Order Aging (PO Aging)
+ * Path: admin/pages/laporan/purchase_aging.php
  * Khusus Role: ADMIN, FINANCE, MANAGER, PURCHASING, LOGISTIK
  */
 
@@ -12,8 +12,8 @@ require_once __DIR__ . '/../../../config/koneksi.php';
 // Auth Protection
 $user = requireAuth([ROLE_ADMIN, ROLE_FINANCE, ROLE_MANAGER, ROLE_PURCHASING, ROLE_LOGISTIK]);
 
-$pageTitle = 'Laporan Realisasi Kuantitas';
-$pageHeading = 'Laporan Realisasi Kuantitas';
+$pageTitle = 'Laporan Purchase Aging';
+$pageHeading = 'Laporan Purchase Aging';
 
 require_once __DIR__ . '/../../components/header.php';
 require_once __DIR__ . '/../../components/sidebar.php';
@@ -24,10 +24,10 @@ require_once __DIR__ . '/../../components/navbar.php';
     <!-- HEADER & ACTION -->
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
         <div>
-            <h4 class="fw-bold text-dark mb-0">Laporan Realisasi Kuantitas</h4>
+            <h4 class="fw-bold text-dark mb-0">Laporan Purchase Aging</h4>
         </div>
         <div class="d-flex gap-2">
-            <button type="button" class="btn btn-outline-secondary filter-btn px-3" onclick="loadRealisasiReport()">
+            <button type="button" class="btn btn-outline-secondary filter-btn px-3" onclick="loadAgingReport()">
                 <i class="bi bi-arrow-clockwise me-1"></i> Refresh
             </button>
             <button type="button" class="btn btn-primary filter-btn px-3 shadow-sm fw-semibold" onclick="printReport()">
@@ -55,12 +55,37 @@ require_once __DIR__ . '/../../components/navbar.php';
                          style="display: none; position: absolute; top: 100%; left: 0; z-index: 1050; margin-top: 4px; max-height: 300px;">
                         <div class="input-group input-group-sm mb-2">
                             <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-search"></i></span>
-                            <input type="text" class="form-control border-start-0" id="searchVendorInput" placeholder="Cari nama / kode vendor..." onkeyup="filterVendorList(this.value)" autocomplete="off">
+                            <input type="text" class="form-control border-start-0" id="searchVendorInput" placeholder="Ketik nama / kode vendor..." onkeyup="filterVendorList(this.value)" autocomplete="off">
                         </div>
                         <div class="overflow-auto" id="vendorOptionsList" style="max-height: 210px;">
                             <!-- Options populated dynamically -->
                         </div>
                     </div>
+                </div>
+
+                <!-- Status PO Filter -->
+                <div style="min-width: 180px; flex: 1 1 180px;">
+                    <select class="form-select filter-select" id="filterStatus" onchange="loadAgingReport()">
+                        <option value="">Semua Status PO</option>
+                        <option value="DRAFT">DRAFT</option>
+                        <option value="REVIEW INTERNAL">REVIEW INTERNAL</option>
+                        <option value="DISETUJUI INTERNAL">DISETUJUI INTERNAL</option>
+                        <option value="TIDAK DISETUJUI INTERNAL">TIDAK DISETUJUI INTERNAL</option>
+                        <option value="REVIEW VENDOR">REVIEW VENDOR</option>
+                        <option value="DIPROSES VENDOR">DIPROSES VENDOR</option>
+                        <option value="BATAL">BATAL</option>
+                    </select>
+                </div>
+
+                <!-- Aging Range Filter -->
+                <div style="min-width: 170px; flex: 1 1 170px;">
+                    <select class="form-select filter-select" id="filterAgingRange" onchange="loadAgingReport()">
+                        <option value="">Semua Umur PO</option>
+                        <option value="1-7">0 - 7 Hari</option>
+                        <option value="8-14">8 - 14 Hari</option>
+                        <option value="15-30">15 - 30 Hari</option>
+                        <option value=">30">> 30 Hari</option>
+                    </select>
                 </div>
 
                 <!-- Reset Button (Icon Only) -->
@@ -77,27 +102,26 @@ require_once __DIR__ . '/../../components/navbar.php';
                     <thead class="table-light">
                         <tr class="text-muted small text-uppercase align-middle">
                             <th class="ps-3 py-3 align-middle" style="width: 50px;">No</th>
+                            <th class="py-3 align-middle" style="width: 140px;">Nomor PO</th>
+                            <th class="py-3 align-middle" style="width: 110px;">Tgl PO</th>
                             <th class="py-3 align-middle">Nama Vendor</th>
-                            <th class="text-end py-3 align-middle" style="width: 150px;">KTS PO</th>
-                            <th class="text-end py-3 align-middle" style="width: 170px;">KTS RCV</th>
-                            <th class="text-end py-3 align-middle" style="width: 170px;">KTS RTN</th>
-                            <th class="text-end pe-3 py-3 align-middle" style="width: 160px;">Realisasi (%)</th>
+                            <th class="py-3 align-middle" style="width: 160px;">Pembuat PO</th>
+                            <th class="text-center py-3 align-middle" style="width: 170px;">Status</th>
+                            <th class="py-3 align-middle" style="width: 150px;">Tgl Update</th>
+                            <th class="text-center pe-3 py-3 align-middle" style="width: 130px;">Umur PO</th>
                         </tr>
                     </thead>
                     <tbody id="summaryTableBody">
                         <tr>
-                            <td colspan="6" class="text-center py-4 text-muted align-middle">
-                                <div class="spinner-border spinner-border-sm text-primary me-2"></div> Memuat data realisasi kuantitas...
+                            <td colspan="8" class="text-center py-4 text-muted align-middle">
+                                <div class="spinner-border spinner-border-sm text-primary me-2"></div> Memuat data purchase aging...
                             </td>
                         </tr>
                     </tbody>
                     <tfoot class="table-light fw-bold align-middle" id="summaryTableFoot" style="display: none;">
                         <tr class="align-middle">
-                            <td colspan="2" class="ps-3 py-3 text-uppercase align-middle">Grand Total</td>
-                            <td class="text-end py-3 align-middle font-monospace" id="footQtyPo">0</td>
-                            <td class="text-end py-3 align-middle font-monospace" id="footQtyRcv">0</td>
-                            <td class="text-end py-3 align-middle font-monospace" id="footQtyRetur">0</td>
-                            <td class="text-end pe-3 py-3 align-middle text-primary fs-6 font-monospace" id="footPersen">0.00%</td>
+                            <td colspan="7" class="ps-3 py-3 text-uppercase align-middle">Total Outstanding PO</td>
+                            <td class="text-center pe-3 py-3 align-middle text-primary fs-6 font-monospace" id="footTotalPo">0 PO</td>
                         </tr>
                     </tfoot>
                 </table>
@@ -185,42 +209,52 @@ function selectVendor(id, label) {
     document.getElementById('vendorDropdownLabel').textContent = label;
     document.getElementById('vendorDropdownLabel').title = label;
     closeVendorDropdown();
-    loadRealisasiReport();
+    loadAgingReport();
 }
 
 function resetFilters() {
     document.getElementById('filterVendor').value = '';
     document.getElementById('vendorDropdownLabel').textContent = 'Semua Vendor';
     document.getElementById('vendorDropdownLabel').title = 'Semua Vendor';
+    document.getElementById('filterStatus').value = '';
+    document.getElementById('filterAgingRange').value = '';
     closeVendorDropdown();
-    loadRealisasiReport();
+    loadAgingReport();
 }
 
 function printReport() {
     const vendor = document.getElementById('filterVendor').value;
+    const status = document.getElementById('filterStatus').value;
+    const aging = document.getElementById('filterAgingRange').value;
 
     const params = new URLSearchParams({
-        id_vendor: vendor
+        id_vendor: vendor,
+        status: status,
+        aging_range: aging
     });
 
-    window.open(`<?= BASE_URL ?>/admin/pages/laporan/print_realisasi_kuantitas.php?${params.toString()}`, '_blank');
+    window.open(`<?= BASE_URL ?>/admin/pages/laporan/print_purchase_aging.php?${params.toString()}`, '_blank');
 }
 
-async function loadRealisasiReport() {
+async function loadAgingReport() {
     const sumTbody = document.getElementById('summaryTableBody');
     const sumTfoot = document.getElementById('summaryTableFoot');
 
-    sumTbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted align-middle"><div class="spinner-border spinner-border-sm text-primary me-2"></div> Memuat data rekapitulasi...</td></tr>`;
+    sumTbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-muted align-middle"><div class="spinner-border spinner-border-sm text-primary me-2"></div> Memuat data purchase aging...</td></tr>`;
     sumTfoot.style.display = 'none';
 
     const vendor = document.getElementById('filterVendor').value;
+    const status = document.getElementById('filterStatus').value;
+    const aging = document.getElementById('filterAgingRange').value;
 
     const params = new URLSearchParams({
-        id_vendor: vendor
+        id_vendor: vendor,
+        status: status,
+        aging_range: aging
     });
 
     try {
-        const response = await fetch(`<?= BASE_URL ?>/api/laporan/realisasi_kuantitas.php?${params.toString()}`);
+        const response = await fetch(`<?= BASE_URL ?>/api/laporan/purchase_aging.php?${params.toString()}`);
         const res = await response.json();
 
         if (res.success && res.data) {
@@ -228,10 +262,10 @@ async function loadRealisasiReport() {
             populateVendorDropdown(res.data.vendors_list, vendor);
             renderSummaryTable(res.data.summary, res.data.grand_total);
         } else {
-            sumTbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger align-middle">${res.message || 'Gagal memuat laporan.'}</td></tr>`;
+            sumTbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger align-middle">${res.message || 'Gagal memuat laporan.'}</td></tr>`;
         }
     } catch (err) {
-        sumTbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger align-middle">Terjadi kesalahan: ${err.message}</td></tr>`;
+        sumTbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger align-middle">Terjadi kesalahan: ${err.message}</td></tr>`;
     }
 }
 
@@ -251,12 +285,40 @@ function populateVendorDropdown(vendors, currentSelected) {
     document.getElementById('filterVendor').value = currentSelected || '';
 }
 
+function getStatusBadge(status) {
+    switch (status) {
+        case 'DISETUJUI INTERNAL':
+            return '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill small fw-semibold">DISETUJUI INTERNAL</span>';
+        case 'REVIEW INTERNAL':
+            return '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1 rounded-pill small fw-semibold">REVIEW INTERNAL</span>';
+        case 'REVIEW VENDOR':
+        case 'DIPROSES VENDOR':
+            return `<span class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-2 py-1 rounded-pill small fw-semibold">${escapeHtml(status)}</span>`;
+        case 'TIDAK DISETUJUI INTERNAL':
+        case 'BATAL':
+            return `<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 rounded-pill small fw-semibold">${escapeHtml(status)}</span>`;
+        default:
+            return `<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1 rounded-pill small fw-semibold">${escapeHtml(status || '-')}</span>`;
+    }
+}
+
+function getAgingBadge(umur) {
+    const u = parseInt(umur, 10) || 0;
+    if (u <= 7) {
+        return `<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill small font-monospace fw-semibold">${u} Hari</span>`;
+    } else if (u <= 14) {
+        return `<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1 rounded-pill small font-monospace fw-semibold">${u} Hari</span>`;
+    } else {
+        return `<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 rounded-pill small font-monospace fw-semibold">${u} Hari</span>`;
+    }
+}
+
 function renderSummaryTable(summary, grand) {
     const tbody = document.getElementById('summaryTableBody');
     const tfoot = document.getElementById('summaryTableFoot');
 
     if (!summary || summary.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted align-middle">Tidak ada data realisasi kuantitas pada filter ini.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-muted align-middle">Tidak ada data Purchase Aging pada filter ini.</td></tr>`;
         tfoot.style.display = 'none';
         return;
     }
@@ -266,23 +328,20 @@ function renderSummaryTable(summary, grand) {
         html += `
         <tr class="align-middle">
             <td class="ps-3 text-muted align-middle">${idx + 1}</td>
-            <td class="fw-semibold text-dark align-middle">
-                ${escapeHtml(item.nama_perusahaan || '-')}
-            </td>
-            <td class="text-end font-monospace align-middle">${Number(item.qty_po || 0).toLocaleString('id-ID')}</td>
-            <td class="text-end font-monospace align-middle">${Number(item.qty_rcv || 0).toLocaleString('id-ID')}</td>
-            <td class="text-end font-monospace text-secondary align-middle">${Number(item.qty_retur || 0).toLocaleString('id-ID')}</td>
-            <td class="text-end pe-3 font-monospace fw-bold text-dark align-middle">${item.formatted_persentase || '0.00%'}</td>
+            <td class="font-monospace fw-semibold text-primary align-middle">${escapeHtml(item.nomor_po || '-')}</td>
+            <td class="text-muted small align-middle">${item.formatted_tanggal_po || '-'}</td>
+            <td class="fw-semibold text-dark align-middle">${escapeHtml(item.nama_perusahaan || '-')}</td>
+            <td class="small align-middle">${escapeHtml(item.pembuat_po || '-')}</td>
+            <td class="text-center align-middle">${getStatusBadge(item.status)}</td>
+            <td class="text-muted small align-middle">${item.formatted_tanggal_update || '-'}</td>
+            <td class="text-center pe-3 align-middle">${getAgingBadge(item.umur_po)}</td>
         </tr>`;
     });
 
     tbody.innerHTML = html;
 
     if (grand) {
-        document.getElementById('footQtyPo').textContent = Number(grand.qty_po || 0).toLocaleString('id-ID');
-        document.getElementById('footQtyRcv').textContent = Number(grand.qty_rcv || 0).toLocaleString('id-ID');
-        document.getElementById('footQtyRetur').textContent = Number(grand.qty_retur || 0).toLocaleString('id-ID');
-        document.getElementById('footPersen').textContent = grand.formatted_persentase || '0.00%';
+        document.getElementById('footTotalPo').textContent = (grand.total_po || 0) + ' PO';
         tfoot.style.display = 'table-footer-group';
     }
 }
@@ -298,7 +357,7 @@ function escapeHtml(str) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    loadRealisasiReport();
+    loadAgingReport();
 });
 </script>
 

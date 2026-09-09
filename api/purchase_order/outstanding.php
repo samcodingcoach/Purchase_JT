@@ -74,8 +74,8 @@ $whereSql = implode(' AND ', $whereClauses);
 // -------------------------------------------------------------
 // 1. HITUNG METRIK GLOBAL (PO OUTSTANDING, OVERDUE, DUE TODAY, KOMITMEN RP)
 // -------------------------------------------------------------
-$metricSql = "SELECT p.id_po, p.tanggal_po, p.tanggal_pengiriman, p.diskon, p.pajak, p.total_termasuk_pajak,
-                     DATEDIFF(COALESCE(DATE(p.tanggal_pengiriman), DATE(p.tanggal_po)), CURRENT_DATE()) as diff_days,
+$metricSql = "SELECT p.id_po, p.status, p.tanggal_po, p.tanggal_pengiriman, p.diskon, p.pajak, p.total_termasuk_pajak,
+                     DATEDIFF(DATE(p.tanggal_pengiriman), CURRENT_DATE()) as diff_days,
                      COALESCE((SELECT SUM(subtotal) FROM purchase_order_detail WHERE id_po = p.id_po), 0) as subtotal_barang
               FROM purchase_order p
               LEFT JOIN vendor v ON p.id_vendor = v.id_vendor
@@ -93,14 +93,17 @@ $metricTotalNominalKomitmen = 0;
 if ($metricRes) {
     while ($m = $metricRes->fetch_assoc()) {
         $metricTotalOutstanding++;
-        $diff = (int)$m['diff_days'];
-
-        if ($diff < 0) {
-            $metricTotalOverdue++;
-        } elseif ($diff === 0) {
-            $metricTotalDueToday++;
-        } else {
-            $metricTotalOnSchedule++;
+        
+        // Overdue dan Due Today hanya berlaku jika PO sudah DIPROSES VENDOR dan ada tanggal pengiriman
+        if ($m['status'] === 'DIPROSES VENDOR' && !empty($m['tanggal_pengiriman'])) {
+            $diff = (int)$m['diff_days'];
+            if ($diff < 0) {
+                $metricTotalOverdue++;
+            } elseif ($diff === 0) {
+                $metricTotalDueToday++;
+            } else {
+                $metricTotalOnSchedule++;
+            }
         }
 
         // Kalkulasi Grand Total per PO
@@ -131,7 +134,7 @@ $sql = "SELECT p.*,
                COALESCE(k.nama_karyawan, u.nama_users, 'Staff Purchasing') as nama_pembuat,
                ro.id_request, 
                ro.nomor as nomor_ro,
-               DATEDIFF(COALESCE(DATE(p.tanggal_pengiriman), DATE(p.tanggal_po)), CURRENT_DATE()) as diff_days,
+               DATEDIFF(DATE(p.tanggal_pengiriman), CURRENT_DATE()) as diff_days,
                COALESCE((SELECT SUM(subtotal) FROM purchase_order_detail WHERE id_po = p.id_po), 0) as subtotal_barang,
                COALESCE((SELECT SUM(qty) FROM purchase_order_detail WHERE id_po = p.id_po), 0) as total_qty,
                COALESCE((SELECT COUNT(id_po_detail) FROM purchase_order_detail WHERE id_po = p.id_po), 0) as total_items
@@ -144,11 +147,12 @@ $sql = "SELECT p.*,
         WHERE $whereSql
         ORDER BY 
             CASE 
-                WHEN p.tanggal_pengiriman IS NOT NULL AND DATEDIFF(DATE(p.tanggal_pengiriman), CURRENT_DATE()) < 0 THEN 1 
-                WHEN p.tanggal_pengiriman IS NOT NULL AND DATEDIFF(DATE(p.tanggal_pengiriman), CURRENT_DATE()) = 0 THEN 2
-                ELSE 3 
+                WHEN p.status = 'DIPROSES VENDOR' AND p.tanggal_pengiriman IS NOT NULL AND DATEDIFF(DATE(p.tanggal_pengiriman), CURRENT_DATE()) < 0 THEN 1 
+                WHEN p.status = 'DIPROSES VENDOR' AND p.tanggal_pengiriman IS NOT NULL AND DATEDIFF(DATE(p.tanggal_pengiriman), CURRENT_DATE()) = 0 THEN 2
+                WHEN p.status = 'DIPROSES VENDOR' THEN 3
+                ELSE 4 
             END ASC,
-            diff_days ASC,
+            p.tanggal_po DESC,
             p.id_po DESC";
 
 $stmt = $conn->prepare($sql);
@@ -160,21 +164,51 @@ $result = $stmt->get_result();
 
 $items = [];
 while ($row = $result->fetch_assoc()) {
-    $diffDays = (int)$row['diff_days'];
+    $statusPO = $row['status'];
+    $tglKirim = $row['tanggal_pengiriman'];
+    $diffDays = ($row['diff_days'] !== null) ? (int)$row['diff_days'] : null;
     
-    // Tentukan status waktu pengiriman
-    if ($diffDays < 0) {
-        $agingStatus = 'OVERDUE';
-        $agingLabel = 'Terlambat ' . abs($diffDays) . ' Hari';
-        $agingBadgeClass = 'bg-danger text-white';
-    } elseif ($diffDays === 0) {
-        $agingStatus = 'DUE_TODAY';
-        $agingLabel = 'Tiba Hari Ini';
-        $agingBadgeClass = 'bg-warning text-dark';
+    // Tentukan status waktu pengiriman / aging
+    if ($statusPO !== 'DIPROSES VENDOR') {
+        if ($statusPO === 'DISETUJUI INTERNAL') {
+            $agingStatus = 'BELUM_PROSES_VENDOR';
+            $agingLabel = 'Belum Diproses Vendor';
+            $agingBadgeClass = 'bg-secondary text-white';
+        } elseif ($statusPO === 'REVIEW INTERNAL') {
+            $agingStatus = 'REVIEW_INTERNAL';
+            $agingLabel = 'Review Internal';
+            $agingBadgeClass = 'bg-warning text-dark';
+        } elseif ($statusPO === 'REVIEW VENDOR') {
+            $agingStatus = 'REVIEW_VENDOR';
+            $agingLabel = 'Review Vendor';
+            $agingBadgeClass = 'bg-info text-white';
+        } else {
+            $agingStatus = 'PENDING';
+            $agingLabel = $statusPO;
+            $agingBadgeClass = 'bg-secondary text-white';
+        }
     } else {
-        $agingStatus = 'ON_SCHEDULE';
-        $agingLabel = 'Sisa ' . $diffDays . ' Hari';
-        $agingBadgeClass = 'bg-success text-white';
+        // Status sudah DIPROSES VENDOR
+        if (empty($tglKirim)) {
+            $agingStatus = 'DIPROSES_VENDOR';
+            $agingLabel = 'Diproses Vendor';
+            $agingBadgeClass = 'bg-info text-white';
+        } else {
+            $diffDays = (int)$row['diff_days'];
+            if ($diffDays < 0) {
+                $agingStatus = 'OVERDUE';
+                $agingLabel = 'Terlambat ' . abs($diffDays) . ' Hari';
+                $agingBadgeClass = 'bg-danger text-white';
+            } elseif ($diffDays === 0) {
+                $agingStatus = 'DUE_TODAY';
+                $agingLabel = 'Tiba Hari Ini';
+                $agingBadgeClass = 'bg-warning text-dark';
+            } else {
+                $agingStatus = 'ON_SCHEDULE';
+                $agingLabel = 'Sisa ' . $diffDays . ' Hari';
+                $agingBadgeClass = 'bg-success text-white';
+            }
+        }
     }
 
     // Filter status waktu jika diminta oleh frontend
