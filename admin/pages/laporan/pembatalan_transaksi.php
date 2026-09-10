@@ -72,8 +72,8 @@ require_once __DIR__ . '/../../components/navbar.php';
                 </div>
 
                 <!-- Filter Jenis Dokumen -->
-                <div style="width: 160px;">
-                    <select class="form-select filter-select" id="filterJenis" onchange="loadPembatalanReport()">
+                <div style="width: 200px;">
+                    <select class="form-select filter-select" id="filterJenis" onchange="loadPembatalanReport()" style="height: 38px;">
                         <option value="">Semua Dokumen</option>
                         <option value="PO">Purchase Order (PO)</option>
                         <option value="FAKTUR">Faktur PO</option>
