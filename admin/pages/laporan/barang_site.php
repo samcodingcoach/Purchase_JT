@@ -137,20 +137,172 @@ require_once __DIR__ . '/../../components/navbar.php';
     </div>
 </div>
 
-<!-- MODAL DETAIL & FOTO BARANG -->
-<div class="modal fade" id="modalDetailBarang" tabindex="-1" aria-labelledby="modalDetailBarangLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-light border-bottom py-3">
-                <h5 class="modal-title fw-bold text-dark" id="modalDetailBarangLabel">
-                    <i class="bi bi-box-seam text-primary me-2"></i> Detail Data Barang
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+<!-- MODAL DETAIL LENGKAP BARANG (Sama seperti gaya pop-up di admin/pages/barang/index.php) -->
+<div class="modal fade" id="modalDetailBarang" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 850px;">
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <!-- Header Modal Modern dengan Status & Close Button di Kanan Atas -->
+            <div class="modal-header bg-white pt-3 pb-0 px-4 border-bottom flex-column align-items-stretch">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-box-seam-fill text-primary fs-5"></i>
+                        <h5 class="modal-title fw-bold text-dark font-monospace mb-0" id="modalHeaderKodeBarang">
+                            BRG-XXXX
+                        </h5>
+                    </div>
+                    <!-- Status & Jenis di sebelah tombol X -->
+                    <div class="d-flex align-items-center gap-2">
+                        <span id="modalHeaderJenisBadge">-</span>
+                        <span id="modalHeaderAssetBadge">-</span>
+                        <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                </div>
+
+                <!-- Nav Tabs Modal Detail -->
+                <ul class="nav nav-tabs border-bottom-0" id="barangDetailTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active fw-bold text-dark small py-2 px-3" id="bdetail-tab-utama" data-bs-toggle="tab" data-bs-target="#bdetail-pane-utama" type="button" role="tab">
+                            <i class="bi bi-tag-fill me-1 text-primary"></i> Utama
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold text-dark small py-2 px-3" id="bdetail-tab-stok" data-bs-toggle="tab" data-bs-target="#bdetail-pane-stok" type="button" role="tab">
+                            <i class="bi bi-boxes me-1 text-primary"></i> Stok Site
+                            <span class="badge bg-primary text-white ms-1" id="modalTabStokBadge">0</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold text-dark small py-2 px-3" id="bdetail-tab-tambahan" data-bs-toggle="tab" data-bs-target="#bdetail-pane-tambahan" type="button" role="tab">
+                            <i class="bi bi-sliders me-1 text-primary"></i> Spesifikasi
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold text-dark small py-2 px-3" id="bdetail-tab-foto" data-bs-toggle="tab" data-bs-target="#bdetail-pane-foto" type="button" role="tab">
+                            <i class="bi bi-images me-1 text-primary"></i> Foto
+                        </button>
+                    </li>
+                </ul>
             </div>
-            <div class="modal-body p-4" id="modalDetailBody">
-                <!-- Content Populated via JS -->
+
+            <div class="modal-body p-4">
+                <div class="tab-content" id="barangDetailTabContent">
+                    
+                    <!-- TAB 1: INFORMASI UTAMA -->
+                    <div class="tab-pane fade show active" id="bdetail-pane-utama" role="tabpanel">
+                        <div class="card bg-light border-0 rounded-3 p-3">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <span class="text-muted small d-block">Kode Barang:</span>
+                                        <strong class="text-primary font-monospace fs-6" id="modalKodeBarang">-</strong>
+                                    </div>
+                                    <div class="mb-3">
+                                        <span class="text-muted small d-block">Nama Barang / Material:</span>
+                                        <strong class="text-dark fs-6 d-block" id="modalNamaBarang">-</strong>
+                                    </div>
+                                    <div>
+                                        <span class="text-muted small d-block">Satuan Pengadaan:</span>
+                                        <span id="modalSatuanBarang">-</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <span class="text-muted small d-block">Lokasi Site Terpilih:</span>
+                                        <div class="d-flex align-items-center gap-2 mt-1">
+                                            <strong class="text-dark fs-6" id="modalNamaSite">-</strong>
+                                            <span class="badge bg-info-subtle text-info font-monospace" id="modalJenisSite">-</span>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <span class="text-muted small d-block">Kuantitas Stok:</span>
+                                        <strong class="text-success font-monospace fs-5" id="modalStokJumlah">0</strong>
+                                        <span class="text-dark fw-bold ms-1" id="modalStokSatuan">PCS</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-muted small d-block">ID Database Barang:</span>
+                                        <span class="badge bg-secondary-subtle text-secondary font-monospace" id="modalIdBarang">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: STOK SITE DETAIL -->
+                    <div class="tab-pane fade" id="bdetail-pane-stok" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-bold text-dark small">Rincian Persediaan Stok pada Site</span>
+                            <span class="badge bg-primary" id="modalTotalStokBadge">Stok: 0 PCS</span>
+                        </div>
+                        <div class="table-responsive border rounded-3 bg-white">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light small text-muted text-uppercase align-middle">
+                                    <tr class="align-middle">
+                                        <th>Lokasi Site / Workshop</th>
+                                        <th>Jenis Site</th>
+                                        <th class="text-end">Jumlah Stok Fisik</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="modalStokSiteList">
+                                    <!-- Dynamic Stok List -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: SPESIFIKASI & TAMBAHAN -->
+                    <div class="tab-pane fade" id="bdetail-pane-tambahan" role="tabpanel">
+                        <div class="card bg-light border-0 rounded-3 p-3">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <span class="text-muted small d-block">Klasifikasi Asset:</span>
+                                    <div id="modalAssetDetail">-</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <span class="text-muted small d-block">Serial Number / Part No.:</span>
+                                    <strong class="font-monospace text-dark" id="modalSerialBarang">-</strong>
+                                </div>
+                                <div class="col-md-6">
+                                    <span class="text-muted small d-block">Jenis Kategori:</span>
+                                    <div id="modalJenisDetail">-</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <span class="text-muted small d-block">Satuan:</span>
+                                    <strong class="text-dark font-monospace" id="modalSatuanDetail">-</strong>
+                                </div>
+                                <div class="col-12">
+                                    <span class="text-muted small d-block">Deskripsi &amp; Spesifikasi Teknis Material:</span>
+                                    <div class="p-3 bg-white rounded border text-dark small mt-1" id="modalDeskripsiBarang">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 4: FOTO -->
+                    <div class="tab-pane fade" id="bdetail-pane-foto" role="tabpanel">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="card border rounded-3 p-3 bg-light text-center h-100">
+                                    <span class="text-muted small fw-bold text-uppercase d-block mb-2">Foto 1 (Utama)</span>
+                                    <div class="d-flex align-items-center justify-content-center" style="min-height: 180px;" id="modalFoto1Container">
+                                        <span class="text-muted small">Tidak ada foto</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border rounded-3 p-3 bg-light text-center h-100">
+                                    <span class="text-muted small fw-bold text-uppercase d-block mb-2">Foto 2 (Detail)</span>
+                                    <div class="d-flex align-items-center justify-content-center" style="min-height: 180px;" id="modalFoto2Container">
+                                        <span class="text-muted small">Tidak ada foto</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
             </div>
-            <div class="modal-footer bg-light border-top py-2">
+
+            <div class="modal-footer bg-light py-2">
                 <button type="button" class="btn btn-secondary btn-sm px-4" data-bs-dismiss="modal">Tutup</button>
             </div>
         </div>
@@ -373,83 +525,64 @@ function showDetailModal(idx) {
     if (!currentReportData || !currentReportData.items || !currentReportData.items[idx]) return;
     const item = currentReportData.items[idx];
 
-    let photosHtml = '';
-    if (item.foto1_url || item.foto2_url) {
-        photosHtml += '<div class="row g-3 mb-3">';
-        if (item.foto1_url) {
-            photosHtml += `
-                <div class="col-md-6 text-center">
-                    <div class="border rounded p-2 bg-light">
-                        <div class="small fw-bold text-muted mb-2">Foto Utama (1)</div>
-                        <img src="${item.foto1_url}" alt="Foto 1" class="img-fluid rounded" style="max-height: 220px; object-fit: contain;">
-                    </div>
-                </div>
-            `;
-        }
-        if (item.foto2_url) {
-            photosHtml += `
-                <div class="col-md-6 text-center">
-                    <div class="border rounded p-2 bg-light">
-                        <div class="small fw-bold text-muted mb-2">Foto Detail (2)</div>
-                        <img src="${item.foto2_url}" alt="Foto 2" class="img-fluid rounded" style="max-height: 220px; object-fit: contain;">
-                    </div>
-                </div>
-            `;
-        }
-        photosHtml += '</div>';
-    } else {
-        photosHtml = '<div class="alert alert-light border text-center text-muted small py-3 mb-3"><i class="bi bi-image me-1"></i> Tidak ada foto terlampir untuk barang ini.</div>';
-    }
+    // Header Modal
+    document.getElementById('modalHeaderKodeBarang').textContent = item.kode_barang || 'BRG-DETAIL';
+    document.getElementById('modalHeaderJenisBadge').innerHTML = `<span class="badge ${item.jenis_barang === 'Persediaan' ? 'bg-primary-subtle text-primary border border-primary-subtle' : 'bg-secondary-subtle text-secondary border'} px-2 py-1">${item.jenis_barang}</span>`;
+    document.getElementById('modalHeaderAssetBadge').innerHTML = `<span class="badge ${item.asset === 'Ya' ? 'bg-warning-subtle text-warning-emphasis border border-warning-subtle' : 'bg-light text-muted border'} px-2 py-1">${item.asset === 'Ya' ? 'Aset' : 'Bukan Aset'}</span>`;
 
-    const modalBody = document.getElementById('modalDetailBody');
-    modalBody.innerHTML = `
-        ${photosHtml}
-        <div class="row g-3">
-            <div class="col-md-6">
-                <div class="bg-light p-3 rounded-3 border">
-                    <div class="mb-2">
-                        <span class="text-muted small d-block">Kode Barang:</span>
-                        <span class="font-monospace fw-bold fs-6 text-primary">${escapeHtml(item.kode_barang)}</span>
-                    </div>
-                    <div class="mb-2">
-                        <span class="text-muted small d-block">Nama Barang:</span>
-                        <strong class="text-dark fs-6">${escapeHtml(item.nama_barang)}</strong>
-                    </div>
-                    <div class="mb-2">
-                        <span class="text-muted small d-block">Deskripsi / Spesifikasi:</span>
-                        <span class="text-dark">${escapeHtml(item.deskripsi || '-')}</span>
-                    </div>
-                    <div>
-                        <span class="text-muted small d-block">Serial Number:</span>
-                        <span class="font-monospace fw-semibold">${escapeHtml(item.serial_number || '-')}</span>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="bg-light p-3 rounded-3 border">
-                    <div class="mb-2">
-                        <span class="text-muted small d-block">Lokasi Site Operasional:</span>
-                        <strong class="text-dark fs-6">${escapeHtml(item.nama_site)}</strong>
-                    </div>
-                    <div class="mb-2">
-                        <span class="text-muted small d-block">Jumlah Stok Fisik:</span>
-                        <strong class="text-success fs-5 font-monospace">${Number(item.stok || 0).toLocaleString('id-ID')}</strong>
-                        <span class="fw-bold text-dark ms-1">${escapeHtml(item.satuan || 'PCS')}</span>
-                    </div>
-                    <div class="mb-2">
-                        <span class="text-muted small d-block">Jenis Barang:</span>
-                        <span class="badge bg-primary-subtle text-primary font-monospace">${escapeHtml(item.jenis_barang)}</span>
-                    </div>
-                    <div>
-                        <span class="text-muted small d-block">Klasifikasi Aset:</span>
-                        <span class="badge ${item.asset === 'Ya' ? 'bg-warning-subtle text-warning' : 'bg-secondary-subtle text-secondary'} font-monospace">${item.asset === 'Ya' ? 'Ya (Aset Perusahaan)' : 'Tidak (Bukan Aset)'}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
+    // Tab 1: Utama
+    document.getElementById('modalKodeBarang').textContent = item.kode_barang || '-';
+    document.getElementById('modalNamaBarang').textContent = item.nama_barang || '-';
+    document.getElementById('modalSatuanBarang').innerHTML = `<span class="badge bg-secondary-subtle text-secondary font-monospace border">${item.satuan || 'PCS'}</span>`;
+    document.getElementById('modalNamaSite').textContent = item.nama_site || '-';
+    document.getElementById('modalJenisSite').textContent = item.jenis_site || 'Site';
+    document.getElementById('modalStokJumlah').textContent = Number(item.stok || 0).toLocaleString('id-ID');
+    document.getElementById('modalStokSatuan').textContent = item.satuan || 'PCS';
+    document.getElementById('modalIdBarang').textContent = `ID: ${item.id_barang}`;
+
+    // Tab 2: Stok Site
+    const stokList = document.getElementById('modalStokSiteList');
+    document.getElementById('modalTabStokBadge').textContent = `${Number(item.stok || 0).toLocaleString('id-ID')} ${item.satuan || 'PCS'}`;
+    document.getElementById('modalTotalStokBadge').textContent = `Stok: ${Number(item.stok || 0).toLocaleString('id-ID')} ${item.satuan || 'PCS'}`;
+    
+    stokList.innerHTML = `
+        <tr>
+            <td class="fw-semibold"><i class="bi bi-geo-alt me-1 text-primary"></i>${escapeHtml(item.nama_site)}</td>
+            <td><span class="badge bg-info-subtle text-info border font-monospace">${escapeHtml(item.jenis_site || 'Site')}</span></td>
+            <td class="text-end font-monospace fw-bold text-primary">${Number(item.stok || 0).toLocaleString('id-ID')} ${escapeHtml(item.satuan || 'PCS')}</td>
+        </tr>
     `;
 
-    const modal = new bootstrap.Modal(document.getElementById('modalDetailBarang'));
+    // Tab 3: Spesifikasi & Tambahan
+    document.getElementById('modalAssetDetail').innerHTML = `<span class="badge ${item.asset === 'Ya' ? 'bg-warning-subtle text-warning-emphasis border border-warning-subtle' : 'bg-secondary-subtle text-secondary border'}">${item.asset === 'Ya' ? 'Ya (Aset Perusahaan)' : 'Tidak (Bukan Aset)'}</span>`;
+    document.getElementById('modalSerialBarang').textContent = item.serial_number || '-';
+    document.getElementById('modalJenisDetail').innerHTML = `<span class="badge bg-primary-subtle text-primary border">${item.jenis_barang}</span>`;
+    document.getElementById('modalSatuanDetail').textContent = item.satuan || 'PCS';
+    document.getElementById('modalDeskripsiBarang').textContent = item.deskripsi || 'Tidak ada deskripsi atau catatan khusus.';
+
+    // Tab 4: Foto
+    const f1Cont = document.getElementById('modalFoto1Container');
+    if (item.foto1_url) {
+        f1Cont.innerHTML = `<a href="${item.foto1_url}" target="_blank"><img src="${item.foto1_url}" alt="Foto 1" class="img-fluid rounded" style="max-height: 180px; object-fit: contain;"></a>`;
+    } else {
+        f1Cont.innerHTML = `<span class="text-muted small"><i class="bi bi-image me-1"></i>Tidak ada Foto 1</span>`;
+    }
+
+    const f2Cont = document.getElementById('modalFoto2Container');
+    if (item.foto2_url) {
+        f2Cont.innerHTML = `<a href="${item.foto2_url}" target="_blank"><img src="${item.foto2_url}" alt="Foto 2" class="img-fluid rounded" style="max-height: 180px; object-fit: contain;"></a>`;
+    } else {
+        f2Cont.innerHTML = `<span class="text-muted small"><i class="bi bi-image me-1"></i>Tidak ada Foto 2</span>`;
+    }
+
+    // Reset ke tab pertama (Utama)
+    const tabTrigger = document.querySelector('#bdetail-tab-utama');
+    if (tabTrigger) {
+        const tab = bootstrap.Tab.getInstance(tabTrigger) || new bootstrap.Tab(tabTrigger);
+        tab.show();
+    }
+
+    const modal = bootstrap.Modal.getInstance(document.getElementById('modalDetailBarang')) || new bootstrap.Modal(document.getElementById('modalDetailBarang'));
     modal.show();
 }
 
