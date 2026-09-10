@@ -67,7 +67,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                             <div class="col-md-6">
                                 <div class="p-3 bg-light rounded-3 border h-100">
                                     <h6 class="fw-bold text-dark mb-3">
-                                        <i class="bi bi-card-heading text-primary me-2"></i>Identitas &amp; Waktu Transaksi
+                                        Identitas &amp; Waktu Transaksi
                                     </h6>
                                     
                                     <div class="mb-3">
@@ -106,7 +106,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                             <div class="col-md-6">
                                 <div class="p-3 bg-light rounded-3 border h-100">
                                     <h6 class="fw-bold text-dark mb-3">
-                                        <i class="bi bi-geo-alt-fill text-primary me-2"></i>Rute Site &amp; Otorisasi
+                                        Rute Site &amp; Otorisasi
                                     </h6>
 
                                     <div class="row g-2 mb-3">
@@ -160,12 +160,12 @@ require_once __DIR__ . '/../../components/navbar.php';
                         <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                             <div>
                                 <h6 class="fw-bold text-dark mb-0">
-                                    <i class="bi bi-boxes text-primary me-2"></i>Rincian Barang yang Dimutasi
+                                    Rincian Barang yang Dimutasi
                                 </h6>
-                                <div class="text-muted small" id="infoSiteAsalText">Pilih Site Asal pada Tab 1 terlebih dahulu.</div>
+                                
                             </div>
                             <button type="button" class="btn btn-outline-primary btn-sm fw-semibold" onclick="addNewItemRow()">
-                                <i class="bi bi-plus-circle-fill me-1"></i> Tambah Baris Barang
+                                <i class="bi bi-plus-circle-fill me-1"></i> Tambah Barang
                             </button>
                         </div>
 
@@ -174,9 +174,9 @@ require_once __DIR__ . '/../../components/navbar.php';
                                 <thead class="table-light text-muted small text-uppercase">
                                     <tr>
                                         <th style="width: 45px;" class="text-center">No</th>
-                                        <th style="min-width: 300px;">Nama Barang &amp; Spesifikasi <span class="text-danger">*</span></th>
+                                        <th style="min-width: 300px;">Nama Barang<span class="text-danger">*</span></th>
                                         <th style="width: 140px; text-align: center;">Kode</th>
-                                        <th style="width: 130px; text-align: center;">Sisa Stok Asal</th>
+                                        <th style="width: 130px; text-align: center;">Stok Asal</th>
                                         <th style="width: 130px; text-align: center;">Jumlah Mutasi <span class="text-danger">*</span></th>
                                         <th style="width: 110px; text-align: center;">Satuan</th>
                                         <th style="width: 50px;" class="text-center">Aksi</th>
@@ -200,9 +200,9 @@ require_once __DIR__ . '/../../components/navbar.php';
                     <div class="tab-pane fade" id="pane-keterangan" role="tabpanel">
                         <div class="p-3 bg-light rounded-3 border">
                             <h6 class="fw-bold text-dark mb-2">
-                                <i class="bi bi-card-text text-primary me-2"></i>Keterangan &amp; Alasan Pemindahan Material
+                                Keterangan &amp; Alasan Pemindahan Material
                             </h6>
-                            <p class="text-muted small mb-3">Tuliskan tujuan spesifik, nomor unit kapal, alasan operasional, atau instruksi pengiriman transfer barang.</p>
+                            
                             <textarea class="form-control" id="keterangan" rows="6" placeholder="Tuliskan keterangan lengkap di sini... Contoh: Transfer material elektroda dan plat untuk percepatan pekerjaan reparasi lambung Dok 2..."></textarea>
                         </div>
                     </div>
