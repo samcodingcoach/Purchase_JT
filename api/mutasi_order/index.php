@@ -484,6 +484,18 @@ try {
                     exit;
                 }
 
+                if ($oldStatus === 'DITERIMA SITE TUJUAN') {
+                    http_response_code(400);
+                    echo json_encode(['success' => false, 'message' => 'Mutasi dengan status DITERIMA SITE TUJUAN telah selesai (final) dan tidak dapat diubah lagi.']);
+                    exit;
+                }
+
+                if ($oldStatus === 'BATAL') {
+                    http_response_code(400);
+                    echo json_encode(['success' => false, 'message' => 'Mutasi dengan status BATAL telah ditutup dan tidak dapat diubah lagi.']);
+                    exit;
+                }
+
                 // Proses Mutasi Stok jika status berubah ke DIKIRIM SITE ASAL atau DITERIMA SITE TUJUAN
                 $conn->begin_transaction();
                 try {
@@ -503,23 +515,22 @@ try {
                     $idAsal = (int)$cur['id_site_asal'];
                     $idTujuan = (int)$cur['id_site_tujuan'];
 
-                    // Kasus 1: DITERIMA SITE TUJUAN
-                    // Kurangi stok di Site Asal & Tambah stok di Site Tujuan (jika sebelumnya belum dikurangi)
+                    // ATURAN MUTASI STOK:
+                    // Hanya saat status berubah menjadi 'DITERIMA SITE TUJUAN', stok antar site diperbarui:
+                    // Stok Site Asal berkurang (-qty) dan Stok Site Tujuan bertambah (+qty)
                     if ($newStatus === 'DITERIMA SITE TUJUAN' && $oldStatus !== 'DITERIMA SITE TUJUAN') {
                         foreach ($items as $it) {
                             $bId = (int)$it['id_barang'];
                             $qty = (float)$it['qty'];
 
-                            // Kurangi di Site Asal jika belum pernah dikurangi saat DIKIRIM
-                            if ($oldStatus !== 'DIKIRIM SITE ASAL') {
-                                $conn->query("
-                                    INSERT INTO barang_stok (id_barang, id_site, stok) 
-                                    VALUES ($bId, $idAsal, 0)
-                                    ON DUPLICATE KEY UPDATE stok = GREATEST(0, stok - $qty)
-                                ");
-                            }
+                            // 1. Kurangi di Site Asal
+                            $conn->query("
+                                INSERT INTO barang_stok (id_barang, id_site, stok) 
+                                VALUES ($bId, $idAsal, 0)
+                                ON DUPLICATE KEY UPDATE stok = GREATEST(0, stok - $qty)
+                            ");
 
-                            // Tambah di Site Tujuan
+                            // 2. Tambah di Site Tujuan
                             $conn->query("
                                 INSERT INTO barang_stok (id_barang, id_site, stok) 
                                 VALUES ($bId, $idTujuan, $qty)
@@ -528,56 +539,119 @@ try {
                         }
                     }
 
-                    // Kasus 2: DIKIRIM SITE ASAL
-                    // Kurangi stok di Site Asal
-                    if ($newStatus === 'DIKIRIM SITE ASAL' && $oldStatus !== 'DIKIRIM SITE ASAL' && $oldStatus !== 'DITERIMA SITE TUJUAN') {
+                    // Kasus Rollback: Jika dibatalkan setelah sebelumnya pernah DITERIMA SITE TUJUAN
+                    if ($newStatus === 'BATAL' && $oldStatus === 'DITERIMA SITE TUJUAN') {
                         foreach ($items as $it) {
                             $bId = (int)$it['id_barang'];
                             $qty = (float)$it['qty'];
-
+                            // Kembalikan ke asal
                             $conn->query("
                                 INSERT INTO barang_stok (id_barang, id_site, stok) 
-                                VALUES ($bId, $idAsal, 0)
-                                ON DUPLICATE KEY UPDATE stok = GREATEST(0, stok - $qty)
+                                VALUES ($bId, $idAsal, $qty)
+                                ON DUPLICATE KEY UPDATE stok = stok + $qty
+                            ");
+                            // Kurangi dari tujuan
+                            $conn->query("
+                                UPDATE barang_stok SET stok = GREATEST(0, stok - $qty) WHERE id_barang = $bId AND id_site = $idTujuan
                             ");
                         }
                     }
 
-                    // Kasus 3: DIBATALKAN dari status DIKIRIM SITE ASAL / DITERIMA SITE TUJUAN
-                    // Kembalikan stok semula
-                    if ($newStatus === 'BATAL') {
-                        if ($oldStatus === 'DIKIRIM SITE ASAL') {
-                            foreach ($items as $it) {
-                                $bId = (int)$it['id_barang'];
-                                $qty = (float)$it['qty'];
-                                $conn->query("
-                                    INSERT INTO barang_stok (id_barang, id_site, stok) 
-                                    VALUES ($bId, $idAsal, $qty)
-                                    ON DUPLICATE KEY UPDATE stok = stok + $qty
+                    $conn->commit();
+
+                    // ----------------------------------------------------
+                    // PENGIRIMAN NOTIFIKASI EMAIL KETIKA DITERIMA SITE TUJUAN
+                    // ----------------------------------------------------
+                    $emailSent = false;
+                    $emailMsg = '';
+                    if ($newStatus === 'DITERIMA SITE TUJUAN') {
+                        try {
+                            require_once __DIR__ . '/../../config/mailer.php';
+
+                            // Ambil data detail untuk isi email
+                            $mailDataSql = "
+                                SELECT 
+                                    mo.*,
+                                    sa.nama_site AS nama_site_asal,
+                                    st.nama_site AS nama_site_tujuan,
+                                    kr.nama_karyawan AS nama_pemohon,
+                                    ka.nama_karyawan AS nama_penyetuju,
+                                    ka.email AS email_penyetuju
+                                FROM mutasi_order mo
+                                LEFT JOIN site sa ON mo.id_site_asal = sa.id_site
+                                LEFT JOIN site st ON mo.id_site_tujuan = st.id_site
+                                LEFT JOIN karyawan kr ON mo.id_karyawan_request = kr.id_karyawan
+                                LEFT JOIN karyawan ka ON mo.id_karyawan_approved = ka.id_karyawan
+                                WHERE mo.id_mutasi = $idMutasi
+                            ";
+                            $mData = $conn->query($mailDataSql)->fetch_assoc();
+
+                            if ($mData && !empty($mData['email_penyetuju'])) {
+                                $toEmail = $mData['email_penyetuju'];
+                                $toName = $mData['nama_penyetuju'];
+                                $subject = "[MUTASI SELESAI] Barang Telah Diterima di {$mData['nama_site_tujuan']} - {$mData['kode_mutasi']}";
+
+                                $itemsTableHtml = '<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse; width:100%; font-family:sans-serif; font-size:13px;">
+                                    <tr style="background:#f0f0f0;">
+                                        <th>No</th>
+                                        <th>Kode</th>
+                                        <th>Nama Barang</th>
+                                        <th>Qty</th>
+                                    </tr>';
+                                $itQ = $conn->query("
+                                    SELECT modt.qty, b.kode_barang, b.nama_barang, b.satuan 
+                                    FROM mutasi_order_detail modt 
+                                    JOIN barang b ON modt.id_barang = b.id_barang 
+                                    WHERE modt.id_mutasi = $idMutasi
                                 ");
+                                $no = 1;
+                                while ($itRow = $itQ->fetch_assoc()) {
+                                    $itemsTableHtml .= "<tr>
+                                        <td align='center'>{$no}</td>
+                                        <td>{$itRow['kode_barang']}</td>
+                                        <td>{$itRow['nama_barang']}</td>
+                                        <td align='right'><strong>{$itRow['qty']} {$itRow['satuan']}</strong></td>
+                                    </tr>";
+                                    $no++;
+                                }
+                                $itemsTableHtml .= '</table>';
+
+                                $htmlBody = "
+                                    <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
+                                        <h3 style='color: #0d6efd; margin-bottom: 5px;'>Pemberitahuan Penerimaan Mutasi Barang</h3>
+                                        <p>Yth. <strong>{$toName}</strong> (Pejabat Penyetuju / Level 1),</p>
+                                        <p>Transaksi transfer/mutasi material antar-site berikut telah <strong>DITERIMA DENGAN SUKSES</strong> di site tujuan dan stok persediaan telah resmi diperbarui:</p>
+                                        
+                                        <div style='background: #f8f9fa; border: 1px solid #e9ecef; padding: 12px 15px; border-radius: 6px; margin-bottom: 15px;'>
+                                            <table style='width: 100%; font-size: 13px;'>
+                                                <tr><td style='width: 140px;'><strong>Kode Mutasi</strong></td><td>: <span style='color: #0d6efd; font-family: monospace; font-weight: bold;'>{$mData['kode_mutasi']}</span></td></tr>
+                                                <tr><td><strong>Site Asal (Pengirim)</strong></td><td>: {$mData['nama_site_asal']}</td></tr>
+                                                <tr><td><strong>Site Tujuan (Penerima)</strong></td><td>: {$mData['nama_site_tujuan']}</td></tr>
+                                                <tr><td><strong>Pemohon Mutasi</strong></td><td>: {$mData['nama_pemohon']}</td></tr>
+                                                <tr><td><strong>Status</strong></td><td>: <span style='background: #198754; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 11px;'>DITERIMA SITE TUJUAN</span></td></tr>
+                                                <tr><td><strong>Tanggal Transaksi</strong></td><td>: " . date('d-m-Y H:i', strtotime($mData['tanggal_mutasi'])) . " WITA</td></tr>
+                                            </table>
+                                        </div>
+
+                                        <h4 style='margin-bottom: 8px;'>Rincian Barang Dimutasi:</h4>
+                                        {$itemsTableHtml}
+
+                                        <p style='margin-top: 20px; font-size: 12px; color: #6c757d;'>Email ini dikirim secara otomatis oleh Sistem Pembelian & Logistik PT Jaya Teknik.</p>
+                                    </div>
+                                ";
+
+                                $mRes = sendSmtpEmail($conn, $toEmail, $toName, $subject, $htmlBody);
+                                $emailSent = !empty($mRes['success']);
                             }
-                        } elseif ($oldStatus === 'DITERIMA SITE TUJUAN') {
-                            foreach ($items as $it) {
-                                $bId = (int)$it['id_barang'];
-                                $qty = (float)$it['qty'];
-                                // Kembalikan ke asal
-                                $conn->query("
-                                    INSERT INTO barang_stok (id_barang, id_site, stok) 
-                                    VALUES ($bId, $idAsal, $qty)
-                                    ON DUPLICATE KEY UPDATE stok = stok + $qty
-                                ");
-                                // Kurangi dari tujuan
-                                $conn->query("
-                                    UPDATE barang_stok SET stok = GREATEST(0, stok - $qty) WHERE id_barang = $bId AND id_site = $idTujuan
-                                ");
-                            }
+                        } catch (Throwable $eMail) {
+                            error_log("Gagal mengirim email notifikasi mutasi diterima: " . $eMail->getMessage());
                         }
                     }
 
-                    $conn->commit();
                     echo json_encode([
                         'success' => true,
-                        'message' => "Status mutasi berhasil diubah menjadi: $newStatus"
+                        'message' => "Status mutasi berhasil diubah menjadi: $newStatus",
+                        'email_sent' => $emailSent
                     ]);
                     exit;
                 } catch (Throwable $e) {

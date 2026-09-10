@@ -121,11 +121,11 @@ require_once __DIR__ . '/../../components/navbar.php';
                             <th style="width: 45px;" class="text-center">No</th>
                             <th style="min-width: 140px;">Kode Mutasi</th>
                             <th style="min-width: 110px;">Tanggal</th>
-                            <th style="min-width: 150px;">Pemohon Transfer</th>
-                            <th style="min-width: 180px;">Rute Pengiriman</th>
-                            <th style="min-width: 110px;" class="text-center">Total Item</th>
-                            <th style="min-width: 160px;" class="text-center">Status</th>
-                            <th style="min-width: 140px;" class="text-center">Aksi</th>
+                            <th style="min-width: 90px;" class="text-center">Waktu</th>
+                            <th style="min-width: 190px;">Rute Mutasi</th>
+                            <th style="min-width: 150px;" class="text-center">Status</th>
+                            <th style="min-width: 120px;" class="text-center">Total</th>
+                            <th style="min-width: 110px;" class="text-center">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="mutasiTableBody">
@@ -155,11 +155,10 @@ require_once __DIR__ . '/../../components/navbar.php';
 <div class="modal fade" id="modalDetailMutasi" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 850px;">
         <div class="modal-content border-0 shadow-lg rounded-3">
-            <!-- Header Modal Modern dengan Status & Close Button di Kanan Atas -->
+            <!-- Header Modal Modern dengan Status & Close Button (X) di Kanan Atas -->
             <div class="modal-header bg-white pt-3 pb-0 px-4 border-bottom flex-column align-items-stretch">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <div class="d-flex align-items-center gap-2">
-                        <i class="bi bi-arrow-left-right text-primary fs-5"></i>
+                    <div>
                         <h5 class="modal-title fw-bold text-dark font-monospace mb-0" id="modalHeaderKodeMutasi">
                             DI-XXXX-00000
                         </h5>
@@ -170,22 +169,22 @@ require_once __DIR__ . '/../../components/navbar.php';
                     </div>
                 </div>
 
-                <!-- Nav Tabs Modal Detail -->
+                <!-- Nav Tabs Modal Detail (Tanpa Icon) -->
                 <ul class="nav nav-tabs border-bottom-0" id="mutasiDetailTabs" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active fw-bold text-dark small py-2 px-3" id="mdetail-tab-utama" data-bs-toggle="tab" data-bs-target="#mdetail-pane-utama" type="button" role="tab">
-                            <i class="bi bi-card-heading me-1 text-primary"></i> 1. Informasi Utama
+                            1. Informasi Utama
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link fw-bold text-dark small py-2 px-3" id="mdetail-tab-barang" data-bs-toggle="tab" data-bs-target="#mdetail-pane-barang" type="button" role="tab">
-                            <i class="bi bi-boxes me-1 text-primary"></i> 2. Daftar Barang Dimutasi
+                            2. Daftar Barang Dimutasi
                             <span class="badge bg-primary text-white ms-1" id="modalTabBarangBadge">0</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link fw-bold text-dark small py-2 px-3" id="mdetail-tab-opsi" data-bs-toggle="tab" data-bs-target="#mdetail-pane-opsi" type="button" role="tab">
-                            <i class="bi bi-gear-wide-connected me-1 text-primary"></i> 3. Update Status Mutasi
+                            3. Update Status Mutasi
                         </button>
                     </li>
                 </ul>
@@ -194,73 +193,73 @@ require_once __DIR__ . '/../../components/navbar.php';
             <div class="modal-body p-4">
                 <div class="tab-content" id="mutasiDetailTabContent">
                     
-                    <!-- TAB 1: INFORMASI UTAMA -->
+                    <!-- TAB 1: INFORMASI UTAMA (TANPA ICON) -->
                     <div class="tab-pane fade show active" id="mdetail-pane-utama" role="tabpanel">
-                        <div class="card bg-light border-0 rounded-3 p-3">
+                        <div class="p-3 bg-light rounded-3 border">
                             <div class="row g-3">
-                                <div class="col-md-6">
-                                    <div class="mb-2">
-                                        <span class="text-muted small d-block">Kode Mutasi:</span>
+                                <div class="col-md-6 border-end-md">
+                                    <div class="mb-3">
+                                        <span class="text-muted small d-block mb-1">Kode Mutasi:</span>
                                         <strong class="text-primary font-monospace fs-6" id="modalKodeMutasi">-</strong>
                                     </div>
-                                    <div class="mb-2">
-                                        <span class="text-muted small d-block">No. Surat Mutasi / Jalan:</span>
-                                        <span class="font-monospace fw-bold text-dark" id="modalNomorSurat">-</span>
+                                    <div class="mb-3">
+                                        <span class="text-muted small d-block mb-1">No. Surat Keterangan Mutasi:</span>
+                                        <span class="font-monospace fw-semibold text-dark" id="modalNomorSurat">-</span>
                                     </div>
-                                    <div class="mb-2">
-                                        <span class="text-muted small d-block">Tanggal Transaksi:</span>
-                                        <span class="text-dark fw-semibold" id="modalTanggalMutasi">-</span>
+                                    <div class="mb-3">
+                                        <span class="text-muted small d-block mb-1">Tanggal &amp; Waktu Transaksi:</span>
+                                        <span class="text-dark fw-medium" id="modalTanggalMutasi">-</span>
                                     </div>
                                     <div>
-                                        <span class="text-muted small d-block">Biaya Operasional:</span>
-                                        <strong class="text-success font-monospace" id="modalBiayaOperasional">Rp 0</strong>
+                                        <span class="text-muted small d-block mb-1">Biaya Operasional Pengiriman:</span>
+                                        <strong class="text-success font-monospace fs-6" id="modalBiayaOperasional">Rp 0</strong>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
-                                    <div class="mb-2">
-                                        <span class="text-muted small d-block">Rute Transfer:</span>
-                                        <div class="d-flex align-items-center gap-1 mt-1">
-                                            <span class="badge bg-secondary-subtle text-dark font-monospace" id="modalSiteAsal">-</span>
-                                            <i class="bi bi-arrow-right text-primary"></i>
-                                            <span class="badge bg-primary-subtle text-primary font-monospace" id="modalSiteTujuan">-</span>
+                                    <div class="mb-3">
+                                        <span class="text-muted small d-block mb-1">Rute Mutasi:</span>
+                                        <div class="d-flex align-items-center gap-2 mt-1">
+                                            <span class="fw-semibold text-dark" id="modalSiteAsal">-</span>
+                                            <span class="text-muted small">&rarr;</span>
+                                            <span class="fw-semibold text-dark" id="modalSiteTujuan">-</span>
                                         </div>
                                     </div>
-                                    <div class="mb-2">
-                                        <span class="text-muted small d-block">Pemohon Transfer:</span>
+                                    <div class="mb-3">
+                                        <span class="text-muted small d-block mb-1">Karyawan Pemohon Transfer:</span>
                                         <strong class="text-dark" id="modalPemohon">-</strong>
                                     </div>
-                                    <div class="mb-2">
-                                        <span class="text-muted small d-block">Disetujui Oleh (Level 1):</span>
-                                        <span class="text-dark fw-semibold" id="modalPenyetuju">-</span>
+                                    <div class="mb-3">
+                                        <span class="text-muted small d-block mb-1">Disetujui Oleh (Level 1):</span>
+                                        <span class="text-dark fw-medium" id="modalPenyetuju">-</span>
                                     </div>
                                     <div>
-                                        <span class="text-muted small d-block">Dibuat Oleh (Petugas Logistik):</span>
+                                        <span class="text-muted small d-block mb-1">Dibuat Oleh (Petugas Logistik):</span>
                                         <span class="text-muted" id="modalPembuat">-</span>
                                     </div>
                                 </div>
-                                <div class="col-12 mt-3">
-                                    <span class="text-muted small d-block">Keterangan / Alasan Transfer:</span>
-                                    <div class="p-2 bg-white rounded border text-dark small mt-1" id="modalKeterangan">-</div>
+                                <div class="col-12 mt-2 pt-2 border-top">
+                                    <span class="text-muted small d-block mb-1">Keterangan / Alasan Transfer:</span>
+                                    <div class="p-2 bg-white rounded border text-dark small" id="modalKeterangan">-</div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- TAB 2: DAFTAR BARANG -->
+                    <!-- TAB 2: DAFTAR BARANG (TANPA ICON) -->
                     <div class="tab-pane fade" id="mdetail-pane-barang" role="tabpanel">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="fw-bold text-dark small">Rincian Barang &amp; Kuantitas Mutasi</span>
-                            <span class="badge bg-primary" id="modalTotalQtyBadge">Total: 0 Qty</span>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="fw-bold text-dark small">Rincian Barang Dimutasi</span>
+                            <span class="badge bg-primary px-3 py-2 fw-semibold" id="modalTotalQtyBadge">Total: 0 Qty</span>
                         </div>
                         <div class="table-responsive border rounded-3 bg-white">
                             <table class="table table-hover align-middle mb-0">
                                 <thead class="table-light small text-muted text-uppercase align-middle">
                                     <tr>
-                                        <th style="width: 40px;" class="text-center">No</th>
-                                        <th>Kode Barang</th>
-                                        <th>Nama Barang</th>
-                                        <th>Serial No</th>
-                                        <th class="text-end">Jumlah Mutasi</th>
+                                        <th style="width: 45px;" class="text-center">No</th>
+                                        <th style="min-width: 130px;">Kode Barang</th>
+                                        <th style="min-width: 220px;">Nama Barang</th>
+                                        <th style="min-width: 110px;" class="text-center">Serial No</th>
+                                        <th style="min-width: 120px;" class="text-end pe-3">Jumlah Mutasi</th>
                                     </tr>
                                 </thead>
                                 <tbody id="modalBarangList">
@@ -268,19 +267,35 @@ require_once __DIR__ . '/../../components/navbar.php';
                                 </tbody>
                             </table>
                         </div>
+
+                        <!-- SECTION BIAYA OPERASIONAL DIBAWAH TABEL BARANG -->
+                        <div class="p-3 bg-light rounded-3 border mt-3 d-flex justify-content-between align-items-center">
+                            <span class="text-muted small fw-bold">Biaya Operasional Pengiriman:</span>
+                            <strong class="text-success font-monospace fs-6" id="modalBarangTabBiayaOperasional">Rp 0</strong>
+                        </div>
                     </div>
 
-                    <!-- TAB 3: OPSI & STATUS FLOW -->
+                    <!-- TAB 3: OPSI & STATUS FLOW (TANPA ICON) -->
                     <div class="tab-pane fade" id="mdetail-pane-opsi" role="tabpanel">
-                        <div class="card bg-light border-0 rounded-3 p-3">
-                            <h6 class="fw-bold text-dark mb-2">Perbarui Status Transaksi Mutasi</h6>
-                            <p class="text-muted small mb-3">
-                                Mengubah status menjadi <strong>DIKIRIM SITE ASAL</strong> akan mengurangi stok di site asal, dan status <strong>DITERIMA SITE TUJUAN</strong> akan menambahkan stok fisik ke site tujuan secara otomatis.
+                        <div class="p-4 bg-light border rounded-3">
+                            <h6 class="fw-bold text-dark mb-2">
+                                Perbarui Status Transaksi Mutasi
+                            </h6>
+                            <p class="text-muted small mb-4" id="modalStatusInfoText" style="line-height: 1.6;">
+                                Stok fisik antar site akan diperbarui secara otomatis saat status diubah menjadi <strong>DITERIMA SITE TUJUAN</strong>.
                             </p>
 
-                            <div class="row g-2 align-items-center">
-                                <div class="col-md-6">
-                                    <label class="form-label small fw-bold">Pilih Status Baru:</label>
+                            <!-- Alert jika status terkunci / final -->
+                            <div class="alert alert-success d-none mb-3 py-2 px-3 small border-0 shadow-sm" id="modalStatusLockedAlert">
+                                <strong>Status Final (Selesai):</strong> Barang telah berhasil diterima di site tujuan dan mutasi stok telah dibukukan. Status tidak dapat diubah lagi.
+                            </div>
+                            <div class="alert alert-secondary d-none mb-3 py-2 px-3 small border-0 shadow-sm" id="modalStatusBatalAlert">
+                                <strong>Status Final (Batal):</strong> Transaksi mutasi ini telah dibatalkan dan tidak dapat diubah lagi.
+                            </div>
+
+                            <div class="row g-3 align-items-end" id="modalStatusFormRow">
+                                <div class="col-md-7">
+                                    <label class="form-label small fw-bold text-dark">Pilih Status Baru:</label>
                                     <select class="form-select form-select-sm" id="modalUpdateStatusSelect">
                                         <option value="DRAFT">DRAFT</option>
                                         <option value="MENUNGGU PERSETUJUAN">MENUNGGU PERSETUJUAN</option>
@@ -290,9 +305,9 @@ require_once __DIR__ . '/../../components/navbar.php';
                                         <option value="BATAL">BATAL</option>
                                     </select>
                                 </div>
-                                <div class="col-md-6 d-flex align-items-end pt-3">
-                                    <button type="button" class="btn btn-primary btn-sm fw-semibold w-100" id="btnUpdateStatusModal" onclick="submitUpdateStatus()">
-                                        <i class="bi bi-check2-circle me-1"></i> Simpan Perubahan Status
+                                <div class="col-md-5">
+                                    <button type="button" class="btn btn-primary btn-sm fw-semibold w-100 py-2 shadow-sm" id="btnUpdateStatusModal" onclick="submitUpdateStatus()">
+                                        Simpan Perubahan Status
                                     </button>
                                 </div>
                             </div>
@@ -300,15 +315,6 @@ require_once __DIR__ . '/../../components/navbar.php';
                     </div>
 
                 </div>
-            </div>
-
-            <div class="modal-footer bg-light py-2 justify-content-between">
-                <div>
-                    <button type="button" class="btn btn-outline-primary btn-sm fw-semibold" id="btnPrintSuratModal" onclick="printCurrentMutasi()">
-                        <i class="bi bi-printer-fill me-1"></i> Cetak Surat Jalan Mutasi
-                    </button>
-                </div>
-                <button type="button" class="btn btn-secondary btn-sm px-4" data-bs-dismiss="modal">Tutup</button>
             </div>
         </div>
     </div>
@@ -450,41 +456,57 @@ function renderTable(items, pagination) {
     const startIndex = pagination ? (pagination.from - 1) : 0;
 
     items.forEach((item, idx) => {
+        const canPrint = ['DITERIMA SITE TUJUAN', 'DIKIRIM SITE ASAL', 'BATAL'].includes(item.status);
+
         html += `
             <tr class="align-middle">
+                <!-- 1. No -->
                 <td class="ps-3 text-center text-muted font-monospace small">${startIndex + idx + 1}</td>
+                
+                <!-- 2. Kode Mutasi -->
                 <td>
                     <div class="font-monospace fw-bold text-primary">${escapeHtml(item.kode_mutasi)}</div>
                     ${item.nomor_surat_mutasi ? `<div class="text-muted small font-monospace">${escapeHtml(item.nomor_surat_mutasi)}</div>` : ''}
                 </td>
+
+                <!-- 3. Tanggal -->
                 <td>
                     <div class="fw-semibold text-dark">${escapeHtml(item.tanggal_mutasi_formatted)}</div>
-                    <div class="text-muted small">${escapeHtml(item.waktu_mutasi_formatted)} WITA</div>
                 </td>
+
+                <!-- 4. Waktu -->
+                <td class="text-center font-monospace text-dark">
+                    ${escapeHtml(item.waktu_mutasi_formatted)}
+                </td>
+
+                <!-- 5. Rute Mutasi -->
                 <td>
-                    <div class="fw-bold text-dark">${escapeHtml(item.nama_pemohon || '-')}</div>
+                    <span class="text-dark fw-medium">${escapeHtml(item.nama_site_asal || '-')}</span>
+                    <i class="bi bi-arrow-right mx-1 text-muted small"></i>
+                    <span class="text-dark fw-medium">${escapeHtml(item.nama_site_tujuan || '-')}</span>
                 </td>
-                <td>
-                    <div class="d-flex align-items-center gap-1">
-                        <span class="badge bg-secondary-subtle text-dark font-monospace">${escapeHtml(item.nama_site_asal || '-')}</span>
-                        <i class="bi bi-arrow-right text-muted small"></i>
-                        <span class="badge bg-primary-subtle text-primary font-monospace">${escapeHtml(item.nama_site_tujuan || '-')}</span>
-                    </div>
-                </td>
-                <td class="text-center">
-                    <span class="badge bg-light text-dark border font-monospace">${item.total_items} Item (${item.total_qty} Qty)</span>
-                </td>
+
+                <!-- 6. Status -->
                 <td class="text-center">
                     ${getStatusBadge(item.status)}
                 </td>
+
+                <!-- 7. Total -->
+                <td class="text-center font-monospace fw-semibold text-dark">
+                    ${item.total_qty.toLocaleString('id-ID')}
+                </td>
+
+                <!-- 8. Aksi -->
                 <td class="pe-3 text-center">
                     <div class="btn-group btn-group-sm">
                         <button type="button" class="btn btn-outline-primary" onclick="showMutasiDetail(${item.id_mutasi})" title="Lihat Detail">
                             <i class="bi bi-eye"></i>
                         </button>
-                        <a href="<?= BASE_URL ?>/admin/pages/mutasi_barang/print_surat.php?id_mutasi=${item.id_mutasi}" target="_blank" class="btn btn-outline-secondary" title="Cetak Surat Jalan">
-                            <i class="bi bi-printer"></i>
-                        </a>
+                        ${canPrint ? `
+                            <a href="<?= BASE_URL ?>/admin/pages/mutasi_barang/print_surat.php?id_mutasi=${item.id_mutasi}" target="_blank" class="btn btn-outline-secondary" title="Cetak Surat Keterangan Mutasi">
+                                <i class="bi bi-printer"></i>
+                            </a>
+                        ` : ''}
                         ${item.status === 'DRAFT' ? `
                             <button type="button" class="btn btn-outline-danger" onclick="deleteMutasi(${item.id_mutasi}, '${item.kode_mutasi}')" title="Hapus Mutasi">
                                 <i class="bi bi-trash"></i>
@@ -584,6 +606,7 @@ async function showMutasiDetail(idMutasi) {
             // Tab 2: Barang
             document.getElementById('modalTabBarangBadge').textContent = data.total_items;
             document.getElementById('modalTotalQtyBadge').textContent = `Total: ${data.total_qty} Qty (${data.total_items} Item)`;
+            document.getElementById('modalBarangTabBiayaOperasional').textContent = data.biaya_operasional_formatted || 'Rp 0';
             
             const bList = document.getElementById('modalBarangList');
             if (data.items && data.items.length > 0) {
@@ -608,7 +631,37 @@ async function showMutasiDetail(idMutasi) {
             }
 
             // Tab 3: Status
-            document.getElementById('modalUpdateStatusSelect').value = data.status;
+            const isDiterima = data.status === 'DITERIMA SITE TUJUAN';
+            const isBatal = data.status === 'BATAL';
+            const isLocked = isDiterima || isBatal;
+
+            const lockedAlert = document.getElementById('modalStatusLockedAlert');
+            const batalAlert = document.getElementById('modalStatusBatalAlert');
+            const statusFormRow = document.getElementById('modalStatusFormRow');
+            const statusSelect = document.getElementById('modalUpdateStatusSelect');
+            const btnSubmitStatus = document.getElementById('btnUpdateStatusModal');
+            const infoText = document.getElementById('modalStatusInfoText');
+
+            statusSelect.value = data.status;
+
+            if (isDiterima) {
+                lockedAlert.classList.remove('d-none');
+                batalAlert.classList.add('d-none');
+                statusFormRow.classList.add('d-none');
+                infoText.classList.add('d-none');
+            } else if (isBatal) {
+                batalAlert.classList.remove('d-none');
+                lockedAlert.classList.add('d-none');
+                statusFormRow.classList.add('d-none');
+                infoText.classList.add('d-none');
+            } else {
+                lockedAlert.classList.add('d-none');
+                batalAlert.classList.add('d-none');
+                statusFormRow.classList.remove('d-none');
+                infoText.classList.remove('d-none');
+                statusSelect.disabled = false;
+                btnSubmitStatus.disabled = false;
+            }
 
             // Reset ke tab 1
             const tabTrigger = document.querySelector('#mdetail-tab-utama');
@@ -620,10 +673,10 @@ async function showMutasiDetail(idMutasi) {
             const modal = bootstrap.Modal.getInstance(document.getElementById('modalDetailMutasi')) || new bootstrap.Modal(document.getElementById('modalDetailMutasi'));
             modal.show();
         } else {
-            alert(json.message || 'Gagal mengambil detail mutasi.');
+            showToast(json.message || 'Gagal mengambil detail mutasi.', 'error');
         }
     } catch (err) {
-        alert('Terjadi kesalahan: ' + err.message);
+        showToast('Terjadi kesalahan: ' + err.message, 'error');
     }
 }
 
@@ -631,8 +684,6 @@ async function submitUpdateStatus() {
     if (!selectedMutasiId) return;
     const newStatus = document.getElementById('modalUpdateStatusSelect').value;
     const btn = document.getElementById('btnUpdateStatusModal');
-
-    if (!confirm(`Konfirmasi perubahan status mutasi menjadi: ${newStatus}?`)) return;
 
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Memproses...';
@@ -654,19 +705,19 @@ async function submitUpdateStatus() {
         const json = await res.json();
 
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Simpan Perubahan Status';
+        btn.innerHTML = 'Simpan Perubahan Status';
 
         if (json.success) {
-            alert(json.message);
+            showToast(json.message || 'Status mutasi berhasil diperbarui.', 'success');
             bootstrap.Modal.getInstance(document.getElementById('modalDetailMutasi')).hide();
             loadMutasi();
         } else {
-            alert(json.message || 'Gagal mengubah status.');
+            showToast(json.message || 'Gagal mengubah status.', 'error');
         }
     } catch (err) {
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Simpan Perubahan Status';
-        alert('Terjadi kesalahan: ' + err.message);
+        btn.innerHTML = 'Simpan Perubahan Status';
+        showToast('Terjadi kesalahan: ' + err.message, 'error');
     }
 }
 
@@ -687,13 +738,13 @@ async function deleteMutasi(idMutasi, kode) {
         });
         const json = await res.json();
         if (json.success) {
-            alert(json.message);
+            showToast(json.message || 'Transaksi mutasi berhasil dihapus.', 'success');
             loadMutasi();
         } else {
-            alert(json.message || 'Gagal menghapus mutasi.');
+            showToast(json.message || 'Gagal menghapus mutasi.', 'error');
         }
     } catch (err) {
-        alert('Terjadi kesalahan: ' + err.message);
+        showToast('Terjadi kesalahan: ' + err.message, 'error');
     }
 }
 
@@ -713,6 +764,15 @@ function escapeHtml(str) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Cek flash toast message dari create page
+    const flashMsg = sessionStorage.getItem('flash_toast_msg');
+    const flashType = sessionStorage.getItem('flash_toast_type') || 'success';
+    if (flashMsg) {
+        sessionStorage.removeItem('flash_toast_msg');
+        sessionStorage.removeItem('flash_toast_type');
+        showToast(flashMsg, flashType);
+    }
+
     loadMutasi();
 });
 </script>

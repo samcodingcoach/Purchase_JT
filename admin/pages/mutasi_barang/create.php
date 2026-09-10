@@ -88,7 +88,20 @@ require_once __DIR__ . '/../../components/navbar.php';
 
                                     <div class="mb-3">
                                         <label class="form-label small fw-bold text-dark">Tanggal &amp; Waktu Mutasi <span class="text-danger">*</span></label>
-                                        <input type="datetime-local" class="form-control form-control-sm" id="tanggalMutasi" required value="<?= date('Y-m-d\TH:i') ?>">
+                                        <div class="row g-2">
+                                            <div class="col-7">
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text bg-white"><i class="bi bi-calendar3"></i></span>
+                                                    <input type="date" class="form-control" id="tanggalMutasiDate" required value="<?= date('Y-m-d') ?>">
+                                                </div>
+                                            </div>
+                                            <div class="col-5">
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text bg-white"><i class="bi bi-clock"></i></span>
+                                                    <input type="text" class="form-control text-center font-monospace" id="tanggalMutasiTime" required maxlength="5" placeholder="HH:MM" value="<?= date('H:i') ?>" oninput="formatTime24(this)" onblur="validateTime24(this)" title="Format 24 Jam (Contoh: 14:30)">
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
 
                                     <div class="mb-2">
@@ -162,7 +175,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                                 <h6 class="fw-bold text-dark mb-0">
                                     Rincian Barang yang Dimutasi
                                 </h6>
-                                
+                                <div class="text-muted small" id="infoSiteAsalText">Pilih Site Asal pada Tab 1 terlebih dahulu.</div>
                             </div>
                             <button type="button" class="btn btn-outline-primary btn-sm fw-semibold" onclick="addNewItemRow()">
                                 <i class="bi bi-plus-circle-fill me-1"></i> Tambah Barang
@@ -299,13 +312,54 @@ function escapeHtml(text) {
 }
 
 // -------------------------------------------------------------
-// 1. FORMAT RIBUAN BIAYA OPERASIONAL
+// 1. FORMAT RIBUAN BIAYA OPERASIONAL & WAKTU 24 JAM
 // -------------------------------------------------------------
 function handleBiayaInput(input) {
     let cleanVal = input.value.replace(/\D/g, '');
     let num = parseInt(cleanVal, 10) || 0;
     document.getElementById('biayaOperasional').value = num;
     input.value = num.toLocaleString('id-ID');
+}
+
+function formatTime24(input) {
+    let val = input.value.replace(/\D/g, ''); // Hanya angka
+    if (val.length > 4) val = val.substring(0, 4);
+
+    let hh = val.substring(0, 2);
+    let mm = val.substring(2, 4);
+
+    if (hh && parseInt(hh, 10) > 23) hh = '23';
+    if (mm && parseInt(mm, 10) > 59) mm = '59';
+
+    if (val.length >= 3) {
+        input.value = `${hh}:${mm}`;
+    } else if (val.length === 2 && input.value.length === 2) {
+        input.value = `${hh}:`;
+    } else {
+        input.value = val;
+    }
+}
+
+function validateTime24(input) {
+    let val = input.value.trim();
+    if (!val) {
+        const d = new Date();
+        const curHH = String(d.getHours()).padStart(2, '0');
+        const curMM = String(d.getMinutes()).padStart(2, '0');
+        input.value = `${curHH}:${curMM}`;
+        return;
+    }
+
+    const parts = val.split(':');
+    let hh = parseInt(parts[0] || '0', 10);
+    let mm = parseInt(parts[1] || '0', 10);
+
+    if (isNaN(hh) || hh < 0) hh = 0;
+    if (hh > 23) hh = 23;
+    if (isNaN(mm) || mm < 0) mm = 0;
+    if (mm > 59) mm = 59;
+
+    input.value = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
 }
 
 // -------------------------------------------------------------
@@ -452,12 +506,14 @@ async function onSiteAsalChange() {
 
     if (!idSite) {
         availableBarangList = [];
-        infoText.textContent = 'Pilih Site Asal pada Tab 1 terlebih dahulu.';
+        if (infoText) infoText.textContent = 'Pilih Site Asal pada Tab 1 terlebih dahulu.';
         resetItemRows();
         return;
     }
 
-    infoText.innerHTML = `Menampilkan barang dengan stok fisik &gt; 0 di <strong>${escapeHtml(selectedText)}</strong>`;
+    if (infoText) {
+        infoText.innerHTML = `Menampilkan barang dengan stok fisik &gt; 0 di <strong>${escapeHtml(selectedText)}</strong>`;
+    }
 
     try {
         const res = await fetch(`<?= BASE_URL ?>/api/mutasi_order/index.php?action=barang_by_site&id_site_asal=${idSite}`, {
@@ -669,25 +725,30 @@ async function handleSaveMutasi(e) {
     const idApp = document.getElementById('idKaryawanApproved').value;
 
     if (!idSiteAsal || !idSiteTujuan) {
-        alert('Site Asal dan Site Tujuan wajib dipilih!');
+        showToast('Site Asal dan Site Tujuan wajib dipilih!', 'warning');
+        goToTab('tab-dokumen');
         return;
     }
     if (idSiteAsal === idSiteTujuan) {
-        alert('Site Tujuan tidak boleh sama dengan Site Asal!');
+        showToast('Site Tujuan tidak boleh sama dengan Site Asal!', 'warning');
+        goToTab('tab-dokumen');
         return;
     }
     if (!idReq) {
-        alert('Karyawan Pemohon Transfer wajib dipilih!');
+        showToast('Karyawan Pemohon Transfer wajib dipilih!', 'warning');
+        goToTab('tab-dokumen');
         return;
     }
     if (!idApp) {
-        alert('Pejabat Penyetuju (Level 1) wajib dipilih!');
+        showToast('Pejabat Penyetuju (Level 1) wajib dipilih!', 'warning');
+        goToTab('tab-dokumen');
         return;
     }
 
     const rows = document.querySelectorAll('.mutasi-item-row');
     if (rows.length === 0) {
-        alert('Minimal harus ada 1 item barang yang dimutasi!');
+        showToast('Minimal harus ada 1 item barang yang dimutasi!', 'warning');
+        goToTab('tab-barang');
         return;
     }
 
@@ -701,13 +762,15 @@ async function handleSaveMutasi(e) {
         const nama = row.querySelector('.item-nama-barang')?.value || '';
 
         if (!bId || qty <= 0) {
-            alert(`Terdapat baris barang "${nama}" yang belum dipilih atau jumlahnya 0.`);
+            showToast(`Baris barang "${nama || 'Pilihan'}" belum valid atau jumlahnya 0.`, 'warning');
+            goToTab('tab-barang');
             hasError = true;
             return;
         }
 
         if (qty > maxStok) {
-            alert(`Jumlah mutasi barang "${nama}" (${qty}) melebihi sisa stok fisik di Site Asal (${maxStok}). Jumlah tidak boleh lebih dari sisa stok!`);
+            showToast(`Jumlah mutasi barang "${nama}" (${qty}) melebihi sisa stok (${maxStok}).`, 'error');
+            goToTab('tab-barang');
             hasError = true;
             return;
         }
@@ -717,10 +780,14 @@ async function handleSaveMutasi(e) {
 
     if (hasError || items.length === 0) return;
 
+    const tglDate = document.getElementById('tanggalMutasiDate').value;
+    const tglTime = document.getElementById('tanggalMutasiTime').value || '00:00';
+    const tanggalMutasiFull = `${tglDate} ${tglTime}:00`;
+
     const payload = {
         kode_mutasi: document.getElementById('kodeMutasi').value.trim(),
         nomor_surat_mutasi: document.getElementById('nomorSuratMutasi').value.trim(),
-        tanggal_mutasi: document.getElementById('tanggalMutasi').value,
+        tanggal_mutasi: tanggalMutasiFull,
         id_site_asal: parseInt(idSiteAsal, 10),
         id_site_tujuan: parseInt(idSiteTujuan, 10),
         id_karyawan_request: parseInt(idReq, 10),
@@ -749,15 +816,16 @@ async function handleSaveMutasi(e) {
         btn.innerHTML = '<i class="bi bi-send-fill me-1"></i> Simpan Transaksi Mutasi';
 
         if (json.success) {
-            alert(json.message);
+            sessionStorage.setItem('flash_toast_msg', json.message || 'Data transaksi mutasi barang berhasil dibuat.');
+            sessionStorage.setItem('flash_toast_type', 'success');
             window.location.href = `<?= BASE_URL ?>/admin/pages/mutasi_barang/index.php`;
         } else {
-            alert(json.message || 'Gagal menyimpan transaksi mutasi.');
+            showToast(json.message || 'Gagal menyimpan transaksi mutasi.', 'error');
         }
     } catch (err) {
         btn.disabled = false;
         btn.innerHTML = '<i class="bi bi-send-fill me-1"></i> Simpan Transaksi Mutasi';
-        alert('Terjadi kesalahan: ' + err.message);
+        showToast('Terjadi kesalahan: ' + err.message, 'error');
     }
 }
 </script>

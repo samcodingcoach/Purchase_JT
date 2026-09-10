@@ -75,22 +75,20 @@ require_once __DIR__ . '/../../components/navbar.php';
 
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0" id="reportTable" style="min-width: 950px;">
+                <table class="table table-hover align-middle mb-0" id="reportTable" style="min-width: 850px;">
                     <thead class="table-light text-muted small text-uppercase">
                         <tr>
                             <th style="width: 45px;" class="text-center">No</th>
                             <th style="min-width: 110px;">Tanggal</th>
                             <th style="min-width: 130px;">Kode Mutasi</th>
-                            <th style="min-width: 150px;">Kode Barang</th>
-                            <th style="min-width: 200px;">Nama Barang</th>
-                            <th style="min-width: 170px;">Rute Pengiriman</th>
-                            <th style="min-width: 100px;" class="text-end">Qty Keluar</th>
-                            <th style="min-width: 120px;" class="text-center">Status</th>
+                            <th style="min-width: 250px;">Nama Barang</th>
+                            <th style="min-width: 200px;">Rute</th>
+                            <th style="min-width: 110px;" class="text-center">KTS</th>
                         </tr>
                     </thead>
                     <tbody id="reportBody">
                         <tr>
-                            <td colspan="8" class="text-center py-5 text-muted">
+                            <td colspan="6" class="text-center py-5 text-muted">
                                 <div class="spinner-border spinner-border-sm text-primary me-2"></div> Memuat laporan barang keluar...
                             </td>
                         </tr>
@@ -220,7 +218,7 @@ function renderTable(items, pagination) {
     const pagContainer = document.getElementById('paginationContainer');
 
     if (items.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-5 text-muted align-middle">Tidak ada data barang keluar yang sesuai filter.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-5 text-muted align-middle">Tidak ada data barang keluar yang sesuai filter.</td></tr>`;
         pagContainer.style.display = 'none';
         return;
     }
@@ -231,34 +229,40 @@ function renderTable(items, pagination) {
     items.forEach((item, idx) => {
         html += `
             <tr class="align-middle">
+                <!-- 1. No -->
                 <td class="ps-3 text-center text-muted font-monospace small">${startIndex + idx + 1}</td>
+                
+                <!-- 2. Tanggal (Hanya tanggal) -->
                 <td>
-                    <div class="fw-semibold text-dark">${escapeHtml(item.tanggal_formatted)}</div>
-                    <div class="text-muted small">${escapeHtml(item.waktu_formatted)} WITA</div>
+                    <div class="fw-medium text-dark">${escapeHtml(item.tanggal_formatted)}</div>
                 </td>
+
+                <!-- 3. Kode Mutasi -->
                 <td>
-                    <a href="<?= BASE_URL ?>/admin/pages/mutasi_barang/print_surat.php?id_mutasi=${item.id_mutasi}" target="_blank" class="font-monospace fw-bold text-primary text-decoration-none" title="Cetak Surat Jalan">
+                    <a href="<?= BASE_URL ?>/admin/pages/mutasi_barang/print_surat.php?id_mutasi=${item.id_mutasi}" target="_blank" class="font-monospace fw-bold text-primary text-decoration-none" title="Cetak Surat Keterangan Mutasi">
                         ${escapeHtml(item.kode_mutasi)}
                     </a>
                 </td>
-                <td class="font-monospace fw-bold text-dark">${escapeHtml(item.kode_barang)}</td>
+
+                <!-- 4. Nama Barang: kode_barang - nama_barang -->
                 <td>
-                    <div class="fw-bold text-dark">${escapeHtml(item.nama_barang)}</div>
+                    <span class="font-monospace fw-bold text-dark">${escapeHtml(item.kode_barang)}</span>
+                    <span class="text-muted mx-1">-</span>
+                    <span class="fw-semibold text-dark">${escapeHtml(item.nama_barang)}</span>
                     ${item.serial_number ? `<div class="text-muted small font-monospace">SN: ${escapeHtml(item.serial_number)}</div>` : ''}
                 </td>
+
+                <!-- 5. Rute: teks biasa -->
                 <td>
-                    <div class="d-flex align-items-center gap-1">
-                        <span class="badge bg-secondary-subtle text-dark font-monospace">${escapeHtml(item.nama_site_asal || '-')}</span>
-                        <i class="bi bi-arrow-right text-muted small"></i>
-                        <span class="badge bg-primary-subtle text-primary font-monospace">${escapeHtml(item.nama_site_tujuan || '-')}</span>
-                    </div>
+                    <span class="text-dark fw-medium">${escapeHtml(item.nama_site_asal || '-')}</span>
+                    <i class="bi bi-arrow-right mx-1 text-muted small"></i>
+                    <span class="text-dark fw-medium">${escapeHtml(item.nama_site_tujuan || '-')}</span>
                 </td>
-                <td class="text-end font-monospace">
-                    <strong class="text-danger fs-6">-${item.qty_formatted}</strong>
+
+                <!-- 6. KTS: X Satuan -->
+                <td class="text-center font-monospace">
+                    <span class="fw-bold text-dark">${item.qty_formatted}</span>
                     <span class="text-muted small ms-1">${escapeHtml(item.satuan || 'PCS')}</span>
-                </td>
-                <td class="pe-3 text-center">
-                    <span class="badge bg-success-subtle text-success border border-success-subtle font-monospace">${escapeHtml(item.status_mutasi)}</span>
                 </td>
             </tr>
         `;
@@ -334,7 +338,9 @@ function printReport() {
     if (start) params.append('start_date', start);
     if (end) params.append('end_date', end);
 
-    window.open(`<?= BASE_URL ?>/admin/pages/laporan/print_barang_keluar.php?${params.toString()}`, '_blank');
+    const queryStr = params.toString();
+    const targetUrl = `<?= BASE_URL ?>/admin/pages/laporan/print_barang_keluar.php` + (queryStr ? `?${queryStr}` : '');
+    window.open(targetUrl, '_blank');
 }
 
 function escapeHtml(str) {

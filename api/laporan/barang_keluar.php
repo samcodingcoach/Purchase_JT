@@ -33,8 +33,8 @@ try {
     $limit = isset($_GET['limit']) && is_numeric($_GET['limit']) ? (int)$_GET['limit'] : 25;
     if ($limit < 0) $limit = 25;
 
-    // Filter kondisi mutasi barang keluar (status yang sudah keluar/terkirim/selesai atau semua selain batal jika diinginkan)
-    $where = ["mo.status NOT IN ('BATAL', 'DRAFT')"];
+    // Filter kondisi mutasi barang keluar: hanya menghitung status yang sudah diterima (DITERIMA SITE TUJUAN)
+    $where = ["mo.status = 'DITERIMA SITE TUJUAN'"];
     $params = [];
     $types = "";
 
