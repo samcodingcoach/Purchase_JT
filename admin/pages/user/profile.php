@@ -22,9 +22,9 @@ require_once __DIR__ . '/../../components/navbar.php';
     <!-- Header Halaman -->
     <div class="mb-4">
         <h4 class="fw-bold text-dark mb-0">
-            <i class="bi bi-person-gear text-primary me-2"></i>Edit Profil Saya
+            Edit Profil Saya
         </h4>
-        <span class="text-muted small">Kelola data pribadi, identitas diri, dan keamanan akun Anda</span>
+        
     </div>
 
     <!-- Loading Skeleton Card -->
@@ -59,7 +59,7 @@ require_once __DIR__ . '/../../components/navbar.php';
 
                 <div class="card-body p-3 text-start">
                     <h6 class="fw-bold text-dark border-bottom pb-2 mb-3 small text-uppercase">
-                        <i class="bi bi-briefcase text-primary me-1"></i> Informasi Penugasan
+                        Informasi Penugasan
                     </h6>
 
                     <div class="mb-2">
@@ -105,15 +105,13 @@ require_once __DIR__ . '/../../components/navbar.php';
             <div class="card border-0 shadow-sm rounded-3">
                 <div class="card-header bg-white py-3 border-bottom">
                     <h6 class="fw-bold text-dark mb-0">
-                        <i class="bi bi-pencil-square text-primary me-1"></i> Perbarui Informasi Pribadi &amp; Kata Sandi
+                         Perbarui Informasi Pribadi &amp; Kata Sandi
                     </h6>
                 </div>
                 <div class="card-body p-4">
                     <form id="formEditProfile" onsubmit="handleSaveProfile(event)">
                         <!-- Data Pribadi & Kontak -->
-                        <h6 class="fw-bold text-dark mb-3 small text-uppercase">
-                            <i class="bi bi-person-lines-fill text-primary me-1"></i> Data Identitas &amp; Kontak
-                        </h6>
+                        
 
                         <div class="row g-3 mb-4">
                             <div class="col-md-12">
@@ -153,7 +151,7 @@ require_once __DIR__ . '/../../components/navbar.php';
 
                         <!-- Keamanan Akun / Ganti Password -->
                         <h6 class="fw-bold text-dark border-top pt-4 mb-3 small text-uppercase">
-                            <i class="bi bi-shield-lock text-primary me-1"></i> Ganti Kata Sandi <span class="text-muted fw-normal text-lowercase">(kosongkan jika tidak ingin mengubah password)</span>
+                             Ganti Kata Sandi <span class="text-muted fw-normal text-lowercase">(kosongkan jika tidak ingin mengubah password)</span>
                         </h6>
 
                         <div class="row g-3 mb-3">
