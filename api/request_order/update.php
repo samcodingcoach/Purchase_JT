@@ -222,8 +222,10 @@ try {
             if ($existingRo['status'] !== 'TERKIRIM' && $status === 'TERKIRIM') {
                 $mailRes = sendNotificationEvent($conn, 'ro_created', ['id_request' => $idRequest]);
                 $emailSent = !empty($mailRes['success']);
-            } elseif (in_array($status, ['DISETUJUI LOGISTIK', 'TIDAK DISETUJUI LOGISTIK', 'DISETUJUI PURCHASING', 'TIDAK DISETUJUI PURCHASING'])) {
-                $approverName = $currentUser['nama_karyawan'] ?? ($currentUser['nama_users'] ?? ($currentUser['username'] ?? 'Approver'));
+                $approverName = $currentUser['nama'] ?? ($currentUser['nama_karyawan'] ?? ($currentUser['nama_users'] ?? ($currentUser['username'] ?? 'Approver')));
+                if (!empty($currentUser['kode_karyawan'])) {
+                    $approverName = $approverName . ' (' . $currentUser['kode_karyawan'] . ')';
+                }
                 $mailRes = sendNotificationEvent($conn, 'ro_status_update', [
                     'id_request' => $idRequest,
                     'status' => $status,

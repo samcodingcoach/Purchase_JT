@@ -411,6 +411,62 @@ require_once __DIR__ . '/../../components/navbar.php';
     </div>
 </div>
 
+<!-- MODAL VERIFIKASI PEMBATALAN PURCHASE ORDER & PENERBITAN BAP -->
+<div class="modal fade" id="modalCancelPo" tabindex="-1" aria-labelledby="modalCancelPoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 540px; width: 100%;">
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <div class="modal-header bg-danger text-white py-3 px-4">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-octagon-fill fs-5"></i>
+                    <h5 class="modal-title fw-bold mb-0" id="modalCancelPoLabel">Batalkan Purchase Order (BAP)</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formCancelPo" onsubmit="submitCancelPo(event)">
+                <input type="hidden" id="cancelPoId" value="">
+                <div class="modal-body p-4">
+                    <!-- Alert Dokumen Target -->
+                    <div class="alert alert-danger bg-danger-subtle border-danger-subtle d-flex align-items-start gap-2 mb-3 py-2 px-3">
+                        <i class="bi bi-info-circle-fill text-danger fs-5 mt-1 flex-shrink-0"></i>
+                        <div class="small">
+                            <div>Anda akan membatalkan <strong>Purchase Order</strong>:</div>
+                            <div class="fw-bold font-monospace text-dark fs-6" id="cancelPoNomorDisplay">PO-XXXX-XXXX</div>
+                            <div class="text-muted" id="cancelPoVendorDisplay">Vendor: -</div>
+                            <div class="text-dark font-monospace fw-semibold" id="cancelPoNilaiDisplay">Nilai: Rp 0</div>
+                        </div>
+                    </div>
+
+                    <!-- Kategori Alasan -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Kategori Alasan Pembatalan <span class="text-danger">*</span></label>
+                        <select class="form-select form-select-sm" id="cancelPoKategori" required>
+                            <option value="">-- Pilih Kategori Alasan --</option>
+                            <option value="Vendor Kehabisan Stok / Discontinued">Vendor Kehabisan Stok / Discontinued</option>
+                            <option value="Perubahan Spek / Kebutuhan Operasional">Perubahan Spek / Kebutuhan Operasional</option>
+                            <option value="Kenaikan Harga Sepihak oleh Vendor">Kenaikan Harga Sepihak oleh Vendor</option>
+                            <option value="Keterlambatan Konfirmasi Vendor">Keterlambatan Konfirmasi Vendor</option>
+                            <option value="Kesalahan Administrasi / Input Ganda">Kesalahan Administrasi / Input Ganda</option>
+                            <option value="Lainnya">Lainnya (Jelaskan pada uraian)</option>
+                        </select>
+                    </div>
+
+                    <!-- Uraian Kronologis / Berita Acara -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Uraian Kronologis Berita Acara <span class="text-danger">*</span></label>
+                        <textarea class="form-control form-control-sm" id="cancelPoAlasan" rows="4" placeholder="Jelaskan alasan pembatalan secara detail untuk arsip resmi Berita Acara Pembatalan (BAP)..." required minlength="5"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2 px-3">
+                    <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">Tutup</button>
+                    <button type="submit" class="btn btn-danger btn-sm px-3 fw-semibold" id="btnSubmitCancelPo">
+                        <i class="bi bi-x-octagon-fill me-1"></i> Konfirmasi &amp; Terbitkan BAP
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <?php require_once __DIR__ . '/../../components/footer.php'; ?>
 
 <!-- Client-side Logic Script for Purchase Order List -->
@@ -419,9 +475,11 @@ const CURRENT_USER_ROLE = '<?= strtoupper($user['role'] ?? '') ?>';
 let currentPage = 1;
 let currentLimit = 10;
 let modalDetailInstance = null;
+let modalCancelPoInstance = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
     modalDetailInstance = new bootstrap.Modal(document.getElementById('modalDetailPo'));
+    modalCancelPoInstance = new bootstrap.Modal(document.getElementById('modalCancelPo'));
 
     // Inisialisasi Filter Site
     await loadSiteOptions();
@@ -573,6 +631,15 @@ async function loadPoList(page = 1) {
             `;
         }
 
+        let cancelBtnHtml = '';
+        if (!['DITERIMA', 'BATAL'].includes(statusUpper) && ['ADMIN', 'PURCHASING', 'MANAGER'].includes(CURRENT_USER_ROLE)) {
+            cancelBtnHtml = `
+                <button type="button" class="btn btn-outline-danger btn-sm px-2 py-1 shadow-xs" onclick="openCancelPoModal(${item.id_po}, '${escapeHtml(nomorPo)}', '${escapeHtml(item.nama_vendor || '')}', '${escapeHtml(nilaiFormatted)}')" title="Batalkan PO &amp; Terbitkan Berita Acara (BAP)">
+                    <i class="bi bi-x-octagon-fill"></i>
+                </button>
+            `;
+        }
+
         rowsHtml += `
             <tr>
                 <td class="text-center font-monospace text-muted small">${no}</td>
@@ -600,6 +667,7 @@ async function loadPoList(page = 1) {
                         ${printBtnHtml}
                         ${editBtnHtml}
                         ${receiveBtnHtml}
+                        ${cancelBtnHtml}
                     </div>
                 </td>
             </tr>
@@ -929,5 +997,67 @@ function escapeHtml(text) {
         "'": '&#039;'
     };
     return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+}
+// -------------------------------------------------------------
+// PEMBATALAN PURCHASE ORDER & BERITA ACARA PEMBATALAN (BAP)
+// -------------------------------------------------------------
+function openCancelPoModal(idPo, nomorPo, vendorName, nilaiFormatted) {
+    document.getElementById('cancelPoId').value = idPo;
+    document.getElementById('cancelPoNomorDisplay').textContent = nomorPo;
+    document.getElementById('cancelPoVendorDisplay').textContent = 'Vendor: ' + (vendorName || '-');
+    document.getElementById('cancelPoNilaiDisplay').textContent = 'Nilai Dokumen: ' + nilaiFormatted;
+    document.getElementById('cancelPoKategori').value = '';
+    document.getElementById('cancelPoAlasan').value = '';
+
+    modalCancelPoInstance.show();
+}
+
+async function submitCancelPo(e) {
+    e.preventDefault();
+    const idPo = document.getElementById('cancelPoId').value;
+    const kategori = document.getElementById('cancelPoKategori').value;
+    const alasan = document.getElementById('cancelPoAlasan').value.trim();
+    const btn = document.getElementById('btnSubmitCancelPo');
+
+    if (!idPo) return;
+    if (!kategori) {
+        showToast('Pilih kategori alasan pembatalan.', 'warning');
+        return;
+    }
+    if (alasan.length < 5) {
+        showToast('Uraian kronologis alasan wajib diisi minimal 5 karakter.', 'warning');
+        return;
+    }
+
+    const origText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Memproses Pembatalan & BAP...';
+
+    try {
+        const res = await apiRequest('/api/purchase_order/cancel.php', 'POST', {
+            id_po: idPo,
+            kategori_alasan: kategori,
+            alasan: alasan
+        });
+
+        if (res && res.success) {
+            modalCancelPoInstance.hide();
+            showToast(res.message, 'success');
+            
+            // Buka lembar cetak BAP di tab baru
+            if (res.data && res.data.id_po) {
+                window.open(`${BASE_URL}/admin/pages/laporan/print_bap.php?type=PO&id=${res.data.id_po}`, '_blank');
+            }
+
+            loadPoList(currentPage);
+        } else {
+            showToast(res ? res.message : 'Gagal membatalkan Purchase Order.', 'danger');
+        }
+    } catch (err) {
+        showToast('Terjadi kesalahan: ' + err.message, 'danger');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = origText;
+    }
 }
 </script>

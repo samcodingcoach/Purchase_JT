@@ -425,18 +425,78 @@ require_once __DIR__ . '/../../components/navbar.php';
     </div>
 </div>
 
+<!-- MODAL VERIFIKASI PEMBATALAN FAKTUR PO & PENERBITAN BAP -->
+<div class="modal fade" id="modalCancelFaktur" tabindex="-1" aria-labelledby="modalCancelFakturLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 540px; width: 100%;">
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <div class="modal-header bg-danger text-white py-3 px-4">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-octagon-fill fs-5"></i>
+                    <h5 class="modal-title fw-bold mb-0" id="modalCancelFakturLabel">Batalkan / Void Faktur PO (BAP)</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formCancelFaktur" onsubmit="submitCancelFaktur(event)">
+                <input type="hidden" id="cancelFakturId" value="">
+                <div class="modal-body p-4">
+                    <!-- Alert Dokumen Target -->
+                    <div class="alert alert-danger bg-danger-subtle border-danger-subtle d-flex align-items-start gap-2 mb-3 py-2 px-3">
+                        <i class="bi bi-info-circle-fill text-danger fs-5 mt-1 flex-shrink-0"></i>
+                        <div class="small">
+                            <div>Anda akan membatalkan <strong>Faktur Purchase Order</strong>:</div>
+                            <div class="fw-bold font-monospace text-dark fs-6" id="cancelFakturNomorDisplay">INV-XXXX-XXXX</div>
+                            <div class="text-muted" id="cancelFakturVendorDisplay">Vendor: -</div>
+                            <div class="text-dark font-monospace fw-semibold" id="cancelFakturNilaiDisplay">Tagihan: Rp 0</div>
+                        </div>
+                    </div>
+
+                    <!-- Kategori Alasan -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Kategori Alasan Pembatalan <span class="text-danger">*</span></label>
+                        <select class="form-select form-select-sm" id="cancelFakturKategori" required>
+                            <option value="">-- Pilih Kategori Alasan --</option>
+                            <option value="Kesalahan Input Nomor Invoice / Pajak">Kesalahan Input Nomor Invoice / Pajak</option>
+                            <option value="Revisi Harga / Diskon oleh Vendor">Revisi Harga / Diskon oleh Vendor</option>
+                            <option value="Faktur Ganda (Double Entry)">Faktur Ganda (Double Entry)</option>
+                            <option value="Dokumen Receiving Dibatalkan / Direvisi">Dokumen Receiving Dibatalkan / Direvisi</option>
+                            <option value="Lainnya">Lainnya (Jelaskan pada uraian)</option>
+                        </select>
+                    </div>
+
+                    <!-- Uraian Kronologis / Berita Acara -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Uraian Kronologis Berita Acara <span class="text-danger">*</span></label>
+                        <textarea class="form-control form-control-sm" id="cancelFakturAlasan" rows="4" placeholder="Jelaskan alasan pembatalan / void faktur secara detail untuk arsip resmi Berita Acara Pembatalan (BAP)..." required minlength="5"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2 px-3">
+                    <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">Tutup</button>
+                    <button type="submit" class="btn btn-danger btn-sm px-3 fw-semibold" id="btnSubmitCancelFaktur">
+                        <i class="bi bi-x-octagon-fill me-1"></i> Konfirmasi &amp; Terbitkan BAP
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
 const CURRENT_USER_ROLE = '<?= strtoupper($user['role'] ?? '') ?>';
 const CAN_PAY_ROLE = ['FINANCE', 'ADMIN', 'MANAGER'].includes(CURRENT_USER_ROLE);
 let currentPage = 1;
 let debounceTimer = null;
 let detailModalInstance = null;
+let cancelFakturModalInstance = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     loadFakturList(1);
     const modalEl = document.getElementById('modalDetailFaktur');
     if (modalEl) {
         detailModalInstance = new bootstrap.Modal(modalEl);
+    }
+    const cancelModalEl = document.getElementById('modalCancelFaktur');
+    if (cancelModalEl) {
+        cancelFakturModalInstance = new bootstrap.Modal(cancelModalEl);
     }
 });
 
@@ -521,6 +581,11 @@ function renderTable(rows, pagination) {
             ? `<a href="<?= BASE_URL ?>/admin/pages/pembayaran_po/create.php?id_faktur=${r.id_faktur}" class="btn btn-outline-success btn-sm px-2 py-1 shadow-none" title="Catat Pembayaran ke Vendor"><i class="bi bi-cash-coin"></i></a>`
             : '';
 
+        const canCancel = ['ADMIN', 'FINANCE', 'MANAGER'].includes(CURRENT_USER_ROLE) && r.status !== 'BATAL' && (parseFloat(r.terbayar || 0) === 0);
+        const cancelBtnHtml = canCancel
+            ? `<button type="button" class="btn btn-outline-danger btn-sm px-2 py-1 shadow-none" onclick="openCancelFakturModal(${r.id_faktur}, '${escapeHtml(r.nomor_faktur)}', '${escapeHtml(r.nama_vendor || '')}', '${escapeHtml(formatRupiah(totalTagihan))}')" title="Batalkan Faktur &amp; Terbitkan BAP"><i class="bi bi-x-octagon"></i></button>`
+            : '';
+
         // Cek apakah data sudah pernah diedit/diupdate (created_at != updated_at)
         const isUpdated = r.updated_at && r.created_at && (r.updated_at !== r.created_at);
         const updatedBadge = isUpdated 
@@ -564,6 +629,7 @@ function renderTable(rows, pagination) {
                     </a>
                     ${payBtnHtml}
                     ${editBtnHtml}
+                    ${cancelBtnHtml}
                 </div>
             </td>
         </tr>`;
@@ -792,6 +858,81 @@ function formatDate(dateStr) {
 
 function formatRupiah(num) {
     return 'Rp ' + (parseFloat(num) || 0).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+    return String(text).replace(/[&<>"']/g, m => map[m]);
+}
+
+// -------------------------------------------------------------
+// PEMBATALAN FAKTUR PO & BERITA ACARA PEMBATALAN (BAP)
+// -------------------------------------------------------------
+function openCancelFakturModal(idFaktur, nomorFaktur, vendorName, nilaiFormatted) {
+    document.getElementById('cancelFakturId').value = idFaktur;
+    document.getElementById('cancelFakturNomorDisplay').textContent = nomorFaktur;
+    document.getElementById('cancelFakturVendorDisplay').textContent = 'Vendor: ' + (vendorName || '-');
+    document.getElementById('cancelFakturNilaiDisplay').textContent = 'Total Tagihan: ' + nilaiFormatted;
+    document.getElementById('cancelFakturKategori').value = '';
+    document.getElementById('cancelFakturAlasan').value = '';
+
+    cancelFakturModalInstance.show();
+}
+
+async function submitCancelFaktur(e) {
+    e.preventDefault();
+    const idFaktur = document.getElementById('cancelFakturId').value;
+    const kategori = document.getElementById('cancelFakturKategori').value;
+    const alasan = document.getElementById('cancelFakturAlasan').value.trim();
+    const btn = document.getElementById('btnSubmitCancelFaktur');
+
+    if (!idFaktur) return;
+    if (!kategori) {
+        alert('Pilih kategori alasan pembatalan.');
+        return;
+    }
+    if (alasan.length < 5) {
+        alert('Uraian kronologis alasan wajib diisi minimal 5 karakter.');
+        return;
+    }
+
+    const origText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Memproses Pembatalan & BAP...';
+
+    try {
+        const res = await fetch(`<?= BASE_URL ?>/api/faktur_po/cancel.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id_faktur: idFaktur,
+                kategori_alasan: kategori,
+                alasan: alasan
+            })
+        });
+
+        const result = await res.json();
+
+        if (result.success) {
+            cancelFakturModalInstance.hide();
+            alert(result.message);
+            
+            // Buka lembar cetak BAP di tab baru
+            if (result.data && result.data.id_faktur) {
+                window.open(`<?= BASE_URL ?>/admin/pages/laporan/print_bap.php?type=FAKTUR&id=${result.data.id_faktur}`, '_blank');
+            }
+
+            loadFakturList(currentPage);
+        } else {
+            alert(result.message || 'Gagal membatalkan Faktur.');
+        }
+    } catch (err) {
+        alert('Terjadi kesalahan: ' + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = origText;
+    }
 }
 </script>
 

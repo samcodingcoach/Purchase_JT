@@ -316,30 +316,38 @@ if (!function_exists('renderNewRoEmailTemplate')) {
     function renderNewRoEmailTemplate($roData, $items, $pemohonData) {
         $nomorRo = htmlspecialchars($roData['nomor'] ?? '-');
         $tglRo = !empty($roData['tanggal_ro']) ? date('d/m/Y H:i', strtotime($roData['tanggal_ro'])) : date('d/m/Y H:i');
-        $prioritas = strtoupper($roData['prioritas'] ?? 'NORMAL');
+        $prioritas = (strtoupper($roData['prioritas'] ?? '') === 'URGENT') ? 'URGENT' : 'NORMAL';
         $namaSite = htmlspecialchars($roData['nama_site'] ?? 'Semua Lokasi / Site Utama');
+        $namaVendor = !empty($roData['nama_vendor']) ? htmlspecialchars($roData['nama_vendor']) : 'Belum Ditentukan';
+        if (!empty($roData['nama_vendor']) && !empty($roData['kode_vendor'])) {
+            $namaVendor .= ' <span style="font-size: 11px; color: #64748b; font-family: monospace;">[' . htmlspecialchars($roData['kode_vendor']) . ']</span>';
+        }
         $keterangan = !empty($roData['keterangan']) ? htmlspecialchars($roData['keterangan']) : '-';
         $namaPemohon = htmlspecialchars($pemohonData['nama_karyawan'] ?? 'Karyawan');
         $jabatanPemohon = htmlspecialchars($pemohonData['nama_jabatan'] ?? ($pemohonData['nama_divisi'] ?? 'Operasional'));
-        $loginUrl = defined('BASE_URL') ? BASE_URL . '/admin/pages/request_order/index.php' : 'http://localhost/JT_Purchase/admin/pages/request_order/index.php';
 
         $badgeColor = ($prioritas === 'URGENT') ? '#dc2626' : '#2563eb';
         $badgeBg = ($prioritas === 'URGENT') ? '#fee2e2' : '#dbeafe';
+        $prioritasLabel = $prioritas;
 
         $itemsHtml = '';
         $no = 1;
         foreach ($items as $it) {
             $namaBarang = htmlspecialchars($it['nama_barang'] ?? '-');
+            $kategori = htmlspecialchars($it['nama_kategori'] ?? ($it['kategori'] ?? '-'));
+            $merk = htmlspecialchars($it['nama_merk'] ?? ($it['merk'] ?? '-'));
             $qty = isset($it['qty']) ? (float)$it['qty'] : 0;
             $satuan = htmlspecialchars($it['satuan'] ?? 'PCS');
             $harga = isset($it['harga']) && (float)$it['harga'] > 0 ? 'Rp ' . number_format((float)$it['harga'], 0, ',', '.') : '-';
 
             $itemsHtml .= '
             <tr style="border-bottom: 1px solid #f1f5f9;">
-                <td style="padding: 10px 12px; font-size: 13px; color: #64748b; text-align: center;">' . $no++ . '</td>
-                <td style="padding: 10px 12px; font-size: 13px; color: #1e293b; font-weight: 500;">' . $namaBarang . '</td>
-                <td style="padding: 10px 12px; font-size: 13px; color: #1e293b; text-align: center; font-weight: 600;">' . $qty . ' ' . $satuan . '</td>
-                <td style="padding: 10px 12px; font-size: 13px; color: #64748b; text-align: right;">' . $harga . '</td>
+                <td style="padding: 10px 8px; font-size: 12px; color: #64748b; text-align: center;">' . $no++ . '</td>
+                <td style="padding: 10px 10px; font-size: 13px; color: #1e293b; font-weight: 600;">' . $namaBarang . '</td>
+                <td style="padding: 10px 8px; font-size: 12px; color: #475569;">' . $kategori . '</td>
+                <td style="padding: 10px 8px; font-size: 12px; color: #475569;">' . $merk . '</td>
+                <td style="padding: 10px 8px; font-size: 13px; color: #1e293b; text-align: center; font-weight: 600;">' . $qty . ' ' . $satuan . '</td>
+                <td style="padding: 10px 10px; font-size: 12px; color: #64748b; text-align: right; font-family: monospace;">' . $harga . '</td>
             </tr>';
         }
 
@@ -355,7 +363,7 @@ if (!function_exists('renderNewRoEmailTemplate')) {
             <table border="0" cellpadding="0" cellspacing="0" width="100%" style="table-layout: fixed;">
                 <tr>
                     <td align="center" style="padding: 30px 10px;">
-                        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 620px; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;">
+                        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 650px; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;">
                             <!-- Header Brand -->
                             <tr>
                                 <td align="center" style="background: linear-gradient(135deg, #0f2744 0%, #1e5288 100%); padding: 28px 20px; color: #ffffff;">
@@ -407,8 +415,20 @@ if (!function_exists('renderNewRoEmailTemplate')) {
                                             <td style="padding: 10px 14px; color: #1e293b; font-weight: 600; border-bottom: 1px solid #e2e8f0;">' . $namaPemohon . ' <span style="font-weight: normal; color: #64748b;">(' . $jabatanPemohon . ')</span></td>
                                         </tr>
                                         <tr>
-                                            <td style="padding: 10px 14px; color: #64748b; border-bottom: 1px solid #e2e8f0;">Lokasi / Site</td>
+                                            <td style="padding: 10px 14px; color: #64748b; border-bottom: 1px solid #e2e8f0;">Tingkat Prioritas Kebutuhan</td>
+                                            <td style="padding: 10px 14px; border-bottom: 1px solid #e2e8f0;">
+                                                <span style="background-color: ' . $badgeBg . '; color: ' . $badgeColor . '; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px;">
+                                                    ' . $prioritasLabel . '
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 10px 14px; color: #64748b; border-bottom: 1px solid #e2e8f0;">Lokasi / Site Penempatan</td>
                                             <td style="padding: 10px 14px; color: #1e293b; border-bottom: 1px solid #e2e8f0;">' . $namaSite . '</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 10px 14px; color: #64748b; border-bottom: 1px solid #e2e8f0;">Vendor Rekanan Tujuan</td>
+                                            <td style="padding: 10px 14px; color: #1e293b; font-weight: 600; border-bottom: 1px solid #e2e8f0;">' . $namaVendor . '</td>
                                         </tr>
                                         <tr>
                                             <td style="padding: 10px 14px; color: #64748b;">Catatan / Keterangan</td>
@@ -417,28 +437,23 @@ if (!function_exists('renderNewRoEmailTemplate')) {
                                     </table>
 
                                     <!-- Tabel Item Material -->
-                                    <div style="margin-bottom: 24px;">
+                                    <div style="margin-bottom: 15px;">
                                         <div style="font-size: 13px; font-weight: 700; color: #0f2744; margin-bottom: 8px;">RINCIAN MATERIAL / BARANG:</div>
                                         <table border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
                                             <thead>
                                                 <tr style="background-color: #f1f5f9; text-align: left;">
-                                                    <th style="padding: 8px 12px; font-size: 12px; color: #475569; width: 40px; text-align: center;">No</th>
-                                                    <th style="padding: 8px 12px; font-size: 12px; color: #475569;">Nama Material / Barang</th>
-                                                    <th style="padding: 8px 12px; font-size: 12px; color: #475569; text-align: center;">Qty</th>
-                                                    <th style="padding: 8px 12px; font-size: 12px; color: #475569; text-align: right;">Est. Harga</th>
+                                                    <th style="padding: 8px 8px; font-size: 12px; color: #475569; width: 30px; text-align: center;">No</th>
+                                                    <th style="padding: 8px 10px; font-size: 12px; color: #475569;">Nama Material / Barang</th>
+                                                    <th style="padding: 8px 8px; font-size: 12px; color: #475569; width: 90px;">Kategori</th>
+                                                    <th style="padding: 8px 8px; font-size: 12px; color: #475569; width: 90px;">Merk</th>
+                                                    <th style="padding: 8px 8px; font-size: 12px; color: #475569; text-align: center; width: 75px;">Qty</th>
+                                                    <th style="padding: 8px 10px; font-size: 12px; color: #475569; text-align: right; width: 85px;">Est. Harga</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 ' . $itemsHtml . '
                                             </tbody>
                                         </table>
-                                    </div>
-
-                                    <!-- Action Button CTA -->
-                                    <div style="text-align: center; margin: 30px 0 10px 0;">
-                                        <a href="' . $loginUrl . '" target="_blank" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-size: 14px; font-weight: 700; display: inline-block; box-shadow: 0 4px 10px rgba(2,132,199,0.3);">
-                                            🔍 Buka &amp; Tinjau Request Order
-                                        </a>
                                     </div>
                                 </td>
                             </tr>
@@ -604,13 +619,6 @@ if (!function_exists('renderRoStatusEmailTemplate')) {
                                             <td style="padding: 10px 14px; color: #1e293b;">' . date('d/m/Y H:i') . '</td>
                                         </tr>
                                     </table>
-
-                                    <!-- Action Button CTA -->
-                                    <div style="text-align: center; margin: 25px 0 10px 0;">
-                                        <a href="' . $loginUrl . '" target="_blank" style="background: linear-gradient(135deg, #0f2744 0%, #1e5288 100%); color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-size: 14px; font-weight: 700; display: inline-block; box-shadow: 0 4px 10px rgba(15,39,68,0.25);">
-                                            📋 Lihat Rincian Request Order
-                                        </a>
-                                    </div>
                                 </td>
                             </tr>
 
@@ -645,12 +653,14 @@ if (!function_exists('sendRoApprovalNotification')) {
             return ['success' => false, 'sent_count' => 0, 'message' => 'ID Request Order tidak valid.'];
         }
 
-        // 1. Ambil data Header RO & Pemohon
-        $sqlRo = "SELECT ro.id_request, ro.nomor, ro.tanggal_ro, ro.prioritas, ro.keterangan, ro.status,
+        // 1. Ambil data Header RO & Pemohon beserta Vendor Rekanan Tujuan
+        $sqlRo = "SELECT ro.id_request, ro.nomor, ro.tanggal_ro, ro.prioritas, ro.keterangan, ro.status, ro.id_vendor,
                          s.nama_site, 
+                         v.nama_perusahaan AS nama_vendor, v.kode_vendor,
                          k.nama_karyawan, k.email as email_pemohon, j.nama_jabatan, d.nama_divisi
                   FROM request_order ro
                   LEFT JOIN site s ON ro.id_site = s.id_site
+                  LEFT JOIN vendor v ON ro.id_vendor = v.id_vendor
                   LEFT JOIN karyawan k ON ro.id_karyawan = k.id_karyawan
                   LEFT JOIN jabatan j ON k.id_jabatan = j.id_jabatan
                   LEFT JOIN divisi d ON k.id_divisi = d.id_divisi
@@ -667,10 +677,16 @@ if (!function_exists('sendRoApprovalNotification')) {
         $roData = $resRo->fetch_assoc();
         $stmt->close();
 
-        // 2. Ambil Rincian Item Barang
-        $sqlItems = "SELECT id_request_detail, nama_barang, qty, satuan, harga, subtotal 
-                     FROM request_order_detail 
-                     WHERE id_request = ? ORDER BY id_request_detail ASC";
+        // 2. Ambil Rincian Item Barang beserta Kategori dan Merk
+        $sqlItems = "SELECT rod.id_request_detail, rod.id_barang, rod.kode_barang, rod.nama_barang, rod.qty, rod.satuan, rod.harga, rod.subtotal,
+                            COALESCE(k.nama_kategori, 'Umum') AS nama_kategori,
+                            COALESCE(m.nama_merk, 'Umum') AS nama_merk
+                     FROM request_order_detail rod
+                     LEFT JOIN barang b ON rod.id_barang = b.id_barang
+                     LEFT JOIN kategori_barang k ON b.id_kategori = k.id_kategori
+                     LEFT JOIN merk_barang m ON b.id_merk = m.id_merk
+                     WHERE rod.id_request = ? 
+                     ORDER BY rod.id_request_detail ASC";
         $stmtIt = $conn->prepare($sqlItems);
         $stmtIt->bind_param("i", $idRequest);
         $stmtIt->execute();
@@ -968,12 +984,14 @@ if (!function_exists('sendRoStatusNotification')) {
             return ['success' => false, 'message' => 'ID Request Order tidak valid.'];
         }
 
-        // 1. Ambil Data RO & Pemohon beserta relasi PO & Vendor jika ada
-        $sqlRo = "SELECT ro.id_request, ro.nomor, ro.status, ro.id_po, ro.id_vendor,
+        // 1. Ambil Data RO & Pemohon beserta Approver, relasi PO & Vendor jika ada
+        $sqlRo = "SELECT ro.id_request, ro.nomor, ro.status, ro.id_po, ro.id_vendor, ro.id_karyawan_approved,
                          k.nama_karyawan as nama_pemohon, k.email as email_pemohon,
+                         appr.kode_karyawan as approver_kode, appr.nama_karyawan as approver_nama,
                          po.nomor_po, v.nama_perusahaan as nama_vendor
                   FROM request_order ro
                   LEFT JOIN karyawan k ON ro.id_karyawan = k.id_karyawan
+                  LEFT JOIN karyawan appr ON ro.id_karyawan_approved = appr.id_karyawan
                   LEFT JOIN purchase_order po ON ro.id_po = po.id_po
                   LEFT JOIN vendor v ON (ro.id_vendor = v.id_vendor OR po.id_vendor = v.id_vendor)
                   WHERE ro.id_request = ? LIMIT 1";
@@ -988,6 +1006,18 @@ if (!function_exists('sendRoStatusNotification')) {
         }
         $roData = $resRo->fetch_assoc();
         $stmt->close();
+
+        // Susun nama approver lengkap dengan kode karyawan
+        $approverDisplay = $approverName;
+        if (!empty($roData['approver_nama'])) {
+            if (!empty($roData['approver_kode'])) {
+                $approverDisplay = $roData['approver_nama'] . ' (' . $roData['approver_kode'] . ')';
+            } else {
+                $approverDisplay = $roData['approver_nama'];
+            }
+        } elseif (!empty($approverName)) {
+            $approverDisplay = $approverName;
+        }
 
         // Gabungkan extraData jika ada nomor_po atau vendor yang baru saja dibuat
         if (!empty($extraData) && is_array($extraData)) {
@@ -1005,7 +1035,7 @@ if (!function_exists('sendRoStatusNotification')) {
         $emailSentPemohon = false;
 
         if (!empty($toEmail) && filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
-            $htmlBody = renderRoStatusEmailTemplate($roData, $statusUpper, $approverName, $keterangan, $extraData);
+            $htmlBody = renderRoStatusEmailTemplate($roData, $statusUpper, $approverDisplay, $keterangan, $extraData);
 
             if ($statusUpper === 'DISETUJUI PURCHASING') {
                 $poInfo = !empty($roData['nomor_po']) ? " (PO: {$roData['nomor_po']})" : "";
@@ -1470,6 +1500,11 @@ if (!function_exists('sendNotificationEvent')) {
         $hDays = isset($payload['h_days']) ? (int)$payload['h_days'] : 3;
 
         switch ($action) {
+            case 'cancellation':
+            case 'pembatalan':
+                $idPembatalan = isset($payload['id_pembatalan']) ? (int)$payload['id_pembatalan'] : 0;
+                return sendCancellationNotification($conn, $idPembatalan);
+
             case 'ro_created':
                 return sendRoApprovalNotification($conn, $idRequest);
 
@@ -1495,4 +1530,254 @@ if (!function_exists('sendNotificationEvent')) {
         }
     }
 }
+
+if (!function_exists('sendCancellationNotification')) {
+    /**
+     * Kirim Notifikasi Email Otomatis ke Manager atas Pembatalan Dokumen (PO / Faktur)
+     * 
+     * @param mysqli $conn
+     * @param int $idPembatalan
+     * @return array [success => bool, message => string, sent_count => int]
+     */
+    function sendCancellationNotification($conn, $idPembatalan) {
+        $idPembatalan = (int)$idPembatalan;
+        if ($idPembatalan <= 0) {
+            return ['success' => false, 'message' => 'ID Pembatalan tidak valid.', 'sent_count' => 0];
+        }
+
+        // 1. Ambil Data BAP Pembatalan
+        $stmt = $conn->prepare("SELECT * FROM pembatalan_transaksi WHERE id_pembatalan = ? LIMIT 1");
+        $stmt->bind_param("i", $idPembatalan);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $bap = $res ? $res->fetch_assoc() : null;
+        $stmt->close();
+
+        if (!$bap) {
+            return ['success' => false, 'message' => 'Data Berita Acara Pembatalan tidak ditemukan.', 'sent_count' => 0];
+        }
+
+        // 2. Ambil Daftar Email Manager & Approver
+        $managers = [];
+        $resMgr = $conn->query("
+            SELECT DISTINCT k.nama_karyawan, k.email, j.nama_jabatan 
+            FROM karyawan k 
+            INNER JOIN jabatan j ON k.id_jabatan = j.id_jabatan 
+            WHERE (UPPER(j.nama_jabatan) LIKE '%MANAGER%' OR UPPER(j.nama_jabatan) LIKE '%ADMIN%') 
+              AND k.email IS NOT NULL AND k.email != ''
+        ");
+        if ($resMgr) {
+            while ($row = $resMgr->fetch_assoc()) {
+                if (filter_var($row['email'], FILTER_VALIDATE_EMAIL)) {
+                    $managers[] = $row;
+                }
+            }
+        }
+
+        if (empty($managers)) {
+            // Fallback cari di tabel users jika ada email
+            $resUsr = $conn->query("SELECT username, email FROM users WHERE role IN ('ADMIN', 'MANAGER') AND email IS NOT NULL AND email != ''");
+            if ($resUsr) {
+                while ($row = $resUsr->fetch_assoc()) {
+                    if (filter_var($row['email'], FILTER_VALIDATE_EMAIL)) {
+                        $managers[] = ['nama_karyawan' => $row['username'], 'email' => $row['email'], 'nama_jabatan' => 'Manager'];
+                    }
+                }
+            }
+        }
+
+        if (empty($managers)) {
+            return ['success' => false, 'message' => 'Tidak ditemukan akun Manager dengan email aktif untuk menerima notifikasi.', 'sent_count' => 0];
+        }
+
+        // 3. Format Template Email
+        $nomorBap = htmlspecialchars($bap['nomor_bap']);
+        $jenisDoc = htmlspecialchars($bap['jenis_dokumen']);
+        $nomorRef = htmlspecialchars($bap['nomor_referensi']);
+        $stateTahapan = htmlspecialchars($bap['state_tahapan']);
+        $namaVendor = htmlspecialchars($bap['nama_vendor'] ?? '-');
+        $nilaiRp = number_format((float)($bap['nilai_transaksi'] ?? 0), 0, ',', '.');
+        $kategoriAlasan = htmlspecialchars($bap['kategori_alasan']);
+        $alasanDetail = nl2br(htmlspecialchars($bap['alasan_detail']));
+        $namaPetugas = htmlspecialchars($bap['nama_karyawan_batal']);
+        $tanggalBatal = date('d/m/Y H:i', strtotime($bap['tanggal_batal']));
+
+        $subject = "[ALERT PEMBATALAN] Berita Acara Pembatalan {$jenisDoc}: {$nomorRef} - PT Jaya Teknik";
+
+        $htmlBody = "
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset='UTF-8'>
+            <style>
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f1f5f9; margin: 0; padding: 20px; color: #1e293b; }
+                .container { max-width: 620px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0; }
+                .header { background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%); color: #ffffff; padding: 24px 30px; }
+                .header h2 { margin: 0 0 6px 0; font-size: 20px; font-weight: 700; letter-spacing: -0.025em; }
+                .header p { margin: 0; font-size: 13px; color: #fecaca; }
+                .content { padding: 28px 30px; }
+                .badge-batal { display: inline-block; background: #fee2e2; color: #b91c1c; font-weight: 700; font-size: 11px; padding: 4px 10px; border-radius: 9999px; text-transform: uppercase; border: 1px solid #fca5a5; margin-bottom: 16px; }
+                .table-info { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px; }
+                .table-info td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; }
+                .table-info td.label { width: 38%; color: #64748b; font-weight: 600; }
+                .table-info td.value { width: 62%; color: #0f172a; font-weight: 600; }
+                .reason-box { background-color: #f8fafc; border-left: 4px solid #ef4444; padding: 14px 16px; border-radius: 0 8px 8px 0; margin-bottom: 24px; font-size: 13px; color: #334155; }
+                .footer { background-color: #f8fafc; padding: 18px 30px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; }
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <div class='header'>
+                    <h2>NOTIFIKASI PEMBATALAN TRANSAKSI</h2>
+                    <p>PT Jaya Teknik — Procure-to-Pay Purchasing System</p>
+                </div>
+                <div class='content'>
+                    <div class='badge-batal'>DOKUMEN {$jenisDoc} RESMI DIBATALKAN</div>
+                    <p style='font-size: 14px; margin-top: 0; line-height: 1.5;'>
+                        Telah diterbitkan dokumen <strong>Berita Acara Pembatalan (BAP)</strong> dengan rincian data sebagai berikut:
+                    </p>
+                    
+                    <table class='table-info'>
+                        <tr>
+                            <td class='label'>Nomor Dokumen BAP</td>
+                            <td class='value' style='color: #b91c1c;'>{$nomorBap}</td>
+                        </tr>
+                        <tr>
+                            <td class='label'>Jenis &amp; Dokumen Referensi</td>
+                            <td class='value'>{$jenisDoc} : <strong>{$nomorRef}</strong></td>
+                        </tr>
+                        <tr>
+                            <td class='label'>Tahapan / State saat Batal</td>
+                            <td class='value'><span style='background: #e2e8f0; padding: 2px 6px; border-radius: 4px;'>{$stateTahapan}</span></td>
+                        </tr>
+                        <tr>
+                            <td class='label'>Vendor Rekanan</td>
+                            <td class='value'>{$namaVendor}</td>
+                        </tr>
+                        <tr>
+                            <td class='label'>Nilai Transaksi Dokumen</td>
+                            <td class='value' style='font-family: monospace;'>Rp {$nilaiRp}</td>
+                        </tr>
+                        <tr>
+                            <td class='label'>Kategori Alasan</td>
+                            <td class='value'>{$kategoriAlasan}</td>
+                        </tr>
+                        <tr>
+                            <td class='label'>Dibatalkan Oleh</td>
+                            <td class='value'>{$namaPetugas}</td>
+                        </tr>
+                        <tr>
+                            <td class='label'>Waktu Pembatalan</td>
+                            <td class='value'>{$tanggalBatal}</td>
+                        </tr>
+                    </table>
+
+                    <div style='font-weight: 600; font-size: 13px; color: #475569; margin-bottom: 6px;'>Kronologis / Alasan Berita Acara:</div>
+                    <div class='reason-box'>
+                        {$alasanDetail}
+                    </div>
+
+                    <p style='font-size: 12px; color: #64748b; line-height: 1.5; margin-bottom: 0;'>
+                        Dokumen Berita Acara Pembatalan (BAP) telah diarsipkan ke dalam sistem. Anda dapat melihat atau mencetak ulang lembar BAP resmi melalui menu <strong>Laporan &rarr; Laporan Pembatalan Transaksi</strong>.
+                    </p>
+                </div>
+                <div class='footer'>
+                    &copy; " . date('Y') . " PT Jaya Teknik. Email ini dikirimkan secara otomatis oleh sistem, mohon tidak membalas langsung ke alamat ini.
+                </div>
+            </div>
+        </body>
+        </html>
+        ";
+
+        // 4. Kirim ke setiap manager
+        $sentCount = 0;
+        foreach ($managers as $mgr) {
+            $resSend = sendSmtpEmail($conn, $mgr['email'], $mgr['nama_karyawan'], $subject, $htmlBody);
+            if ($resSend['success']) {
+                $sentCount++;
+            }
+        }
+
+        if ($sentCount > 0) {
+            return ['success' => true, 'message' => "Notifikasi pembatalan berhasil dikirim ke {$sentCount} Manager.", 'sent_count' => $sentCount];
+        }
+
+        return ['success' => false, 'message' => 'Gagal mengirim email notifikasi ke Manager (Server SMTP offline atau kuota habis).', 'sent_count' => 0];
+    }
+}
+
+if (!function_exists('sendCancellationNotificationDirect')) {
+    /**
+     * Kirim Notifikasi Email Otomatis ke Manager atas Pembatalan Dokumen (PO / Faktur) Langsung
+     */
+    function sendCancellationNotificationDirect($conn, $jenisDoc, $idRef, $nomorRef, $namaVendor, $kategoriAlasan, $alasanDetail, $stateTahapan, $namaPetugas) {
+        $managers = [];
+        $resMgr = $conn->query("
+            SELECT DISTINCT k.nama_karyawan, k.email 
+            FROM karyawan k 
+            INNER JOIN jabatan j ON k.id_jabatan = j.id_jabatan 
+            WHERE (UPPER(j.nama_jabatan) LIKE '%MANAGER%' OR UPPER(j.nama_jabatan) LIKE '%ADMIN%') 
+              AND k.email IS NOT NULL AND k.email != ''
+        ");
+        if ($resMgr) {
+            while ($row = $resMgr->fetch_assoc()) {
+                if (filter_var($row['email'], FILTER_VALIDATE_EMAIL)) {
+                    $managers[] = $row;
+                }
+            }
+        }
+
+        if (empty($managers)) {
+            $resUsr = $conn->query("SELECT username, email FROM users WHERE role IN ('ADMIN', 'MANAGER') AND email IS NOT NULL AND email != ''");
+            if ($resUsr) {
+                while ($row = $resUsr->fetch_assoc()) {
+                    if (filter_var($row['email'], FILTER_VALIDATE_EMAIL)) {
+                        $managers[] = ['nama_karyawan' => $row['username'], 'email' => $row['email']];
+                    }
+                }
+            }
+        }
+
+        if (empty($managers)) {
+            return ['success' => false, 'message' => 'Tidak ada akun email Manager aktif.', 'sent_count' => 0];
+        }
+
+        $subject = "[ALERT PEMBATALAN] Pembatalan {$jenisDoc}: {$nomorRef} - PT Jaya Teknik";
+        $htmlBody = "
+        <div style='font-family: Arial, sans-serif; padding: 20px; color: #1e293b; background: #f8fafc;'>
+            <div style='max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden;'>
+                <div style='background: #dc2626; color: #fff; padding: 16px 20px;'>
+                    <h3 style='margin: 0; font-size: 18px;'>Pemberitahuan Pembatalan {$jenisDoc}</h3>
+                </div>
+                <div style='padding: 20px;'>
+                    <p style='margin-top: 0; font-size: 14px;'>Telah dilakukan pembatalan dokumen pengadaan dengan rincian:</p>
+                    <table style='width: 100%; font-size: 13px; border-collapse: collapse;'>
+                        <tr><td style='padding: 6px 0; color: #64748b; width: 35%;'>Dokumen Referensi</td><td style='padding: 6px 0;'><strong>{$jenisDoc} - {$nomorRef}</strong></td></tr>
+                        <tr><td style='padding: 6px 0; color: #64748b;'>Vendor Rekanan</td><td style='padding: 6px 0;'><strong>" . htmlspecialchars($namaVendor ?? '-') . "</strong></td></tr>
+                        <tr><td style='padding: 6px 0; color: #64748b;'>State saat Batal</td><td style='padding: 6px 0;'><span style='background:#f1f5f9; padding: 2px 6px; border-radius: 4px;'>{$stateTahapan}</span></td></tr>
+                        <tr><td style='padding: 6px 0; color: #64748b;'>Kategori Alasan</td><td style='padding: 6px 0;'><strong style='color: #dc2626;'>" . htmlspecialchars($kategoriAlasan) . "</strong></td></tr>
+                        <tr><td style='padding: 6px 0; color: #64748b;'>Dibatalkan Oleh</td><td style='padding: 6px 0;'>" . htmlspecialchars($namaPetugas) . "</td></tr>
+                        <tr><td style='padding: 6px 0; color: #64748b;'>Waktu Pembatalan</td><td style='padding: 6px 0;'>" . date('d/m/Y H:i') . "</td></tr>
+                    </table>
+                    <div style='margin-top: 15px; padding: 12px; background: #fef2f2; border-left: 4px solid #dc2626; font-size: 13px; color: #334155;'>
+                        <strong>Uraian Alasan:</strong><br>" . nl2br(htmlspecialchars($alasanDetail)) . "
+                    </div>
+                </div>
+                <div style='background: #f8fafc; padding: 12px 20px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0;'>
+                    &copy; " . date('Y') . " PT Jaya Teknik System
+                </div>
+            </div>
+        </div>";
+
+        $sent = 0;
+        foreach ($managers as $m) {
+            $r = sendSmtpEmail($conn, $m['email'], $m['nama_karyawan'], $subject, $htmlBody);
+            if ($r['success']) $sent++;
+        }
+
+        return ['success' => ($sent > 0), 'sent_count' => $sent, 'message' => "Email terkirim ke {$sent} Manager."];
+    }
+}
+
+
 
