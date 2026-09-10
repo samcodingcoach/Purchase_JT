@@ -1,0 +1,16 @@
+{
+  "nodes": [],
+  "edges": [],
+  "stats": {
+    "files_scanned": 0,
+    "nodes": 0,
+    "edges": 0,
+    "edges_resolved": 0,
+    "orphan_nodes": 0,
+    "sink_nodes": 0,
+    "source_nodes": 0,
+    "by_language": {},
+    "top_hubs": []
+  },
+  "errors": []
+}

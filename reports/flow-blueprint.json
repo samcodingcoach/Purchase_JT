@@ -1,0 +1,14 @@
+{
+  "nodes": [],
+  "edges": [],
+  "stats": {
+    "files_scanned": 0,
+    "nodes": 0,
+    "edges": 0,
+    "edges_resolved": 0,
+    "by_language": {},
+    "by_edge_kind": {},
+    "by_edge_kind_resolved": {}
+  },
+  "errors": []
+}

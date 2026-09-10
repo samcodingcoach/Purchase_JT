@@ -1,0 +1,27 @@
+{
+  "flow_check": {
+    "files": [
+      {
+        "path": "c:/xampp/htdocs/JT_Purchase/flows",
+        "issues": [
+          {
+            "severity": "warning",
+            "field": null,
+            "message": "No flow specs found in c:\\xampp\\htdocs\\JT_Purchase\\flows (flow specs are optional)"
+          }
+        ]
+      }
+    ],
+    "error_count": 0,
+    "warning_count": 1
+  },
+  "audit": {
+    "summary": {
+      "files_scanned": 0,
+      "findings": 0,
+      "by_category": {},
+      "by_language": {}
+    },
+    "findings": []
+  }
+}

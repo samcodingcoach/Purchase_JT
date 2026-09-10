@@ -1,0 +1,11 @@
+{
+  "repo_type": {
+    "kind": "mixed",
+    "confidence": 0.3,
+    "indicators": [],
+    "expected_structure": []
+  },
+  "findings": [],
+  "summary": {},
+  "files_scanned": 206
+}

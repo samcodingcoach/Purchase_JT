@@ -20,6 +20,15 @@ require_once __DIR__ . '/../../components/sidebar.php';
 require_once __DIR__ . '/../../components/navbar.php';
 ?>
 
+<style>
+.filter-select {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    padding-right: 2.25rem !important;
+}
+</style>
+
 <div class="container-fluid px-0">
     <!-- HEADER & ACTION -->
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
