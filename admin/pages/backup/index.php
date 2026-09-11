@@ -169,22 +169,20 @@ require_once __DIR__ . '/../../components/navbar.php';
     <div class="card border-0 shadow-sm rounded-3">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0" id="tableBackup" style="min-width: 950px;">
+                <table class="table table-hover align-middle mb-0" id="tableBackup">
                     <thead class="table-light text-muted small text-uppercase">
                         <tr>
                             <th style="width: 50px;" class="text-center">No</th>
-                            <th style="min-width: 200px;">Nama Berkas</th>
-                            <th style="min-width: 150px;">Scope</th>
-                            <th style="min-width: 190px;">Waktu &amp; Pelaksana Backup</th>
-                            <th style="min-width: 170px;">Tujuan Email</th>
-                            <th style="min-width: 150px;">Status Restore</th>
-                            <th style="min-width: 150px;">Keterangan</th>
+                            <th style="min-width: 220px;">Nama File</th>
+                            <th style="min-width: 130px;">Scope</th>
+                            <th style="min-width: 150px;">Tanggal Backup</th>
+                            <th style="min-width: 150px;">Tanggal Restore</th>
                             <th class="text-center" style="width: 130px;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="tbodyBackup">
                         <tr>
-                            <td colspan="8" class="text-center py-5 text-muted">
+                            <td colspan="6" class="text-center py-5 text-muted">
                                 <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
                                 Memuat data riwayat backup...
                             </td>
@@ -471,18 +469,18 @@ require_once __DIR__ . '/../../components/navbar.php';
 </div>
 
 <!-- ============================================================== -->
-<!-- MODAL 3: RINCIAN TABEL & RESEND EMAIL                          -->
+<!-- MODAL 3: RINCIAN TABEL                                         -->
 <!-- ============================================================== -->
 <div class="modal fade" id="modalDetail" tabindex="-1" aria-labelledby="modalDetailLabel" aria-hidden="true">
     <div class="modal-dialog modal-md modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg rounded-3">
             <div class="modal-header bg-white px-4 py-3 border-bottom">
-                <h5 class="modal-title fw-bold text-dark mb-0 d-flex align-items-center gap-2" id="modalDetailLabel">
-                    <i class="bi bi-info-circle-fill text-primary"></i> Rincian Arsip Backup
+                <h5 class="modal-title fw-bold text-dark mb-0" id="modalDetailLabel">
+                    Rincian Arsip Backup
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-4">
+            <div class="modal-body px-4 py-3">
                 <table class="table table-sm table-borderless small mb-3">
                     <tr><td class="text-muted" style="width: 35%;">Nama Berkas:</td><td class="fw-bold font-monospace text-primary" id="detailFileName">-</td></tr>
                     <tr><td class="text-muted">Ukuran Berkas:</td><td class="fw-bold" id="detailFileSize">-</td></tr>
@@ -493,27 +491,12 @@ require_once __DIR__ . '/../../components/navbar.php';
                     <tr><td class="text-muted">Status Restore:</td><td id="detailStatusRestore">-</td></tr>
                 </table>
 
-                <div class="mb-3">
+                <div>
                     <label class="form-label fw-bold small text-dark mb-1">Daftar Tabel Terarsip (Scope):</label>
                     <div class="p-2 border rounded bg-light" style="max-height: 140px; overflow-y: auto;" id="detailScopeList">
                         -
                     </div>
                 </div>
-
-                <div class="bg-light p-3 rounded-3 border">
-                    <label class="form-label fw-bold small text-dark mb-1">
-                        <i class="bi bi-send-fill text-primary me-1"></i> Kirim Ulang Berkas ke Email:
-                    </label>
-                    <div class="input-group input-group-sm">
-                        <input type="email" class="form-control" id="resendTargetEmail" placeholder="nama@perusahaan.com">
-                        <button class="btn btn-primary fw-semibold" id="btnResendEmail" onclick="executeResendEmail()">
-                            Kirim Ulang
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer bg-light py-2">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
             </div>
         </div>
     </div>
@@ -604,7 +587,7 @@ async function loadBackupData(page = 1) {
         if (data.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="8" class="text-center py-5 text-muted">
+                    <td colspan="6" class="text-center py-5 text-muted">
                         <i class="bi bi-inbox fs-3 d-block mb-1 text-secondary"></i>
                         Belum ada riwayat pencadangan database yang sesuai kriteria.
                     </td>
@@ -620,52 +603,41 @@ async function loadBackupData(page = 1) {
                     ? `<span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1"><i class="bi bi-check-all me-1"></i>Seluruh Tabel</span>`
                     : `<span class="badge bg-teal-subtle text-dark border px-2 py-1"><i class="bi bi-list-check me-1"></i>${item.scope_count} Tabel</span>`;
 
-                // Status Restore Badge
-                const restoreBadge = item.is_restored
-                    ? `<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1"><i class="bi bi-check-circle-fill me-1"></i>Di-restore (${item.tanggal_restore_format})</span>`
+                // Tanggal Restore Badge / Text
+                const tanggalRestoreText = item.is_restored
+                    ? `<div class="small fw-semibold text-success">${item.tanggal_restore_format}</div>`
                     : `<span class="badge bg-light text-muted border px-2 py-1">Belum Pernah</span>`;
-
-                // File status & size
-                const fileInfo = item.file_exists 
-                    ? `<span class="badge bg-secondary-subtle text-secondary small font-monospace">${item.file_size_formatted}</span>`
-                    : `<span class="badge bg-danger-subtle text-danger small">Berkas Hilang</span>`;
 
                 html += `
                     <tr>
                         <td class="text-center text-muted fw-bold">${no}</td>
                         <td>
-                            <div class="fw-bold text-dark font-monospace small">${escapeHtml(item.nama_file)}</div>
-                            <div>${fileInfo}</div>
+                            <div class="fw-bold text-dark font-monospace small text-truncate" style="max-width: 280px;" title="${escapeHtml(item.nama_file)}">
+                                ${escapeHtml(item.nama_file)}
+                            </div>
                         </td>
                         <td>${scopeBadge}</td>
                         <td>
-                            <div class="small fw-semibold text-dark"><i class="bi bi-clock me-1 text-muted"></i>${item.tanggal_backup_format}</div>
-                            <div class="small text-muted"><i class="bi bi-person me-1"></i>${escapeHtml(item.pelaksana_backup || '-')}</div>
+                            <div class="small fw-semibold text-dark">${item.tanggal_backup_format}</div>
                         </td>
                         <td>
-                            <span class="small font-monospace text-primary"><i class="bi bi-envelope me-1"></i>${escapeHtml(item.email_backup || '-')}</span>
-                        </td>
-                        <td>${restoreBadge}</td>
-                        <td>
-                            <span class="small text-secondary text-truncate d-inline-block" style="max-width: 150px;" title="${escapeHtml(item.keterangan)}">
-                                ${escapeHtml(item.keterangan)}
-                            </span>
+                            ${tanggalRestoreText}
                         </td>
                         <td class="text-center">
                             <div class="btn-group btn-group-sm">
-                                <button type="button" class="btn btn-outline-info" title="Rincian & Kirim Ulang Email" onclick='openDetailModal(${JSON.stringify(item)})'>
-                                    <i class="bi bi-eye-fill"></i>
+                                <button type="button" class="btn btn-outline-primary py-1 px-2" title="Lihat Rincian" onclick='openDetailModal(${JSON.stringify(item)})'>
+                                    <i class="bi bi-eye"></i>
                                 </button>
                                 ${item.file_exists ? `
-                                <a href="<?= BASE_URL ?>/api/backup/download.php?id=${item.id_backup}" class="btn btn-outline-primary" title="Unduh Berkas SQL">
+                                <a href="<?= BASE_URL ?>/api/backup/download.php?id=${item.id_backup}" class="btn btn-outline-secondary py-1 px-2" title="Unduh Berkas SQL">
                                     <i class="bi bi-download"></i>
                                 </a>
-                                <button type="button" class="btn btn-outline-danger" title="Quick Restore Database" onclick='openRestoreModal(${JSON.stringify(item)})'>
+                                <button type="button" class="btn btn-outline-warning py-1 px-2" title="Pulihkan Database (Restore)" onclick='openRestoreModal(${JSON.stringify(item)})'>
                                     <i class="bi bi-arrow-counterclockwise"></i>
                                 </button>
                                 ` : ''}
-                                <button type="button" class="btn btn-outline-secondary" title="Hapus Riwayat" onclick="deleteBackup(${item.id_backup}, '${escapeHtml(item.nama_file)}')">
-                                    <i class="bi bi-trash3-fill text-danger"></i>
+                                <button type="button" class="btn btn-outline-danger py-1 px-2" title="Hapus Riwayat" onclick="deleteBackup(${item.id_backup}, '${escapeHtml(item.nama_file)}')">
+                                    <i class="bi bi-trash"></i>
                                 </button>
                             </div>
                         </td>
@@ -679,7 +651,7 @@ async function loadBackupData(page = 1) {
         renderPagination(pagination);
 
     } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-4">Gagal terhubung ke API: ${err.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger py-4">Gagal terhubung ke API: ${err.message}</td></tr>`;
     }
 }
 
@@ -1174,8 +1146,6 @@ function openDetailModal(item) {
         let tags = item.scope_tables.map(t => `<span class="badge bg-secondary me-1 mb-1 font-monospace">${escapeHtml(t)}</span>`).join('');
         scopeContainer.innerHTML = tags || '-';
     }
-
-    document.getElementById('resendTargetEmail').value = item.email_backup || defaultSmtpEmail;
 
     modalDetailInstance.show();
 }

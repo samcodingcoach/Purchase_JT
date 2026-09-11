@@ -143,7 +143,7 @@ try {
             'id_backup'              => (int)$row['id_backup'],
             'email_backup'           => $row['email_backup'],
             'tanggal_backup'         => $row['tanggal_backup'],
-            'tanggal_backup_format'  => date('d/m/Y H:i:s', strtotime($row['tanggal_backup'])),
+            'tanggal_backup_format'  => date('d/m/Y H:i', strtotime($row['tanggal_backup'])),
             'id_karyawan'            => $row['id_karyawan'],
             'pelaksana_backup'       => $pelaksanaBackup,
             'scope'                  => $scopeRaw,
