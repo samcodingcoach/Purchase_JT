@@ -400,18 +400,18 @@ require_once __DIR__ . '/../../components/navbar.php';
 <!-- MODAL 2: QUICK RESTORE DATABASE (SERAGAM DENGAN STANDARD)      -->
 <!-- ============================================================== -->
 <div class="modal fade" id="modalRestore" tabindex="-1" aria-labelledby="modalRestoreLabel" aria-hidden="true" data-bs-backdrop="static">
-    <div class="modal-dialog modal-md modal-dialog-centered">
+    <div class="modal-dialog modal-md modal-dialog-centered" style="max-width: 580px;">
         <div class="modal-content border-0 shadow-lg rounded-3">
             <div class="modal-header bg-white px-4 py-3 border-bottom">
-                <h5 class="modal-title fw-bold text-danger mb-0 d-flex align-items-center gap-2" id="modalRestoreLabel">
-                    <i class="bi bi-exclamation-triangle-fill"></i> Konfirmasi Pemulihan Database
+                <h5 class="modal-title fw-bold text-dark mb-0" id="modalRestoreLabel">
+                    Konfirmasi Pemulihan Database
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="formRestore" onsubmit="event.preventDefault(); submitRestoreProcess();">
-                <div class="modal-body p-4">
+                <div class="modal-body px-4 py-3">
                     <div class="alert alert-danger border-0 d-flex gap-2 align-items-start py-2 px-3 mb-3">
-                        <i class="bi bi-exclamation-octagon-fill fs-5 text-danger flex-shrink-0 mt-1"></i>
+                        <i class="bi bi-exclamation-triangle-fill fs-5 text-danger flex-shrink-0 mt-1"></i>
                         <div>
                             <strong class="d-block text-danger small">Peringatan Kritis:</strong>
                             <span class="small" style="font-size: 0.8rem;">Proses ini akan menimpa data pada tabel terpilih dengan berkas cadangan. Pastikan data terkini telah diamankan.</span>
@@ -421,7 +421,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                     <div class="bg-light p-3 rounded-3 border mb-3">
                         <div class="row g-2 small">
                             <div class="col-4 text-muted">Berkas SQL:</div>
-                            <div class="col-8 fw-bold font-monospace text-primary" id="restoreModalFileName">-</div>
+                            <div class="col-8 fw-bold font-monospace text-primary text-truncate" id="restoreModalFileName">-</div>
                             <div class="col-4 text-muted">Cakupan Scope:</div>
                             <div class="col-8" id="restoreModalScope">-</div>
                             <div class="col-4 text-muted">Waktu Backup:</div>
@@ -431,37 +431,44 @@ require_once __DIR__ . '/../../components/navbar.php';
 
                     <input type="hidden" id="restoreBackupId" value="0">
 
-                    <!-- Otorisasi Keamanan Restore -->
-                    <div class="mb-3">
-                        <label for="restorePassword" class="form-label small fw-bold text-dark">
-                            Password Akun Anda <span class="text-danger">*</span>
-                        </label>
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text bg-white"><i class="bi bi-lock-fill text-muted"></i></span>
-                            <input type="password" class="form-control" id="restorePassword" placeholder="Masukkan password login" required>
+                    <!-- Otorisasi Keamanan: Password & Tombol Minta OTP Berdampingan (Sama Tinggi) -->
+                    <div class="row g-3 align-items-end mb-3">
+                        <div class="col-md-6">
+                            <label for="restorePassword" class="form-label small fw-bold text-dark">
+                                Password Akun Anda <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white"><i class="bi bi-lock-fill text-muted"></i></span>
+                                <input type="password" class="form-control" id="restorePassword" placeholder="Masukkan password login" required>
+                            </div>
                         </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <label class="form-label small fw-bold text-dark mb-0">Kode OTP Keamanan <span class="text-danger">*</span></label>
-                            <button type="button" class="btn btn-outline-danger btn-sm py-0 px-2 fw-semibold" style="font-size: 0.75rem;" id="btnRequestOtpRestore" onclick="requestOtpRestore()">
+                        <div class="col-md-6">
+                            <button type="button" class="btn btn-outline-danger w-100 fw-semibold" id="btnRequestOtpRestore" onclick="requestOtpRestore()">
                                 <i class="bi bi-send-fill me-1"></i> Minta Kode OTP
                             </button>
                         </div>
-                        <div class="row g-2" id="otpRestoreSection" style="display: none;">
-                            <div class="col-12">
-                                <input type="text" class="form-control form-control-sm otp-input-box text-danger" id="restoreOtp" maxlength="6" placeholder="------" autocomplete="off">
-                                <div class="form-text small text-muted">Masukkan 6 digit kode OTP yang dikirimkan ke email.</div>
-                            </div>
+                    </div>
+
+                    <!-- Input 6 Digit OTP -->
+                    <div class="row g-3" id="otpRestoreSection" style="display: none;">
+                        <div class="col-12">
+                            <label for="restoreOtp" class="form-label small fw-bold text-dark">
+                                Masukkan 6 Digit Kode OTP <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control form-control-sm otp-input-box text-danger" id="restoreOtp" maxlength="6" placeholder="------" autocomplete="off">
+                            <div class="form-text small text-muted">Masukkan 6 digit kode OTP yang dikirimkan ke email login Anda (berlaku 15 menit).</div>
                         </div>
                     </div>
-                </div>
-                <div class="modal-footer bg-light py-2">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-danger btn-sm px-3 fw-semibold" id="btnSubmitRestore">
-                        <i class="bi bi-arrow-counterclockwise me-1"></i> Eksekusi Pemulihan Database
-                    </button>
+
+                    <!-- Tombol Aksi Bawah Terpadu -->
+                    <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                        <button type="button" class="btn btn-outline-secondary btn-sm px-3" data-bs-dismiss="modal">
+                            Batal
+                        </button>
+                        <button type="submit" class="btn btn-danger btn-sm px-4 fw-semibold" id="btnSubmitRestore">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i> Eksekusi Pemulihan Database
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>
