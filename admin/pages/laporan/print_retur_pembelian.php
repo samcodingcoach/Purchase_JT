@@ -38,6 +38,21 @@ $companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <!-- External Print Stylesheet -->
     <link href="<?= BASE_URL ?>/styles/print_document.css" rel="stylesheet">
+    <style>
+        .table-summary-box {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+            font-size: 11px;
+        }
+        .table-summary-box th, .table-summary-box td {
+            border: 1px solid #333;
+            padding: 5px 8px;
+        }
+        .table-summary-box th {
+            background-color: #f2f2f2;
+        }
+    </style>
 </head>
 <body class="print-mode">
 
@@ -84,20 +99,19 @@ $companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
 <div class="print-wrapper <?= !$useKop ? 'no-kop' : '' ?>" id="printContainer">
     
     <?php if ($useKop): ?>
-    <!-- KOP SURAT RESMI -->
+    <!-- KOP PERUSAHAAN RESMI -->
     <div class="kop-container">
         <div class="kop-left">
             <?php if (!empty($companyLogo)): ?>
-                <img src="<?= BASE_URL ?>/<?= htmlspecialchars(ltrim($companyLogo, '/')) ?>" alt="Logo" style="max-height: 55px; max-width: 140px; object-fit: contain; flex-shrink: 0;">
+                <img src="<?= BASE_URL ?>/<?= htmlspecialchars(ltrim($companyLogo, '/')) ?>" alt="Logo Perusahaan" style="max-height: 55px; max-width: 140px; object-fit: contain;">
             <?php else: ?>
                 <div class="d-flex align-items-center justify-content-center bg-dark text-white rounded p-2" style="width: 50px; height: 50px;">
                     <i class="bi bi-buildings fs-3"></i>
                 </div>
             <?php endif; ?>
-
             <div>
                 <div class="company-title"><?= htmlspecialchars($companyName) ?></div>
-                <div class="company-addr"><?= htmlspecialchars($companyAddr) ?><?= $companyCity ? ' - ' . htmlspecialchars($companyCity) : '' ?></div>
+                <div class="company-addr"><?= htmlspecialchars($companyAddr) ?><?= !empty($companyCity) ? ', ' . htmlspecialchars($companyCity) : '' ?></div>
                 <div class="company-contacts">
                     <?php if (!empty($companyPhone)): ?>
                         <span><i class="bi bi-telephone-fill"></i> <?= htmlspecialchars($companyPhone) ?></span>
@@ -111,85 +125,123 @@ $companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
                 </div>
             </div>
         </div>
-
-        <div class="tagline-container">
-            <div class="tagline-divider"></div>
-            <div class="tagline-text">
-                INTEGRATED<br>PURCHASE &amp;<br>LOGISTICS
-            </div>
-        </div>
     </div>
-    <div class="header-divider-line"></div>
+    <div class="kop-separator" style="border-bottom: 2px solid #000; margin-bottom: 12px;"></div>
     <?php endif; ?>
 
     <!-- JUDUL DOKUMEN -->
-    <div class="title-box-row">
-        <div class="title-area">
-            <div class="doc-title-main">LAPORAN REKAPITULASI RETUR PEMBELIAN</div>
-            <div class="doc-title-sub">
-                <div class="line-side"></div>
-                <div class="text-side" id="printDocSubtitle">Periode: Semua Tanggal</div>
-                <div class="line-side"></div>
-            </div>
-        </div>
-        <div class="doc-badge-box">
-            <div class="doc-badge-title">JENIS LAPORAN</div>
-            <div class="doc-badge-value">RETUR VENDOR</div>
-        </div>
+    <div class="doc-title-box" style="text-align: center; margin: 16px 0 20px 0; border-bottom: none;">
+        <div class="doc-title" style="font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0;" id="printDocTitle">Laporan Rekapitulasi Retur Pembelian</div>
+        <div class="doc-subtitle" style="font-size: 11px; margin-top: 4px; color: #555;" id="printDocSubtitle">Periode: Semua Tanggal</div>
     </div>
 
-    <!-- TABEL UTAMA LAPORAN: No, Vendor, Kompensasi, No Retur, Status -->
+    <!-- TABEL UTAMA LAPORAN: No, Vendor, Kompensasi, No. Retur, Kuantitas, Nominal, Biaya Retur, Status -->
     <table class="table-items-main mb-3" id="tablePrintReport">
         <thead>
             <tr>
                 <th class="text-center" style="width: 35px;">No</th>
                 <th style="text-align: left;">Vendor</th>
-                <th class="text-center" style="width: 140px;">Kompensasi</th>
-                <th class="text-center" style="width: 160px;">No Retur</th>
-                <th class="text-center" style="width: 180px;">Status</th>
+                <th class="text-center" style="width: 105px;">Kompensasi</th>
+                <th class="text-center" style="width: 100px;">No. Retur</th>
+                <th class="text-end" style="width: 80px;">KTS</th>
+                <th class="text-end" style="width: 80px;">Nominal</th>
+                <th class="text-end" style="width: 80px;">Biaya</th>
+                <th class="text-center" style="width: 80px;">Status</th>
             </tr>
         </thead>
         <tbody id="printTableBody">
             <tr>
-                <td colspan="5" class="text-center py-4 text-muted">
+                <td colspan="8" class="text-center py-4 text-muted">
                     <div class="spinner-border spinner-border-sm text-dark me-2"></div> Memuat data laporan retur pembelian...
                 </td>
             </tr>
         </tbody>
         <tfoot id="printTableFoot" style="display: none;">
-            <tr class="total-row">
-                <td colspan="3" class="text-end pe-2">TOTAL DOKUMEN RETUR:</td>
-                <td colspan="2" class="text-start font-monospace fw-bold" id="footTotalRetur">0 Dokumen</td>
+            <tr class="total-row" style="font-weight: bold; background-color: #f8f9fa;">
+                <td colspan="4" class="text-end pe-2">TOTAL:</td>
+                <td class="text-end font-monospace" id="footTotalQty">-</td>
+                <td class="text-end font-monospace" id="footTotalNominal">-</td>
+                <td class="text-end font-monospace" id="footTotalBiayaRetur">-</td>
+                <td class="text-center" id="footTotalDokumen">0 Dokumen</td>
             </tr>
         </tfoot>
     </table>
 
-    <!-- LEMBAR PENGESAHAN / TANDA TANGAN (3 KOLOM STANDAR) -->
-    <div class="sig-section mt-4">
-        <div class="row">
-            <div class="col-4 sig-col">
-                <div class="sig-header-main">Dibuat Oleh,</div>
-                <div class="sig-header-sub">&nbsp;</div>
-                <div class="sig-line-box">
-                    <span class="sig-person-name">Petugas Logistik</span>
-                </div>
-                <div class="sig-footer-note">Tanggal: ....................</div>
+    <!-- RINGKASAN REKAPITULASI DITERIMA & BELUM DITERIMA -->
+    <div id="printSummaryContainer" style="display: none; margin-top: 15px; page-break-inside: avoid;">
+        <div class="row g-2">
+            <div class="col-6">
+                <table class="table-summary-box">
+                    <thead>
+                        <tr>
+                            <th colspan="2" class="text-start fw-bold">1. Rekapitulasi Tukar Unit (Stok)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Stok Telah Diterima:</td>
+                            <td class="text-end font-monospace fw-bold" id="sumQtyDiterima">0 Unit</td>
+                        </tr>
+                        <tr>
+                            <td>Stok Belum Diterima:</td>
+                            <td class="text-end font-monospace fw-bold" id="sumQtyBelum">0 Unit</td>
+                        </tr>
+                        <tr style="background-color: #f8f9fa;">
+                            <td class="fw-bold">Total Stok Tukar Unit:</td>
+                            <td class="text-end font-monospace fw-bold" id="sumQtyTotal">0 Unit</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
-            <div class="col-4 sig-col">
-                <div class="sig-header-main">Diperiksa Oleh,</div>
-                <div class="sig-header-sub">&nbsp;</div>
-                <div class="sig-line-box">
-                    <span class="sig-person-name">Purchasing Officer</span>
-                </div>
-                <div class="sig-footer-note">Tanggal: ....................</div>
+
+            <div class="col-6">
+                <table class="table-summary-box">
+                    <thead>
+                        <tr>
+                            <th colspan="2" class="text-start fw-bold">2. Rekapitulasi Potong Tagihan (-Rp) &amp; Biaya</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Potong Tagihan Diterima:</td>
+                            <td class="text-end font-monospace fw-bold" id="sumNominalDiterima">Rp 0</td>
+                        </tr>
+                        <tr>
+                            <td>Potong Tagihan Belum Diterima:</td>
+                            <td class="text-end font-monospace fw-bold" id="sumNominalBelum">Rp 0</td>
+                        </tr>
+                        <tr style="background-color: #f8f9fa;">
+                            <td class="fw-bold">Total Potong Tagihan:</td>
+                            <td class="text-end font-monospace fw-bold" id="sumNominalTotal">Rp 0</td>
+                        </tr>
+                        <tr>
+                            <td>Total Biaya Retur:</td>
+                            <td class="text-end font-monospace fw-bold" id="sumBiayaReturTotal">Rp 0</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
-            <div class="col-4 sig-col">
-                <div class="sig-header-main">Disetujui Oleh,</div>
-                <div class="sig-header-sub">&nbsp;</div>
-                <div class="sig-line-box">
-                    <span class="sig-person-name">Manager Operasional</span>
+        </div>
+    </div>
+
+    <!-- LEMBAR PENGESAHAN / TANDA TANGAN (2 TANDA TANGAN: DIBUAT & DISETUJUI) -->
+    <div class="sig-section mt-4" style="page-break-inside: avoid;">
+        <div class="row justify-content-between">
+            <div class="col-5 sig-col text-center">
+                <div class="sig-header-main fw-bold">Dibuat Oleh,</div>
+                <div class="sig-header-sub text-muted" id="sigRolePembuat">(Staff Logistik / Purchasing)</div>
+                <div class="sig-line-box" style="margin-top: 50px;">
+                    <span class="sig-person-name fw-bold" id="sigNamaPembuat"><?= htmlspecialchars($user['nama_karyawan'] ?? $user['username'] ?? 'Petugas') ?></span>
                 </div>
-                <div class="sig-footer-note">Tanggal: ....................</div>
+                <div class="sig-footer-note text-muted small">Tanggal: <?= date('d/m/Y') ?></div>
+            </div>
+            <div class="col-5 sig-col text-center">
+                <div class="sig-header-main fw-bold">Disetujui Oleh,</div>
+                <div class="sig-header-sub text-muted" id="sigRoleApprover">(Manager / Kepala Logistik)</div>
+                <div class="sig-line-box" style="margin-top: 50px;">
+                    <span class="sig-person-name fw-bold" id="sigNamaApprover">..........................................</span>
+                </div>
+                <div class="sig-footer-note text-muted small">Tanggal: ....................</div>
             </div>
         </div>
     </div>
@@ -224,6 +276,7 @@ function formatShortDate(dateStr) {
 async function loadPrintData() {
     const tbody = document.getElementById('printTableBody');
     const tfoot = document.getElementById('printTableFoot');
+    const sumBox = document.getElementById('printSummaryContainer');
 
     const params = new URLSearchParams({
         page: 1,
@@ -250,28 +303,73 @@ async function loadPrintData() {
         if (res.success && res.data) {
             renderPrintTable(res.data.items || []);
         } else {
-            tbody.innerHTML = `<tr><td colspan="5" class="text-center py-3">${res.message || 'Gagal memuat data.'}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center py-3">${res.message || 'Gagal memuat data.'}</td></tr>`;
         }
     } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-3">Terjadi kesalahan: ${err.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-3">Terjadi kesalahan: ${err.message}</td></tr>`;
     }
 }
 
 function renderPrintTable(items) {
     const tbody = document.getElementById('printTableBody');
     const tfoot = document.getElementById('printTableFoot');
+    const sumBox = document.getElementById('printSummaryContainer');
 
     if (!items || items.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-3">Tidak ada data retur pembelian pada kriteria ini.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-3">Tidak ada data retur pembelian pada kriteria ini.</td></tr>`;
         tfoot.style.display = 'none';
+        if (sumBox) sumBox.style.display = 'none';
         return;
     }
 
     let html = '';
+    let totalQtyTukarUnit = 0;
+    let totalNominalPotong = 0;
+    let totalBiayaRetur = 0;
+
+    let qtyDiterima = 0;
+    let qtyBelum = 0;
+
+    let nominalDiterima = 0;
+    let nominalBelum = 0;
+
     items.forEach((it, idx) => {
         const vendorText = `${escapeHtml(it.nama_vendor || '-')} [${escapeHtml(it.kode_vendor || '-')}]`;
-        const kompText = (parseInt(it.kompensasi, 10) === 1) ? 'Tukar Unit' : 'Potong Tagihan';
+        const isTukarUnit = (parseInt(it.kompensasi, 10) === 1);
+        const kompText = isTukarUnit ? 'Tukar Unit' : 'Potong Tagihan';
         const statusText = escapeHtml(it.status || '-');
+
+        const qtyVal = Number(it.total_qty_retur || 0);
+        const nominalVal = Number(it.total || 0);
+        const biayaVal = Number(it.biaya_retur || 0);
+
+        totalBiayaRetur += biayaVal;
+
+        // Status diterima vs belum
+        const isDiterima = ['DITERIMA', 'SELESAI'].includes(it.status);
+        const isBatal = ['DITOLAK', 'BATAL'].includes(it.status);
+
+        let qtyDisplay = '-';
+        let nominalDisplay = '-';
+        const biayaDisplay = (biayaVal > 0) ? `Rp ${biayaVal.toLocaleString('id-ID')}` : '-';
+
+        if (isTukarUnit) {
+            qtyDisplay = `${qtyVal.toLocaleString('id-ID')} Unit`;
+            totalQtyTukarUnit += qtyVal;
+            if (isDiterima) {
+                qtyDiterima += qtyVal;
+            } else if (!isBatal) {
+                qtyBelum += qtyVal;
+            }
+        } else {
+            nominalDisplay = `Rp ${nominalVal.toLocaleString('id-ID')}`;
+            totalNominalPotong += nominalVal;
+            if (isDiterima) {
+                nominalDiterima += nominalVal;
+            } else if (!isBatal) {
+                nominalBelum += nominalVal;
+            }
+        }
 
         html += `
         <tr>
@@ -281,13 +379,33 @@ function renderPrintTable(items) {
             </td>
             <td class="text-center">${kompText}</td>
             <td class="text-center font-monospace fw-bold">${escapeHtml(it.nomor_po_retur || '-')}</td>
+            <td class="text-end font-monospace">${qtyDisplay}</td>
+            <td class="text-end font-monospace">${nominalDisplay}</td>
+            <td class="text-end font-monospace">${biayaDisplay}</td>
             <td class="text-center fw-medium">${statusText}</td>
         </tr>`;
     });
 
     tbody.innerHTML = html;
-    document.getElementById('footTotalRetur').textContent = `${items.length} Dokumen Retur`;
+
+    // Footer Table
+    document.getElementById('footTotalQty').textContent = `${totalQtyTukarUnit.toLocaleString('id-ID')} Unit`;
+    document.getElementById('footTotalNominal').textContent = `Rp ${totalNominalPotong.toLocaleString('id-ID')}`;
+    document.getElementById('footTotalBiayaRetur').textContent = `Rp ${totalBiayaRetur.toLocaleString('id-ID')}`;
+    document.getElementById('footTotalDokumen').textContent = `${items.length} Doc`;
     tfoot.style.display = 'table-footer-group';
+
+    // Summary Box
+    document.getElementById('sumQtyDiterima').textContent = `${qtyDiterima.toLocaleString('id-ID')} Unit`;
+    document.getElementById('sumQtyBelum').textContent = `${qtyBelum.toLocaleString('id-ID')} Unit`;
+    document.getElementById('sumQtyTotal').textContent = `${totalQtyTukarUnit.toLocaleString('id-ID')} Unit`;
+
+    document.getElementById('sumNominalDiterima').textContent = `Rp ${nominalDiterima.toLocaleString('id-ID')}`;
+    document.getElementById('sumNominalBelum').textContent = `Rp ${nominalBelum.toLocaleString('id-ID')}`;
+    document.getElementById('sumNominalTotal').textContent = `Rp ${totalNominalPotong.toLocaleString('id-ID')}`;
+    document.getElementById('sumBiayaReturTotal').textContent = `Rp ${totalBiayaRetur.toLocaleString('id-ID')}`;
+
+    if (sumBox) sumBox.style.display = 'block';
 }
 
 function escapeHtml(str) {

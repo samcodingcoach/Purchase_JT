@@ -83,10 +83,29 @@ try {
         }
         $stmtD->close();
 
+        // Hitung Subtotal jika 0
+        $subtotal = isset($header['subtotal']) && (float)$header['subtotal'] > 0 ? (float)$header['subtotal'] : 0;
+        if ($subtotal == 0) {
+            foreach ($items as $it) {
+                $subtotal += (float)($it['subtotal'] ?? ((float)$it['qty_retur'] * (float)($it['harga_satuan'] ?? 0)));
+            }
+        }
+
+        foreach ($items as &$it) {
+            $it['harga_satuan_formatted'] = 'Rp ' . number_format((float)($it['harga_satuan'] ?? 0), 0, ',', '.');
+            $itSubtotal = (float)($it['subtotal'] ?? ((float)$it['qty_retur'] * (float)($it['harga_satuan'] ?? 0)));
+            $it['subtotal_formatted'] = 'Rp ' . number_format($itSubtotal, 0, ',', '.');
+        }
+        unset($it);
+
         $header['items'] = $items;
+        $header['subtotal_calculated'] = $subtotal;
+        $header['subtotal_formatted'] = 'Rp ' . number_format($subtotal, 0, ',', '.');
+        $header['nominal_pajak_formatted'] = 'Rp ' . number_format((float)($header['nominal_pajak'] ?? 0), 0, ',', '.');
+        $header['rate_pajak_formatted'] = number_format((float)($header['rate_pajak'] ?? 0), 0) . '%';
+        $header['biaya_retur_formatted'] = 'Rp ' . number_format((float)($header['biaya_retur'] ?? 0), 0, ',', '.');
+        $header['total_formatted'] = 'Rp ' . number_format((float)($header['total'] ?? 0), 0, ',', '.');
         $header['tanggal_formatted'] = $header['tanggal_po_retur'] ? date('d-m-Y H:i', strtotime($header['tanggal_po_retur'])) : '-';
-        $header['total_formatted'] = 'Rp ' . number_format((float)$header['total'], 0, ',', '.');
-        $header['biaya_retur_formatted'] = 'Rp ' . number_format((float)$header['biaya_retur'], 0, ',', '.');
 
         sendJson(true, 'Detail Retur PO berhasil diambil.', $header);
     }
@@ -156,11 +175,13 @@ try {
     // Query Data Listing
     $sqlList = "SELECT r.id_po_retur, r.nomor_po_retur, r.tanggal_po_retur, r.kompensasi, r.status,
                        r.total, r.nominal_pajak, r.rate_pajak, r.nomor_sj_retur, r.biaya_retur,
+                       r.id_karyawan, r.id_karyawan_approved,
                        v.id_vendor, v.kode_vendor, v.nama_perusahaan AS nama_vendor,
                        po.id_po, po.nomor_po,
                        rcv.id_rcv, rcv.nomor_rcv,
                        s.nama_site,
                        k.nama_karyawan AS nama_pembuat,
+                       k_app.nama_karyawan AS nama_penyetuju,
                        COUNT(d.id_po_retur_detail) AS total_items,
                        COALESCE(SUM(d.qty_retur), 0) AS total_qty_retur
                 FROM retur_po r
@@ -169,6 +190,7 @@ try {
                 LEFT JOIN receiving_order rcv ON r.id_rcv = rcv.id_rcv
                 LEFT JOIN site s ON r.id_site = s.id_site
                 LEFT JOIN karyawan k ON r.id_karyawan = k.id_karyawan
+                LEFT JOIN karyawan k_app ON r.id_karyawan_approved = k_app.id_karyawan
                 LEFT JOIN retur_po_detail d ON r.id_po_retur = d.id_po_retur
                 {$where}
                 GROUP BY r.id_po_retur
@@ -189,6 +211,7 @@ try {
     while ($r = $resL->fetch_assoc()) {
         $r['tanggal_formatted'] = $r['tanggal_po_retur'] ? date('d/m/Y', strtotime($r['tanggal_po_retur'])) : '-';
         $r['total_formatted'] = 'Rp ' . number_format((float)$r['total'], 0, ',', '.');
+        $r['biaya_retur_formatted'] = 'Rp ' . number_format((float)$r['biaya_retur'], 0, ',', '.');
         $r['kompensasi_label'] = ((int)$r['kompensasi'] === 1) ? 'Tukar Unit' : 'Potong Tagihan';
         $items[] = $r;
     }

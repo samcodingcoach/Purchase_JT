@@ -133,10 +133,10 @@ require_once __DIR__ . '/../../components/navbar.php';
 </div>
 
 <!-- ============================================================= -->
-<!-- MODAL POPUP DETAIL RETUR PEMBELIAN (TABBED UI) -->
+<!-- MODAL POPUP DETAIL RETUR PEMBELIAN (5 TAB SESUAI FUNGSI) -->
 <!-- ============================================================= -->
 <div class="modal fade" id="modalDetailRetur" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 900px;">
+    <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 950px;">
         <div class="modal-content border-0 shadow-lg rounded-3">
             <!-- Modal Header dengan Nav Tabs Seragam -->
             <div class="modal-header bg-white pt-3 pb-0 px-4 border-bottom flex-column align-items-stretch">
@@ -145,98 +145,194 @@ require_once __DIR__ . '/../../components/navbar.php';
                         <h5 class="modal-title fw-bold text-dark font-monospace mb-0" id="modalHeaderNoRetur">
                             RET-0000-0000
                         </h5>
-                        <span id="modalHeaderStatusBadge" class="fw-semibold small text-dark">-</span>
+                        <div id="modalHeaderStatusBadge"></div>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
 
-                <!-- Nav Tabs Modal Sesuai Pola Sistem -->
+                <!-- Nav Tabs Modal 4 Tab Sesuai Fungsi -->
                 <ul class="nav nav-tabs border-bottom-0" id="modalReturTabs" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active fw-bold text-dark small py-2 px-3" id="modal-tab-retur-dokumen" data-bs-toggle="tab" data-bs-target="#modal-pane-retur-dokumen" type="button" role="tab">
-                            <i class="bi bi-file-earmark-text me-1 text-primary"></i> 1. Dokumen &amp; Vendor
+                        <button class="nav-link active fw-bold text-dark small py-2 px-3" id="modal-tab-retur-info" data-bs-toggle="tab" data-bs-target="#modal-pane-retur-info" type="button" role="tab">
+                            <i class="bi bi-file-earmark-text me-1 text-primary"></i> 1. Informasi Utama
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold text-dark small py-2 px-3" id="modal-tab-retur-vendor" data-bs-toggle="tab" data-bs-target="#modal-pane-retur-vendor" type="button" role="tab">
+                            <i class="bi bi-building me-1 text-primary"></i> 2. Vendor
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold text-dark small py-2 px-3" id="modal-tab-retur-pengiriman" data-bs-toggle="tab" data-bs-target="#modal-pane-retur-pengiriman" type="button" role="tab">
+                            <i class="bi bi-truck me-1 text-primary"></i> 3. Pengiriman &amp; Persetujuan
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link fw-bold text-dark small py-2 px-3" id="modal-tab-retur-rincian" data-bs-toggle="tab" data-bs-target="#modal-pane-retur-rincian" type="button" role="tab">
-                            <i class="bi bi-boxes me-1 text-primary"></i> 2. Rincian Barang
+                            <i class="bi bi-boxes me-1 text-primary"></i> 4. Rincian Barang &amp; Biaya
                             <span class="badge bg-primary text-white ms-1" id="modalTotalItemBadge">0</span>
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link fw-bold text-dark small py-2 px-3" id="modal-tab-retur-catatan" data-bs-toggle="tab" data-bs-target="#modal-pane-retur-catatan" type="button" role="tab">
-                            <i class="bi bi-chat-left-text me-1 text-primary"></i> 3. Catatan &amp; Keterangan
                         </button>
                     </li>
                 </ul>
             </div>
 
-            <!-- MODAL BODY DENGAN 3 TAB PANE -->
+            <!-- MODAL BODY DENGAN 4 TAB PANE TERSTRUKTUR RAPI -->
             <div class="modal-body p-4">
                 <div class="tab-content" id="modalReturTabContent">
                     
-                    <!-- TAB 1: DOKUMEN & VENDOR -->
-                    <div class="tab-pane fade show active" id="modal-pane-retur-dokumen" role="tabpanel">
+                    <!-- TAB 1: INFORMASI UTAMA -->
+                    <div class="tab-pane fade show active" id="modal-pane-retur-info" role="tabpanel">
                         <div class="row g-3">
-                            <!-- Kolom Kiri: Identitas Retur & Referensi -->
+                            <!-- Kolom Kiri: Dokumen Asal Penerimaan (Receiving) -->
                             <div class="col-md-6">
-                                <div class="card bg-light border-0 rounded-3 p-3 h-100">
-                                    <h6 class="fw-bold text-dark mb-3">Identitas Retur</h6>
+                                <div class="card border border-light-subtle rounded-3 p-3 h-100 bg-light-subtle">
+                                    <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Dokumen Asal Penerimaan (Receiving)</h6>
                                     
-                                    <div class="mb-2">
-                                        <span class="text-muted small d-block">Tanggal Retur:</span>
-                                        <strong class="text-dark font-monospace" id="modalTanggalRetur">-</strong>
+                                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-light">
+                                        <span class="text-muted small">No. Penerimaan (RCV)</span>
+                                        <strong class="font-monospace text-dark small" id="modalNoRcv">-</strong>
                                     </div>
-                                    <div class="mb-2">
-                                        <span class="text-muted small d-block">Skema Kompensasi:</span>
-                                        <strong class="text-dark" id="modalKompensasiBadge">-</strong>
+                                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-light">
+                                        <span class="text-muted small">No. Purchase Order (PO)</span>
+                                        <strong class="font-monospace text-primary small" id="modalNoPo">-</strong>
                                     </div>
-                                    <div class="mb-2">
-                                        <span class="text-muted small d-block">Referensi Purchase Order (PO):</span>
-                                        <span class="font-monospace fw-semibold text-primary" id="modalNoPo">-</span>
+                                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-light">
+                                        <span class="text-muted small">No. Surat Jalan Vendor</span>
+                                        <span class="font-monospace text-dark small" id="modalNoSjVendor">-</span>
                                     </div>
-                                    <div>
-                                        <span class="text-muted small d-block">Dokumen Penerimaan (RCV):</span>
-                                        <span class="font-monospace fw-semibold text-dark" id="modalNoRcv">-</span>
+                                    <div class="d-flex justify-content-between align-items-center pt-2">
+                                        <span class="text-muted small">Site / Lokasi Fisik</span>
+                                        <strong class="text-dark small text-end" id="modalSite">-</strong>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Kolom Kanan: Data Vendor & Penginput -->
+                            <!-- Kolom Kanan: Identitas Retur & Skema -->
                             <div class="col-md-6">
-                                <div class="card bg-light border-0 rounded-3 p-3 h-100">
-                                    <h6 class="fw-bold text-dark mb-3">Vendor &amp; Lokasi</h6>
+                                <div class="card border border-light-subtle rounded-3 p-3 h-100 bg-light-subtle">
+                                    <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Identitas Retur &amp; Skema</h6>
                                     
-                                    <div class="mb-2">
-                                        <span class="text-muted small d-block">Nama Vendor:</span>
-                                        <strong class="text-dark fs-6" id="modalVendorNama">-</strong>
-                                        <div class="text-muted small font-monospace" id="modalVendorKode">-</div>
+                                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-light">
+                                        <span class="text-muted small">Nomor Retur PO</span>
+                                        <strong class="font-monospace text-primary small" id="modalNomorReturCard">-</strong>
                                     </div>
-                                    <div class="mb-2">
-                                        <span class="text-muted small d-block">Site / Lokasi:</span>
-                                        <strong class="text-dark" id="modalSite">-</strong>
+                                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-light">
+                                        <span class="text-muted small">Tanggal Pengajuan</span>
+                                        <strong class="text-dark font-monospace small" id="modalTanggalRetur">-</strong>
                                     </div>
-                                    <div>
-                                        <span class="text-muted small d-block">Petugas &amp; Penyetuju:</span>
-                                        <span class="text-dark" id="modalPembuat">-</span>
+                                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-light">
+                                        <span class="text-muted small">Skema Kompensasi</span>
+                                        <strong class="text-dark small" id="modalKompensasiBadge">-</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center pt-2">
+                                        <span class="text-muted small">Status Dokumen</span>
+                                        <span class="text-dark small" id="modalStatusInfoBadge">-</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- TAB 2: RINCIAN BARANG -->
+                    <!-- TAB 2: VENDOR -->
+                    <div class="tab-pane fade" id="modal-pane-retur-vendor" role="tabpanel">
+                        <div class="card border border-light-subtle rounded-3 p-4 bg-light-subtle">
+                            <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Informasi Vendor Rekanan</h6>
+                            <div class="row g-3 align-items-center">
+                                <div class="col-md-7">
+                                    <span class="text-muted small d-block mb-1">Nama Perusahaan Vendor</span>
+                                    <strong class="text-dark fs-5 d-block" id="modalVendorNama">-</strong>
+                                </div>
+                                <div class="col-md-5 text-md-end">
+                                    <span class="text-muted small d-block mb-1">Kode Identitas Vendor</span>
+                                    <span class="badge bg-white text-dark border font-monospace px-3 py-2 fs-6 shadow-sm" id="modalVendorKode">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: PENGIRIMAN & PERSETUJUAN -->
+                    <div class="tab-pane fade" id="modal-pane-retur-pengiriman" role="tabpanel">
+                        <div class="row g-3">
+                            <!-- Kolom Kiri: Logistik & Dokumen Pengiriman -->
+                            <div class="col-md-6">
+                                <div class="card border border-light-subtle rounded-3 p-3 h-100 bg-light-subtle">
+                                    <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Pengiriman &amp; Dokumen Retur</h6>
+                                    
+                                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-light">
+                                        <span class="text-muted small">Jalur &amp; Armada</span>
+                                        <strong class="text-dark small text-end" id="modalPengiriman">-</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-light">
+                                        <span class="text-muted small">No. Surat Jalan Retur</span>
+                                        <strong class="text-dark font-monospace small" id="modalNoSjRetur">-</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-light">
+                                        <span class="text-muted small">No. Nota Retur Pajak</span>
+                                        <strong class="text-dark font-monospace small" id="modalNoNotaPajak">-</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center pt-2">
+                                        <span class="text-muted small">Keterangan Pajak PPN</span>
+                                        <span class="text-dark font-monospace small" id="modalPajakSummary">-</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Kolom Kanan: Pejabat Penyetuju Dokumen -->
+                            <div class="col-md-6">
+                                <div class="card border border-light-subtle rounded-3 p-3 h-100 bg-light-subtle">
+                                    <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Persetujuan Dokumen</h6>
+                                    
+                                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-light">
+                                        <span class="text-muted small">Pejabat Penyetuju (Approval)</span>
+                                        <strong class="text-dark small" id="modalPenyetuju">-</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center pt-2">
+                                        <span class="text-muted small">Status Verifikasi</span>
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 small">
+                                            <i class="bi bi-check-circle me-1"></i>Terverifikasi Sistem
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 4: RINCIAN BARANG & BIAYA -->
                     <div class="tab-pane fade" id="modal-pane-retur-rincian" role="tabpanel">
+                        <!-- Ringkasan Finansial -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6 col-6">
+                                <div class="p-3 border border-light-subtle rounded-3 bg-light-subtle d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="text-muted small d-block">Pajak PPN (<span id="modalRatePajak">0%</span>)</span>
+                                        <span class="text-secondary" style="font-size: 0.75rem;">Nominal Pajak Masukan/Keluaran</span>
+                                    </div>
+                                    <strong class="text-primary font-monospace fs-5" id="modalNominalPajak">Rp 0</strong>
+                                </div>
+                            </div>
+                            <div class="col-md-6 col-6">
+                                <div class="p-3 border border-light-subtle rounded-3 bg-light-subtle d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="text-muted small d-block">Biaya Pengiriman</span>
+                                        <span class="text-secondary" style="font-size: 0.75rem;">Ongkos Kirim Retur Fisik</span>
+                                    </div>
+                                    <strong class="text-dark font-monospace fs-5" id="modalBiayaReturTab2">Rp 0</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tabel Barang -->
                         <div class="table-responsive border rounded-3 bg-white">
                             <table class="table table-hover align-middle mb-0">
                                 <thead class="table-light small text-muted text-uppercase">
                                     <tr>
-                                        <th style="width: 45px;" class="text-center">No</th>
+                                        <th style="width: 40px;" class="text-center">No</th>
                                         <th style="min-width: 120px;">Kode Barang</th>
                                         <th style="min-width: 200px;">Nama Barang</th>
-                                        <th style="min-width: 110px;" class="text-center">Serial No</th>
-                                        <th style="min-width: 110px;" class="text-end">Jumlah</th>
-                                        <th style="min-width: 160px;">Alasan Retur</th>
+                                        <th style="min-width: 100px;" class="text-center">Serial No</th>
+                                        <th style="min-width: 100px;" class="text-end">KTS Retur</th>
+                                        <th style="min-width: 130px;" class="text-end">Harga &amp; Subtotal</th>
+                                        <th style="min-width: 150px;">Alasan Retur</th>
                                     </tr>
                                 </thead>
                                 <tbody id="modalTableItemsBody">
@@ -246,30 +342,36 @@ require_once __DIR__ . '/../../components/navbar.php';
                         </div>
                     </div>
 
-                    <!-- TAB 3: CATATAN & KETERANGAN -->
-                    <div class="tab-pane fade" id="modal-pane-retur-catatan" role="tabpanel">
-                        <div class="card bg-light border-0 rounded-3 p-3">
-                            <h6 class="fw-bold text-dark mb-2">Catatan / Keterangan Tambahan</h6>
-                            <p class="mb-0 text-dark" id="modalKeterangan">-</p>
-                        </div>
-                    </div>
-
                 </div>
-            </div>
-
-            <div class="modal-footer bg-white border-top py-2 px-4 d-flex justify-content-between">
-                <div>
-                    <a href="#" target="_blank" class="btn btn-outline-secondary btn-sm" id="btnModalPrintSpb" style="display: none;">
-                        <i class="bi bi-printer me-1"></i> Cetak SPB Retur
-                    </a>
-                </div>
-                <button type="button" class="btn btn-secondary btn-sm px-4 fw-semibold" data-bs-dismiss="modal">Tutup</button>
             </div>
         </div>
     </div>
 </div>
 
 <style>
+#modalReturTabs .nav-link {
+    border: 1px solid transparent;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    color: #475569;
+    background: transparent;
+    margin-bottom: -1px;
+    padding: 0.55rem 0.95rem;
+    font-size: 0.85rem;
+    transition: all 0.15s ease-in-out;
+}
+#modalReturTabs .nav-link:hover {
+    border-color: #e2e8f0 #e2e8f0 transparent;
+    color: #0d6efd;
+    background-color: #f8fafc;
+}
+#modalReturTabs .nav-link.active {
+    color: #0f172a !important;
+    background-color: #ffffff !important;
+    border-color: #dee2e6 #dee2e6 #ffffff !important;
+    border-bottom: 1px solid #ffffff !important;
+    font-weight: 700 !important;
+}
 .filter-select {
     padding-top: 0.15rem !important;
     padding-bottom: 0.35rem !important;
@@ -288,6 +390,22 @@ require_once __DIR__ . '/../../components/navbar.php';
 }
 .cursor-pointer {
     cursor: pointer;
+}
+.pagination .page-item .page-link {
+    color: #495057;
+    border-color: #dee2e6;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.825rem;
+}
+.pagination .page-item.active .page-link {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: #fff;
+    font-weight: 600;
+}
+.pagination .page-item.disabled .page-link {
+    color: #6c757d;
+    background-color: #f8f9fa;
 }
 </style>
 
@@ -308,13 +426,34 @@ function formatShortDate(dateStr) {
 }
 
 function formatAlasanRetur(alasan) {
-    switch (alasan) {
-        case 'RUSAK_FISIK': return 'Rusak Fisik';
-        case 'CACAT_PRODUKSI': return 'Cacat Produksi';
-        case 'SALAH_SPESIFIKASI': return 'Salah Spesifikasi';
-        case 'KURANG_PENGIRIMAN': return 'Kurang Pengiriman';
-        case 'KADALUARSA_EXP': return 'Kadaluarsa / Exp';
-        default: return alasan || '-';
+    const map = {
+        'RUSAK_FISIK': 'Rusak Fisik / Kirim',
+        'CACAT_PRODUKSI': 'Cacat Pabrik Vendor',
+        'SALAH_SPESIFIKASI': 'Salah Spesifikasi',
+        'KURANG_PENGIRIMAN': 'Kurang Kuantitas',
+        'KADALUARSA_EXP': 'Kadaluarsa'
+    };
+    return map[alasan] || (alasan ? escapeHtml(alasan) : '-');
+}
+
+function getStatusBadge(status) {
+    switch (status) {
+        case 'DRAFT':
+            return '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-3 py-1"><i class="bi bi-pencil me-1"></i>DRAFT</span>';
+        case 'MENUNGGU KONFIRMASI VENDOR':
+            return '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-1"><i class="bi bi-hourglass-split me-1"></i>MENUNGGU KONFIRMASI VENDOR</span>';
+        case 'DISETUJUI VENDOR':
+            return '<span class="badge bg-info-subtle text-info border border-info-subtle px-3 py-1"><i class="bi bi-check2-circle me-1"></i>DISETUJUI VENDOR</span>';
+        case 'TIDAK DISETUJUI VENDOR':
+        case 'DITOLAK':
+            return '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-1"><i class="bi bi-x-circle me-1"></i>TIDAK DISETUJUI VENDOR</span>';
+        case 'DIKIRIM KE VENDOR':
+            return '<span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1"><i class="bi bi-truck me-1"></i>DIKIRIM KE VENDOR</span>';
+        case 'DITERIMA':
+        case 'SELESAI':
+            return '<span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1"><i class="bi bi-check-circle-fill me-1"></i>DITERIMA</span>';
+        default:
+            return `<span class="badge bg-light text-dark border px-3 py-1">${escapeHtml(status || '-')}</span>`;
     }
 }
 
@@ -607,29 +746,34 @@ async function showDetailModal(idRetur) {
             const d = json.data;
 
             document.getElementById('modalHeaderNoRetur').textContent = d.nomor_po_retur || '-';
-            // Status murni tanpa badge improve
-            document.getElementById('modalHeaderStatusBadge').textContent = d.status || '-';
+            // Status Badge kanan atas
+            document.getElementById('modalHeaderStatusBadge').innerHTML = getStatusBadge(d.status);
 
-            document.getElementById('modalVendorNama').textContent = d.nama_vendor || '-';
-            document.getElementById('modalVendorKode').textContent = `Kode: ${d.kode_vendor || '-'} | Telp: ${d.telepon_vendor || '-'}`;
+            // Tab 1: Informasi Utama
+            document.getElementById('modalNoRcv').textContent = d.nomor_rcv || '-';
             document.getElementById('modalNoPo').textContent = d.nomor_po ? `${d.nomor_po} (${formatShortDate(d.tanggal_po)})` : '-';
-            document.getElementById('modalNoRcv').textContent = d.nomor_rcv ? `${d.nomor_rcv} / SJ: ${d.nomor_sj_rcv || '-'}` : '-';
-
+            document.getElementById('modalNoSjVendor').textContent = d.nomor_sj_rcv || '-';
+            document.getElementById('modalSite').textContent = d.nama_site || '-';
+            document.getElementById('modalNomorReturCard').textContent = d.nomor_po_retur || '-';
             document.getElementById('modalTanggalRetur').textContent = d.tanggal_formatted || '-';
             document.getElementById('modalKompensasiBadge').textContent = (parseInt(d.kompensasi, 10) === 1) ? 'Tukar Unit' : 'Potong Tagihan';
-            document.getElementById('modalSite').textContent = d.nama_site || '-';
-            document.getElementById('modalPembuat').textContent = `${d.nama_pembuat || '-'} (Penyetuju: ${d.nama_penyetuju || '-'})`;
+            document.getElementById('modalStatusInfoBadge').textContent = d.status || '-';
 
-            document.getElementById('modalKeterangan').textContent = d.keterangan || 'Tidak ada catatan tambahan.';
+            // Tab 2: Vendor
+            document.getElementById('modalVendorNama').textContent = d.nama_vendor || '-';
+            document.getElementById('modalVendorKode').textContent = `Kode: ${d.kode_vendor || '-'}`;
 
-            // Tombol Cetak SPB di Modal
-            const btnSpb = document.getElementById('btnModalPrintSpb');
-            if (['DISETUJUI VENDOR', 'DIKIRIM KE VENDOR', 'DITERIMA'].includes(d.status)) {
-                btnSpb.href = `<?= BASE_URL ?>/admin/pages/retur_po/print_spb.php?id=${d.id_po_retur}`;
-                btnSpb.style.display = 'inline-block';
-            } else {
-                btnSpb.style.display = 'none';
-            }
+            // Tab 3: Pengiriman & Persetujuan
+            document.getElementById('modalPengiriman').textContent = d.pengiriman || 'Ekspedisi / Logistik Internal';
+            document.getElementById('modalNoSjRetur').textContent = d.nomor_sj_retur || '-';
+            document.getElementById('modalNoNotaPajak').textContent = d.nomor_nota_retur_pajak || '-';
+            document.getElementById('modalPajakSummary').textContent = `Rate: ${d.rate_pajak_formatted || '0%'} (${d.nominal_pajak_formatted || 'Rp 0'})`;
+            document.getElementById('modalPenyetuju').textContent = d.nama_penyetuju || '-';
+
+            // Tab 4: Rincian Barang & Biaya
+            document.getElementById('modalRatePajak').textContent = d.rate_pajak_formatted || '0%';
+            document.getElementById('modalNominalPajak').textContent = d.nominal_pajak_formatted || 'Rp 0';
+            document.getElementById('modalBiayaReturTab2').textContent = d.biaya_retur_formatted || 'Rp 0';
 
             // Items Table
             const tItems = document.getElementById('modalTableItemsBody');
@@ -647,7 +791,14 @@ async function showDetailModal(idRetur) {
                                 ${it.keterangan_kerusakan ? `<div class="text-muted small fst-italic">${escapeHtml(it.keterangan_kerusakan)}</div>` : ''}
                             </td>
                             <td class="font-monospace small text-center">${escapeHtml(it.serial_number || '-')}</td>
-                            <td class="text-end font-monospace fw-bold fs-6 text-dark">${Number(it.qty_retur || 0).toLocaleString('id-ID')} <span class="small text-muted">${escapeHtml(it.satuan || 'PCS')}</span></td>
+                            <td class="text-end font-monospace fw-bold fs-6 text-dark">
+                                ${Number(it.qty_retur || 0).toLocaleString('id-ID')} <span class="small text-muted">${escapeHtml(it.satuan || 'PCS')}</span>
+                                ${(parseInt(d.kompensasi, 10) === 1 && it.qty_diganti > 0) ? `<div class="small text-success fw-normal">Diganti: ${Number(it.qty_diganti).toLocaleString('id-ID')}</div>` : ''}
+                            </td>
+                            <td class="text-end font-monospace">
+                                <div class="text-dark fw-semibold">${it.subtotal_formatted || 'Rp 0'}</div>
+                                <div class="text-muted small">@ ${it.harga_satuan_formatted || 'Rp 0'}</div>
+                            </td>
                             <td>
                                 <span class="text-dark small">${formatAlasanRetur(it.alasan_retur)}</span>
                             </td>
@@ -656,11 +807,11 @@ async function showDetailModal(idRetur) {
                 });
                 tItems.innerHTML = itHtml;
             } else {
-                tItems.innerHTML = `<tr><td colspan="6" class="text-center py-3 text-muted small">Tidak ada rincian barang retur.</td></tr>`;
+                tItems.innerHTML = `<tr><td colspan="7" class="text-center py-3 text-muted small">Tidak ada rincian barang retur.</td></tr>`;
             }
 
-            // Reset Tab ke Tab 1 (Dokumen & Vendor)
-            const firstTabEl = document.getElementById('modal-tab-retur-dokumen');
+            // Reset Tab ke Tab 1 (Informasi Utama)
+            const firstTabEl = document.getElementById('modal-tab-retur-info');
             if (firstTabEl) {
                 const tabInstance = bootstrap.Tab.getOrCreateInstance(firstTabEl);
                 tabInstance.show();
