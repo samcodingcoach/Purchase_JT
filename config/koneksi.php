@@ -40,23 +40,35 @@ try {
     $conn = new mysqli($db_host, $db_user, $db_pass, $db_name, $db_port);
     $conn->set_charset("utf8mb4");
     applyAppTimezone($conn);
+    if (!defined('DB_NAME')) {
+        define('DB_NAME', $db_name);
+    }
 } catch (mysqli_sql_exception $e) {
     // Coba fallback jika nama database di server adalah jaya_teknik
     try {
         $conn = new mysqli($db_host, $db_user, $db_pass, 'jaya_teknik', $db_port);
         $conn->set_charset("utf8mb4");
         applyAppTimezone($conn);
+        if (!defined('DB_NAME')) {
+            define('DB_NAME', 'jaya_teknik');
+        }
     } catch (mysqli_sql_exception $e2) {
         // Coba fallback user root tanpa password jika default XAMPP aktif untuk kemudahan testing
         try {
             $conn = new mysqli($db_host, 'root', '', 'jaya_teknis', $db_port);
             $conn->set_charset("utf8mb4");
             applyAppTimezone($conn);
+            if (!defined('DB_NAME')) {
+                define('DB_NAME', 'jaya_teknis');
+            }
         } catch (mysqli_sql_exception $e3) {
             try {
                 $conn = new mysqli($db_host, 'root', '', 'jaya_teknik', $db_port);
                 $conn->set_charset("utf8mb4");
                 applyAppTimezone($conn);
+                if (!defined('DB_NAME')) {
+                    define('DB_NAME', 'jaya_teknik');
+                }
             } catch (mysqli_sql_exception $e4) {
                 error_log("Database Connection Error: " . $e->getMessage());
                 if (basename($_SERVER['PHP_SELF']) === 'koneksi.php' || (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], '/api/') !== false)) {

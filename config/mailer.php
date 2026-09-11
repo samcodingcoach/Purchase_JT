@@ -22,9 +22,10 @@ if (!function_exists('sendSmtpEmail')) {
      * @param string $toName
      * @param string $subject
      * @param string $htmlBody
+     * @param array $attachments Array of file paths or array of ['path' => ..., 'name' => ...]
      * @return array [success => bool, message => string]
      */
-    function sendSmtpEmail($conn, $toEmail, $toName, $subject, $htmlBody) {
+    function sendSmtpEmail($conn, $toEmail, $toName, $subject, $htmlBody, $attachments = []) {
         if (empty($toEmail) || !filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
             return ['success' => false, 'message' => 'Alamat email penerima tidak valid.'];
         }
@@ -80,12 +81,24 @@ if (!function_exists('sendSmtpEmail')) {
             }
             $mail->Port        = $port;
             $mail->CharSet     = 'UTF-8';
-            $mail->Timeout     = 15;
+            $mail->Timeout     = 25;
 
             // Recipients
             $mail->setFrom($fromEmail, $fromName);
             $mail->addAddress($toEmail, $toName);
             $mail->addReplyTo($fromEmail, $fromName);
+
+            // Attachments
+            if (!empty($attachments) && is_array($attachments)) {
+                foreach ($attachments as $att) {
+                    if (is_string($att) && file_exists($att)) {
+                        $mail->addAttachment($att);
+                    } elseif (is_array($att) && !empty($att['path']) && file_exists($att['path'])) {
+                        $attName = !empty($att['name']) ? $att['name'] : basename($att['path']);
+                        $mail->addAttachment($att['path'], $attName);
+                    }
+                }
+            }
 
             // Content
             $mail->isHTML(true);
@@ -1776,6 +1789,134 @@ if (!function_exists('sendCancellationNotificationDirect')) {
         }
 
         return ['success' => ($sent > 0), 'sent_count' => $sent, 'message' => "Email terkirim ke {$sent} Manager."];
+    }
+}
+
+if (!function_exists('renderBackupOtpEmailTemplate')) {
+    /**
+     * Template Email OTP Verifikasi Keamanan Backup & Restore Database
+     */
+    function renderBackupOtpEmailTemplate($nama, $otpCode, $action = 'BACKUP', $expiresMinutes = 10) {
+        $actionTitle = ($action === 'RESTORE') ? 'Restore Database' : 'Backup Database';
+        $actionDesc = ($action === 'RESTORE') 
+            ? 'Permintaan otorisasi pemulihan (RESTORE) data database sistem PT Jaya Teknis.'
+            : 'Permintaan otorisasi pencadangan (BACKUP) data database sistem PT Jaya Teknis.';
+        $actionColor = ($action === 'RESTORE') ? '#dc2626' : '#0f2744';
+
+        return "
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset='utf-8'>
+            <title>Kode OTP Keamanan {$actionTitle}</title>
+        </head>
+        <body style='margin: 0; padding: 0; background-color: #f1f5f9; font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif;'>
+            <table border='0' cellpadding='0' cellspacing='0' width='100%' style='padding: 30px 10px;'>
+                <tr>
+                    <td align='center'>
+                        <table border='0' cellpadding='0' cellspacing='0' width='100%' style='max-width: 540px; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;'>
+                            <tr>
+                                <td style='background: {$actionColor}; padding: 24px 20px; color: #ffffff; text-align: center;'>
+                                    <h2 style='margin: 0; font-size: 20px; letter-spacing: 0.5px;'>PT JAYA TEKNIS</h2>
+                                    <p style='margin: 5px 0 0 0; font-size: 12px; opacity: 0.85;'>Verifikasi Keamanan {$actionTitle}</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style='padding: 25px 24px; color: #1e293b; font-size: 14px; line-height: 1.6;'>
+                                    <p style='margin-top: 0;'>Halo <strong>" . htmlspecialchars($nama) . "</strong>,</p>
+                                    <p>{$actionDesc}</p>
+                                    <p style='margin-bottom: 8px;'>Gunakan kode verifikasi (OTP) berikut untuk melanjutkan transaksi:</p>
+                                    
+                                    <div style='text-align: center; margin: 20px 0;'>
+                                        <div style='display: inline-block; background: #f8fafc; border: 2px dashed {$actionColor}; padding: 12px 30px; border-radius: 8px;'>
+                                            <span style='font-size: 30px; font-weight: 800; font-family: monospace; letter-spacing: 8px; color: {$actionColor};'>{$otpCode}</span>
+                                        </div>
+                                    </div>
+
+                                    <p style='font-size: 12px; color: #64748b; text-align: center;'>Kode OTP ini berlaku selama <strong>{$expiresMinutes} menit</strong>. Jangan berikan kode ini kepada siapapun.</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style='background: #f8fafc; padding: 12px 20px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0;'>
+                                    &copy; " . date('Y') . " PT Jaya Teknis System &bull; Keamanan Database
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </body>
+        </html>";
+    }
+}
+
+if (!function_exists('renderBackupFileEmailTemplate')) {
+    /**
+     * Template Email Pengiriman Berkas Backup Database (.sql)
+     */
+    function renderBackupFileEmailTemplate($nama, $fileName, $fileSize, $scopeText, $keterangan, $tanggal) {
+        return "
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset='utf-8'>
+            <title>Berkas Cadangan Database</title>
+        </head>
+        <body style='margin: 0; padding: 0; background-color: #f1f5f9; font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif;'>
+            <table border='0' cellpadding='0' cellspacing='0' width='100%' style='padding: 30px 10px;'>
+                <tr>
+                    <td align='center'>
+                        <table border='0' cellpadding='0' cellspacing='0' width='100%' style='max-width: 580px; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;'>
+                            <tr>
+                                <td style='background: #0f2744; padding: 24px 20px; color: #ffffff; text-align: center;'>
+                                    <h2 style='margin: 0; font-size: 20px; letter-spacing: 0.5px;'>PT JAYA TEKNIS</h2>
+                                    <p style='margin: 5px 0 0 0; font-size: 12px; opacity: 0.85;'>Arsip Cadangan Database (Backup .SQL)</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style='padding: 25px 24px; color: #1e293b; font-size: 14px; line-height: 1.6;'>
+                                    <p style='margin-top: 0;'>Halo <strong>" . htmlspecialchars($nama) . "</strong>,</p>
+                                    <p>Proses pencadangan database sistem PT Jaya Teknis telah berhasil dieksekusi. Berkas SQL terlampir pada email ini.</p>
+                                    
+                                    <table style='width: 100%; font-size: 13px; border-collapse: collapse; margin: 15px 0; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;'>
+                                        <tr>
+                                            <td style='padding: 10px 14px; color: #64748b; width: 35%; border-bottom: 1px solid #e2e8f0;'>Nama Berkas</td>
+                                            <td style='padding: 10px 14px; font-weight: bold; font-family: monospace; border-bottom: 1px solid #e2e8f0; color: #0284c7;'>" . htmlspecialchars($fileName) . "</td>
+                                        </tr>
+                                        <tr>
+                                            <td style='padding: 10px 14px; color: #64748b; border-bottom: 1px solid #e2e8f0;'>Ukuran Berkas</td>
+                                            <td style='padding: 10px 14px; font-weight: bold; border-bottom: 1px solid #e2e8f0;'>" . htmlspecialchars($fileSize) . "</td>
+                                        </tr>
+                                        <tr>
+                                            <td style='padding: 10px 14px; color: #64748b; border-bottom: 1px solid #e2e8f0;'>Cakupan (Scope)</td>
+                                            <td style='padding: 10px 14px; border-bottom: 1px solid #e2e8f0;'>" . htmlspecialchars($scopeText) . "</td>
+                                        </tr>
+                                        <tr>
+                                            <td style='padding: 10px 14px; color: #64748b; border-bottom: 1px solid #e2e8f0;'>Waktu Backup</td>
+                                            <td style='padding: 10px 14px; border-bottom: 1px solid #e2e8f0;'>" . htmlspecialchars($tanggal) . "</td>
+                                        </tr>
+                                        <tr>
+                                            <td style='padding: 10px 14px; color: #64748b;'>Keterangan</td>
+                                            <td style='padding: 10px 14px;'>" . htmlspecialchars($keterangan ?: 'Pencadangan berkala database.') . "</td>
+                                        </tr>
+                                    </table>
+
+                                    <div style='background: #ecfdf5; border-left: 4px solid #10b981; padding: 10px 14px; font-size: 12px; color: #065f46;'>
+                                        <strong>Informasi Keamanan:</strong> Simpan berkas ini di tempat yang aman. Berkas dapat digunakan untuk Quick Restore melalui panel admin PT Jaya Teknis.
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style='background: #f8fafc; padding: 12px 20px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0;'>
+                                    &copy; " . date('Y') . " PT Jaya Teknis System &bull; Database Backup Service
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </body>
+        </html>";
     }
 }
 
