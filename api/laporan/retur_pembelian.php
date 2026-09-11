@@ -226,9 +226,16 @@ try {
         }
     }
 
+    $generatedBy = !empty($user['nama']) ? $user['nama'] : (!empty($user['username']) ? $user['username'] : 'Petugas');
+
     sendJson(true, 'Data Laporan Rekapitulasi Retur Pembelian berhasil diambil.', [
         'items' => $items,
         'vendors' => $vendors,
+        'meta' => [
+            'generated_by' => $generatedBy,
+            'generated_at' => date('d/m/Y H:i') . ' WITA',
+            'tanggal_cetak' => date('d/m/Y')
+        ],
         'pagination' => [
             'current_page' => $page,
             'per_page' => $limit,

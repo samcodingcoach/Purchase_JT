@@ -231,9 +231,9 @@ $companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
                 <div class="sig-header-main fw-bold">Dibuat Oleh,</div>
                 <div class="sig-header-sub text-muted" id="sigRolePembuat">(Staff Logistik / Purchasing)</div>
                 <div class="sig-line-box" style="margin-top: 50px;">
-                    <span class="sig-person-name fw-bold" id="sigNamaPembuat"><?= htmlspecialchars($user['nama_karyawan'] ?? $user['username'] ?? 'Petugas') ?></span>
+                    <span class="sig-person-name fw-bold" id="sigNamaPembuat"><?= htmlspecialchars($user['nama'] ?? $user['username'] ?? 'Petugas') ?></span>
                 </div>
-                <div class="sig-footer-note text-muted small">Tanggal: <?= date('d/m/Y') ?></div>
+                <div class="sig-footer-note text-muted small" id="sigTanggalPembuat">Tanggal: <?= date('d/m/Y') ?></div>
             </div>
             <div class="col-5 sig-col text-center">
                 <div class="sig-header-main fw-bold">Disetujui Oleh,</div>
@@ -249,7 +249,7 @@ $companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
     <!-- FOOTER BAWAH DOKUMEN -->
     <div class="footer-line-container mt-4">
         <div class="footer-right">
-            <div>Dokumen dicetak pada: <?= date('d/m/Y H:i') ?> WITA | Oleh: <?= htmlspecialchars($user['nama_karyawan'] ?? $user['username'] ?? 'Petugas') ?></div>
+            <div id="printFooterText">Dokumen dicetak pada: <?= date('d/m/Y H:i') ?> WITA | Oleh: <?= htmlspecialchars($user['nama'] ?? $user['username'] ?? 'Petugas') ?></div>
             <div>Purchasing &amp; Logistics Management System - <?= htmlspecialchars($companyName) ?></div>
         </div>
     </div>
@@ -301,6 +301,18 @@ async function loadPrintData() {
         const res = await response.json();
 
         if (res.success && res.data) {
+            // Update info penandatangan & footer dari meta API
+            if (res.data.meta) {
+                if (res.data.meta.generated_by) {
+                    document.getElementById('sigNamaPembuat').textContent = res.data.meta.generated_by;
+                }
+                if (res.data.meta.tanggal_cetak) {
+                    document.getElementById('sigTanggalPembuat').textContent = `Tanggal: ${res.data.meta.tanggal_cetak}`;
+                }
+                if (res.data.meta.generated_at && res.data.meta.generated_by) {
+                    document.getElementById('printFooterText').textContent = `Dokumen dicetak pada: ${res.data.meta.generated_at} | Oleh: ${res.data.meta.generated_by}`;
+                }
+            }
             renderPrintTable(res.data.items || []);
         } else {
             tbody.innerHTML = `<tr><td colspan="8" class="text-center py-3">${res.message || 'Gagal memuat data.'}</td></tr>`;
