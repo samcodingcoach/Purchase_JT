@@ -205,13 +205,16 @@ require_once __DIR__ . '/../../components/navbar.php';
                                 <span class="badge bg-secondary-subtle text-secondary font-monospace" id="roTotalItemsBadge">0 Item</span>
                             </div>
 
+                            <!-- Notice jika RO memuat Barang Mewah (PPnBM) -->
+                            <div id="roPpnbmNoticeContainer" class="d-none"></div>
+
                             <!-- Tabel Input Harga Barang -->
-                            <div class="table-responsive border rounded-3 mb-4">
-                                <table class="table table-bordered align-middle mb-0" id="tablePricingItems">
+                            <div class="table-responsive bg-white border rounded-3 overflow-hidden mb-4 shadow-none">
+                                <table class="table table-hover align-middle mb-0" id="tablePricingItems">
                                     <thead class="table-light small text-muted text-uppercase">
                                         <tr>
                                             <th class="text-center" style="width: 45px;">#</th>
-                                            <th style="min-width: 250px;">Barang &amp; Spesifikasi</th>
+                                            <th style="min-width: 260px;">Barang &amp; Spesifikasi</th>
                                             <th class="text-center" style="width: 90px;">Qty</th>
                                             <th style="width: 170px;">Harga Satuan (Rp)</th>
                                             <th style="width: 140px;">Diskon Item (Rp)</th>
@@ -237,13 +240,13 @@ require_once __DIR__ . '/../../components/navbar.php';
                                             <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
                                                 <div class="form-check m-0">
                                                     <input class="form-check-input" type="checkbox" id="checkEnablePajak" checked onchange="togglePajak(this.checked)">
-                                                    <label class="form-check-label fw-bold small text-dark" for="checkEnablePajak">
+                                                    <label class="form-check-label fw-bold small text-dark" id="labelEnablePajak" for="checkEnablePajak">
                                                         Kena Pajak PPN
                                                     </label>
                                                 </div>
                                                 <div class="d-flex align-items-center gap-1" id="wrapperPajakRate">
                                                     <label class="small text-muted mb-0 me-1" style="font-size: 0.78rem;">Tarif:</label>
-                                                    <select class="form-select form-select-sm font-monospace py-0 px-2" id="selectPajakRate" style="width: 85px; height: 28px; font-size: 0.8rem;" onchange="onPajakRateChange()">
+                                                    <select class="form-select form-select-sm font-monospace py-0 px-2" id="selectPajakRate" style="min-width: 85px; height: 28px; font-size: 0.8rem;" onchange="onPajakRateChange()">
                                                         <option value="12" selected>12%</option>
                                                         <option value="11">11%</option>
                                                     </select>
@@ -741,16 +744,33 @@ function renderRoData() {
         updateTopKeterangan(inputTopEl.value);
     }
 
-    // 5. Render Items di Tab Pricing (Lengkap dengan Kategori, Merk, & Total Stok)
+    // 5. Render Items di Tab Pricing (Lengkap dengan Kategori, Merk, Stok & Status Mewah PPnBM)
     const items = ro.items || [];
     document.getElementById('roTotalItemsBadge').textContent = `${items.length} Item Barang`;
 
+    let hasPpnbmInRo = false;
+    let roPpnbmRate = 0;
+
     let pricingHtml = '';
     items.forEach((item, idx) => {
+        const isLuxury = (parseInt(item.PPnBM) === 1 || parseInt(item.ppnbm) === 1);
+        const itemRatePpnbm = parseFloat(item.rate_PPnBM || item.rate_ppnbm || 0);
+
+        if (isLuxury) {
+            hasPpnbmInRo = true;
+            if (itemRatePpnbm > 0 && roPpnbmRate === 0) {
+                roPpnbmRate = itemRatePpnbm;
+            }
+        }
+
         // Ambil harga_set dari barang_hargavendor yang berlaku paling akhir (atau fallback ke harga RO)
         const defaultHarga = parseFloat(item.harga_set) > 0 ? parseFloat(item.harga_set) : (parseFloat(item.harga) || 0);
         const subtotal = item.qty * defaultHarga;
         const totalStok = parseInt(item.total_stok) || 0;
+
+        const luxuryBadge = isLuxury
+            ? `<span class="badge bg-warning text-dark border border-warning-subtle fw-bold" style="font-size: 0.68rem;"><i class="bi bi-stars me-1"></i>PPnBM (${itemRatePpnbm}%)</span>`
+            : `<span class="badge bg-light text-muted border" style="font-size: 0.68rem;">Non-PPnBM</span>`;
 
         pricingHtml += `
             <tr data-item-id="${item.id_barang}">
@@ -759,6 +779,7 @@ function renderRoData() {
                     <div class="fw-bold text-dark mb-1">${escapeHtml(item.nama_barang)}</div>
                     <div class="d-flex flex-wrap gap-1 align-items-center">
                         <span class="badge bg-light text-muted border font-monospace" style="font-size: 0.68rem;">${escapeHtml(item.kode_barang || 'BRG')}</span>
+                        ${luxuryBadge}
                         <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.68rem;"><i class="bi bi-tag me-1"></i>${escapeHtml(item.nama_kategori || 'Material')}</span>
                         <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.68rem;"><i class="bi bi-bookmark me-1"></i>${escapeHtml(item.nama_merk || 'Umum')}</span>
                         <span class="badge bg-info-subtle text-info border border-info-subtle font-monospace" style="font-size: 0.68rem;">
@@ -789,6 +810,52 @@ function renderRoData() {
     });
 
     document.getElementById('tablePricingItemsBody').innerHTML = pricingHtml;
+
+    // Sinkronisasi Notice & Pilihan Pajak jika Dokumen Memuat Barang Mewah
+    const noticeContainer = document.getElementById('roPpnbmNoticeContainer');
+    const selectPajakRate = document.getElementById('selectPajakRate');
+    const labelEnablePajak = document.getElementById('labelEnablePajak');
+    const checkEnablePajak = document.getElementById('checkEnablePajak');
+
+    if (hasPpnbmInRo && roPpnbmRate > 0) {
+        if (noticeContainer) {
+            noticeContainer.classList.remove('d-none');
+            noticeContainer.innerHTML = `
+                <div class="alert alert-warning py-2 px-3 small mb-3 border-0 rounded-3 shadow-xs d-flex align-items-center">
+                    <i class="bi bi-stars text-warning-emphasis fs-5 me-2"></i>
+                    <div>
+                        <strong>Dokumen RO Barang Mewah (PPnBM):</strong> Seluruh barang dalam RO ini dikenakan tarif PPnBM sebesar <strong>${roPpnbmRate}%</strong>.
+                    </div>
+                </div>
+            `;
+        }
+        if (labelEnablePajak) {
+            labelEnablePajak.innerHTML = `<i class="bi bi-stars text-warning me-1"></i>Kena Pajak PPnBM (${roPpnbmRate}%)`;
+        }
+
+        // Pastikan opsi tarif PPnBM tersedia di dropdown selectPajakRate
+        let optionExists = false;
+        for (let i = 0; i < selectPajakRate.options.length; i++) {
+            if (parseFloat(selectPajakRate.options[i].value) === roPpnbmRate) {
+                optionExists = true;
+                break;
+            }
+        }
+        if (!optionExists) {
+            const newOpt = document.createElement('option');
+            newOpt.value = roPpnbmRate;
+            newOpt.textContent = `${roPpnbmRate}% (PPnBM)`;
+            selectPajakRate.insertBefore(newOpt, selectPajakRate.firstChild);
+        }
+        selectPajakRate.value = roPpnbmRate;
+        if (checkEnablePajak) {
+            checkEnablePajak.checked = true;
+        }
+        document.getElementById('inputPajakPpn').value = roPpnbmRate;
+    } else {
+        if (noticeContainer) noticeContainer.classList.add('d-none');
+        if (labelEnablePajak) labelEnablePajak.textContent = 'Kena Pajak PPN';
+    }
 
     // Hitung kalkulasi awal
     calculateAllTotals();
@@ -934,7 +1001,14 @@ function calculateAllTotals() {
     document.getElementById('summarySubtotal').textContent = formatRupiah(subtotalBarang);
     document.getElementById('summaryDiskon').textContent = `- ${formatRupiah(diskonAkhirNominal)}`;
     document.getElementById('summaryDpp').textContent = formatRupiah(dpp);
-    document.getElementById('labelSummaryPpn').textContent = `PPN (${ppnRate}%)${isTermasukPajak ? ' (Inklusif)' : ''}:`;
+
+    // Cek apakah ada barang mewah dalam cache
+    let isDocLuxury = false;
+    if (roDataCache && roDataCache.items) {
+        isDocLuxury = roDataCache.items.some(it => (parseInt(it.PPnBM) === 1 || parseInt(it.ppnbm) === 1));
+    }
+    const taxLabelPrefix = isDocLuxury ? 'PPnBM' : 'PPN';
+    document.getElementById('labelSummaryPpn').textContent = `${taxLabelPrefix} (${ppnRate}%)${isTermasukPajak ? ' (Inklusif)' : ''}:`;
     document.getElementById('summaryPpn').textContent = formatRupiah(ppnAmount);
     document.getElementById('summaryGrandTotal').textContent = formatRupiah(grandTotal);
 }

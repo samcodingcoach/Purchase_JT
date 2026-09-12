@@ -106,9 +106,10 @@ foreach ($items as $idx => $item) {
     ];
 }
 
-// Validasi Aturan PPnBM: Tidak boleh menggabungkan barang mewah & non-mewah dalam 1 RO
+// Validasi Aturan PPnBM: Tidak boleh menggabungkan barang mewah & non-mewah, serta tarif PPnBM harus sama
 $hasLuxuryItem = false;
 $hasNonLuxuryItem = false;
+$luxuryRates = [];
 $checkBarangIds = [];
 
 foreach ($cleanItems as $cItem) {
@@ -123,11 +124,12 @@ foreach ($cleanItems as $cItem) {
 if (!empty($checkBarangIds)) {
     $checkBarangIds = array_unique($checkBarangIds);
     $inList = implode(',', $checkBarangIds);
-    $resPpnbm = $conn->query("SELECT id_barang, PPnBM FROM barang WHERE id_barang IN ($inList)");
+    $resPpnbm = $conn->query("SELECT id_barang, PPnBM, rate_PPnBM FROM barang WHERE id_barang IN ($inList)");
     if ($resPpnbm) {
         while ($rowP = $resPpnbm->fetch_assoc()) {
             if ((int)$rowP['PPnBM'] === 1) {
                 $hasLuxuryItem = true;
+                $luxuryRates[] = (float)$rowP['rate_PPnBM'];
             } else {
                 $hasNonLuxuryItem = true;
             }
@@ -137,6 +139,10 @@ if (!empty($checkBarangIds)) {
 
 if ($hasLuxuryItem && $hasNonLuxuryItem) {
     jsonResponse(false, 'Barang Mewah (PPnBM) & Non-Mewah tidak boleh digabung dalam satu RO.', null, 422);
+}
+
+if ($hasLuxuryItem && count(array_unique($luxuryRates)) > 1) {
+    jsonResponse(false, 'Tarif PPnBM barang dalam satu RO harus sama (tidak boleh berbeda).', null, 422);
 }
 
 // 3. Mulai Database Transaction

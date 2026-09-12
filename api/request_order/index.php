@@ -59,7 +59,7 @@ if ($method === 'GET') {
         // Ambil rincian material barang lengkap dengan stok dan harga set vendor terakhir
         $stmtItems = $conn->prepare("SELECT rod.id_request_detail, rod.id_request, rod.id_barang, 
                                             rod.kode_barang, rod.nama_barang, rod.qty, rod.satuan, rod.harga, rod.subtotal,
-                                            b.foto1, b.nama_barang AS master_nama_barang, m.nama_merk, k.nama_kategori,
+                                            b.foto1, b.nama_barang AS master_nama_barang, b.PPnBM, b.rate_PPnBM, m.nama_merk, k.nama_kategori,
                                             COALESCE((SELECT SUM(stok) FROM barang_stok bs WHERE bs.id_barang = rod.id_barang), 0) AS total_stok,
                                             COALESCE(
                                                 (SELECT bhv.harga_set FROM barang_hargavendor bhv WHERE bhv.id_barang = rod.id_barang AND bhv.id_vendor = ? ORDER BY bhv.berlaku DESC, bhv.id_harga DESC LIMIT 1),
@@ -101,7 +101,11 @@ if ($method === 'GET') {
                 'satuan' => $item['satuan'] ?? 'PCS',
                 'harga' => $harga,
                 'harga_set' => $hargaSet,
-                'subtotal' => $subtotal
+                'subtotal' => $subtotal,
+                'PPnBM' => (int)($item['PPnBM'] ?? 0),
+                'ppnbm' => (int)($item['PPnBM'] ?? 0),
+                'rate_PPnBM' => (float)($item['rate_PPnBM'] ?? 0),
+                'rate_ppnbm' => (float)($item['rate_PPnBM'] ?? 0)
             ];
         }
         $stmtItems->close();

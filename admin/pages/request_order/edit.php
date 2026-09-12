@@ -684,6 +684,7 @@ function addNewItemRow(data = {}) {
     const tbody = document.getElementById('roItemsTableBody');
 
     const isLuxury = parseInt(data.PPnBM || data.ppnbm || 0, 10) === 1;
+    const ratePpnbm = parseFloat(data.rate_PPnBM || data.rate_ppnbm || 0);
 
     const tr = document.createElement('tr');
     tr.id = rowId;
@@ -695,6 +696,7 @@ function addNewItemRow(data = {}) {
             <div class="ro-item-search-wrapper" id="wrapper_${rowId}">
                 <input type="hidden" class="item-id-barang" value="${data.id_barang || ''}">
                 <input type="hidden" class="item-ppnbm" value="${isLuxury ? '1' : '0'}">
+                <input type="hidden" class="item-rate-ppnbm" value="${ratePpnbm}">
                 <input type="hidden" class="item-harga" value="0">
                 <div class="position-relative">
                     <input type="text" class="form-control form-control-sm item-nama-barang ${isLuxury ? 'pe-5' : ''}" 
@@ -706,7 +708,7 @@ function addNewItemRow(data = {}) {
                            oninput="handleItemSearch('${rowId}')" 
                            required>
                     <span class="luxury-badge-container position-absolute top-50 end-0 translate-middle-y me-2 ${isLuxury ? '' : 'd-none'}" style="pointer-events: none; z-index: 5;">
-                        <span class="badge bg-warning text-dark border border-warning-subtle fw-bold" style="font-size: 0.65rem;"><i class="bi bi-stars me-1"></i>MEWAH</span>
+                        <span class="badge bg-warning text-dark border border-warning-subtle fw-bold luxury-badge-text" style="font-size: 0.65rem;"><i class="bi bi-stars me-1"></i>MEWAH (${ratePpnbm}%)</span>
                     </span>
                 </div>
                 <div class="ro-item-dropdown d-none" id="dropdown_${rowId}"></div>
@@ -778,47 +780,61 @@ function reindexRows() {
 }
 
 // -------------------------------------------------------------
-// KLASIFIKASI & ATURAN BARANG MEWAH VS REGULER
+// KLASIFIKASI & ATURAN BARANG MEWAH VS REGULER & TARIF PPNBM
 // -------------------------------------------------------------
 function getRoCurrentClassification(excludeRowId = null) {
     const rows = document.querySelectorAll('.ro-item-row');
     let hasLuxury = false;
     let hasNonLuxury = false;
+    let luxuryRates = [];
 
     rows.forEach(r => {
         if (excludeRowId && r.id === excludeRowId) return;
         const idBarang = r.querySelector('.item-id-barang')?.value;
         const namaBarang = r.querySelector('.item-nama-barang')?.value.trim();
         const ppnbm = parseInt(r.querySelector('.item-ppnbm')?.value || '0', 10);
+        const rate = parseFloat(r.querySelector('.item-rate-ppnbm')?.value || '0');
 
         if (idBarang || namaBarang) {
             if (ppnbm === 1) {
                 hasLuxury = true;
+                luxuryRates.push(rate);
             } else {
                 hasNonLuxury = true;
             }
         }
     });
 
-    if (hasLuxury && hasNonLuxury) return 'MIXED';
-    if (hasLuxury) return 'LUXURY';
-    if (hasNonLuxury) return 'REGULAR';
-    return 'EMPTY';
+    if (hasLuxury && hasNonLuxury) return { type: 'MIXED_TYPE', rate: null };
+    if (hasLuxury) {
+        const uniqueRates = [...new Set(luxuryRates)];
+        if (uniqueRates.length > 1) {
+            return { type: 'MIXED_RATE', rate: null, rates: uniqueRates };
+        }
+        return { type: 'LUXURY', rate: uniqueRates[0] || 0 };
+    }
+    if (hasNonLuxury) return { type: 'REGULAR', rate: 0 };
+    return { type: 'EMPTY', rate: null };
 }
 
 function updateRoClassificationStatus() {
-    const status = getRoCurrentClassification();
+    const cl = getRoCurrentClassification();
     const banner = document.getElementById('roClassificationBanner');
     const icon = document.getElementById('roClassificationIcon');
     const text = document.getElementById('roClassificationText');
     if (!banner || !icon || !text) return;
 
-    if (status === 'LUXURY') {
+    if (cl.type === 'LUXURY') {
         banner.className = 'alert alert-warning d-flex align-items-center py-2 px-3 mb-3 border-0 rounded-3 shadow-none text-dark small';
         banner.style.backgroundColor = '#fff3cd';
         icon.className = 'bi bi-stars text-warning fs-6 me-2';
-        text.innerHTML = '<strong>RO Khusus Barang Mewah (PPnBM):</strong> Dokumen ini khusus barang mewah.';
-    } else if (status === 'MIXED') {
+        text.innerHTML = `<strong>RO Khusus Barang Mewah (PPnBM ${cl.rate}%):</strong> Dokumen ini khusus barang mewah dengan tarif ${cl.rate}%.`;
+    } else if (cl.type === 'MIXED_RATE') {
+        banner.className = 'alert alert-danger d-flex align-items-center py-2 px-3 mb-3 border-0 rounded-3 shadow-none text-dark small';
+        banner.style.backgroundColor = '#f8d7da';
+        icon.className = 'bi bi-exclamation-octagon-fill text-danger fs-6 me-2';
+        text.innerHTML = '<strong>Peringatan:</strong> Tarif PPnBM dalam satu RO harus sama (tidak boleh berbeda).';
+    } else if (cl.type === 'MIXED_TYPE') {
         banner.className = 'alert alert-danger d-flex align-items-center py-2 px-3 mb-3 border-0 rounded-3 shadow-none text-dark small';
         banner.style.backgroundColor = '#f8d7da';
         icon.className = 'bi bi-exclamation-octagon-fill text-danger fs-6 me-2';
@@ -880,7 +896,7 @@ function renderItemDropdown(rowId, items, query = '') {
     const dropdown = document.getElementById(`dropdown_${rowId}`);
     if (!dropdown) return;
 
-    const currentRoType = getRoCurrentClassification(rowId);
+    const currentRo = getRoCurrentClassification(rowId);
 
     let html = '';
     const cleanQ = query.trim().toLowerCase();
@@ -888,6 +904,7 @@ function renderItemDropdown(rowId, items, query = '') {
     if (items.length > 0) {
         items.forEach(item => {
             const isItemLuxury = parseInt(item.PPnBM ?? item.ppnbm ?? 0, 10) === 1;
+            const itemRate = parseFloat(item.rate_PPnBM ?? item.rate_ppnbm ?? 0);
             const imgSrc = item.foto1 ? `${BASE_URL}/${item.foto1}` : '';
             const imgHtml = imgSrc 
                 ? `<img src="${imgSrc}" class="rounded border me-2 flex-shrink-0" style="width: 42px; height: 42px; object-fit: cover;" onerror="this.outerHTML='<div class=\\\'rounded border bg-light text-secondary d-flex align-items-center justify-content-center me-2 flex-shrink-0\\\' style=\\\'width: 42px; height: 42px;\\\'><i class=\\\'bi bi-box-seam fs-5\\\'></i></div>'">` 
@@ -898,21 +915,26 @@ function renderItemDropdown(rowId, items, query = '') {
 
             let conflictBadge = '';
             let isConflict = false;
-            if (currentRoType === 'LUXURY' && !isItemLuxury) {
-                isConflict = true;
-                conflictBadge = `<span class="badge bg-danger-subtle text-danger ms-auto"><i class="bi bi-x-circle me-1"></i>Bukan Mewah</span>`;
-            } else if (currentRoType === 'REGULAR' && isItemLuxury) {
+            if (currentRo.type === 'LUXURY') {
+                if (!isItemLuxury) {
+                    isConflict = true;
+                    conflictBadge = `<span class="badge bg-danger-subtle text-danger ms-auto"><i class="bi bi-x-circle me-1"></i>Bukan Mewah</span>`;
+                } else if (currentRo.rate !== null && itemRate !== currentRo.rate) {
+                    isConflict = true;
+                    conflictBadge = `<span class="badge bg-danger-subtle text-danger ms-auto"><i class="bi bi-x-circle me-1"></i>Beda Tarif (${itemRate}%)</span>`;
+                }
+            } else if (currentRo.type === 'REGULAR' && isItemLuxury) {
                 isConflict = true;
                 conflictBadge = `<span class="badge bg-danger-subtle text-danger ms-auto"><i class="bi bi-x-circle me-1"></i>Barang Mewah</span>`;
             }
 
             const luxuryTag = isItemLuxury 
-                ? `<span class="badge bg-warning text-dark border border-warning-subtle fw-bold"><i class="bi bi-stars me-1"></i>MEWAH (PPnBM)</span>` 
+                ? `<span class="badge bg-warning text-dark border border-warning-subtle fw-bold"><i class="bi bi-stars me-1"></i>MEWAH (PPnBM ${itemRate}%)</span>` 
                 : '';
 
             html += `
                 <div class="ro-item-dropdown-item d-flex align-items-center p-2 ${isConflict ? 'opacity-75 bg-light' : ''}" 
-                     onclick="selectMasterBarang('${rowId}', ${item.id_barang}, '${item.kode_barang.replace(/'/g, "\\'")}', '${item.nama_barang.replace(/'/g, "\\'")}', '${item.satuan}', ${isItemLuxury ? 1 : 0})">
+                     onclick="selectMasterBarang('${rowId}', ${item.id_barang}, '${item.kode_barang.replace(/'/g, "\\'")}', '${item.nama_barang.replace(/'/g, "\\'")}', '${item.satuan}', ${isItemLuxury ? 1 : 0}, ${itemRate})">
                     ${imgHtml}
                     <div class="flex-grow-1 overflow-hidden">
                         <div class="fw-bold text-dark small mb-1 d-flex align-items-center justify-content-between">
@@ -935,7 +957,7 @@ function renderItemDropdown(rowId, items, query = '') {
 
     if (cleanQ) {
         let allowCustom = true;
-        if (currentRoType === 'LUXURY') {
+        if (currentRo.type === 'LUXURY') {
             allowCustom = false;
         }
 
@@ -975,18 +997,25 @@ function isBarangAlreadySelected(idBarang, namaBarang, currentRowId) {
     return false;
 }
 
-function selectMasterBarang(rowId, idBarang, kode, nama, satuan, isLuxury = 0) {
+function selectMasterBarang(rowId, idBarang, kode, nama, satuan, isLuxury = 0, ratePpnbm = 0) {
     const row = document.getElementById(rowId);
     if (!row) return;
 
-    // CEK ATURAN TIDAK BISA MEMUAT MEWAH & NON-MEWAH DALAM 1 RO
-    const currentClassification = getRoCurrentClassification(rowId);
-    if (currentClassification === 'LUXURY' && !isLuxury) {
-        showToast('Barang Mewah (PPnBM) & Non-Mewah tidak boleh digabung!', 'error');
-        document.getElementById(`dropdown_${rowId}`)?.classList.add('d-none');
-        return;
+    // CEK ATURAN TIDAK BISA MEMUAT MEWAH & NON-MEWAH SERTA PERBEDAAN TARIF DALAM 1 RO
+    const currentRo = getRoCurrentClassification(rowId);
+    if (currentRo.type === 'LUXURY') {
+        if (!isLuxury) {
+            showToast('Barang Mewah (PPnBM) & Non-Mewah tidak boleh digabung!', 'error');
+            document.getElementById(`dropdown_${rowId}`)?.classList.add('d-none');
+            return;
+        }
+        if (currentRo.rate !== null && ratePpnbm !== currentRo.rate) {
+            showToast(`Tarif PPnBM berbeda (${ratePpnbm}% vs ${currentRo.rate}%). Tarif PPnBM harus sama dalam satu RO.`, 'error');
+            document.getElementById(`dropdown_${rowId}`)?.classList.add('d-none');
+            return;
+        }
     }
-    if (currentClassification === 'REGULAR' && isLuxury) {
+    if (currentRo.type === 'REGULAR' && isLuxury) {
         showToast('Barang Mewah (PPnBM) & Non-Mewah tidak boleh digabung!', 'error');
         document.getElementById(`dropdown_${rowId}`)?.classList.add('d-none');
         return;
@@ -999,6 +1028,7 @@ function selectMasterBarang(rowId, idBarang, kode, nama, satuan, isLuxury = 0) {
         row.querySelector('.item-nama-barang').value = '';
         row.querySelector('.item-kode-barang').value = '';
         row.querySelector('.item-ppnbm').value = '0';
+        row.querySelector('.item-rate-ppnbm').value = '0';
         row.querySelector('.luxury-badge-container')?.classList.add('d-none');
         row.querySelector('.item-nama-barang')?.classList.remove('pe-5');
         document.getElementById(`dropdown_${rowId}`)?.classList.add('d-none');
@@ -1010,10 +1040,13 @@ function selectMasterBarang(rowId, idBarang, kode, nama, satuan, isLuxury = 0) {
     if (inputNama) inputNama.value = nama;
     row.querySelector('.item-kode-barang').value = kode;
     row.querySelector('.item-ppnbm').value = isLuxury ? '1' : '0';
+    row.querySelector('.item-rate-ppnbm').value = isLuxury ? ratePpnbm : '0';
     
     const badgeContainer = row.querySelector('.luxury-badge-container');
+    const badgeText = row.querySelector('.luxury-badge-text');
     if (badgeContainer) {
         if (isLuxury) {
+            if (badgeText) badgeText.innerHTML = `<i class="bi bi-stars me-1"></i>MEWAH (${ratePpnbm}%)`;
             badgeContainer.classList.remove('d-none');
             if (inputNama) inputNama.classList.add('pe-5');
         } else {
@@ -1038,8 +1071,8 @@ function useCustomItemName(rowId, customName) {
     const row = document.getElementById(rowId);
     if (!row) return;
 
-    const currentClassification = getRoCurrentClassification(rowId);
-    if (currentClassification === 'LUXURY') {
+    const currentRo = getRoCurrentClassification(rowId);
+    if (currentRo.type === 'LUXURY') {
         showToast('Barang input manual tidak dapat digabung ke RO Barang Mewah.', 'error');
         document.getElementById(`dropdown_${rowId}`)?.classList.add('d-none');
         return;
@@ -1051,6 +1084,7 @@ function useCustomItemName(rowId, customName) {
         row.querySelector('.item-nama-barang').value = '';
         row.querySelector('.item-kode-barang').value = '';
         row.querySelector('.item-ppnbm').value = '0';
+        row.querySelector('.item-rate-ppnbm').value = '0';
         row.querySelector('.luxury-badge-container')?.classList.add('d-none');
         row.querySelector('.item-nama-barang')?.classList.remove('pe-5');
         document.getElementById(`dropdown_${rowId}`)?.classList.add('d-none');
@@ -1064,6 +1098,7 @@ function useCustomItemName(rowId, customName) {
         inputNama.classList.remove('pe-5');
     }
     row.querySelector('.item-ppnbm').value = '0';
+    row.querySelector('.item-rate-ppnbm').value = '0';
     row.querySelector('.luxury-badge-container')?.classList.add('d-none');
     row.querySelector('.item-harga').value = 0;
     document.getElementById(`dropdown_${rowId}`)?.classList.add('d-none');
@@ -1310,10 +1345,15 @@ async function submitEditRequestOrder(targetStatus = 'DRAFT') {
         return;
     }
 
-    // Validasi Aturan Barang Mewah vs Non-Mewah
+    // Validasi Aturan Barang Mewah vs Non-Mewah & Keseragaman Tarif
     const currentClassification = getRoCurrentClassification();
-    if (currentClassification === 'MIXED') {
+    if (currentClassification.type === 'MIXED_TYPE') {
         showToast('Barang Mewah (PPnBM) & Non-Mewah tidak boleh digabung dalam satu RO.', 'danger');
+        goToTab('tab-material');
+        return;
+    }
+    if (currentClassification.type === 'MIXED_RATE') {
+        showToast('Tarif PPnBM barang dalam satu RO harus sama (tidak boleh berbeda).', 'danger');
         goToTab('tab-material');
         return;
     }
