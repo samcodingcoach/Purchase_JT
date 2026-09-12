@@ -62,6 +62,7 @@ if ($method === 'GET') {
 
         // Ambil detail item
         $stmtItems = $conn->prepare("SELECT pd.*, b.kode_barang, b.nama_barang, b.satuan,
+                                            b.PPnBM, b.rate_PPnBM,
                                             kat.nama_kategori, mrk.nama_merk
                                      FROM purchase_order_detail pd
                                      LEFT JOIN barang b ON pd.id_barang = b.id_barang

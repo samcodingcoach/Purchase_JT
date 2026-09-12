@@ -147,23 +147,44 @@ require_once __DIR__ . '/../../components/navbar.php';
     }
     #modalPoTabNav .nav-link {
         border: 1px solid transparent !important;
-        border-top-left-radius: 6px !important;
-        border-top-right-radius: 6px !important;
+        border-top-left-radius: 8px !important;
+        border-top-right-radius: 8px !important;
         color: #475569 !important;
         background: transparent !important;
         margin-bottom: -1px !important;
-        padding: 0.6rem 1rem !important;
+        padding: 0.65rem 1.15rem !important;
+        font-weight: 600;
+        font-size: 0.85rem;
+        transition: all 0.2s ease;
     }
     #modalPoTabNav .nav-link:hover {
         border-color: #e2e8f0 #e2e8f0 transparent !important;
         color: #0d6efd !important;
+        background: #f8fafc !important;
     }
     #modalPoTabNav .nav-link.active {
         color: #0f172a !important;
         background-color: #ffffff !important;
-        border-color: #dee2e6 #dee2e6 #ffffff !important;
-        border-bottom: 1px solid #ffffff !important;
+        border-color: #e2e8f0 #e2e8f0 #ffffff !important;
+        border-bottom: 2px solid #ffffff !important;
         font-weight: 700 !important;
+    }
+    .po-info-card {
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 10px;
+    }
+    .po-info-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #64748b;
+        font-weight: 600;
+        margin-bottom: 2px;
+    }
+    .po-info-val {
+        color: #1e293b;
+        font-size: 0.9rem;
     }
     </style>
 
@@ -207,101 +228,114 @@ require_once __DIR__ . '/../../components/navbar.php';
     </div>
 </div>
 
-<!-- MODAL DETAIL PURCHASE ORDER (DILENGKAPI TAB PEMISAH FUNGSI) -->
+<!-- MODAL DETAIL PURCHASE ORDER (DESAIN ELEGAN & BERSIH) -->
 <div class="modal fade" id="modalDetailPo" tabindex="-1" aria-labelledby="modalDetailPoLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width: 830px; width: 100%;">
-        <div class="modal-content border-0 shadow-lg rounded-3">
-            <!-- MODAL HEADER DENGAN STATUS & TAB INTEGRASI -->
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" style="max-width: 960px; width: 100%;">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <!-- MODAL HEADER -->
             <div class="modal-header bg-white pt-3 pb-0 px-4 border-bottom flex-column align-items-stretch">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="modal-title fw-bold text-dark font-monospace mb-0" id="modalDetailPoLabel">
-                        <span id="detailNomorPo">PO-XXXX-XXXX</span>
-                    </h5>
-                    <div id="detailStatusBadgeHeader"></div>
+                    <div>
+                        <span class="text-muted small text-uppercase fw-bold" style="font-size: 0.68rem; letter-spacing: 0.5px;">Purchase Order Detail</span>
+                        <h5 class="modal-title fw-bold text-dark font-monospace mb-0" id="modalDetailPoLabel">
+                            <span id="detailNomorPo">PO-XXXX-XXXX</span>
+                        </h5>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span id="detailPrioritasBadgeHeader"></span>
+                        <div id="detailStatusBadgeHeader"></div>
+                        <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
                 </div>
 
                 <!-- Nav Tabs Modal Sesuai Fungsi -->
                 <ul class="nav nav-tabs border-bottom-0" id="modalPoTabNav" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active fw-semibold" id="tab-m-info-btn" data-bs-toggle="tab" data-bs-target="#tab-m-info" type="button" role="tab">
-                            <i class="bi bi-file-earmark-text me-1 text-primary"></i> 1. Informasi PO &amp; Vendor
+                            <i class="bi bi-file-earmark-text me-1"></i> 1. Informasi PO &amp; Vendor
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link fw-semibold" id="tab-m-shipping-btn" data-bs-toggle="tab" data-bs-target="#tab-m-shipping" type="button" role="tab">
-                            <i class="bi bi-truck me-1 text-primary"></i> 2. Pengiriman &amp; Pembayaran
+                            <i class="bi bi-truck me-1"></i> 2. Pengiriman &amp; Pembayaran
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link fw-semibold" id="tab-m-items-btn" data-bs-toggle="tab" data-bs-target="#tab-m-items" type="button" role="tab">
-                            <i class="bi bi-boxes me-1 text-primary"></i> 3. Rincian Barang &amp; Biaya
-                            <span class="badge bg-primary text-white ms-1" id="modalItemCountBadge">0</span>
+                            <i class="bi bi-boxes me-1"></i> 3. Rincian Barang &amp; Finansial
+                            <span class="badge bg-primary text-white ms-1 rounded-pill px-2" id="modalItemCountBadge">0</span>
                         </button>
                     </li>
                 </ul>
             </div>
 
             <!-- MODAL BODY DENGAN 3 TAB PANE -->
-            <div class="modal-body p-4">
+            <div class="modal-body p-4 bg-light-subtle">
                 <div class="tab-content" id="modalPoTabContent">
                     
                     <!-- TAB 1: INFORMASI PO & VENDOR -->
                     <div class="tab-pane fade show active" id="tab-m-info" role="tabpanel">
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <div class="card bg-light border-0 rounded-3 p-3 h-100">
-                                    <h6 class="fw-bold text-dark mb-3">Data Purchase Order</h6>
+                                <div class="po-info-card p-3 h-100 shadow-xs">
+                                    <h6 class="fw-bold text-dark mb-3 border-bottom pb-2">
+                                        Dokumen Purchase Order
+                                    </h6>
                                     
                                     <div class="mb-2">
-                                        <span class="text-muted small d-block">Tanggal PO:</span>
-                                        <strong class="text-dark font-monospace" id="detailTanggalPo">-</strong>
+                                        <div class="po-info-label">Tanggal PO</div>
+                                        <div class="po-info-val fw-bold font-monospace" id="detailTanggalPo">-</div>
                                     </div>
                                     <div class="mb-2">
-                                        <span class="text-muted small d-block">Referensi Request Order (RO):</span>
-                                        <span class="badge bg-secondary-subtle text-dark border font-monospace" id="detailReferensiRo">-</span>
+                                        <div class="po-info-label">Referensi Request Order (RO)</div>
+                                        <div class="po-info-val">
+                                            <span class="badge bg-secondary-subtle text-dark border font-monospace" id="detailReferensiRo">-</span>
+                                        </div>
                                     </div>
                                     <div class="mb-2">
-                                        <span class="text-muted small d-block">Prioritas:</span>
-                                        <span id="detailPrioritasBadge">-</span>
+                                        <div class="po-info-label">Prioritas Dokumen</div>
+                                        <div id="detailPrioritasBadge">-</div>
                                     </div>
                                     <div class="mb-2">
-                                        <span class="text-muted small d-block">Pembuat (Purchasing):</span>
-                                        <strong class="text-dark" id="detailPembuat">-</strong>
+                                        <div class="po-info-label">Dibuat Oleh (Purchasing)</div>
+                                        <div class="po-info-val fw-semibold" id="detailPembuat">-</div>
                                     </div>
                                     <div>
-                                        <span class="text-muted small d-block">Disetujui Oleh:</span>
-                                        <strong class="text-dark" id="detailApprover">-</strong>
+                                        <div class="po-info-label">Disetujui Oleh (Approver)</div>
+                                        <div class="po-info-val fw-semibold text-primary" id="detailApprover">-</div>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="col-md-6">
-                                <div class="card bg-light border-0 rounded-3 p-3 h-100">
-                                    <h6 class="fw-bold text-dark mb-3">Vendor</h6>
+                                <div class="po-info-card p-3 h-100 shadow-xs">
+                                    <h6 class="fw-bold text-dark mb-3 border-bottom pb-2">
+                                        Informasi Vendor / Rekanan
+                                    </h6>
                                     
                                     <div class="mb-2">
-                                        <span class="text-muted small d-block">Nama Perusahaan:</span>
-                                        <strong class="text-dark fs-6" id="detailVendor">-</strong>
+                                        <div class="po-info-label">Nama Vendor / Perusahaan</div>
+                                        <div class="po-info-val fw-bold text-dark fs-6" id="detailVendor">-</div>
                                     </div>
                                     <div class="mb-2">
-                                        <span class="text-muted small d-block">Kontak / Telepon:</span>
-                                        <span class="text-dark fw-semibold" id="detailTeleponVendor">-</span>
+                                        <div class="po-info-label">Kontak / No. Telepon</div>
+                                        <div class="po-info-val fw-semibold font-monospace" id="detailTeleponVendor">-</div>
                                     </div>
                                     <div class="mb-2">
-                                        <span class="text-muted small d-block">Email:</span>
-                                        <span class="text-dark" id="detailEmailVendor">-</span>
+                                        <div class="po-info-label">Email Vendor</div>
+                                        <div class="po-info-val" id="detailEmailVendor">-</div>
                                     </div>
                                     <div>
-                                        <span class="text-muted small d-block">Alamat Vendor:</span>
-                                        <span class="text-secondary small" id="detailAlamatVendor">-</span>
+                                        <div class="po-info-label">Alamat Lengkap Vendor</div>
+                                        <div class="po-info-val text-muted small" id="detailAlamatVendor">-</div>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="col-12">
-                                <div class="bg-light p-3 rounded-3 border-0">
-                                    <span class="text-muted small d-block mb-1 fw-bold"><i class="bi bi-chat-left-text me-1 text-primary"></i> Catatan / Keterangan PO:</span>
-                                    <p class="mb-0 small text-dark" id="detailCatatan">-</p>
+                                <div class="po-info-card p-3 shadow-xs">
+                                    <div class="po-info-label mb-1">Catatan &amp; Keterangan PO</div>
+                                    <p class="mb-0 text-dark small" id="detailCatatan">-</p>
                                 </div>
                             </div>
                         </div>
@@ -311,36 +345,45 @@ require_once __DIR__ . '/../../components/navbar.php';
                     <div class="tab-pane fade" id="tab-m-shipping" role="tabpanel">
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <div class="card bg-light border-0 rounded-3 p-3 h-100">
-                                    <h6 class="fw-bold text-dark mb-3">Lokasi &amp; Pengiriman</h6>
+                                <div class="po-info-card p-3 h-100 shadow-xs">
+                                    <h6 class="fw-bold text-dark mb-3 border-bottom pb-2">
+                                        Lokasi &amp; Pengiriman
+                                    </h6>
                                     
                                     <div class="mb-2">
-                                        <span class="text-muted small d-block">Site Tujuan:</span>
-                                        <strong class="text-dark" id="detailSite">-</strong>
+                                        <div class="po-info-label">Site / Lokasi Tujuan</div>
+                                        <div class="po-info-val fw-bold text-dark" id="detailSite">-</div>
                                     </div>
                                     <div class="mb-2">
-                                        <span class="text-muted small d-block">Metode Pengiriman:</span>
-                                        <span class="badge bg-info-subtle text-info border border-info-subtle" id="detailPengiriman">-</span>
+                                        <div class="po-info-label">Metode Pengiriman</div>
+                                        <div class="po-info-val">
+                                            <span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1" id="detailPengiriman">-</span>
+                                        </div>
                                     </div>
                                     <div class="mb-2">
-                                        <span class="text-muted small d-block">Estimasi Tanggal Tiba:</span>
-                                        <span class="text-dark font-monospace" id="detailTanggalKirim">-</span>
+                                        <div class="po-info-label">Estimasi Tanggal Tiba</div>
+                                        <div class="po-info-val font-monospace" id="detailTanggalKirim">-</div>
                                     </div>
                                     <div>
-                                        <span class="text-muted small d-block">Alamat Lengkap Pengiriman:</span>
-                                        <span class="text-secondary small" id="detailAlamatKirim">-</span>
+                                        <div class="po-info-label">Alamat Tujuan Pengiriman</div>
+                                        <div class="po-info-val text-muted small" id="detailAlamatKirim">-</div>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="col-md-6">
-                                <div class="card bg-light border-0 rounded-3 p-3 h-100">
-                                    <h6 class="fw-bold text-dark mb-3">Ketentuan Pembayaran</h6>
+                                <div class="po-info-card p-3 h-100 shadow-xs">
+                                    <h6 class="fw-bold text-dark mb-3 border-bottom pb-2">
+                                        Ketentuan Pembayaran
+                                    </h6>
                                     
                                     <div class="mb-3">
-                                        <span class="text-muted small d-block">Term of Payment (T.O.P):</span>
-                                        <span class="badge bg-light text-dark border fs-6 mt-1" id="detailTop">-</span>
+                                        <div class="po-info-label">Term of Payment (T.O.P)</div>
+                                        <div class="po-info-val mt-1">
+                                            <span class="badge bg-white text-dark border shadow-xs px-3 py-2 fs-6 font-monospace" id="detailTop">-</span>
+                                        </div>
                                     </div>
+                                   
                                 </div>
                             </div>
                         </div>
@@ -349,16 +392,16 @@ require_once __DIR__ . '/../../components/navbar.php';
                     <!-- TAB 3: RINCIAN BARANG & BIAYA -->
                     <div class="tab-pane fade" id="tab-m-items" role="tabpanel">
                         <!-- Tabel Item Barang PO -->
-                        <div class="table-responsive mb-3 border rounded-3">
+                        <div class="table-responsive mb-3 border rounded-3 bg-white shadow-xs">
                             <table class="table table-hover align-middle mb-0">
                                 <thead class="table-light small text-muted text-uppercase">
                                     <tr>
                                         <th style="width: 45px;" class="text-center">#</th>
-                                        <th>Barang</th>
-                                        <th style="width: 85px;" class="text-center">Kts</th>
-                                        <th style="width: 140px;" class="text-end">Harga Satuan</th>
+                                        <th>Barang &amp; Spesifikasi</th>
+                                        <th style="width: 90px;" class="text-center">Kts</th>
+                                        <th style="width: 145px;" class="text-end">Harga Satuan</th>
                                         <th style="width: 130px;" class="text-end">Diskon Item</th>
-                                        <th style="width: 140px;" class="text-end">Subtotal</th>
+                                        <th style="width: 145px;" class="text-end">Subtotal</th>
                                     </tr>
                                 </thead>
                                 <tbody id="detailItemsTableBody">
@@ -371,27 +414,33 @@ require_once __DIR__ . '/../../components/navbar.php';
 
                         <!-- Financial Calculation Card (Konsisten dengan Proses PO) -->
                         <div class="row justify-content-end">
-                            <div class="col-md-6">
-                                <div class="p-3 border rounded-3 bg-white shadow-xs">
+                            <div class="col-md-6 col-lg-5">
+                                <div class="p-3 border rounded-3 bg-white shadow-sm">
                                     <div class="d-flex justify-content-between mb-2 small">
                                         <span class="text-muted">Subtotal Barang:</span>
                                         <span class="fw-semibold text-dark font-monospace" id="calcSubtotalBarang">Rp 0</span>
                                     </div>
                                     <div class="d-flex justify-content-between mb-2 small">
-                                        <span class="text-muted">Diskon Akhir:</span>
+                                        <span class="text-muted">Diskon Akhir PO:</span>
                                         <span class="fw-semibold text-danger font-monospace" id="calcDiskonPo">- Rp 0</span>
                                     </div>
                                     <div class="d-flex justify-content-between mb-2 small">
                                         <span class="text-muted">DPP (Dasar Pengenaan Pajak):</span>
                                         <span class="fw-semibold text-dark font-monospace" id="calcDpp">Rp 0</span>
                                     </div>
-                                    <div class="d-flex justify-content-between mb-2 small">
-                                        <span class="text-muted" id="calcLabelPpn">PPN (12%):</span>
+                                    <!-- Baris Pajak PPnBM (Muncul jika ada PPnBM) -->
+                                    <div class="d-flex justify-content-between mb-2 small d-none" id="calcRowPpnbm">
+                                        <span class="text-muted" id="calcLabelPpnbm">PPnBM (0%):</span>
+                                        <span class="fw-semibold text-warning-emphasis font-monospace" id="calcNominalPpnbm">Rp 0</span>
+                                    </div>
+                                    <!-- Baris Pajak PPN (11% atau 12%) -->
+                                    <div class="d-flex justify-content-between mb-2 small" id="calcRowPpn">
+                                        <span class="text-muted" id="calcLabelPpn">PPN (11%):</span>
                                         <span class="fw-semibold text-dark font-monospace" id="calcNominalPajak">Rp 0</span>
                                     </div>
-                                    <hr class="my-2">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <span class="fw-bold text-dark">GRAND TOTAL:</span>
+                                    <hr class="my-2 border-secondary-subtle">
+                                    <div class="d-flex justify-content-between align-items-center pt-1">
+                                        <span class="fw-bold text-dark fs-6">GRAND TOTAL:</span>
                                         <span class="fs-5 fw-bold text-primary font-monospace" id="calcGrandTotal">Rp 0</span>
                                     </div>
                                 </div>
@@ -400,12 +449,6 @@ require_once __DIR__ . '/../../components/navbar.php';
                     </div>
 
                 </div>
-            </div>
-
-            <!-- MODAL FOOTER -->
-            <div class="modal-footer bg-light py-2 px-3 d-flex justify-content-between align-items-center">
-                <div id="modalPrintPoContainer"></div>
-                <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">Tutup</button>
             </div>
         </div>
     </div>
@@ -623,7 +666,7 @@ async function loadPoList(page = 1) {
         }
 
         let printBtnHtml = '';
-        if (['DISETUJUI INTERNAL', 'DIPROSES VENDOR', 'DITERIMA', 'SELESAI'].includes(statusUpper)) {
+        if (['DIPROSES VENDOR', 'DITERIMA', 'SELESAI'].includes(statusUpper)) {
             printBtnHtml = `
                 <a href="${BASE_URL}/admin/pages/purchase_order/print.php?id=${item.id_po}" target="_blank" class="btn btn-outline-primary btn-sm px-2 py-1 shadow-xs" title="Cetak / Download Surat Pesanan Barang (PO)">
                     <i class="bi bi-printer-fill"></i>
@@ -764,6 +807,8 @@ async function openDetailModal(idPo) {
 
     document.getElementById('detailNomorPo').textContent = 'Memuat...';
     document.getElementById('detailStatusBadgeHeader').innerHTML = '';
+    const headerPrioEl = document.getElementById('detailPrioritasBadgeHeader');
+    if (headerPrioEl) headerPrioEl.innerHTML = '';
     document.getElementById('detailTanggalPo').textContent = '-';
     document.getElementById('detailReferensiRo').textContent = '-';
     document.getElementById('detailPrioritasBadge').innerHTML = '-';
@@ -784,14 +829,14 @@ async function openDetailModal(idPo) {
     document.getElementById('calcSubtotalBarang').textContent = 'Rp 0';
     document.getElementById('calcDiskonPo').textContent = '- Rp 0';
     document.getElementById('calcDpp').textContent = 'Rp 0';
-    document.getElementById('calcLabelPpn').textContent = 'PPN (12%):';
+    document.getElementById('calcLabelPpn').textContent = 'PPN (11%):';
     document.getElementById('calcNominalPajak').textContent = 'Rp 0';
     document.getElementById('calcGrandTotal').textContent = 'Rp 0';
     document.getElementById('modalItemCountBadge').textContent = '0';
 
     document.getElementById('detailItemsTableBody').innerHTML = `
         <tr>
-            <td colspan="6" class="text-center py-3 text-muted">
+            <td colspan="6" class="text-center py-4 text-muted">
                 <div class="spinner-border spinner-border-sm text-primary me-2"></div> Memuat rincian barang...
             </td>
         </tr>
@@ -810,14 +855,17 @@ async function openDetailModal(idPo) {
     document.getElementById('detailNomorPo').textContent = po.nomor_po || '-';
     document.getElementById('detailStatusBadgeHeader').innerHTML = renderStatusBadge(po.status);
     
+    const prio = (po.prioritas || 'NORMAL').toUpperCase();
+    const prioBadgeHtml = (prio === 'URGENT')
+        ? '<span class="badge bg-danger-subtle text-danger border border-danger-subtle font-monospace px-2 py-1"><i class="bi bi-lightning-fill me-1"></i>URGENT</span>'
+        : '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle font-monospace px-2 py-1">NORMAL</span>';
+
+    if (headerPrioEl) headerPrioEl.innerHTML = prioBadgeHtml;
+
     // Tab 1 Info
     document.getElementById('detailTanggalPo').textContent = po.tanggal_po ? po.tanggal_po.split(' ')[0] : '-';
     document.getElementById('detailReferensiRo').textContent = po.nomor_ro ? `RO: ${po.nomor_ro}` : 'Tanpa RO';
-    
-    const prio = (po.prioritas || 'NORMAL').toUpperCase();
-    document.getElementById('detailPrioritasBadge').innerHTML = (prio === 'URGENT')
-        ? '<span class="badge bg-danger-subtle text-danger border border-danger-subtle font-monospace px-2 py-1"><i class="bi bi-lightning-fill me-1"></i>URGENT</span>'
-        : '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle font-monospace px-2 py-1">NORMAL</span>';
+    document.getElementById('detailPrioritasBadge').innerHTML = prioBadgeHtml;
         
     document.getElementById('detailPembuat').textContent = po.nama_pembuat || 'Staff Purchasing';
     document.getElementById('detailApprover').textContent = po.nama_approver || 'Menunggu Persetujuan';
@@ -843,39 +891,64 @@ async function openDetailModal(idPo) {
     const diskonPo = parseFloat(po.nominal_diskon || po.diskon) || 0;
     const ratePajak = parseFloat(po.rate_pajak || po.pajak) || 0;
     const isTermasukPajak = parseInt(po.total_termasuk_pajak) === 1;
+    const ratePpnbm = parseFloat(po.rate_ppnbm || po.pajak_PPnBM) || 0;
+    const isTermasukPpnbm = parseInt(po.total_termasuk_PPnBM) === 1;
 
-    let dpp = 0;
-    let nominalPajak = 0;
-    let grandTotal = 0;
+    let dpp = parseFloat(po.dpp) || 0;
+    let nominalPpnbm = parseFloat(po.nominal_ppnbm) || 0;
+    let nominalPajak = parseFloat(po.nominal_pajak) || 0;
+    let grandTotal = parseFloat(po.grand_total) || 0;
 
-    const dasarSetelahDiskon = Math.max(0, subtotalBarang - diskonPo);
-    if (ratePajak > 0) {
-        if (isTermasukPajak) {
-            dpp = dasarSetelahDiskon / (1 + (ratePajak / 100));
-            nominalPajak = dasarSetelahDiskon - dpp;
-            grandTotal = dasarSetelahDiskon;
-        } else {
-            dpp = dasarSetelahDiskon;
-            nominalPajak = (dpp * ratePajak) / 100;
-            grandTotal = dpp + nominalPajak;
-        }
-    } else {
-        dpp = dasarSetelahDiskon;
-        nominalPajak = 0;
-        grandTotal = dpp;
+    // Fallback perhitungan jika API belum menghitung
+    if (dpp === 0 && subtotalBarang > 0) {
+        const dasarSetelahDiskon = Math.max(0, subtotalBarang - diskonPo);
+        let divisor = 1.0;
+        if (isTermasukPpnbm && ratePpnbm > 0) divisor += (ratePpnbm / 100);
+        if (isTermasukPajak && ratePajak > 0) divisor += (ratePajak / 100);
+
+        dpp = dasarSetelahDiskon / divisor;
+        nominalPpnbm = (ratePpnbm > 0) ? (dpp * (ratePpnbm / 100)) : 0;
+        nominalPajak = (ratePajak > 0) ? (dpp * (ratePajak / 100)) : 0;
+        grandTotal = dpp + nominalPpnbm + nominalPajak;
     }
 
     document.getElementById('calcSubtotalBarang').textContent = formatRupiah(subtotalBarang);
     document.getElementById('calcDiskonPo').textContent = `- ${formatRupiah(diskonPo)}`;
     document.getElementById('calcDpp').textContent = formatRupiah(dpp);
-    document.getElementById('calcLabelPpn').textContent = `PPN (${ratePajak}%)${isTermasukPajak ? ' (Inklusif)' : ''}:`;
-    document.getElementById('calcNominalPajak').textContent = formatRupiah(nominalPajak);
+
+    // Render Baris PPnBM jika ada
+    const rowPpnbmEl = document.getElementById('calcRowPpnbm');
+    const labelPpnbmEl = document.getElementById('calcLabelPpnbm');
+    const nominalPpnbmEl = document.getElementById('calcNominalPpnbm');
+    if (ratePpnbm > 0) {
+        rowPpnbmEl.classList.remove('d-none');
+        labelPpnbmEl.textContent = `PPnBM (${ratePpnbm}%)${isTermasukPpnbm ? ' (Inklusif)' : ''}:`;
+        nominalPpnbmEl.textContent = formatRupiah(nominalPpnbm);
+    } else {
+        rowPpnbmEl.classList.add('d-none');
+    }
+
+    // Render Baris PPN
+    const rowPpnEl = document.getElementById('calcRowPpn');
+    const labelPpnEl = document.getElementById('calcLabelPpn');
+    const nominalPpnEl = document.getElementById('calcNominalPajak');
+    if (ratePajak > 0) {
+        rowPpnEl.classList.remove('d-none');
+        labelPpnEl.textContent = `PPN (${ratePajak}%)${isTermasukPajak ? ' (Inklusif)' : ''}:`;
+        nominalPpnEl.textContent = formatRupiah(nominalPajak);
+    } else {
+        rowPpnEl.classList.remove('d-none');
+        labelPpnEl.textContent = 'PPN (0%):';
+        nominalPpnEl.textContent = formatRupiah(0);
+    }
+
     document.getElementById('calcGrandTotal').textContent = formatRupiah(grandTotal);
 
-    // Tombol Cetak di Footer Modal
+    // Tombol Cetak di Footer Modal (Khusus PO yang sudah diproses ke vendor / diterima / selesai)
     const printContainer = document.getElementById('modalPrintPoContainer');
     if (printContainer) {
-        if (['DISETUJUI INTERNAL', 'DIPROSES VENDOR', 'DITERIMA', 'SELESAI'].includes((po.status || '').toUpperCase())) {
+        const allowedStatuses = ['DIPROSES VENDOR', 'DITERIMA', 'SELESAI'];
+        if (allowedStatuses.includes((po.status || '').toUpperCase())) {
             printContainer.innerHTML = `
                 <a href="${BASE_URL}/admin/pages/purchase_order/print.php?id=${po.id_po}" target="_blank" class="btn btn-primary btn-sm px-3 fw-semibold shadow-sm">
                     <i class="bi bi-printer-fill me-1"></i> Cetak / Download PO
@@ -906,6 +979,12 @@ async function openDetailModal(idPo) {
         const itemDiskon = parseFloat(item.diskon) || 0;
         const itemSubtotal = parseFloat(item.subtotal) || 0;
 
+        const isItemPpnbm = (item.PPnBM == 1 || item.PPnBM === '1' || item.kena_pajak_ppnbm == 1 || item.kena_pajak_ppnbm === '1');
+        const itemPpnbmRate = parseFloat(item.rate_PPnBM || item.rate_ppnbm || ratePpnbm) || 0;
+        const ppnbmBadge = isItemPpnbm 
+            ? `<span class="badge bg-warning text-dark border border-warning-subtle fw-bold" style="font-size: 0.68rem;">PPnBM (${itemPpnbmRate}%)</span>`
+            : '';
+
         itemsHtml += `
             <tr>
                 <td class="text-center font-monospace text-muted small">${idx + 1}</td>
@@ -913,17 +992,18 @@ async function openDetailModal(idPo) {
                     <div class="fw-bold text-dark">${escapeHtml(item.nama_barang || '')}</div>
                     <div class="d-flex flex-wrap gap-1 align-items-center mt-1">
                         <span class="badge bg-light text-muted border font-monospace" style="font-size: 0.68rem;">${escapeHtml(item.kode_barang || 'BRG')}</span>
-                        ${item.nama_kategori ? `<span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.68rem;"><i class="bi bi-tag me-1"></i>${escapeHtml(item.nama_kategori)}</span>` : ''}
-                        ${item.nama_merk ? `<span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.68rem;"><i class="bi bi-bookmark me-1"></i>${escapeHtml(item.nama_merk)}</span>` : ''}
+                        ${item.nama_kategori ? `<span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.68rem;">${escapeHtml(item.nama_kategori)}</span>` : ''}
+                        ${item.nama_merk ? `<span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.68rem;">${escapeHtml(item.nama_merk)}</span>` : ''}
+                        ${ppnbmBadge}
                     </div>
                 </td>
                 <td class="text-center">
                     <span class="fw-bold font-monospace">${itemQty}</span>
                     <span class="small text-muted d-block" style="font-size: 0.72rem;">${escapeHtml(item.satuan || 'PCS')}</span>
                 </td>
-                <td class="text-end font-monospace">${formatRupiah(itemHarga)}</td>
-                <td class="text-end font-monospace text-danger">${itemDiskon > 0 ? ('- ' + formatRupiah(itemDiskon)) : '0'}</td>
-                <td class="text-end font-monospace fw-bold text-dark">${formatRupiah(itemSubtotal)}</td>
+                <td class="text-end font-monospace">${formatNumber(itemHarga)}</td>
+                <td class="text-end font-monospace text-danger">${itemDiskon > 0 ? ('- ' + formatNumber(itemDiskon)) : '0'}</td>
+                <td class="text-end font-monospace fw-bold text-dark">${formatNumber(itemSubtotal)}</td>
             </tr>
         `;
     });
