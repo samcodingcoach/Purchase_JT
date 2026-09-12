@@ -90,7 +90,7 @@ if ($method === 'GET') {
     }
 
     $sql = "SELECT b.id_barang, b.kode_barang, b.nama_barang, b.id_merk, b.id_kategori, b.default_id_vendor,
-                   b.jenis, b.satuan, b.asset, b.serial_number, b.foto1, b.foto2, b.deskripsi, b.created_at, b.id_karyawan, b.aktif,
+                   b.jenis, b.satuan, b.asset, b.PPnBM, b.rate_PPnBM, b.serial_number, b.foto1, b.foto2, b.deskripsi, b.created_at, b.id_karyawan, b.aktif,
                    v.nama_perusahaan AS nama_vendor, v.kode_vendor,
                    k.nama_kategori, m.nama_merk, kry.nama_karyawan AS pembuat_barang,
                    COALESCE((SELECT SUM(bs_sub.stok) FROM barang_stok bs_sub JOIN site s_sub ON bs_sub.id_site = s_sub.id_site WHERE bs_sub.id_barang = b.id_barang AND s_sub.penyimpanan_stok = 1), 0) AS total_stok
@@ -132,6 +132,9 @@ if ($method === 'GET') {
             'satuan' => $row['satuan'] ?? 'PCS',
             'asset' => (int)($row['asset'] ?? 0),
             'asset_label' => (int)($row['asset'] ?? 0) === 1 ? 'Asset' : 'Bukan Asset',
+            'ppnbm' => (int)($row['PPnBM'] ?? 0),
+            'ppnbm_label' => (int)($row['PPnBM'] ?? 0) === 1 ? 'PPnBM' : 'Non PPnBM',
+            'rate_ppnbm' => (float)($row['rate_PPnBM'] ?? 0),
             'serial_number' => $row['serial_number'] ?? '',
             'foto1' => $row['foto1'] ?? '',
             'foto2' => $row['foto2'] ?? '',
@@ -247,6 +250,8 @@ if ($method === 'POST') {
     if (strlen($satuan) > 20) { $satuan = substr($satuan, 0, 20); }
     $jenis = isset($input['jenis']) ? (int)$input['jenis'] : 1;
     $asset = isset($input['asset']) ? (int)$input['asset'] : 0;
+    $ppnbm = isset($input['PPnBM']) ? (int)$input['PPnBM'] : (isset($input['ppnbm']) ? (int)$input['ppnbm'] : 0);
+    $ratePpnbm = isset($input['rate_PPnBM']) ? (float)$input['rate_PPnBM'] : (isset($input['rate_ppnbm']) ? (float)$input['rate_ppnbm'] : 0.0);
     $idVendor = !empty($input['default_id_vendor']) ? (int)$input['default_id_vendor'] : null;
     $idKategori = !empty($input['id_kategori']) ? (int)$input['id_kategori'] : 1;
     $idMerk = !empty($input['id_merk']) ? (int)$input['id_merk'] : 1;
@@ -267,9 +272,9 @@ if ($method === 'POST') {
         $kodeBarang = 'BRG' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
     }
 
-    $stmt = $conn->prepare("INSERT INTO barang (kode_barang, id_merk, id_kategori, default_id_vendor, nama_barang, jenis, satuan, asset, serial_number, foto1, foto2, deskripsi, id_karyawan, aktif) 
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("siiisisissssii", $kodeBarang, $idMerk, $idKategori, $idVendor, $namaBarang, $jenis, $satuan, $asset, $serialNumber, $foto1, $foto2, $deskripsi, $idKaryawan, $aktif);
+    $stmt = $conn->prepare("INSERT INTO barang (kode_barang, id_merk, id_kategori, default_id_vendor, nama_barang, jenis, satuan, asset, PPnBM, rate_PPnBM, serial_number, foto1, foto2, deskripsi, id_karyawan, aktif) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("siiisisiddssssii", $kodeBarang, $idMerk, $idKategori, $idVendor, $namaBarang, $jenis, $satuan, $asset, $ppnbm, $ratePpnbm, $serialNumber, $foto1, $foto2, $deskripsi, $idKaryawan, $aktif);
     
     if ($stmt->execute()) {
         $newId = $conn->insert_id;
@@ -334,6 +339,8 @@ if ($method === 'PUT') {
     if (strlen($satuan) > 20) { $satuan = substr($satuan, 0, 20); }
     $jenis = isset($input['jenis']) ? (int)$input['jenis'] : 1;
     $asset = isset($input['asset']) ? (int)$input['asset'] : 0;
+    $ppnbm = isset($input['PPnBM']) ? (int)$input['PPnBM'] : (isset($input['ppnbm']) ? (int)$input['ppnbm'] : 0);
+    $ratePpnbm = isset($input['rate_PPnBM']) ? (float)$input['rate_PPnBM'] : (isset($input['rate_ppnbm']) ? (float)$input['rate_ppnbm'] : 0.0);
     $idVendor = !empty($input['default_id_vendor']) ? (int)$input['default_id_vendor'] : null;
     $idKategori = !empty($input['id_kategori']) ? (int)$input['id_kategori'] : 1;
     $idMerk = !empty($input['id_merk']) ? (int)$input['id_merk'] : 1;
@@ -367,9 +374,9 @@ if ($method === 'PUT') {
     }
 
     $stmt = $conn->prepare("UPDATE barang SET kode_barang = ?, id_merk = ?, id_kategori = ?, default_id_vendor = ?, 
-                            nama_barang = ?, jenis = ?, satuan = ?, asset = ?, serial_number = ?, foto1 = ?, foto2 = ?, deskripsi = ?, aktif = ? 
+                            nama_barang = ?, jenis = ?, satuan = ?, asset = ?, PPnBM = ?, rate_PPnBM = ?, serial_number = ?, foto1 = ?, foto2 = ?, deskripsi = ?, aktif = ? 
                             WHERE id_barang = ?");
-    $stmt->bind_param("siiisisissssii", $kodeBarang, $idMerk, $idKategori, $idVendor, $namaBarang, $jenis, $satuan, $asset, $serialNumber, $foto1, $foto2, $deskripsi, $aktif, $idBarang);
+    $stmt->bind_param("siiisisiddssssii", $kodeBarang, $idMerk, $idKategori, $idVendor, $namaBarang, $jenis, $satuan, $asset, $ppnbm, $ratePpnbm, $serialNumber, $foto1, $foto2, $deskripsi, $aktif, $idBarang);
     
     if ($stmt->execute()) {
         $stmt->close();

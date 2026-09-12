@@ -37,7 +37,7 @@ require_once __DIR__ . '/../../components/navbar.php';
             <thead>
                 <tr>
                     <th style="width: 50px;" class="text-center">No</th>
-                    <th>Nama Barang / Jasa</th>
+                    <th>Nama Barang</th>
                     <th>Total KTS</th>
                     <th>Jenis</th>
                     <th>Status</th>
@@ -81,7 +81,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                 <div class="modal-header bg-white pt-3 pb-0 px-4 border-bottom flex-column align-items-stretch">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h5 class="modal-title fw-bold text-dark mb-0 d-flex align-items-center gap-2" id="barangFormModalTitle">
-                            <i class="bi bi-box-seam-fill text-primary"></i> Tambah Barang Baru
+                             Tambah Barang Baru
                         </h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
@@ -212,67 +212,59 @@ require_once __DIR__ . '/../../components/navbar.php';
                             </div>
                         </div>
 
-                        <!-- TAB 3: HARGA VENDOR -->
-                        <div class="tab-pane fade" id="bform-pane-harga" role="tabpanel">
-                            <!-- RED NOTICE: JANGAN HAPUS JIKA PERNAH DITRANSAKSIKAN -->
-                            <div class="alert alert-danger d-flex align-items-center py-2 px-3 small mb-3 border-0 shadow-sm">
-                                <i class="bi bi-exclamation-triangle-fill fs-5 me-2 flex-shrink-0 text-danger"></i>
-                                <div>
-                                    <strong>PERHATIAN:</strong> Jangan menghapus baris referensi harga jika vendor tersebut sudah pernah digunakan dalam transaksi pembelian (PO / RO). Anda cukup menambahkan baris harga baru dengan tanggal berlaku yang lebih baru.
-                                </div>
-                            </div>
-
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <div>
-                                    <span class="fw-bold small text-dark">Daftar Harga per Vendor</span>
-                                    <div class="text-muted small">Atur referensi harga satuan dan tanggal berlakunya per vendor</div>
-                                </div>
-                                <button type="button" class="btn btn-outline-primary btn-sm fw-semibold" onclick="addHargaRow()">
-                                    <i class="bi bi-plus-circle me-1"></i> Tambah Harga Vendor
-                                </button>
+                        <!-- TAB 3: STOK PER SITE -->
+                        <div class="tab-pane fade" id="bform-pane-stok" role="tabpanel">
+                            <div class="mb-3">
+                                <span class="fw-bold small text-dark">Alokasi Stok Awal per Site</span>
                             </div>
                             <div class="table-responsive border rounded bg-white">
-                                <table class="table table-sm table-bordered align-middle mb-0" id="tableHargaForm">
+                                <table class="table table-sm table-hover align-middle mb-0">
                                     <thead class="table-light">
                                         <tr>
-                                            <th>Vendor</th>
-                                            <th style="width: 190px;">Harga Satuan (Rp)</th>
-                                            <th style="width: 170px;">Berlaku Mulai</th>
-                                            <th class="text-center" style="width: 50px;">Aksi</th>
+                                            <th style="width: 45px;" class="text-center">No</th>
+                                            <th>Site</th>
+                                            <th>Jenis</th>
+                                            <th style="width: 180px;">Stok (<span class="stokSatuanLabel">PCS</span>)</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="hargaRowsContainer">
-                                        <!-- Dynamic Harga Rows -->
+                                    <tbody id="stokRowsContainer">
+                                        <tr><td colspan="4" class="text-center py-3 text-muted small">Memuat daftar site...</td></tr>
                                     </tbody>
                                 </table>
                             </div>
                         </div>
 
-                        <!-- TAB 4: STOK PER SITE -->
-                        <div class="tab-pane fade" id="bform-pane-stok" role="tabpanel">
-                            <!-- INFO NOTICE: HANYA UNTUK STOK AWAL -->
-                            <div class="alert alert-warning d-flex align-items-center py-2 px-3 small mb-3 border-0 shadow-sm">
-                                <i class="bi bi-info-circle-fill fs-5 me-2 flex-shrink-0 text-warning"></i>
+                        <!-- TAB 4: HARGA VENDOR -->
+                        <div class="tab-pane fade" id="bform-pane-harga" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
                                 <div>
-                                    <strong>INFORMASI STOK AWAL:</strong> Pengisian stok manual di bawah ini <u>hanya diperuntukkan untuk saldo stok awal</u> inventaris. Pergerakan mutasi stok barang selanjutnya akan bertambah/berkurang secara otomatis melalui alur <strong>Purchasing & Receiving (Penerimaan Barang)</strong> dan <strong>Pengeluaran / Penjualan</strong>.
+                                    <span class="fw-bold small text-dark">Daftar Harga per Vendor</span>
                                 </div>
+                                <button type="button" class="btn btn-outline-primary btn-sm fw-semibold" onclick="addHargaRow()">
+                                    <i class="bi bi-plus-circle me-1"></i> Tambah Harga
+                                </button>
+                            </div>
+                            
+                            <!-- Placeholder jika belum ada data harga -->
+                            <div id="emptyHargaNotice" class="text-center py-4 border rounded bg-light text-muted small">
+                                <i class="bi bi-cash-stack fs-4 d-block mb-1 text-secondary"></i>
+                                Belum ada daftar harga vendor. Klik tombol <strong>"Tambah Harga"</strong> di atas untuk menambahkan.
                             </div>
 
-                            <div class="mb-3">
-                                <span class="fw-bold small text-dark">Alokasi Stok Fisik per Lokasi Site / Workshop</span>
-                                <div class="text-muted small">Tentukan jumlah persediaan unit/material pada setiap site operasional</div>
-                            </div>
-                            <div class="table-responsive border rounded bg-white">
-                                <table class="table table-sm table-bordered align-middle mb-0">
+                            <!-- Table Wrapper (sembunyi jika kosong) -->
+                            <div class="table-responsive border rounded bg-white d-none" id="tableHargaWrapper" style="overflow: visible;">
+                                <table class="table table-sm table-hover align-middle mb-0" id="tableHargaForm">
                                     <thead class="table-light">
                                         <tr>
-                                            <th>Lokasi Site / Bengkel Workshop</th>
-                                            <th>Jenis Site</th>
-                                            <th style="width: 180px;">Stok Fisik (<span class="stokSatuanLabel">PCS</span>)</th>
+                                            <th style="width: 45px;" class="text-center">No</th>
+                                            <th style="min-width: 250px;">Nama Vendor</th>
+                                            <th style="width: 170px;">Berlaku</th>
+                                            <th style="width: 210px;">Harga Satuan (Rp)</th>
+                                            <th class="text-center" style="width: 50px;">Aksi</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="stokRowsContainer">
-                                        <tr><td colspan="3" class="text-center py-3 text-muted small">Memuat daftar site...</td></tr>
+                                    <tbody id="hargaRowsContainer">
+                                        <!-- Dynamic Harga Rows -->
                                     </tbody>
                                 </table>
                             </div>
@@ -291,7 +283,6 @@ require_once __DIR__ . '/../../components/navbar.php';
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </div>
-                                    <div class="form-text small text-muted">File akan diunggah otomatis saat Anda menekan tombol Simpan Data.</div>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label small fw-bold">Foto Produk 2 (Detail)</label>
@@ -303,7 +294,6 @@ require_once __DIR__ . '/../../components/navbar.php';
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </div>
-                                    <div class="form-text small text-muted">File akan diunggah otomatis saat Anda menekan tombol Simpan Data.</div>
                                 </div>
                             </div>
                         </div>
@@ -332,6 +322,25 @@ require_once __DIR__ . '/../../components/navbar.php';
                                     </div>
                                 </div>
 
+                                <!-- Klasifikasi Pajak PPnBM & Rate -->
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold d-block">Klasifikasi PPnBM</label>
+                                    <div class="btn-group w-100" role="group">
+                                        <input type="radio" class="btn-check" name="formPpnbmRadio" id="ppnbmNo" value="0" checked onchange="togglePpnbmRateInput()">
+                                        <label class="btn btn-outline-secondary btn-sm" for="ppnbmNo">Non PPnBM</label>
+                                        
+                                        <input type="radio" class="btn-check" name="formPpnbmRadio" id="ppnbmYes" value="1" onchange="togglePpnbmRateInput()">
+                                        <label class="btn btn-outline-warning btn-sm" for="ppnbmYes">Kena PPnBM</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Tarif / Rate PPnBM (%)</label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="number" step="0.01" min="0" max="100" class="form-control" id="formRatePpnbm" placeholder="0" value="0">
+                                        <span class="input-group-text bg-light">%</span>
+                                    </div>
+                                </div>
+
                                 <div class="col-md-6">
                                     <label class="form-label small fw-bold">Serial Number / Part Number</label>
                                     <input type="text" class="form-control" id="formSerialNumber" placeholder="Contoh: SN-8890283-A">
@@ -342,8 +351,8 @@ require_once __DIR__ . '/../../components/navbar.php';
                                 </div>
 
                                 <div class="col-12">
-                                    <label class="form-label small fw-bold">Deskripsi &amp; Spesifikasi Teknis Material</label>
-                                    <textarea class="form-control" id="formDeskripsi" rows="3" placeholder="Rincian dimensi, ketebalan, grade standar marine, sertifikasi material, dll"></textarea>
+                                    <label class="form-label small fw-bold">Deskripsi &amp; Spesifikasi Teknis</label>
+                                    <textarea class="form-control" id="formDeskripsi" rows="3" placeholder="Rincian dimensi, grade standar, sertifikasi, dll"></textarea>
                                 </div>
                             </div>
                         </div>
@@ -352,9 +361,9 @@ require_once __DIR__ . '/../../components/navbar.php';
                 </div>
 
                 <div class="modal-footer bg-light py-2">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+                    
                     <button type="submit" id="btnSaveBarang" class="btn btn-primary btn-sm fw-semibold">
-                        <i class="bi bi-save me-1"></i> Simpan Data Barang
+                        <i class="bi bi-save me-1"></i> Simpan
                     </button>
                 </div>
             </form>
@@ -529,6 +538,10 @@ require_once __DIR__ . '/../../components/navbar.php';
                                     <div id="modalAssetBarang">-</div>
                                 </div>
                                 <div class="col-md-6">
+                                    <span class="text-muted small d-block">Klasifikasi Pajak (PPnBM):</span>
+                                    <div id="modalPpnbmBarang">-</div>
+                                </div>
+                                <div class="col-md-6">
                                     <span class="text-muted small d-block">Serial Number / Part No.:</span>
                                     <strong class="font-monospace text-dark" id="modalSerialBarang">-</strong>
                                 </div>
@@ -620,7 +633,7 @@ function renderStokFormRows(existingStokMap = {}) {
     const container = document.getElementById('stokRowsContainer');
     if (!container) return;
     if (siteListCache.length === 0) {
-        container.innerHTML = '<tr><td colspan="3" class="text-center py-2 text-muted small">Tidak ada data site tersedia.</td></tr>';
+        container.innerHTML = '<tr><td colspan="4" class="text-center py-2 text-muted small">Tidak ada data site tersedia.</td></tr>';
         return;
     }
 
@@ -628,12 +641,13 @@ function renderStokFormRows(existingStokMap = {}) {
     document.querySelectorAll('.stokSatuanLabel').forEach(el => el.textContent = currentSatuan);
 
     let html = '';
-    siteListCache.forEach(s => {
+    siteListCache.forEach((s, idx) => {
         const qty = existingStokMap[s.id_site] !== undefined ? existingStokMap[s.id_site] : 0;
         html += `
             <tr>
+                <td class="text-center text-muted fw-bold">${idx + 1}</td>
                 <td class="fw-semibold text-dark">
-                    <i class="bi bi-geo-alt me-1 text-primary"></i>${s.nama_site} 
+                    ${s.nama_site} 
                     <span class="badge bg-light text-muted border font-monospace ms-1">${s.kode_site || ''}</span>
                 </td>
                 <td><span class="badge bg-secondary-subtle text-secondary">${s.jenis_site || 'Site'}</span></td>
@@ -649,47 +663,200 @@ function renderStokFormRows(existingStokMap = {}) {
     container.innerHTML = html;
 }
 
+function updateTableHargaVisibility() {
+    const container = document.getElementById('hargaRowsContainer');
+    const tableWrapper = document.getElementById('tableHargaWrapper');
+    const emptyNotice = document.getElementById('emptyHargaNotice');
+    
+    if (container && tableWrapper && emptyNotice) {
+        if (container.children.length > 0) {
+            tableWrapper.classList.remove('d-none');
+            emptyNotice.classList.add('d-none');
+            reindexHargaRows();
+        } else {
+            tableWrapper.classList.add('d-none');
+            emptyNotice.classList.remove('d-none');
+        }
+    }
+}
+
+function reindexHargaRows() {
+    const container = document.getElementById('hargaRowsContainer');
+    if (!container) return;
+    const rows = container.querySelectorAll('.harga-vendor-row');
+    rows.forEach((row, idx) => {
+        const noCell = row.querySelector('.harga-row-num');
+        if (noCell) noCell.textContent = idx + 1;
+    });
+}
+
 function addHargaRow(idVendor = '', hargaSet = '', berlaku = '') {
     const container = document.getElementById('hargaRowsContainer');
     const rowId = 'hrow_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
     const today = new Date().toISOString().split('T')[0];
 
-    let options = '<option value="">-- Pilih Vendor --</option>';
-    vendorListCache.forEach(v => {
-        const sel = (v.id_vendor == idVendor) ? 'selected' : '';
-        options += `<option value="${v.id_vendor}" ${sel}>${v.nama_perusahaan} (${v.kode_vendor || 'VND'})</option>`;
-    });
+    let selectedVendorText = '-- Pilih Vendor --';
+    if (idVendor) {
+        const found = vendorListCache.find(v => String(v.id_vendor) === String(idVendor));
+        if (found) {
+            selectedVendorText = (found.kode_vendor ? `[${found.kode_vendor}] ` : '') + (found.nama_perusahaan || '');
+        }
+    }
+
+    const initialPriceVal = hargaSet ? parseFloat(hargaSet) : '';
+    const initialPriceDisplay = initialPriceVal ? formatRupiahDisplay(initialPriceVal) : '';
 
     const tr = document.createElement('tr');
     tr.id = rowId;
     tr.className = 'harga-vendor-row';
     tr.innerHTML = `
-        <td>
-            <select class="form-select form-select-sm harga-vendor-select" required>
-                ${options}
-            </select>
-        </td>
-        <td>
-            <div class="input-group input-group-sm">
-                <span class="input-group-text">Rp</span>
-                <input type="number" class="form-control harga-vendor-price" value="${hargaSet}" min="0" placeholder="0" required>
+        <td class="text-center text-muted fw-bold harga-row-num" style="height: 38px; vertical-align: middle;">1</td>
+        <td style="vertical-align: middle;">
+            <div class="position-relative" id="wrapper_vendor_${rowId}">
+                <input type="hidden" class="harga-vendor-id-val" value="${idVendor || ''}">
+                <div class="form-control d-flex align-items-center justify-content-between bg-white cursor-pointer px-3" 
+                     id="btn_vendor_${rowId}" 
+                     onclick="toggleRowVendorDropdown('${rowId}', event)" 
+                     style="height: 38px; cursor: pointer; user-select: none; border-radius: 6px;">
+                    <span id="label_vendor_${rowId}" class="text-truncate text-dark small" style="max-width: calc(100% - 20px);" title="${escapeHtml(selectedVendorText)}">
+                        ${escapeHtml(selectedVendorText)}
+                    </span>
+                    <i class="bi bi-chevron-down text-muted small ms-1" id="icon_vendor_${rowId}"></i>
+                </div>
+                <div class="dropdown-menu shadow border p-2 w-100" 
+                     id="menu_vendor_${rowId}" 
+                     style="display: none; position: absolute; top: 100%; left: 0; z-index: 1060; margin-top: 4px; max-height: 250px;">
+                    <div class="input-group input-group-sm mb-2">
+                        <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control border-start-0" id="search_vendor_${rowId}" placeholder="Cari nama / kode vendor..." onkeyup="filterRowVendorList('${rowId}', this.value)" autocomplete="off">
+                    </div>
+                    <div class="overflow-auto" id="list_vendor_${rowId}" style="max-height: 180px;">
+                        <!-- Vendor list populated by JS -->
+                    </div>
+                </div>
             </div>
         </td>
-        <td>
-            <input type="date" class="form-control form-control-sm harga-vendor-date" value="${berlaku || today}" required>
+        <td style="vertical-align: middle;">
+            <input type="date" class="form-control harga-vendor-date" value="${berlaku || today}" style="height: 38px;" required>
         </td>
-        <td class="text-center">
-            <button type="button" class="btn btn-outline-danger btn-sm p-1" onclick="removeHargaRow('${rowId}')" title="Hapus Baris">
+        <td style="vertical-align: middle;">
+            <div class="input-group" style="height: 38px;">
+                <span class="input-group-text bg-light text-muted small" style="height: 38px;">Rp</span>
+                <input type="text" class="form-control harga-vendor-price-display" value="${initialPriceDisplay}" placeholder="0" oninput="handlePriceDisplayInput(this)" style="height: 38px;" required>
+                <input type="hidden" class="harga-vendor-price" value="${initialPriceVal}">
+            </div>
+        </td>
+        <td class="text-center" style="vertical-align: middle;">
+            <button type="button" class="btn btn-outline-danger btn-sm p-1" onclick="removeHargaRow('${rowId}')" title="Hapus Baris" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;">
                 <i class="bi bi-trash"></i>
             </button>
         </td>
     `;
     container.appendChild(tr);
+    updateTableHargaVisibility();
 }
+
+function formatRupiahDisplay(val) {
+    if (val === '' || isNaN(val)) return '';
+    return new Intl.NumberFormat('id-ID').format(val);
+}
+
+function handlePriceDisplayInput(input) {
+    // Ambil hanya angka
+    let raw = input.value.replace(/\D/g, '');
+    if (raw === '') {
+        input.value = '';
+        input.closest('td').querySelector('.harga-vendor-price').value = '';
+        return;
+    }
+    const num = parseInt(raw, 10);
+    input.value = formatRupiahDisplay(num);
+    input.closest('td').querySelector('.harga-vendor-price').value = num;
+}
+
+function toggleRowVendorDropdown(rowId, e) {
+    e.stopPropagation();
+    const menu = document.getElementById(`menu_vendor_${rowId}`);
+    const isOpen = menu.style.display === 'block';
+    
+    // Close any other open dropdowns first
+    document.querySelectorAll('[id^="menu_vendor_"]').forEach(m => m.style.display = 'none');
+    document.querySelectorAll('[id^="btn_vendor_"]').forEach(b => b.classList.remove('border-primary', 'shadow-sm'));
+
+    if (!isOpen) {
+        menu.style.display = 'block';
+        document.getElementById(`btn_vendor_${rowId}`).classList.add('border-primary', 'shadow-sm');
+        const sInput = document.getElementById(`search_vendor_${rowId}`);
+        sInput.value = '';
+        filterRowVendorList(rowId, '');
+        setTimeout(() => sInput.focus(), 50);
+    }
+}
+
+function filterRowVendorList(rowId, query) {
+    const q = (query || '').toLowerCase().trim();
+    const listContainer = document.getElementById(`list_vendor_${rowId}`);
+    const currentVal = document.querySelector(`#wrapper_vendor_${rowId} .harga-vendor-id-val`).value;
+
+    let html = `
+        <div class="dropdown-item py-2 px-2 rounded-2 text-truncate cursor-pointer ${currentVal === '' ? 'active fw-bold' : ''}" 
+             onclick="selectRowVendor('${rowId}', '', '-- Pilih Vendor --')" 
+             style="cursor: pointer; font-size: 0.85rem;">
+            -- Pilih Vendor --
+        </div>
+    `;
+
+    let matchCount = 0;
+    vendorListCache.forEach(v => {
+        const text = (v.kode_vendor ? `[${v.kode_vendor}] ` : '') + (v.nama_perusahaan || '');
+        if (!q || text.toLowerCase().includes(q)) {
+            matchCount++;
+            const isSel = String(v.id_vendor) === String(currentVal);
+            html += `
+                <div class="dropdown-item py-2 px-2 rounded-2 text-truncate cursor-pointer ${isSel ? 'active fw-bold' : ''}" 
+                     onclick="selectRowVendor('${rowId}', '${v.id_vendor}', '${escapeHtml(text)}')" 
+                     style="cursor: pointer; font-size: 0.85rem;" title="${escapeHtml(text)}">
+                    ${escapeHtml(text)}
+                </div>
+            `;
+        }
+    });
+
+    if (matchCount === 0 && q !== '') {
+        html += `<div class="p-2 text-muted text-center small">Tidak ada vendor cocok.</div>`;
+    }
+
+    listContainer.innerHTML = html;
+}
+
+function selectRowVendor(rowId, id, label) {
+    const wrapper = document.getElementById(`wrapper_vendor_${rowId}`);
+    wrapper.querySelector('.harga-vendor-id-val').value = id;
+    const labelEl = document.getElementById(`label_vendor_${rowId}`);
+    labelEl.textContent = label;
+    labelEl.title = label;
+    document.getElementById(`menu_vendor_${rowId}`).style.display = 'none';
+    document.getElementById(`btn_vendor_${rowId}`).classList.remove('border-primary', 'shadow-sm');
+}
+
+// Global click listener to close table row vendor dropdowns when clicking outside
+document.addEventListener('click', function(e) {
+    document.querySelectorAll('[id^="wrapper_vendor_"]').forEach(wrapper => {
+        const menu = wrapper.querySelector('[id^="menu_vendor_"]');
+        const btn = wrapper.querySelector('[id^="btn_vendor_"]');
+        if (menu && menu.style.display === 'block') {
+            if (!menu.contains(e.target) && !btn.contains(e.target)) {
+                menu.style.display = 'none';
+                btn.classList.remove('border-primary', 'shadow-sm');
+            }
+        }
+    });
+});
 
 function removeHargaRow(rowId) {
     const row = document.getElementById(rowId);
     if (row) row.remove();
+    updateTableHargaVisibility();
 }
 
 async function loadBarang() {
@@ -1092,6 +1259,21 @@ function removeProductImage(slot) {
     }
 }
 
+function togglePpnbmRateInput() {
+    const isPpnbm = document.getElementById('ppnbmYes').checked;
+    const rateInput = document.getElementById('formRatePpnbm');
+    if (isPpnbm) {
+        rateInput.disabled = false;
+        if (parseFloat(rateInput.value) <= 0) {
+            rateInput.value = '10'; // default nilai tarif acuan
+        }
+        rateInput.focus();
+    } else {
+        rateInput.disabled = true;
+        rateInput.value = '0';
+    }
+}
+
 // -------------------------------------------------------------
 // MODAL CRUD
 // -------------------------------------------------------------
@@ -1109,13 +1291,18 @@ function openTambahBarangModal() {
     document.getElementById('jenisPersediaan').checked = true;
     document.getElementById('assetNon').checked = true;
     document.getElementById('barangAktifYes').checked = true;
+
+    // PPnBM & Rate
+    document.getElementById('ppnbmNo').checked = true;
+    togglePpnbmRateInput();
     
     // Clear & Init Harga & Stok Form
     document.getElementById('hargaRowsContainer').innerHTML = '';
+    updateTableHargaVisibility();
     renderStokFormRows({});
     
     bootstrap.Tab.getOrCreateInstance(document.getElementById('bform-tab-utama')).show();
-    document.getElementById('barangFormModalTitle').innerHTML = '<i class="bi bi-box-seam-fill text-primary"></i> Tambah Barang Baru';
+    document.getElementById('barangFormModalTitle').innerHTML = 'Tambah Barang Baru';
     const modal = new bootstrap.Modal(document.getElementById('barangFormModal'));
     modal.show();
 }
@@ -1181,6 +1368,17 @@ function openEditBarangModal(idx) {
         document.getElementById('barangAktifNo').checked = true;
     }
 
+    // PPnBM & Rate
+    if (item.ppnbm === 1) {
+        document.getElementById('ppnbmYes').checked = true;
+        document.getElementById('formRatePpnbm').disabled = false;
+        document.getElementById('formRatePpnbm').value = item.rate_ppnbm || 0;
+    } else {
+        document.getElementById('ppnbmNo').checked = true;
+        document.getElementById('formRatePpnbm').disabled = true;
+        document.getElementById('formRatePpnbm').value = 0;
+    }
+
     // Foto 1
     removeProductImage(1);
     if (item.foto1) {
@@ -1219,6 +1417,8 @@ function openEditBarangModal(idx) {
         item.harga_vendors.forEach(h => {
             addHargaRow(h.id_vendor, h.harga_set, h.berlaku);
         });
+    } else {
+        updateTableHargaVisibility();
     }
 
     bootstrap.Tab.getOrCreateInstance(document.getElementById('bform-tab-utama')).show();
@@ -1306,6 +1506,8 @@ async function handleSaveBarang(e) {
     const jenisVal = document.querySelector('input[name="formJenisRadio"]:checked')?.value || '1';
     const assetVal = document.querySelector('input[name="formAssetRadio"]:checked')?.value || '0';
     const aktifVal = document.querySelector('input[name="formAktifRadio"]:checked')?.value || '1';
+    const ppnbmVal = document.querySelector('input[name="formPpnbmRadio"]:checked')?.value || '0';
+    const ratePpnbmVal = parseFloat(document.getElementById('formRatePpnbm')?.value) || 0;
 
     // Kumpulkan Alokasi Stok per Site (Selalu simpan ke database meskipun 0 atau null)
     const stokSites = [];
@@ -1321,10 +1523,10 @@ async function handleSaveBarang(e) {
     // Kumpulkan Daftar Harga per Vendor
     const hargaVendors = [];
     document.querySelectorAll('.harga-vendor-row').forEach(row => {
-        const selV = row.querySelector('.harga-vendor-select');
+        const inpV = row.querySelector('.harga-vendor-id-val');
         const inpP = row.querySelector('.harga-vendor-price');
         const inpD = row.querySelector('.harga-vendor-date');
-        const vId = selV ? parseInt(selV.value, 10) : 0;
+        const vId = inpV ? parseInt(inpV.value, 10) : 0;
         const price = inpP ? parseFloat(inpP.value) : 0;
         const bDate = inpD ? inpD.value : '';
         if (vId > 0 && price > 0) {
@@ -1343,6 +1545,8 @@ async function handleSaveBarang(e) {
         jenis: parseInt(jenisVal),
         asset: parseInt(assetVal),
         aktif: parseInt(aktifVal),
+        PPnBM: parseInt(ppnbmVal),
+        rate_PPnBM: ratePpnbmVal,
         serial_number: document.getElementById('formSerialNumber').value.trim(),
         deskripsi: document.getElementById('formDeskripsi').value.trim(),
         foto1: foto1Final,
@@ -1358,7 +1562,7 @@ async function handleSaveBarang(e) {
     });
     
     btnSave.disabled = false;
-    btnSave.innerHTML = '<i class="bi bi-save me-1"></i> Simpan Data Barang';
+    btnSave.innerHTML = '<i class="bi bi-save me-1"></i> Simpan';
     
     if (res && res.success) {
         showToast(res.message || 'Data barang berhasil disimpan!', 'success');
@@ -1462,6 +1666,13 @@ function showBarangDetail(idx) {
 
     // Tab 5: Tambahan
     document.getElementById('modalAssetBarang').innerHTML = `<span class="badge ${item.asset === 1 ? 'bg-primary-subtle text-primary border border-primary-subtle' : 'bg-secondary-subtle text-secondary border'}">${item.asset_label}</span>`;
+    
+    // Visual Klasifikasi Pajak PPnBM & Rate
+    const ppnbmBadge = item.ppnbm === 1 
+        ? `<span class="badge bg-warning text-dark border border-warning-subtle"><i class="bi bi-percent me-1"></i>Kena PPnBM (${item.rate_ppnbm || 0}%)</span>`
+        : `<span class="badge bg-light text-muted border">Non PPnBM (0%)</span>`;
+    document.getElementById('modalPpnbmBarang').innerHTML = ppnbmBadge;
+
     document.getElementById('modalSerialBarang').textContent = item.serial_number || '-';
     document.getElementById('modalCreatedAt').textContent = item.created_at || '-';
     document.getElementById('modalDeskripsiBarang').textContent = item.deskripsi || 'Tidak ada deskripsi khusus.';
