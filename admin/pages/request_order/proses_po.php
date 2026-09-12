@@ -235,31 +235,53 @@ require_once __DIR__ . '/../../components/navbar.php';
                                     <div class="p-3 border rounded-3 bg-light">
                                         <h6 class="fw-bold text-dark small mb-3">Pengaturan Pajak &amp; Diskon Akhir PO:</h6>
                                         
-                                        <!-- Checkbox Pajak, Pilihan Tarif (11% / 12%), & Checkbox Total Termasuk Pajak -->
+                                        <!-- Checkbox & Pengaturan Pajak (PPnBM dan PPN 11%) -->
                                         <div class="mb-3 p-3 bg-white rounded border">
+                                            <!-- Baris 1: Pajak PPnBM (Otomatis & Permanen jika Dokumen RO Barang Mewah) -->
+                                            <div id="wrapperPajakPpnbm" class="d-none pb-2 mb-2 border-bottom">
+                                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                                    <div class="form-check m-0">
+                                                        <input class="form-check-input" type="checkbox" id="checkEnablePpnbm" checked disabled>
+                                                        <label class="form-check-label fw-bold small text-dark" id="labelEnablePpnbm" for="checkEnablePpnbm">
+                                                            <i class="bi bi-stars text-warning me-1"></i>Pajak PPnBM (<span id="textPpnbmRate">0</span>%)
+                                                        </label>
+                                                    </div>
+                                                    <span class="badge bg-warning text-dark border border-warning-subtle fw-bold font-monospace" style="font-size: 0.75rem;" id="badgePpnbmRate">
+                                                        0% (PPnBM)
+                                                    </span>
+                                                </div>
+                                                <div class="form-check mt-1">
+                                                    <input class="form-check-input" type="checkbox" id="checkTermasukPpnbm" onchange="calculateAllTotals()">
+                                                    <label class="form-check-label small text-muted" for="checkTermasukPpnbm" style="font-size: 0.8rem;">
+                                                        Harga Barang Termasuk PPnBM (Tax Inclusive)
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            <!-- Baris 2: Pajak PPN (12% jika Barang PPnBM, 11% jika Barang Biasa) -->
                                             <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
                                                 <div class="form-check m-0">
                                                     <input class="form-check-input" type="checkbox" id="checkEnablePajak" checked onchange="togglePajak(this.checked)">
                                                     <label class="form-check-label fw-bold small text-dark" id="labelEnablePajak" for="checkEnablePajak">
-                                                        Kena Pajak PPN
+                                                        Kena Pajak PPN (<span id="textPpnRateLabel">11</span>%)
                                                     </label>
                                                 </div>
-                                                <div class="d-flex align-items-center gap-1" id="wrapperPajakRate">
-                                                    <label class="small text-muted mb-0 me-1" style="font-size: 0.78rem;">Tarif:</label>
-                                                    <select class="form-select form-select-sm font-monospace py-0 px-2" id="selectPajakRate" style="min-width: 85px; height: 28px; font-size: 0.8rem;" onchange="onPajakRateChange()">
-                                                        <option value="12" selected>12%</option>
-                                                        <option value="11">11%</option>
-                                                    </select>
-                                                </div>
+                                                <span class="badge bg-light text-dark border font-monospace" style="font-size: 0.75rem;" id="badgePpnRate">
+                                                    Tarif <span id="textPpnBadgeRate">11</span>%
+                                                </span>
                                             </div>
                                             <div class="form-check">
                                                 <input class="form-check-input" type="checkbox" id="checkTermasukPajak" onchange="calculateAllTotals()">
                                                 <label class="form-check-label small text-dark" for="checkTermasukPajak">
-                                                    Total Termasuk Pajak (Tax Inclusive)
+                                                    Harga Barang Sudah Termasuk PPN (Tax Inclusive)
                                                 </label>
                                             </div>
-                                            <input type="hidden" id="inputPajakPpn" name="pajak" value="12">
+
+                                            <!-- Hidden Inputs untuk Nilai Pajak -->
+                                            <input type="hidden" id="inputPajakPpn" name="pajak" value="11">
                                             <input type="hidden" id="inputTotalTermasukPajak" name="total_termasuk_pajak" value="0">
+                                            <input type="hidden" id="inputPajakPpnbm" name="pajak_PPnBM" value="0">
+                                            <input type="hidden" id="inputTotalTermasukPpnbm" name="total_termasuk_PPnBM" value="0">
                                         </div>
 
                                         <!-- Diskon Akhir: Nominal (Rp) atau Persentase (%) -->
@@ -301,8 +323,14 @@ require_once __DIR__ . '/../../components/navbar.php';
                                             <span class="text-muted">DPP (Dasar Pengenaan Pajak):</span>
                                             <span class="fw-semibold text-dark font-monospace" id="summaryDpp">Rp 0</span>
                                         </div>
-                                        <div class="d-flex justify-content-between mb-2 small">
-                                            <span class="text-muted" id="labelSummaryPpn">PPN (12%):</span>
+                                        <!-- Baris Pajak PPnBM (Khusus Dokumen RO Mewah) -->
+                                        <div class="d-flex justify-content-between mb-2 small d-none" id="summaryRowPpnbm">
+                                            <span class="text-muted" id="labelSummaryPpnbm">PPnBM (0%):</span>
+                                            <span class="fw-semibold text-warning-emphasis font-monospace" id="summaryPpnbm">Rp 0</span>
+                                        </div>
+                                        <!-- Baris Pajak PPN 11% -->
+                                        <div class="d-flex justify-content-between mb-2 small" id="summaryRowPpn">
+                                            <span class="text-muted" id="labelSummaryPpn">PPN (11%):</span>
                                             <span class="fw-semibold text-dark font-monospace" id="summaryPpn">Rp 0</span>
                                         </div>
                                         <hr class="my-2">
@@ -586,21 +614,12 @@ function updateTopKeterangan(val) {
 }
 
 // -------------------------------------------------------------
-// PENGATURAN PAJAK (11% / 12%) & TIPE DISKON
+// PENGATURAN PAJAK (PPN & PPnBM) & TIPE DISKON
 // -------------------------------------------------------------
 function togglePajak(enable) {
-    const rateSelect = document.getElementById('selectPajakRate');
-    rateSelect.disabled = !enable;
-    const selectedRate = parseInt(rateSelect.value) || 12;
-    document.getElementById('inputPajakPpn').value = enable ? selectedRate : 0;
-    calculateAllTotals();
-}
-
-function onPajakRateChange() {
-    const selectedRate = parseInt(document.getElementById('selectPajakRate').value) || 12;
-    if (document.getElementById('checkEnablePajak').checked) {
-        document.getElementById('inputPajakPpn').value = selectedRate;
-    }
+    const ppnbmRate = parseFloat(document.getElementById('inputPajakPpnbm')?.value) || 0;
+    const activePpnRate = (ppnbmRate > 0) ? 12 : 11;
+    document.getElementById('inputPajakPpn').value = enable ? activePpnRate : 0;
     calculateAllTotals();
 }
 
@@ -811,10 +830,12 @@ function renderRoData() {
 
     document.getElementById('tablePricingItemsBody').innerHTML = pricingHtml;
 
-    // Sinkronisasi Notice & Pilihan Pajak jika Dokumen Memuat Barang Mewah
+    // Sinkronisasi Notice & Pengaturan Pajak PPnBM / PPN
     const noticeContainer = document.getElementById('roPpnbmNoticeContainer');
-    const selectPajakRate = document.getElementById('selectPajakRate');
-    const labelEnablePajak = document.getElementById('labelEnablePajak');
+    const wrapperPajakPpnbm = document.getElementById('wrapperPajakPpnbm');
+    const textPpnbmRate = document.getElementById('textPpnbmRate');
+    const badgePpnbmRate = document.getElementById('badgePpnbmRate');
+    const inputPajakPpnbm = document.getElementById('inputPajakPpnbm');
     const checkEnablePajak = document.getElementById('checkEnablePajak');
 
     if (hasPpnbmInRo && roPpnbmRate > 0) {
@@ -824,37 +845,34 @@ function renderRoData() {
                 <div class="alert alert-warning py-2 px-3 small mb-3 border-0 rounded-3 shadow-xs d-flex align-items-center">
                     <i class="bi bi-stars text-warning-emphasis fs-5 me-2"></i>
                     <div>
-                        <strong>Dokumen RO Barang Mewah (PPnBM):</strong> Seluruh barang dalam RO ini dikenakan tarif PPnBM sebesar <strong>${roPpnbmRate}%</strong>.
+                        <strong>Dokumen RO Barang Mewah (PPnBM):</strong> Seluruh barang dalam RO ini dikenakan pajak barang mewah PPnBM sebesar <strong>${roPpnbmRate}%</strong> dan tarif PPN <strong>12%</strong>.
                     </div>
                 </div>
             `;
         }
-        if (labelEnablePajak) {
-            labelEnablePajak.innerHTML = `<i class="bi bi-stars text-warning me-1"></i>Kena Pajak PPnBM (${roPpnbmRate}%)`;
-        }
+        if (wrapperPajakPpnbm) wrapperPajakPpnbm.classList.remove('d-none');
+        if (textPpnbmRate) textPpnbmRate.textContent = roPpnbmRate;
+        if (badgePpnbmRate) badgePpnbmRate.textContent = `${roPpnbmRate}% (PPnBM)`;
+        if (inputPajakPpnbm) inputPajakPpnbm.value = roPpnbmRate;
 
-        // Pastikan opsi tarif PPnBM tersedia di dropdown selectPajakRate
-        let optionExists = false;
-        for (let i = 0; i < selectPajakRate.options.length; i++) {
-            if (parseFloat(selectPajakRate.options[i].value) === roPpnbmRate) {
-                optionExists = true;
-                break;
-            }
-        }
-        if (!optionExists) {
-            const newOpt = document.createElement('option');
-            newOpt.value = roPpnbmRate;
-            newOpt.textContent = `${roPpnbmRate}% (PPnBM)`;
-            selectPajakRate.insertBefore(newOpt, selectPajakRate.firstChild);
-        }
-        selectPajakRate.value = roPpnbmRate;
-        if (checkEnablePajak) {
-            checkEnablePajak.checked = true;
-        }
-        document.getElementById('inputPajakPpn').value = roPpnbmRate;
+        // Untuk barang mewah, tarif PPN adalah 12%
+        if (document.getElementById('textPpnRateLabel')) document.getElementById('textPpnRateLabel').textContent = '12';
+        if (document.getElementById('textPpnBadgeRate')) document.getElementById('textPpnBadgeRate').textContent = '12';
+        document.getElementById('inputPajakPpn').value = 12;
     } else {
         if (noticeContainer) noticeContainer.classList.add('d-none');
-        if (labelEnablePajak) labelEnablePajak.textContent = 'Kena Pajak PPN';
+        if (wrapperPajakPpnbm) wrapperPajakPpnbm.classList.add('d-none');
+        if (inputPajakPpnbm) inputPajakPpnbm.value = 0;
+
+        // Untuk barang biasa, tarif PPN adalah 11%
+        if (document.getElementById('textPpnRateLabel')) document.getElementById('textPpnRateLabel').textContent = '11';
+        if (document.getElementById('textPpnBadgeRate')) document.getElementById('textPpnBadgeRate').textContent = '11';
+        document.getElementById('inputPajakPpn').value = 11;
+    }
+
+    // Default PPN aktif
+    if (checkEnablePajak) {
+        checkEnablePajak.checked = true;
     }
 
     // Hitung kalkulasi awal
@@ -925,7 +943,7 @@ async function fetchNextPoNumber() {
 }
 
 // -------------------------------------------------------------
-// KALKULASI HARGA & TOTAL (PAJAK 12%, INKLUSIF/EKSKLUSIF, DISKON RP/%)
+// KALKULASI HARGA & TOTAL (PPN 11%/12%, PPnBM, INKLUSIF/EKSKLUSIF, DISKON RP/%)
 // -------------------------------------------------------------
 function calculateRowSubtotal(inputEl) {
     const row = inputEl.closest('tr');
@@ -967,49 +985,79 @@ function calculateAllTotals() {
 
     const dasarSetelahDiskon = subtotalBarang - diskonAkhirNominal;
 
-    // Pengaturan Pajak PPN (11% / 12%) & Inklusif
+    // Kalkulasi Pajak PPnBM (Barang Mewah)
+    const ppnbmRate = parseFloat(document.getElementById('inputPajakPpnbm')?.value) || 0;
+    const isTermasukPpnbm = (ppnbmRate > 0) && (document.getElementById('checkTermasukPpnbm')?.checked || false);
+    if (document.getElementById('inputTotalTermasukPpnbm')) {
+        document.getElementById('inputTotalTermasukPpnbm').value = isTermasukPpnbm ? 1 : 0;
+    }
+
+    // Kalkulasi Pajak PPN (12% jika Barang PPnBM, 11% jika Barang Non-PPnBM)
+    const standardPpnRate = (ppnbmRate > 0) ? 12 : 11;
     const isPajakEnabled = document.getElementById('checkEnablePajak').checked;
-    const selectedRate = parseInt(document.getElementById('selectPajakRate').value) || 12;
-    const ppnRate = isPajakEnabled ? selectedRate : 0;
+    const ppnRate = isPajakEnabled ? standardPpnRate : 0;
     document.getElementById('inputPajakPpn').value = ppnRate;
 
-    const isTermasukPajak = isPajakEnabled && document.getElementById('checkTermasukPajak').checked;
+    const isTermasukPajak = isPajakEnabled && (document.getElementById('checkTermasukPajak')?.checked || false);
     document.getElementById('inputTotalTermasukPajak').value = isTermasukPajak ? 1 : 0;
 
     let dpp = 0;
+    let ppnbmAmount = 0;
     let ppnAmount = 0;
     let grandTotal = 0;
 
-    if (ppnRate > 0) {
-        if (isTermasukPajak) {
-            // Tax Inclusive: Nilai setelah diskon sudah merupakan Grand Total
-            grandTotal = dasarSetelahDiskon;
-            dpp = grandTotal / (1 + (ppnRate / 100));
-            ppnAmount = grandTotal - dpp;
-        } else {
-            // Tax Exclusive: DPP adalah nilai setelah diskon, PPN ditambahkan
-            dpp = dasarSetelahDiskon;
-            ppnAmount = (dpp * ppnRate) / 100;
-            grandTotal = dpp + ppnAmount;
-        }
-    } else {
-        dpp = dasarSetelahDiskon;
-        ppnAmount = 0;
-        grandTotal = dpp;
+    // Basis perhitungan setelah diskon global
+    // 1. Hitung DPP berdasarkan status inklusif/eksklusif
+    // Jika harga inklusif PPnBM dan/atau PPN
+    let divisor = 1.0;
+    if (isTermasukPpnbm && ppnbmRate > 0) {
+        divisor += (ppnbmRate / 100);
+    }
+    if (isTermasukPajak && ppnRate > 0) {
+        divisor += (ppnRate / 100);
     }
 
+    dpp = dasarSetelahDiskon / divisor;
+
+    // 2. Hitung Nominal Pajak dari DPP
+    if (ppnbmRate > 0) {
+        ppnbmAmount = (dpp * ppnbmRate) / 100;
+    }
+    if (ppnRate > 0) {
+        ppnAmount = (dpp * ppnRate) / 100;
+    }
+
+    // 3. Grand Total
+    if (divisor > 1.0) {
+        // Jika ada pajak yang inklusif, sesuaikan grand total dengan dasar + pajak eksklusif
+        grandTotal = dpp;
+        if (ppnbmRate > 0) grandTotal += ppnbmAmount;
+        if (ppnRate > 0) grandTotal += ppnAmount;
+    } else {
+        // Eksklusif murni: DPP + PPnBM + PPN
+        grandTotal = dpp + ppnbmAmount + ppnAmount;
+    }
+
+    // Tampilkan di Ringkasan Biaya
     document.getElementById('summarySubtotal').textContent = formatRupiah(subtotalBarang);
     document.getElementById('summaryDiskon').textContent = `- ${formatRupiah(diskonAkhirNominal)}`;
     document.getElementById('summaryDpp').textContent = formatRupiah(dpp);
 
-    // Cek apakah ada barang mewah dalam cache
-    let isDocLuxury = false;
-    if (roDataCache && roDataCache.items) {
-        isDocLuxury = roDataCache.items.some(it => (parseInt(it.PPnBM) === 1 || parseInt(it.ppnbm) === 1));
+    // Baris PPnBM
+    const summaryRowPpnbm = document.getElementById('summaryRowPpnbm');
+    const labelSummaryPpnbm = document.getElementById('labelSummaryPpnbm');
+    const summaryPpnbm = document.getElementById('summaryPpnbm');
+    if (ppnbmRate > 0) {
+        if (summaryRowPpnbm) summaryRowPpnbm.classList.remove('d-none');
+        if (labelSummaryPpnbm) labelSummaryPpnbm.textContent = `PPnBM (${ppnbmRate}%)${isTermasukPpnbm ? ' (Inklusif)' : ''}:`;
+        if (summaryPpnbm) summaryPpnbm.textContent = formatRupiah(ppnbmAmount);
+    } else {
+        if (summaryRowPpnbm) summaryRowPpnbm.classList.add('d-none');
     }
-    const taxLabelPrefix = isDocLuxury ? 'PPnBM' : 'PPN';
-    document.getElementById('labelSummaryPpn').textContent = `${taxLabelPrefix} (${ppnRate}%)${isTermasukPajak ? ' (Inklusif)' : ''}:`;
-    document.getElementById('summaryPpn').textContent = formatRupiah(ppnAmount);
+
+    // Baris PPN (12% untuk PPnBM, 11% untuk Non-PPnBM)
+    document.getElementById('labelSummaryPpn').textContent = `PPN (${standardPpnRate}%)${isTermasukPajak ? ' (Inklusif)' : ''}:`;
+    document.getElementById('summaryPpn').textContent = isPajakEnabled ? formatRupiah(ppnAmount) : 'Rp 0';
     document.getElementById('summaryGrandTotal').textContent = formatRupiah(grandTotal);
 }
 
@@ -1050,8 +1098,9 @@ function handleApproveToPo(e) {
     const pengirimanVal = document.getElementById('selectPengiriman')?.value || 'Vendor';
     const tanggalKirimVal = document.getElementById('inputTanggalPengiriman')?.value || '';
     const isKenaPajak = document.getElementById('checkEnablePajak')?.checked || false;
-    const pajakRate = parseInt(document.getElementById('inputPajakPpn')?.value) || 0;
     const isTermasukPajak = document.getElementById('checkTermasukPajak')?.checked || false;
+    const ppnbmRate = parseFloat(document.getElementById('inputPajakPpnbm')?.value) || 0;
+    const isTermasukPpnbm = document.getElementById('checkTermasukPpnbm')?.checked || false;
 
     // 2. Isi Ringkasan Modal
     if (document.getElementById('verifyPoNumberDisplay')) document.getElementById('verifyPoNumberDisplay').textContent = nomorPo;
@@ -1067,8 +1116,31 @@ function handleApproveToPo(e) {
     if (document.getElementById('verifyValPengiriman')) document.getElementById('verifyValPengiriman').textContent = pengirimanVal;
     if (document.getElementById('verifyValTanggalPengiriman')) document.getElementById('verifyValTanggalPengiriman').textContent = tanggalKirimVal ? tanggalKirimVal : 'Sesuai Jadwal Standar';
     if (document.getElementById('verifyValTotalQty')) document.getElementById('verifyValTotalQty').textContent = `${totalQtyCount} Qty (${itemCount} Item Barang)`;
-    if (document.getElementById('verifyValKenaPajak')) document.getElementById('verifyValKenaPajak').textContent = isKenaPajak ? `Kena Pajak PPN (${pajakRate}%)` : 'Bebas Pajak (Non-PPN)';
-    if (document.getElementById('verifyValTermasukPajak')) document.getElementById('verifyValTermasukPajak').textContent = isTermasukPajak ? 'Sudah Termasuk Pajak (Inklusif)' : 'Belum Termasuk Pajak (Eksklusif)';
+    
+    // Status Pajak di Checklist 5
+    let statusPajakText = [];
+    const activePpnRate = (ppnbmRate > 0) ? 12 : 11;
+    if (ppnbmRate > 0) {
+        statusPajakText.push(`PPnBM ${ppnbmRate}%`);
+    }
+    if (isKenaPajak) {
+        statusPajakText.push(`PPN ${activePpnRate}%`);
+    }
+    if (statusPajakText.length === 0) {
+        statusPajakText.push('Bebas Pajak (Non-PPN)');
+    }
+    if (document.getElementById('verifyValKenaPajak')) {
+        document.getElementById('verifyValKenaPajak').textContent = statusPajakText.join(' + ');
+    }
+
+    // Status Skema Inklusif/Eksklusif di Checklist 6
+    let skemaText = [];
+    if (isTermasukPajak) skemaText.push('PPN Inklusif');
+    if (isTermasukPpnbm) skemaText.push('PPnBM Inklusif');
+    if (skemaText.length === 0) skemaText.push('Eksklusif');
+    if (document.getElementById('verifyValTermasukPajak')) {
+        document.getElementById('verifyValTermasukPajak').textContent = skemaText.join(' & ');
+    }
 
     // 4. Reset Checkbox & Input Password
     document.querySelectorAll('.verify-check-item').forEach(cb => cb.checked = false);
@@ -1177,6 +1249,8 @@ async function submitFinalApprovedPo() {
         alamat: document.getElementById('inputAlamatPengiriman').value.trim(),
         pajak: parseInt(document.getElementById('inputPajakPpn').value) || 0,
         total_termasuk_pajak: document.getElementById('checkTermasukPajak').checked ? 1 : 0,
+        pajak_PPnBM: parseInt(document.getElementById('inputPajakPpnbm').value) || 0,
+        total_termasuk_PPnBM: document.getElementById('checkTermasukPpnbm')?.checked ? 1 : 0,
         diskon: calculatedDiskonNominal || 0,
         keterangan: document.getElementById('inputKeteranganPo').value.trim(),
         items: items
@@ -1266,6 +1340,8 @@ async function handleSaveDraftPo() {
         alamat: document.getElementById('inputAlamatPengiriman').value.trim(),
         pajak: parseInt(document.getElementById('inputPajakPpn').value) || 0,
         total_termasuk_pajak: document.getElementById('checkTermasukPajak').checked ? 1 : 0,
+        pajak_PPnBM: parseInt(document.getElementById('inputPajakPpnbm').value) || 0,
+        total_termasuk_PPnBM: document.getElementById('checkTermasukPpnbm')?.checked ? 1 : 0,
         diskon: calculatedDiskonNominal || 0,
         keterangan: document.getElementById('inputKeteranganPo').value.trim(),
         items: items

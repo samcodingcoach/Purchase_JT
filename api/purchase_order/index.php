@@ -82,22 +82,31 @@ if ($method === 'GET') {
         $stmtItems->close();
 
         $diskonPo = (float)($po['diskon'] ?? 0);
-        $dpp = max(0, $subtotalBarang - $diskonPo);
-        $ratePajak = (float)($po['pajak'] ?? 0);
-        $isInclusive = ((int)($po['total_termasuk_pajak'] ?? 0) === 1);
-        
-        $nominalPajak = 0;
-        $grandTotal = $dpp;
-        if ($ratePajak > 0) {
-            if ($isInclusive) {
-                $dppReal = $dpp / (1 + ($ratePajak / 100));
-                $nominalPajak = $dpp - $dppReal;
-                $grandTotal = $dpp;
-                $dpp = $dppReal;
-            } else {
-                $nominalPajak = $dpp * ($ratePajak / 100);
-                $grandTotal = $dpp + $nominalPajak;
-            }
+        $dasarSetelahDiskon = max(0, $subtotalBarang - $diskonPo);
+
+        $ratePpn = (float)($po['pajak'] ?? 0);
+        $isPpnInclusive = ((int)($po['total_termasuk_pajak'] ?? 0) === 1);
+
+        $ratePpnbm = (float)($po['pajak_PPnBM'] ?? 0);
+        $isPpnbmInclusive = ((int)($po['total_termasuk_PPnBM'] ?? 0) === 1);
+
+        // Hitung pembagi untuk inklusif
+        $divisor = 1.0;
+        if ($isPpnbmInclusive && $ratePpnbm > 0) {
+            $divisor += ($ratePpnbm / 100);
+        }
+        if ($isPpnInclusive && $ratePpn > 0) {
+            $divisor += ($ratePpn / 100);
+        }
+
+        $dpp = $dasarSetelahDiskon / $divisor;
+        $nominalPpnbm = ($ratePpnbm > 0) ? ($dpp * ($ratePpnbm / 100)) : 0;
+        $nominalPpn = ($ratePpn > 0) ? ($dpp * ($ratePpn / 100)) : 0;
+
+        if ($divisor > 1.0) {
+            $grandTotal = $dpp + ($ratePpnbm > 0 ? $nominalPpnbm : 0) + ($ratePpn > 0 ? $nominalPpn : 0);
+        } else {
+            $grandTotal = $dpp + $nominalPpnbm + $nominalPpn;
         }
 
         $po['items'] = $items;
@@ -105,10 +114,13 @@ if ($method === 'GET') {
         $po['subtotal_barang'] = $subtotalBarang;
         $po['nominal_diskon'] = $diskonPo;
         $po['dpp'] = $dpp;
-        $po['rate_pajak'] = $ratePajak;
-        $po['nominal_pajak'] = $nominalPajak;
+        $po['rate_pajak'] = $ratePpn;
+        $po['nominal_pajak'] = $nominalPpn;
+        $po['rate_ppnbm'] = $ratePpnbm;
+        $po['nominal_ppnbm'] = $nominalPpnbm;
         $po['grand_total'] = $grandTotal;
-        $po['total_termasuk_pajak'] = $isInclusive ? 1 : 0;
+        $po['total_termasuk_pajak'] = $isPpnInclusive ? 1 : 0;
+        $po['total_termasuk_PPnBM'] = $isPpnbmInclusive ? 1 : 0;
 
         jsonResponse(true, 'Detail Purchase Order berhasil diambil.', $po);
     }

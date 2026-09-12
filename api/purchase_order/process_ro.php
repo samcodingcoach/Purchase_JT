@@ -209,7 +209,7 @@ if ($action === 'approve' || $action === 'draft') {
     $keteranganPo = trim($input['keterangan'] ?? '');
 
     // Ambil Data Barang yang diajukan dari RO Detail (Pencegahan manipulasi / penghapusan item oleh Purchasing)
-    $stmtItems = $conn->prepare("SELECT rd.*, b.nama_barang as nama_master 
+    $stmtItems = $conn->prepare("SELECT rd.*, b.nama_barang as nama_master, b.PPnBM, b.rate_PPnBM 
                                  FROM request_order_detail rd
                                  LEFT JOIN barang b ON rd.id_barang = b.id_barang
                                  WHERE rd.id_request = ?");
@@ -226,6 +226,9 @@ if ($action === 'approve' || $action === 'draft') {
     if (empty($roItems)) {
         jsonResponse(false, 'Request Order ini tidak memiliki rincian barang untuk diproses.', null, 422);
     }
+
+    $pajakPpnbm = isset($input['pajak_PPnBM']) ? (int)$input['pajak_PPnBM'] : 0;
+    $totalTermasukPpnbm = isset($input['total_termasuk_PPnBM']) ? (int)$input['total_termasuk_PPnBM'] : 0;
 
     // Input data harga & diskon per item yang dikirim dari form UI
     $itemsInputMap = [];
@@ -245,12 +248,12 @@ if ($action === 'approve' || $action === 'draft') {
         // 1. Insert ke purchase_order
         $statusPo = $isDraft ? 'DRAFT' : 'DISETUJUI INTERNAL';
         $stmtPo = $conn->prepare("INSERT INTO purchase_order 
-            (nomor_po, tanggal_po, id_karyawan, id_site, id_vendor, status, prioritas, tanggal_status, keterangan, alamat, pengiriman, tanggal_pengiriman, term_of_payment, id_karyawan_approved, pajak, total_termasuk_pajak, diskon) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            (nomor_po, tanggal_po, id_karyawan, id_site, id_vendor, status, prioritas, tanggal_status, keterangan, alamat, pengiriman, tanggal_pengiriman, term_of_payment, id_karyawan_approved, pajak, total_termasuk_pajak, diskon, pajak_PPnBM, total_termasuk_PPnBM) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         
         $approvedBy = $isDraft ? null : $idKaryawan;
         $stmtPo->bind_param(
-            "ssiiissssssiiiid",
+            "ssiiissssssiiiidii",
             $nomorPo,
             $tanggalPo,
             $idKaryawan,
@@ -266,7 +269,9 @@ if ($action === 'approve' || $action === 'draft') {
             $approvedBy,
             $pajak,
             $totalTermasukPajak,
-            $diskonGlobal
+            $diskonGlobal,
+            $pajakPpnbm,
+            $totalTermasukPpnbm
         );
 
         if (!$stmtPo->execute()) {
@@ -278,8 +283,8 @@ if ($action === 'approve' || $action === 'draft') {
 
         // 2. Insert ke purchase_order_detail (Semua barang asli dari RO dipindahkan)
         $stmtDetail = $conn->prepare("INSERT INTO purchase_order_detail 
-            (id_po, id_barang, qty, harga, diskon, subtotal, kena_pajak, keterangan) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            (id_po, id_barang, qty, harga, diskon, subtotal, kena_pajak, keterangan, kena_pajak_ppnbm) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
         foreach ($roItems as $roItem) {
             $idBarang = (int)$roItem['id_barang'];
@@ -290,12 +295,13 @@ if ($action === 'approve' || $action === 'draft') {
             $harga = $overrideItem && isset($overrideItem['harga']) ? (float)$overrideItem['harga'] : ((float)$roItem['harga'] > 0 ? (float)$roItem['harga'] : 0.0);
             $diskonItem = $overrideItem && isset($overrideItem['diskon']) ? (float)$overrideItem['diskon'] : 0.0;
             $kenaPajak = $overrideItem && isset($overrideItem['kena_pajak']) ? (float)$overrideItem['kena_pajak'] : 1.0;
+            $kenaPajakPpnbm = (int)($roItem['PPnBM'] ?? 0) === 1 ? 1.0 : 0.0;
             $keteranganItem = $overrideItem && isset($overrideItem['keterangan']) ? trim($overrideItem['keterangan']) : '';
 
             $subtotal = ($qty * $harga) - $diskonItem;
             if ($subtotal < 0) $subtotal = 0;
 
-            $stmtDetail->bind_param("iiddddds", $newIdPo, $idBarang, $qty, $harga, $diskonItem, $subtotal, $kenaPajak, $keteranganItem);
+            $stmtDetail->bind_param("iidddddsd", $newIdPo, $idBarang, $qty, $harga, $diskonItem, $subtotal, $kenaPajak, $keteranganItem, $kenaPajakPpnbm);
             
             if (!$stmtDetail->execute()) {
                 throw new Exception("Gagal menyimpan item barang PO: " . $stmtDetail->error);

@@ -245,8 +245,12 @@ $companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
                         <td class="lbl">DPP (Dasar Pengenaan Pajak)</td>
                         <td class="val" id="docDpp">Rp 0</td>
                     </tr>
-                    <tr>
-                        <td class="lbl" id="docLabelPpn">PPN (12%):</td>
+                    <tr id="docRowPpnbm" class="d-none">
+                        <td class="lbl" id="docLabelPpnbm">PPnBM (0%):</td>
+                        <td class="val" id="docNominalPpnbm">Rp 0</td>
+                    </tr>
+                    <tr id="docRowPpn">
+                        <td class="lbl" id="docLabelPpn">PPN (11%):</td>
                         <td class="val" id="docNominalPpn">Rp 0</td>
                     </tr>
                     <tr class="grand-total-row">
@@ -417,35 +421,46 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Financial Calculation (Konsisten dari API)
         const subtotalBarang = parseFloat(po.subtotal_barang) || 0;
         const diskonPo = parseFloat(po.nominal_diskon || po.diskon) || 0;
-        const ratePajak = parseFloat(po.rate_pajak || po.pajak) || 0;
-        const isTermasukPajak = parseInt(po.total_termasuk_pajak) === 1;
+        const ratePpn = parseFloat(po.rate_pajak || po.pajak) || 0;
+        const isPpnInclusive = parseInt(po.total_termasuk_pajak) === 1;
 
-        let dpp = 0;
-        let nominalPajak = 0;
-        let grandTotal = 0;
+        const ratePpnbm = parseFloat(po.rate_ppnbm || po.pajak_PPnBM) || 0;
+        const isPpnbmInclusive = parseInt(po.total_termasuk_PPnBM) === 1;
 
         const dasarSetelahDiskon = Math.max(0, subtotalBarang - diskonPo);
-        if (ratePajak > 0) {
-            if (isTermasukPajak) {
-                dpp = dasarSetelahDiskon / (1 + (ratePajak / 100));
-                nominalPajak = dasarSetelahDiskon - dpp;
-                grandTotal = dasarSetelahDiskon;
-            } else {
-                dpp = dasarSetelahDiskon;
-                nominalPajak = (dpp * ratePajak) / 100;
-                grandTotal = dpp + nominalPajak;
-            }
+
+        let divisor = 1.0;
+        if (isPpnbmInclusive && ratePpnbm > 0) divisor += (ratePpnbm / 100);
+        if (isPpnInclusive && ratePpn > 0) divisor += (ratePpn / 100);
+
+        const dpp = dasarSetelahDiskon / divisor;
+        const nominalPpnbm = ratePpnbm > 0 ? (dpp * (ratePpnbm / 100)) : 0;
+        const nominalPpn = ratePpn > 0 ? (dpp * (ratePpn / 100)) : 0;
+
+        let grandTotal = 0;
+        if (divisor > 1.0) {
+            grandTotal = dpp + (ratePpnbm > 0 ? nominalPpnbm : 0) + (ratePpn > 0 ? nominalPpn : 0);
         } else {
-            dpp = dasarSetelahDiskon;
-            nominalPajak = 0;
-            grandTotal = dpp;
+            grandTotal = dpp + nominalPpnbm + nominalPpn;
         }
 
         document.getElementById('docSubtotalBarang').textContent = formatRupiah(subtotalBarang);
         document.getElementById('docDiskonAkhir').textContent = diskonPo > 0 ? (`- ${formatRupiah(diskonPo)}`) : 'Rp 0';
         document.getElementById('docDpp').textContent = formatRupiah(dpp);
-        document.getElementById('docLabelPpn').textContent = `PPN (${ratePajak}%)${isTermasukPajak ? ' (Inklusif)' : ''}:`;
-        document.getElementById('docNominalPpn').textContent = formatRupiah(nominalPajak);
+
+        // PPnBM
+        const docRowPpnbm = document.getElementById('docRowPpnbm');
+        if (ratePpnbm > 0) {
+            if (docRowPpnbm) docRowPpnbm.classList.remove('d-none');
+            document.getElementById('docLabelPpnbm').textContent = `PPnBM (${ratePpnbm}%)${isPpnbmInclusive ? ' (Inklusif)' : ''}:`;
+            document.getElementById('docNominalPpnbm').textContent = formatRupiah(nominalPpnbm);
+        } else {
+            if (docRowPpnbm) docRowPpnbm.classList.add('d-none');
+        }
+
+        // PPN
+        document.getElementById('docLabelPpn').textContent = `PPN (${ratePpn}%)${isPpnInclusive ? ' (Inklusif)' : ''}:`;
+        document.getElementById('docNominalPpn').textContent = formatRupiah(nominalPpn);
         document.getElementById('docGrandTotal').textContent = formatRupiah(grandTotal);
 
         // Signatures (Nama, Jabatan & Divisi Dinamis)
