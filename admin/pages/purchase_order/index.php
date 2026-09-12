@@ -392,16 +392,16 @@ require_once __DIR__ . '/../../components/navbar.php';
                     <!-- TAB 3: RINCIAN BARANG & BIAYA -->
                     <div class="tab-pane fade" id="tab-m-items" role="tabpanel">
                         <!-- Tabel Item Barang PO -->
-                        <div class="table-responsive mb-3 border rounded-3 bg-white shadow-xs">
-                            <table class="table table-hover align-middle mb-0">
+                        <div class="table-responsive mb-3">
+                            <table class="table table-bordered table-hover align-middle mb-0 bg-white">
                                 <thead class="table-light small text-muted text-uppercase">
                                     <tr>
-                                        <th style="width: 45px;" class="text-center">#</th>
-                                        <th>Barang &amp; Spesifikasi</th>
-                                        <th style="width: 90px;" class="text-center">Kts</th>
-                                        <th style="width: 145px;" class="text-end">Harga Satuan</th>
-                                        <th style="width: 130px;" class="text-end">Diskon Item</th>
-                                        <th style="width: 145px;" class="text-end">Subtotal</th>
+                                        <th style="width: 45px;" class="text-center align-middle">#</th>
+                                        <th style="min-width: 260px;" class="align-middle">Barang &amp; Spesifikasi</th>
+                                        <th style="width: 90px;" class="text-center align-middle">Kts</th>
+                                        <th style="width: 160px;" class="text-end align-middle">Harga Satuan</th>
+                                        <th style="width: 140px;" class="text-end align-middle">Diskon Item</th>
+                                        <th style="width: 165px;" class="text-end align-middle">Subtotal</th>
                                     </tr>
                                 </thead>
                                 <tbody id="detailItemsTableBody">
@@ -656,15 +656,6 @@ async function loadPoList(page = 1) {
             ? `<a href="${BASE_URL}/admin/pages/purchase_order/edit.php?id=${item.id_po}" class="btn btn-outline-warning btn-sm px-2 py-1 shadow-xs text-dark" title="Edit Purchase Order"><i class="bi bi-pencil-fill"></i></a>`
             : `<button type="button" class="btn btn-light btn-sm px-2 py-1 text-muted border opacity-50" disabled title="${lockTooltip}"><i class="bi bi-lock-fill"></i></button>`;
 
-        let receiveBtnHtml = '';
-        if (statusUpper === 'DIPROSES VENDOR') {
-            receiveBtnHtml = `
-                <button type="button" class="btn btn-outline-success btn-sm px-2 py-1 shadow-xs" onclick="confirmReceivePo(${item.id_po}, '${escapeHtml(item.nomor_po)}')" title="Update Status: Barang Diterima">
-                    <i class="bi bi-box-seam-fill"></i>
-                </button>
-            `;
-        }
-
         let printBtnHtml = '';
         if (['DIPROSES VENDOR', 'DITERIMA', 'SELESAI'].includes(statusUpper)) {
             printBtnHtml = `
@@ -709,7 +700,6 @@ async function loadPoList(page = 1) {
                         </button>
                         ${printBtnHtml}
                         ${editBtnHtml}
-                        ${receiveBtnHtml}
                         ${cancelBtnHtml}
                     </div>
                 </td>
@@ -985,25 +975,39 @@ async function openDetailModal(idPo) {
             ? `<span class="badge bg-warning text-dark border border-warning-subtle fw-bold" style="font-size: 0.68rem;">PPnBM (${itemPpnbmRate}%)</span>`
             : '';
 
+        const imgSrc = item.foto1 ? `${BASE_URL}/${escapeHtml(item.foto1)}` : '';
+        const imgHtml = imgSrc 
+            ? `<a href="${imgSrc}" target="_blank" class="d-inline-block flex-shrink-0" title="Klik untuk perbesar foto">
+                   <img src="${imgSrc}" alt="${escapeHtml(item.nama_barang || '')}" class="rounded border bg-white object-fit-cover" style="width: 44px; height: 44px;" onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\\'rounded border bg-light d-flex align-items-center justify-content-center text-muted flex-shrink-0\\' style=\\'width: 44px; height: 44px;\\'><i class=\\'bi bi-box-seam fs-5\\'></i></div>';">
+               </a>`
+            : `<div class="rounded border bg-light d-flex align-items-center justify-content-center text-muted flex-shrink-0" style="width: 44px; height: 44px;">
+                   <i class="bi bi-box-seam fs-5"></i>
+               </div>`;
+
         itemsHtml += `
             <tr>
-                <td class="text-center font-monospace text-muted small">${idx + 1}</td>
-                <td>
-                    <div class="fw-bold text-dark">${escapeHtml(item.nama_barang || '')}</div>
-                    <div class="d-flex flex-wrap gap-1 align-items-center mt-1">
-                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 0.68rem;">${escapeHtml(item.kode_barang || 'BRG')}</span>
-                        ${item.nama_kategori ? `<span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.68rem;">${escapeHtml(item.nama_kategori)}</span>` : ''}
-                        ${item.nama_merk ? `<span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.68rem;">${escapeHtml(item.nama_merk)}</span>` : ''}
-                        ${ppnbmBadge}
+                <td class="text-center font-monospace text-muted small align-middle">${idx + 1}</td>
+                <td class="align-middle">
+                    <div class="d-flex align-items-center gap-3">
+                        ${imgHtml}
+                        <div class="flex-grow-1 min-w-0">
+                            <div class="fw-bold text-dark mb-1 text-truncate" title="${escapeHtml(item.nama_barang || '')}">${escapeHtml(item.nama_barang || '')}</div>
+                            <div class="d-flex flex-wrap gap-1 align-items-center">
+                                <span class="badge bg-light text-muted border font-monospace" style="font-size: 0.68rem;">${escapeHtml(item.kode_barang || 'BRG')}</span>
+                                ${item.nama_kategori ? `<span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.68rem;">${escapeHtml(item.nama_kategori)}</span>` : ''}
+                                ${item.nama_merk ? `<span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.68rem;">${escapeHtml(item.nama_merk)}</span>` : ''}
+                                ${ppnbmBadge}
+                            </div>
+                        </div>
                     </div>
                 </td>
-                <td class="text-center">
-                    <span class="fw-bold font-monospace">${itemQty}</span>
+                <td class="text-center align-middle">
+                    <span class="fw-bold font-monospace fs-6">${itemQty}</span>
                     <span class="small text-muted d-block" style="font-size: 0.72rem;">${escapeHtml(item.satuan || 'PCS')}</span>
                 </td>
-                <td class="text-end font-monospace">${formatNumber(itemHarga)}</td>
-                <td class="text-end font-monospace text-danger">${itemDiskon > 0 ? ('- ' + formatNumber(itemDiskon)) : '0'}</td>
-                <td class="text-end font-monospace fw-bold text-dark">${formatNumber(itemSubtotal)}</td>
+                <td class="text-end font-monospace align-middle">${formatNumber(itemHarga)}</td>
+                <td class="text-end font-monospace text-danger align-middle">${itemDiskon > 0 ? ('- ' + formatNumber(itemDiskon)) : '0'}</td>
+                <td class="text-end font-monospace fw-bold text-dark align-middle">${formatNumber(itemSubtotal)}</td>
             </tr>
         `;
     });
@@ -1021,27 +1025,6 @@ function resetFilters() {
     document.getElementById('filterStartDate').value = '';
     document.getElementById('filterEndDate').value = '';
     loadPoList(1);
-}
-
-// -------------------------------------------------------------
-// KONFIRMASI UPDATE STATUS DITERIMA (PENERIMAAN BARANG)
-// -------------------------------------------------------------
-async function confirmReceivePo(idPo, nomorPo) {
-    if (!confirm(`Konfirmasi Penerimaan Barang untuk dokumen ${nomorPo}?\n\nStatus PO akan diperbarui menjadi 'DITERIMA' dan tercatat dalam sistem.`)) {
-        return;
-    }
-
-    const res = await apiRequest('/api/purchase_order/receive.php', {
-        method: 'POST',
-        body: JSON.stringify({ id_po: idPo })
-    });
-
-    if (res && res.success) {
-        showToast(res.message, 'success');
-        loadPoList(currentPage);
-    } else {
-        showToast(res ? res.message : 'Gagal memperbarui status PO.', 'danger');
-    }
 }
 
 // -------------------------------------------------------------

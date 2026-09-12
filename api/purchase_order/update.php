@@ -67,6 +67,8 @@ $tanggalPengiriman = !empty($input['tanggal_pengiriman']) ? trim($input['tanggal
 $top = isset($input['term_of_payment']) ? (int)$input['term_of_payment'] : 30;
 $pajak = isset($input['pajak']) ? (int)$input['pajak'] : 0;
 $totalTermasukPajak = !empty($input['total_termasuk_pajak']) ? 1 : 0;
+$pajakPpnbm = isset($input['pajak_PPnBM']) ? (int)$input['pajak_PPnBM'] : 0;
+$totalTermasukPpnbm = !empty($input['total_termasuk_PPnBM']) ? 1 : 0;
 $diskon = isset($input['diskon']) ? (float)$input['diskon'] : 0;
 $keterangan = isset($input['keterangan']) ? trim($input['keterangan']) : '';
 $newStatus = !empty($input['status']) ? trim($input['status']) : $currentPo['status'];
@@ -92,6 +94,8 @@ try {
         term_of_payment = ?,
         pajak = ?,
         total_termasuk_pajak = ?,
+        pajak_PPnBM = ?,
+        total_termasuk_PPnBM = ?,
         diskon = ?,
         keterangan = ?,
         status = ?,
@@ -99,7 +103,7 @@ try {
         WHERE id_po = ?");
 
     $stmtUpdate->bind_param(
-        "sssssiiidssi",
+        "sssssiiiiidssi",
         $tanggalPo,
         $prioritas,
         $alamat,
@@ -108,6 +112,8 @@ try {
         $top,
         $pajak,
         $totalTermasukPajak,
+        $pajakPpnbm,
+        $totalTermasukPpnbm,
         $diskon,
         $keterangan,
         $newStatus,
