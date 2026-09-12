@@ -24,7 +24,7 @@ require_once __DIR__ . '/../../components/navbar.php';
     <!-- Header Title -->
     <div class="mb-4">
         <h2 class="fs-4 fw-bold text-dark mb-0">
-            Buat Request Order (RO) Baru
+            Buat Request Order
         </h2>
     </div>
 
@@ -40,7 +40,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link fw-bold text-dark" id="tab-daftar-kebutuhan" data-bs-toggle="tab" data-bs-target="#pane-daftar-kebutuhan" type="button" role="tab">
+                        <button class="nav-link fw-semibold" id="tab-daftar-kebutuhan" data-bs-toggle="tab" data-bs-target="#pane-daftar-kebutuhan" type="button" role="tab">
                             <i class="bi bi-boxes me-2 text-primary"></i>2. Daftar Barang 
                             <span class="badge bg-primary text-white ms-2" id="tabItemCountBadge">1</span>
                         </button>
@@ -59,7 +59,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                             <div class="col-md-6">
                                 <div class="p-3 bg-light rounded-3 border h-100">
                                     <h6 class="fw-bold text-dark mb-3">
-                                        <i class="bi bi-card-heading text-primary me-2"></i>Identitas &amp; Pengajuan
+                                        Identitas &amp; Pengajuan
                                     </h6>
                                     
                                     <div class="mb-3">
@@ -72,7 +72,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                                             </button>
                                         </div>
                                         <div class="form-text small text-muted" style="font-size: 0.73rem;">
-                                            Format otomatis: <code>RO-YYMM-0000</code> (Reset setiap bulan). Anda juga dapat mengetik nomor kustom.
+                                             Format otomatis: <code>RO-YYMM-0000</code> (Reset setiap bulan). Anda juga dapat mengetik nomor kustom.
                                         </div>
                                     </div>
 
@@ -105,7 +105,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                             <div class="col-md-6">
                                 <div class="p-3 bg-light rounded-3 border h-100">
                                     <h6 class="fw-bold text-dark mb-3">
-                                        <i class="bi bi-geo-alt-fill text-primary me-2"></i>Penempatan &amp; Prioritas
+                                        Penempatan &amp; Prioritas
                                     </h6>
 
                                     <div class="mb-3">
@@ -165,17 +165,24 @@ require_once __DIR__ . '/../../components/navbar.php';
                         <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                             <div>
                                 <h6 class="fw-bold text-dark mb-0">
-                                    <i class="bi bi-boxes text-primary me-2"></i>Daftar Kebutuhan Barang
+                                    Daftar Kebutuhan Barang
                                 </h6>
-                                
                             </div>
                             <button type="button" class="btn btn-outline-primary btn-sm fw-semibold" onclick="addNewItemRow()">
-                                <i class="bi bi-plus-circle-fill me-1"></i> Tambah Baris Barang
+                                <i class="bi bi-plus-circle-fill me-1"></i> Tambah Barang
                             </button>
                         </div>
 
-                        <div class="table-container border rounded-3 bg-white" style="overflow: visible; position: relative;">
-                            <table class="table table-bordered align-middle mb-0" id="roItemsTable">
+                        <!-- Info Warning & Status Klasifikasi RO -->
+                        <div id="roClassificationBanner" class="alert alert-warning d-flex align-items-center py-2 px-3 mb-3 border-0 rounded-3 shadow-none text-dark small" style="background-color: #fff3cd;">
+                            <i id="roClassificationIcon" class="bi bi-exclamation-triangle-fill text-warning me-2 fs-6"></i>
+                            <div id="roClassificationText">
+                                Barang baru termasuk mewah harus input di master barang
+                            </div>
+                        </div>
+
+                        <div class="table-container bg-white" style="overflow: visible; position: relative;">
+                            <table class="table table-hover align-middle mb-0" id="roItemsTable">
                                 <thead class="table-light text-muted small text-uppercase">
                                     <tr>
                                         <th style="width: 45px;" class="text-center">No</th>
@@ -193,9 +200,9 @@ require_once __DIR__ . '/../../components/navbar.php';
                         </div>
 
                         <!-- REAKTIF TOTALS RINGKASAN -->
-                        <div class="card-footer bg-light p-3 border rounded-3 mt-3">
+                        <div class="card-footer bg-light p-3 border rounded-3 mt-3 shadow-none">
                             <div class="d-flex gap-4 text-muted small">
-                                <div><i class="bi bi-boxes me-1 text-primary"></i>Total Kuantitas: <strong class="text-dark" id="summaryTotalQty">0</strong></div>
+                                <div>Total Kuantitas: <strong class="text-dark" id="summaryTotalQty">0</strong></div>
                             </div>
                         </div>
 
@@ -238,33 +245,50 @@ require_once __DIR__ . '/../../components/navbar.php';
 
 <!-- STYLING AUTOCOMPLETE & SEARCHABLE SELECT LAYER ATAS -->
 <style>
+/* Tab styling: tidak aktif = biru cerah, aktif = hitam */
+#roFormTabs .nav-link {
+    color: #0d6efd !important;
+    font-weight: 600;
+}
+#roFormTabs .nav-link.active {
+    color: #000000 !important;
+    font-weight: 700 !important;
+}
+
 #roItemsTable {
-    border-collapse: separate !important;
-    border-spacing: 0 !important;
-    border: 1px solid #dee2e6 !important;
+    border-collapse: collapse !important;
     width: 100% !important;
+    margin-bottom: 0 !important;
 }
 #roItemsTable th,
 #roItemsTable td {
-    border-right: 1px solid #dee2e6 !important;
-    border-bottom: 1px solid #dee2e6 !important;
     vertical-align: middle !important;
-    box-shadow: none !important;
-}
-#roItemsTable th:last-child,
-#roItemsTable td:last-child {
-    border-right: none !important;
+    border: 1px solid #dee2e6 !important;
+    background-clip: padding-box;
 }
 #roItemsTable thead th {
     background-color: #f8f9fa !important;
     border-bottom: 2px solid #dee2e6 !important;
 }
-#roItemsTable tbody tr:last-child td {
-    border-bottom: none !important;
-}
 .table-container {
     overflow: visible !important;
     position: relative;
+    border-radius: 0.375rem;
+}
+.table-container > .table {
+    border-radius: inherit;
+}
+.table-container thead th:first-child {
+    border-top-left-radius: 0.375rem;
+}
+.table-container thead th:last-child {
+    border-top-right-radius: 0.375rem;
+}
+.table-container tbody tr:last-child td:first-child {
+    border-bottom-left-radius: 0.375rem;
+}
+.table-container tbody tr:last-child td:last-child {
+    border-bottom-right-radius: 0.375rem;
 }
 .ro-item-row {
     position: relative;
@@ -543,23 +567,32 @@ function addNewItemRow(data = {}) {
     const rowId = `itemRow_${nextRowIndex}`;
     const tbody = document.getElementById('roItemsTableBody');
 
+    const isLuxury = parseInt(data.PPnBM || data.ppnbm || 0, 10) === 1;
+
     const tr = document.createElement('tr');
     tr.id = rowId;
     tr.className = 'ro-item-row';
+    tr.dataset.ppnbm = isLuxury ? '1' : (data.id_barang ? '0' : '0');
     tr.innerHTML = `
         <td class="text-center text-muted fw-bold row-number"></td>
         <td>
             <div class="ro-item-search-wrapper" id="wrapper_${rowId}">
                 <input type="hidden" class="item-id-barang" value="${data.id_barang || ''}">
+                <input type="hidden" class="item-ppnbm" value="${isLuxury ? '1' : '0'}">
                 <input type="hidden" class="item-harga" value="0">
-                <input type="text" class="form-control form-control-sm item-nama-barang" 
-                       placeholder="Ketik / cari nama barang..." 
-                       value="${data.nama_barang || ''}" 
-                       autocomplete="off" 
-                       onfocus="openItemDropdown('${rowId}')" 
-                       onclick="openItemDropdown('${rowId}')" 
-                       oninput="handleItemSearch('${rowId}')" 
-                       required>
+                <div class="position-relative">
+                    <input type="text" class="form-control form-control-sm item-nama-barang ${isLuxury ? 'pe-5' : ''}" 
+                           placeholder="Ketik / cari nama barang..." 
+                           value="${data.nama_barang || ''}" 
+                           autocomplete="off" 
+                           onfocus="openItemDropdown('${rowId}')" 
+                           onclick="openItemDropdown('${rowId}')" 
+                           oninput="handleItemSearch('${rowId}')" 
+                           required>
+                    <span class="luxury-badge-container position-absolute top-50 end-0 translate-middle-y me-2 ${isLuxury ? '' : 'd-none'}" style="pointer-events: none; z-index: 5;">
+                        <span class="badge bg-warning text-dark border border-warning-subtle fw-bold" style="font-size: 0.65rem;"><i class="bi bi-stars me-1"></i>MEWAH</span>
+                    </span>
+                </div>
                 <div class="ro-item-dropdown d-none" id="dropdown_${rowId}"></div>
             </div>
         </td>
@@ -583,11 +616,11 @@ function addNewItemRow(data = {}) {
                     <div class="input-group input-group-sm mb-2">
                         <span class="input-group-text bg-white py-1 px-2 border-end-0"><i class="bi bi-search text-muted" style="font-size: 0.75rem;"></i></span>
                         <input type="text" class="form-control form-control-sm border-start-0 ps-1 font-monospace text-uppercase" 
-                               id="satuanSearch_${rowId}" 
-                               placeholder="Cari / baru..." 
-                               autocomplete="off" 
-                               oninput="filterSatuanList('${rowId}')" 
-                               onkeydown="handleSatuanKeydown(event, '${rowId}')">
+                                id="satuanSearch_${rowId}" 
+                                placeholder="Cari / baru..." 
+                                autocomplete="off" 
+                                oninput="filterSatuanList('${rowId}')" 
+                                onkeydown="handleSatuanKeydown(event, '${rowId}')">
                     </div>
                     <div class="ro-satuan-list" id="satuanList_${rowId}"></div>
                 </div>
@@ -602,6 +635,7 @@ function addNewItemRow(data = {}) {
 
     tbody.appendChild(tr);
     reindexRows();
+    updateRoClassificationStatus();
     calculateGrandTotal();
 }
 
@@ -614,6 +648,7 @@ function removeItemRow(rowId) {
     const tr = document.getElementById(rowId);
     if (tr) tr.remove();
     reindexRows();
+    updateRoClassificationStatus();
     calculateGrandTotal();
 }
 
@@ -624,6 +659,60 @@ function reindexRows() {
         if (numCell) numCell.textContent = idx + 1;
     });
     document.getElementById('tabItemCountBadge').textContent = rows.length;
+}
+
+// -------------------------------------------------------------
+// KLASIFIKASI & ATURAN BARANG MEWAH VS REGULER
+// -------------------------------------------------------------
+function getRoCurrentClassification(excludeRowId = null) {
+    const rows = document.querySelectorAll('.ro-item-row');
+    let hasLuxury = false;
+    let hasNonLuxury = false;
+
+    rows.forEach(r => {
+        if (excludeRowId && r.id === excludeRowId) return;
+        const idBarang = r.querySelector('.item-id-barang')?.value;
+        const namaBarang = r.querySelector('.item-nama-barang')?.value.trim();
+        const ppnbm = parseInt(r.querySelector('.item-ppnbm')?.value || '0', 10);
+
+        if (idBarang || namaBarang) {
+            if (ppnbm === 1) {
+                hasLuxury = true;
+            } else {
+                hasNonLuxury = true;
+            }
+        }
+    });
+
+    if (hasLuxury && hasNonLuxury) return 'MIXED';
+    if (hasLuxury) return 'LUXURY';
+    if (hasNonLuxury) return 'REGULAR';
+    return 'EMPTY';
+}
+
+function updateRoClassificationStatus() {
+    const status = getRoCurrentClassification();
+    const banner = document.getElementById('roClassificationBanner');
+    const icon = document.getElementById('roClassificationIcon');
+    const text = document.getElementById('roClassificationText');
+    if (!banner || !icon || !text) return;
+
+    if (status === 'LUXURY') {
+        banner.className = 'alert alert-warning d-flex align-items-center py-2 px-3 mb-3 border-0 rounded-3 shadow-none text-dark small';
+        banner.style.backgroundColor = '#fff3cd';
+        icon.className = 'bi bi-stars text-warning fs-6 me-2';
+        text.innerHTML = '<strong>RO Khusus Barang Mewah (PPnBM):</strong> Dokumen ini khusus barang mewah.';
+    } else if (status === 'MIXED') {
+        banner.className = 'alert alert-danger d-flex align-items-center py-2 px-3 mb-3 border-0 rounded-3 shadow-none text-dark small';
+        banner.style.backgroundColor = '#f8d7da';
+        icon.className = 'bi bi-exclamation-octagon-fill text-danger fs-6 me-2';
+        text.innerHTML = '<strong>Peringatan:</strong> Barang Mewah (PPnBM) & Non-Mewah tidak boleh digabung dalam satu RO.';
+    } else {
+        banner.className = 'alert alert-warning d-flex align-items-center py-2 px-3 mb-3 border-0 rounded-3 shadow-none text-dark small';
+        banner.style.backgroundColor = '#fff3cd';
+        icon.className = 'bi bi-exclamation-triangle-fill text-warning me-2 fs-6';
+        text.innerHTML = 'Barang baru termasuk mewah harus input di master barang';
+    }
 }
 
 // -------------------------------------------------------------
@@ -675,11 +764,14 @@ function renderItemDropdown(rowId, items, query = '') {
     const dropdown = document.getElementById(`dropdown_${rowId}`);
     if (!dropdown) return;
 
+    const currentRoType = getRoCurrentClassification(rowId);
+
     let html = '';
     const cleanQ = query.trim().toLowerCase();
 
     if (items.length > 0) {
         items.forEach(item => {
+            const isItemLuxury = parseInt(item.PPnBM ?? item.ppnbm ?? 0, 10) === 1;
             const imgSrc = item.foto1 ? `${BASE_URL}/${item.foto1}` : '';
             const imgHtml = imgSrc 
                 ? `<img src="${imgSrc}" class="rounded border me-2 flex-shrink-0" style="width: 42px; height: 42px; object-fit: cover;" onerror="this.outerHTML='<div class=\\\'rounded border bg-light text-secondary d-flex align-items-center justify-content-center me-2 flex-shrink-0\\\' style=\\\'width: 42px; height: 42px;\\\'><i class=\\\'bi bi-box-seam fs-5\\\'></i></div>'">` 
@@ -688,15 +780,34 @@ function renderItemDropdown(rowId, items, query = '') {
             const namaMerk = item.nama_merk || 'Umum';
             const namaKategori = item.nama_kategori || 'Material';
 
+            let conflictBadge = '';
+            let isConflict = false;
+            if (currentRoType === 'LUXURY' && !isItemLuxury) {
+                isConflict = true;
+                conflictBadge = `<span class="badge bg-danger-subtle text-danger ms-auto"><i class="bi bi-x-circle me-1"></i>Bukan Mewah</span>`;
+            } else if (currentRoType === 'REGULAR' && isItemLuxury) {
+                isConflict = true;
+                conflictBadge = `<span class="badge bg-danger-subtle text-danger ms-auto"><i class="bi bi-x-circle me-1"></i>Barang Mewah</span>`;
+            }
+
+            const luxuryTag = isItemLuxury 
+                ? `<span class="badge bg-warning text-dark border border-warning-subtle fw-bold"><i class="bi bi-stars me-1"></i>MEWAH (PPnBM)</span>` 
+                : '';
+
             html += `
-                <div class="ro-item-dropdown-item d-flex align-items-center p-2" onclick="selectMasterBarang('${rowId}', ${item.id_barang}, '${item.kode_barang.replace(/'/g, "\\'")}', '${item.nama_barang.replace(/'/g, "\\'")}', '${item.satuan}')">
+                <div class="ro-item-dropdown-item d-flex align-items-center p-2 ${isConflict ? 'opacity-75 bg-light' : ''}" 
+                     onclick="selectMasterBarang('${rowId}', ${item.id_barang}, '${item.kode_barang.replace(/'/g, "\\'")}', '${item.nama_barang.replace(/'/g, "\\'")}', '${item.satuan}', ${isItemLuxury ? 1 : 0})">
                     ${imgHtml}
                     <div class="flex-grow-1 overflow-hidden">
-                        <div class="fw-bold text-dark small mb-1 text-truncate">${item.nama_barang}</div>
+                        <div class="fw-bold text-dark small mb-1 d-flex align-items-center justify-content-between">
+                            <span class="text-truncate">${item.nama_barang}</span>
+                            ${conflictBadge}
+                        </div>
                         <div class="d-flex align-items-center flex-wrap gap-1" style="font-size: 0.72rem;">
                             <span class="badge bg-light text-dark border font-monospace">${item.kode_barang || 'BRG'}</span>
                             <span class="badge bg-secondary-subtle text-secondary"><i class="bi bi-tag-fill me-1"></i>${namaMerk}</span>
                             <span class="badge bg-primary-subtle text-primary">${namaKategori}</span>
+                            ${luxuryTag}
                         </div>
                     </div>
                 </div>
@@ -707,12 +818,25 @@ function renderItemDropdown(rowId, items, query = '') {
     }
 
     if (cleanQ) {
-        html += `
-            <div class="ro-item-dropdown-item text-primary bg-primary-subtle border-top border-primary-subtle py-2 px-3 d-flex align-items-center justify-content-between" onclick="useCustomItemName('${rowId}', '${query.replace(/'/g, "\\'")}')">
-                <span class="small"><i class="bi bi-pencil-square me-1"></i> Gunakan Barang Kustom: <strong>"${query}"</strong></span>
-                <span class="badge bg-primary text-white" style="font-size: 0.68rem;">Input Manual</span>
-            </div>
-        `;
+        let allowCustom = true;
+        if (currentRoType === 'LUXURY') {
+            allowCustom = false;
+        }
+
+        if (allowCustom) {
+            html += `
+                <div class="ro-item-dropdown-item text-primary bg-primary-subtle border-top border-primary-subtle py-2 px-3 d-flex align-items-center justify-content-between" onclick="useCustomItemName('${rowId}', '${query.replace(/'/g, "\\'")}')">
+                    <span class="small"><i class="bi bi-pencil-square me-1"></i> Gunakan Barang Kustom: <strong>"${query}"</strong></span>
+                    <span class="badge bg-primary text-white" style="font-size: 0.68rem;">Input Manual</span>
+                </div>
+            `;
+        } else {
+            html += `
+                <div class="p-2 text-muted bg-light border-top text-center small">
+                    <i class="bi bi-info-circle me-1"></i> Barang input manual tidak dapat digabung ke RO Mewah.
+                </div>
+            `;
+        }
     }
 
     dropdown.innerHTML = html;
@@ -735,24 +859,53 @@ function isBarangAlreadySelected(idBarang, namaBarang, currentRowId) {
     return false;
 }
 
-function selectMasterBarang(rowId, idBarang, kode, nama, satuan) {
+function selectMasterBarang(rowId, idBarang, kode, nama, satuan, isLuxury = 0) {
     const row = document.getElementById(rowId);
     if (!row) return;
 
-    // CEK VALIDASI GANDA
-    if (isBarangAlreadySelected(idBarang, nama, rowId)) {
-        showToast(`Barang "${nama}" sudah dipilih pada baris lain. Silakan ubah kuantitas pada baris yang sudah ada.`, 'warning');
-        row.querySelector('.item-id-barang').value = '';
-        row.querySelector('.item-nama-barang').value = '';
-        row.querySelector('.item-kode-barang').value = '';
+    // CEK ATURAN TIDAK BISA MEMUAT MEWAH & NON-MEWAH DALAM 1 RO
+    const currentClassification = getRoCurrentClassification(rowId);
+    if (currentClassification === 'LUXURY' && !isLuxury) {
+        showToast('Barang Mewah (PPnBM) & Non-Mewah tidak boleh digabung!', 'error');
+        document.getElementById(`dropdown_${rowId}`)?.classList.add('d-none');
+        return;
+    }
+    if (currentClassification === 'REGULAR' && isLuxury) {
+        showToast('Barang Mewah (PPnBM) & Non-Mewah tidak boleh digabung!', 'error');
         document.getElementById(`dropdown_${rowId}`)?.classList.add('d-none');
         return;
     }
 
+    // CEK VALIDASI GANDA
+    if (isBarangAlreadySelected(idBarang, nama, rowId)) {
+        showToast(`Barang "${nama}" sudah dipilih pada baris lain.`, 'warning');
+        row.querySelector('.item-id-barang').value = '';
+        row.querySelector('.item-nama-barang').value = '';
+        row.querySelector('.item-kode-barang').value = '';
+        row.querySelector('.item-ppnbm').value = '0';
+        row.querySelector('.luxury-badge-container')?.classList.add('d-none');
+        row.querySelector('.item-nama-barang')?.classList.remove('pe-5');
+        document.getElementById(`dropdown_${rowId}`)?.classList.add('d-none');
+        return;
+    }
+
+    const inputNama = row.querySelector('.item-nama-barang');
     row.querySelector('.item-id-barang').value = idBarang;
-    row.querySelector('.item-nama-barang').value = nama;
+    if (inputNama) inputNama.value = nama;
     row.querySelector('.item-kode-barang').value = kode;
+    row.querySelector('.item-ppnbm').value = isLuxury ? '1' : '0';
     
+    const badgeContainer = row.querySelector('.luxury-badge-container');
+    if (badgeContainer) {
+        if (isLuxury) {
+            badgeContainer.classList.remove('d-none');
+            if (inputNama) inputNama.classList.add('pe-5');
+        } else {
+            badgeContainer.classList.add('d-none');
+            if (inputNama) inputNama.classList.remove('pe-5');
+        }
+    }
+
     const chosenSatuan = satuan ? satuan.toUpperCase() : 'PCS';
     row.querySelector('.item-satuan').value = chosenSatuan;
     const btn = document.getElementById(`satuanBtn_${rowId}`);
@@ -761,6 +914,7 @@ function selectMasterBarang(rowId, idBarang, kode, nama, satuan) {
     row.querySelector('.item-harga').value = 0;
 
     document.getElementById(`dropdown_${rowId}`)?.classList.add('d-none');
+    updateRoClassificationStatus();
     calculateGrandTotal();
 }
 
@@ -768,19 +922,36 @@ function useCustomItemName(rowId, customName) {
     const row = document.getElementById(rowId);
     if (!row) return;
 
-    if (isBarangAlreadySelected(null, customName, rowId)) {
-        showToast(`Barang "${customName}" sudah ada pada baris lain. Silakan ubah kuantitas pada baris yang sudah ada.`, 'warning');
-        row.querySelector('.item-id-barang').value = '';
-        row.querySelector('.item-nama-barang').value = '';
-        row.querySelector('.item-kode-barang').value = '';
+    const currentClassification = getRoCurrentClassification(rowId);
+    if (currentClassification === 'LUXURY') {
+        showToast('Barang input manual tidak dapat digabung ke RO Barang Mewah.', 'error');
         document.getElementById(`dropdown_${rowId}`)?.classList.add('d-none');
         return;
     }
 
+    if (isBarangAlreadySelected(null, customName, rowId)) {
+        showToast(`Barang "${customName}" sudah ada pada baris lain.`, 'warning');
+        row.querySelector('.item-id-barang').value = '';
+        row.querySelector('.item-nama-barang').value = '';
+        row.querySelector('.item-kode-barang').value = '';
+        row.querySelector('.item-ppnbm').value = '0';
+        row.querySelector('.luxury-badge-container')?.classList.add('d-none');
+        row.querySelector('.item-nama-barang')?.classList.remove('pe-5');
+        document.getElementById(`dropdown_${rowId}`)?.classList.add('d-none');
+        return;
+    }
+
+    const inputNama = row.querySelector('.item-nama-barang');
     row.querySelector('.item-id-barang').value = '';
-    row.querySelector('.item-nama-barang').value = customName;
+    if (inputNama) {
+        inputNama.value = customName;
+        inputNama.classList.remove('pe-5');
+    }
+    row.querySelector('.item-ppnbm').value = '0';
+    row.querySelector('.luxury-badge-container')?.classList.add('d-none');
     row.querySelector('.item-harga').value = 0;
     document.getElementById(`dropdown_${rowId}`)?.classList.add('d-none');
+    updateRoClassificationStatus();
     calculateGrandTotal();
 }
 
@@ -995,6 +1166,15 @@ async function submitRequestOrder(targetStatus = 'TERKIRIM') {
                 hasError = true;
                 break;
             }
+        }
+
+        // Validasi Aturan Barang Mewah vs Non-Mewah
+        const currentClassification = getRoCurrentClassification();
+        if (currentClassification === 'MIXED') {
+            showToast('Barang Mewah (PPnBM) & Non-Mewah tidak boleh digabung dalam satu RO.', 'error');
+            goToTab('tab-daftar-kebutuhan');
+            hasError = true;
+            break;
         }
 
         items.push({

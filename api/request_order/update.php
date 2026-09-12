@@ -106,6 +106,39 @@ foreach ($items as $idx => $item) {
     ];
 }
 
+// Validasi Aturan PPnBM: Tidak boleh menggabungkan barang mewah & non-mewah dalam 1 RO
+$hasLuxuryItem = false;
+$hasNonLuxuryItem = false;
+$checkBarangIds = [];
+
+foreach ($cleanItems as $cItem) {
+    if (!empty($cItem['id_barang'])) {
+        $checkBarangIds[] = (int)$cItem['id_barang'];
+    } else {
+        // Barang kustom manual non-master selalu dikategorikan sebagai non-mewah
+        $hasNonLuxuryItem = true;
+    }
+}
+
+if (!empty($checkBarangIds)) {
+    $checkBarangIds = array_unique($checkBarangIds);
+    $inList = implode(',', $checkBarangIds);
+    $resPpnbm = $conn->query("SELECT id_barang, PPnBM FROM barang WHERE id_barang IN ($inList)");
+    if ($resPpnbm) {
+        while ($rowP = $resPpnbm->fetch_assoc()) {
+            if ((int)$rowP['PPnBM'] === 1) {
+                $hasLuxuryItem = true;
+            } else {
+                $hasNonLuxuryItem = true;
+            }
+        }
+    }
+}
+
+if ($hasLuxuryItem && $hasNonLuxuryItem) {
+    jsonResponse(false, 'Barang Mewah (PPnBM) & Non-Mewah tidak boleh digabung dalam satu RO.', null, 422);
+}
+
 // 3. Mulai Database Transaction
 $conn->begin_transaction();
 
