@@ -10,7 +10,7 @@ require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../config/activity_logger.php';
 require_once __DIR__ . '/../middleware/auth.php';
 
-$user = apiAuth([ROLE_PURCHASING, ROLE_ADMIN, ROLE_MANAGER]);
+$user = apiAuth([ROLE_PURCHASING, ROLE_FINANCE, ROLE_ADMIN, ROLE_MANAGER, ROLE_LOGISTIK]);
 $method = $_SERVER['REQUEST_METHOD'];
 
 function sendJson($success, $message, $data = null, $code = 200) {
@@ -47,12 +47,13 @@ if ($method === 'GET') {
     // Detail Tunggal
     if ($idFaktur > 0) {
         $sql = "SELECT fp.*,
-                       po.nomor_po, po.tanggal_po,
+                       po.nomor_po, po.tanggal_po, po.total_termasuk_pajak, po.total_termasuk_PPnBM, po.pajak_PPnBM,
                        rcv.nomor_rcv, rcv.nomor_sj AS nomor_sj_rcv, rcv.tanggal_diterima AS tanggal_rcv_diterima,
                        rp.nomor_po_retur, rp.kompensasi AS retur_kompensasi, rp.total AS retur_total,
                        v.kode_vendor, v.nama_perusahaan AS nama_vendor, v.no_telepon AS telepon_vendor, v.email AS email_vendor, v.alamat AS alamat_vendor,
                        s.nama_site, s.kode_site, s.alamat AS alamat_site,
-                       k.nama_karyawan AS nama_pembuat
+                       k.nama_karyawan AS nama_pembuat,
+                       j.nama_jabatan, dvs.nama_divisi
                 FROM faktur_po fp
                 JOIN purchase_order po ON fp.id_po = po.id_po
                 JOIN receiving_order rcv ON fp.id_rcv = rcv.id_rcv
@@ -60,6 +61,8 @@ if ($method === 'GET') {
                 JOIN vendor v ON fp.id_vendor = v.id_vendor
                 JOIN site s ON fp.id_site = s.id_site
                 LEFT JOIN karyawan k ON fp.id_karyawan = k.id_karyawan
+                LEFT JOIN jabatan j ON k.id_jabatan = j.id_jabatan
+                LEFT JOIN divisi dvs ON j.id_divisi = dvs.id_divisi
                 WHERE fp.id_faktur = ? LIMIT 1";
 
         $stmt = $conn->prepare($sql);
@@ -73,7 +76,7 @@ if ($method === 'GET') {
         }
 
         // Ambil Detail Items
-        $sqlD = "SELECT fpd.*, b.kode_barang, b.nama_barang, b.satuan AS satuan_master,
+        $sqlD = "SELECT fpd.*, b.kode_barang, b.nama_barang, b.satuan AS satuan_master, b.PPnBM, b.rate_PPnBM,
                         kat.nama_kategori, mrk.nama_merk
                  FROM faktur_po_detail fpd
                  JOIN barang b ON fpd.id_barang = b.id_barang

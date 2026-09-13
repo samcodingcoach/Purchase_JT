@@ -1,8 +1,8 @@
 <?php
 /**
- * Halaman Cetak Dokumen Faktur Purchase Order (Faktur Pembelian / 3-Way Matching)
+ * Halaman Cetak Dokumen Faktur Purchase Order (Faktur Pembelian)
  * Path: admin/pages/faktur_po/print.php
- * Format: Terintegrasi External CSS (styles/print_document.css) & Standar B/W Siap Cetak
+ * Format: Terintegrasi API & External CSS (styles/print_document.css)
  */
 
 require_once __DIR__ . '/../../../config/config.php';
@@ -17,109 +17,6 @@ if ($idFaktur <= 0) {
     die("ID Faktur Purchase Order tidak valid.");
 }
 
-// 1. QUERY MASTER FAKTUR PURCHASE ORDER
-$sqlMaster = "SELECT
-	faktur_po.id_faktur,
-	faktur_po.nomor_faktur, 
-	faktur_po.nomor_faktur_vendor, 
-	faktur_po.nomor_faktur_pajak, 
-	faktur_po.tanggal_faktur_vendor, 
-	faktur_po.tanggal_terima_faktur_vendor, 
-	faktur_po.term_of_payment, 
-	faktur_po.tanggal_jatuh_tempo, 
-	purchase_order.id_po,
-	purchase_order.nomor_po, 
-	purchase_order.tanggal_po,
-	purchase_order.total_termasuk_pajak,
-	purchase_order.total_termasuk_PPnBM,
-	purchase_order.pajak_PPnBM,
-	receiving_order.id_rcv,
-	receiving_order.nomor_rcv, 
-	receiving_order.nomor_sj AS nomor_sj_rcv,
-	receiving_order.tanggal_diterima AS tanggal_rcv,
-	vendor.id_vendor,
-	vendor.kode_vendor,
-	vendor.nama_perusahaan AS nama_vendor,
-	vendor.alamat AS alamat_vendor,
-	vendor.no_telepon AS telepon_vendor,
-	vendor.email AS email_vendor,
-	site.id_site,
-	site.nama_site, 
-	faktur_po.nama_bank, 
-	faktur_po.nomor_rekening, 
-	faktur_po.atas_nama_rekening, 
-	karyawan.nama_karyawan, 
-	jabatan.nama_jabatan, 
-	divisi.nama_divisi, 
-	faktur_po.subtotal_po, 
-	faktur_po.subtotal_diterima,
-	faktur_po.nilai_retur,
-	faktur_po.diskon, 
-	faktur_po.dpp, 
-	faktur_po.rate_pajak, 
-	faktur_po.nominal_pajak, 
-	faktur_po.rate_ppnbm,
-	faktur_po.nominal_ppnbm,
-	faktur_po.biaya_lain,
-	faktur_po.total_tagihan, 
-	faktur_po.terbayar,
-	faktur_po.sisa_tagihan,
-	faktur_po.`status`, 
-	faktur_po.keterangan,
-	faktur_po.created_at
-FROM
-	faktur_po
-	INNER JOIN purchase_order ON faktur_po.id_po = purchase_order.id_po
-	INNER JOIN receiving_order ON faktur_po.id_rcv = receiving_order.id_rcv
-	INNER JOIN vendor ON faktur_po.id_vendor = vendor.id_vendor
-	INNER JOIN site ON faktur_po.id_site = site.id_site
-	INNER JOIN karyawan ON faktur_po.id_karyawan = karyawan.id_karyawan
-	LEFT JOIN jabatan ON karyawan.id_jabatan = jabatan.id_jabatan
-	LEFT JOIN divisi ON jabatan.id_divisi = divisi.id_divisi
-WHERE faktur_po.id_faktur = ? LIMIT 1";
-
-$stmtM = $conn->prepare($sqlMaster);
-$stmtM->bind_param("i", $idFaktur);
-$stmtM->execute();
-$faktur = $stmtM->get_result()->fetch_assoc();
-$stmtM->close();
-
-if (!$faktur) {
-    die("Dokumen Faktur Purchase Order tidak ditemukan.");
-}
-
-// 2. QUERY DETAIL BARANG FAKTUR PURCHASE ORDER
-$sqlDetail = "SELECT
-	faktur_po_detail.id_faktur_detail,
-	faktur_po_detail.id_barang, 
-	barang.kode_barang, 
-	faktur_po_detail.qty_po, 
-	faktur_po_detail.qty_rcv, 
-	faktur_po_detail.qty_retur, 
-	faktur_po_detail.satuan, 
-	faktur_po_detail.harga_satuan, 
-	faktur_po_detail.diskon_item, 
-	faktur_po_detail.subtotal, 
-	faktur_po_detail.keterangan, 
-	barang.nama_barang, 
-	barang.PPnBM,
-	barang.rate_PPnBM,
-	merk_barang.nama_merk, 
-	kategori_barang.nama_kategori
-FROM
-	faktur_po_detail
-	INNER JOIN barang ON faktur_po_detail.id_barang = barang.id_barang
-	LEFT JOIN merk_barang ON barang.id_merk = merk_barang.id_merk
-	LEFT JOIN kategori_barang ON barang.id_kategori = kategori_barang.id_kategori
-WHERE faktur_po_detail.id_faktur = ?
-ORDER BY faktur_po_detail.id_faktur_detail ASC";
-
-$stmtD = $conn->prepare($sqlDetail);
-$stmtD->bind_param("i", $idFaktur);
-$stmtD->execute();
-$items = $stmtD->get_result()->fetch_all(MYSQLI_ASSOC);
-$stmtD->close();
-
 // Ambil Data Profil Perusahaan
 $profile = getCompanyProfile($conn);
 $companyName = !empty($profile['nama']) ? $profile['nama'] : 'PT Jaya Teknis Indonesia';
@@ -129,64 +26,13 @@ $companyPhone = !empty($profile['telepon1']) ? $profile['telepon1'] : '';
 $companyWa = !empty($profile['whatsapp']) ? $profile['whatsapp'] : '';
 $companyEmail = !empty($profile['email']) ? $profile['email'] : 'purchasing@jayateknis.co.id';
 $companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
-
-// Helper Functions
-function formatRupiah($num) {
-    return 'Rp ' . number_format((float)$num, 0, ',', '.');
-}
-function formatTgl($dateStr) {
-    if (!$dateStr || $dateStr === '0000-00-00') return '-';
-    return date('d/m/Y', strtotime($dateStr));
-}
-function formatTglPanjang($dateStr) {
-    if (!$dateStr || $dateStr === '0000-00-00') return '-';
-    $bulan = [
-        1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni',
-        7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
-    ];
-    $time = strtotime($dateStr);
-    $d = date('j', $time);
-    $m = (int)date('n', $time);
-    $y = date('Y', $time);
-    return $d . ' ' . ($bulan[$m] ?? date('F', $time)) . ' ' . $y;
-}
-function terbilang($angka) {
-    $angka = abs((float)$angka);
-    $satuan = ["", "Satu", "Dua", "Tiga", "Empat", "Lima", "Enam", "Tujuh", "Delapan", "Sembilan", "Sepuluh", "Sebelas"];
-    if ($angka < 12) return " " . $satuan[(int)$angka];
-    if ($angka < 20) return terbilang($angka - 10) . " Belas";
-    if ($angka < 100) return terbilang($angka / 10) . " Puluh" . terbilang($angka % 10);
-    if ($angka < 200) return " Seratus" . terbilang($angka - 100);
-    if ($angka < 1000) return terbilang($angka / 100) . " Ratus" . terbilang($angka % 100);
-    if ($angka < 2000) return " Seribu" . terbilang($angka - 1000);
-    if ($angka < 1000000) return terbilang($angka / 1000) . " Ribu" . terbilang($angka % 1000);
-    if ($angka < 1000000000) return terbilang($angka / 1000000) . " Juta" . terbilang($angka % 1000000);
-    if ($angka < 1000000000000) return terbilang($angka / 1000000000) . " Miliar" . terbilang($angka % 1000000000);
-    if ($angka < 1000000000000000) return terbilang($angka / 1000000000000) . " Triliun" . terbilang($angka % 1000000000000);
-    return "";
-}
-
-$isTermasukPajak = ((int)($faktur['total_termasuk_pajak'] ?? 0) === 1);
-$isTermasukPpnbm = ((int)($faktur['total_termasuk_PPnBM'] ?? 0) === 1);
-$ratePajak = (int)($faktur['rate_pajak'] ?? 0);
-$ratePpnbm = (int)($faktur['rate_ppnbm'] ?? ($faktur['pajak_PPnBM'] ?? 0));
-$subtotalPo = (float)$faktur['subtotal_po'];
-$subtotalRcv = (float)$faktur['subtotal_diterima'];
-$nilaiRetur = (float)$faktur['nilai_retur'];
-$diskon = (float)$faktur['diskon'];
-$dpp = (float)$faktur['dpp'];
-$nominalPajak = (float)$faktur['nominal_pajak'];
-$nominalPpnbm = (float)($faktur['nominal_ppnbm'] ?? 0);
-$biayaLain = (float)$faktur['biaya_lain'];
-$totalTagihan = (float)$faktur['total_tagihan'];
-$terbilangTotal = trim(terbilang($totalTagihan)) . " Rupiah";
 ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Faktur Purchase Order - <?= htmlspecialchars($faktur['nomor_faktur']) ?></title>
+    <title>Faktur Purchase Order</title>
     <!-- Bootstrap CSS & Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
@@ -202,8 +48,8 @@ $terbilangTotal = trim(terbilang($totalTagihan)) . " Rupiah";
             <span class="fw-bold fs-6">
                 <i class="bi bi-printer text-info me-1"></i> Cetak Faktur Purchase Order
             </span>
-            <span class="badge bg-secondary font-monospace"><?= htmlspecialchars($faktur['nomor_faktur']) ?></span>
-            <span class="badge bg-primary"><?= htmlspecialchars($faktur['status']) ?></span>
+            <span class="badge bg-secondary font-monospace" id="toolbarNomorFaktur">...</span>
+            <span class="badge bg-primary" id="toolbarStatusFaktur">...</span>
         </div>
         
         <div class="d-flex align-items-center gap-2">
@@ -294,10 +140,10 @@ $terbilangTotal = trim(terbilang($totalTagihan)) . " Rupiah";
 
         <div class="doc-meta-box">
             <div class="box-row-lbl">No. Faktur Sistem</div>
-            <div class="box-row-val font-monospace"><?= htmlspecialchars($faktur['nomor_faktur']) ?></div>
+            <div class="box-row-val font-monospace" id="docNomorFaktur">-</div>
             <div class="box-divider"></div>
             <div class="box-row-lbl">Tanggal Faktur</div>
-            <div class="box-row-val font-monospace"><?= formatTglPanjang($faktur['tanggal_faktur_vendor']) ?></div>
+            <div class="box-row-val font-monospace" id="docTanggalFaktur">-</div>
         </div>
     </div>
 
@@ -306,29 +152,29 @@ $terbilangTotal = trim(terbilang($totalTagihan)) . " Rupiah";
         <!-- Kolom Kiri: Vendor & Referensi Dokumen -->
         <div class="info-col-left">
             <div class="small text-muted mb-1" style="font-size: 11px;">Tagihan Dari Rekanan Vendor:</div>
-            <div class="fw-bold text-dark mb-1" style="font-size: 13px;"><?= htmlspecialchars($faktur['nama_vendor']) ?></div>
-            <div class="text-dark mb-2" style="font-size: 11.5px; line-height: 1.35;"><?= htmlspecialchars($faktur['alamat_vendor'] ?? '-') ?></div>
+            <div class="fw-bold text-dark mb-1" style="font-size: 13px;" id="docNamaVendor">-</div>
+            <div class="text-dark mb-2" style="font-size: 11.5px; line-height: 1.35;" id="docAlamatVendor">-</div>
             
             <table class="table-meta-details mt-2">
                 <tr>
                     <td class="lbl">No. Invoice Vendor</td>
                     <td class="colon">:</td>
-                    <td class="val font-monospace fw-bold"><?= htmlspecialchars($faktur['nomor_faktur_vendor'] ?: '-') ?></td>
+                    <td class="val font-monospace fw-bold" id="docNomorFakturVendor">-</td>
                 </tr>
                 <tr>
                     <td class="lbl">No. Faktur Pajak</td>
                     <td class="colon">:</td>
-                    <td class="val font-monospace"><?= htmlspecialchars($faktur['nomor_faktur_pajak'] ?: '-') ?></td>
+                    <td class="val font-monospace" id="docNomorFakturPajak">-</td>
                 </tr>
                 <tr>
                     <td class="lbl">No. Purchase Order (PO)</td>
                     <td class="colon">:</td>
-                    <td class="val font-monospace"><?= htmlspecialchars($faktur['nomor_po'] ?: '-') ?></td>
+                    <td class="val font-monospace" id="docNomorPo">-</td>
                 </tr>
                 <tr>
                     <td class="lbl">No. Penerimaan (RCV)</td>
                     <td class="colon">:</td>
-                    <td class="val font-monospace"><?= htmlspecialchars($faktur['nomor_rcv'] ?: '-') ?> (SJ: <?= htmlspecialchars($faktur['nomor_sj_rcv'] ?: '-') ?>)</td>
+                    <td class="val font-monospace" id="docNomorRcv">-</td>
                 </tr>
             </table>
         </div>
@@ -339,36 +185,33 @@ $terbilangTotal = trim(terbilang($totalTagihan)) . " Rupiah";
                 <tr>
                     <td class="lbl">Term of Payment (TOP)</td>
                     <td class="colon">:</td>
-                    <td class="val fw-semibold"><?= (int)$faktur['term_of_payment'] ?> Hari</td>
+                    <td class="val fw-semibold" id="docTop">-</td>
                 </tr>
                 <tr>
                     <td class="lbl">Tgl Jatuh Tempo</td>
                     <td class="colon">:</td>
-                    <td class="val font-monospace fw-bold text-dark"><?= formatTglPanjang($faktur['tanggal_jatuh_tempo']) ?></td>
+                    <td class="val font-monospace fw-bold text-dark" id="docTanggalJatuhTempo">-</td>
                 </tr>
                 <tr>
                     <td class="lbl">Rekening Vendor</td>
                     <td class="colon">:</td>
-                    <td class="val font-monospace">
-                        <?= htmlspecialchars($faktur['nama_bank'] ?: '-') ?> &bull; <strong><?= htmlspecialchars($faktur['nomor_rekening'] ?: '-') ?></strong><br>
-                        <span class="text-muted" style="font-size: 10.5px;">a.n. <?= htmlspecialchars($faktur['atas_nama_rekening'] ?: $faktur['nama_vendor']) ?></span>
-                    </td>
+                    <td class="val font-monospace" id="docRekeningVendor">-</td>
                 </tr>
                 <tr>
                     <td class="lbl">Site Tujuan</td>
                     <td class="colon">:</td>
-                    <td class="val"><?= htmlspecialchars($faktur['nama_site'] ?: '-') ?></td>
+                    <td class="val" id="docNamaSite">-</td>
                 </tr>
                 <tr>
                     <td class="lbl">Status Tagihan</td>
                     <td class="colon">:</td>
-                    <td class="val fw-bold font-monospace">[ <?= htmlspecialchars($faktur['status']) ?> ]</td>
+                    <td class="val fw-bold font-monospace" id="docStatus">-</td>
                 </tr>
             </table>
         </div>
     </div>
 
-    <!-- TABEL RINCIAN BARANG (BERDASARKAN PENERIMAAN BARANG) -->
+    <!-- TABEL RINCIAN BARANG -->
     <div class="table-title fw-bold text-dark mb-1" style="font-size: 11px; text-transform: uppercase;">
         Rincian Barang &amp; Penagihan Berdasarkan Penerimaan:
     </div>
@@ -387,47 +230,10 @@ $terbilangTotal = trim(terbilang($totalTagihan)) . " Rupiah";
                 <th style="width: 110px;" class="text-end">SUBTOTAL</th>
             </tr>
         </thead>
-        <tbody>
-            <?php if (empty($items)): ?>
-                <tr>
-                    <td colspan="10" class="text-center py-3 text-muted">Tidak ada rincian barang.</td>
-                </tr>
-            <?php else: ?>
-                <?php foreach ($items as $idx => $it): 
-                    $qtyPo = (float)$it['qty_po'];
-                    $qtyRcv = (float)$it['qty_rcv'];
-                    $qtyRet = (float)$it['qty_retur'];
-                    $harga = (float)$it['harga_satuan'];
-                    $disc = (float)$it['diskon_item'];
-                    $sub = (float)$it['subtotal'];
-                    $isItemPpnbm = ((int)($it['PPnBM'] ?? 0) === 1 || (float)($it['rate_PPnBM'] ?? 0) > 0);
-                    $itemPpnbmRate = (float)($it['rate_PPnBM'] ?: $ratePpnbm);
-                ?>
-                <tr>
-                    <td class="text-center font-monospace"><?= $idx + 1 ?></td>
-                    <td class="font-monospace"><?= htmlspecialchars($it['kode_barang'] ?: '-') ?></td>
-                    <td>
-                        <strong class="text-dark"><?= htmlspecialchars($it['nama_barang']) ?></strong>
-                        <?php if (!empty($it['nama_kategori']) && $it['nama_kategori'] !== 'Umum'): ?>
-                            <span class="text-muted small" style="font-size: 10px;">(<?= htmlspecialchars($it['nama_kategori']) ?>)</span>
-                        <?php endif; ?>
-                        <?php if ($isItemPpnbm): ?>
-                            <span class="badge bg-light text-dark border ms-1" style="font-size: 9px;">PPnBM <?= $itemPpnbmRate ?>%</span>
-                        <?php endif; ?>
-                        <?php if (!empty($it['keterangan'])): ?>
-                            <div class="text-muted small" style="font-size: 10px;"><?= htmlspecialchars($it['keterangan']) ?></div>
-                        <?php endif; ?>
-                    </td>
-                    <td class="text-center font-monospace"><?= $qtyPo ?></td>
-                    <td class="text-center font-monospace fw-bold text-dark"><?= $qtyRcv ?></td>
-                    <td class="text-center font-monospace"><?= $qtyRet > 0 ? $qtyRet : '-' ?></td>
-                    <td class="text-center"><?= htmlspecialchars($it['satuan'] ?: 'Unit') ?></td>
-                    <td class="text-end font-monospace"><?= number_format($harga, 0, ',', '.') ?></td>
-                    <td class="text-end font-monospace"><?= $disc > 0 ? number_format($disc, 0, ',', '.') : '-' ?></td>
-                    <td class="text-end font-monospace fw-bold text-dark"><?= number_format($sub, 0, ',', '.') ?></td>
-                </tr>
-                <?php endforeach; ?>
-            <?php endif; ?>
+        <tbody id="docItemsTableBody">
+            <tr>
+                <td colspan="10" class="text-center py-3 text-muted">Memuat rincian barang...</td>
+            </tr>
         </tbody>
     </table>
 
@@ -437,16 +243,14 @@ $terbilangTotal = trim(terbilang($totalTagihan)) . " Rupiah";
         <div class="notes-column">
             <div class="notes-card">
                 <div class="notes-title">Terbilang:</div>
-                <div class="fw-bold text-dark font-monospace mb-2" style="font-size: 11.5px; line-height: 1.4;">
-                    # <?= htmlspecialchars($terbilangTotal) ?> #
+                <div class="fw-bold text-dark font-monospace mb-2" style="font-size: 11.5px; line-height: 1.4;" id="docTerbilangTotal">
+                    # - #
                 </div>
                 
-                <?php if (!empty($faktur['keterangan'])): ?>
-                    <div class="pt-2 border-top border-dark" style="font-size: 11px;">
-                        <strong>Catatan Faktur:</strong><br>
-                        <?= nl2br(htmlspecialchars($faktur['keterangan'])) ?>
-                    </div>
-                <?php endif; ?>
+                <div class="pt-2 border-top border-dark d-none" style="font-size: 11px;" id="docKeteranganContainer">
+                    <strong>Catatan Faktur:</strong><br>
+                    <span id="docKeterangan"></span>
+                </div>
 
                 <div class="pt-2 mt-2 border-top text-muted" style="font-size: 10px;">
                     * Pembayaran tagihan ditransfer resmi ke rekening vendor sesuai data yang tertera di atas.<br>
@@ -461,47 +265,35 @@ $terbilangTotal = trim(terbilang($totalTagihan)) . " Rupiah";
                 <table class="summary-table">
                     <tr>
                         <td class="lbl">Subtotal Barang Diterima</td>
-                        <td class="val">Rp <?= number_format($subtotalRcv, 0, ',', '.') ?></td>
+                        <td class="val" id="docSubtotalRcv">Rp 0</td>
                     </tr>
-                    <?php if ($nilaiRetur > 0): ?>
-                    <tr>
+                    <tr id="docRowRetur" class="d-none">
                         <td class="lbl">Potongan Retur PO (Credit Note)</td>
-                        <td class="val" style="color: #dc3545;">- Rp <?= number_format($nilaiRetur, 0, ',', '.') ?></td>
+                        <td class="val" style="color: #dc3545;" id="docNilaiRetur">- Rp 0</td>
                     </tr>
-                    <?php endif; ?>
-                    <?php if ($diskon > 0): ?>
-                    <tr>
+                    <tr id="docRowDiskon" class="d-none">
                         <td class="lbl">Diskon Tambahan Faktur</td>
-                        <td class="val" style="color: #dc3545;">- Rp <?= number_format($diskon, 0, ',', '.') ?></td>
+                        <td class="val" style="color: #dc3545;" id="docDiskon">- Rp 0</td>
                     </tr>
-                    <?php endif; ?>
                     <tr>
                         <td class="lbl">DPP (Dasar Pengenaan Pajak)</td>
-                        <td class="val font-monospace fw-bold">Rp <?= number_format($dpp, 0, ',', '.') ?></td>
+                        <td class="val font-monospace fw-bold" id="docDpp">Rp 0</td>
                     </tr>
-                    <?php if ($ratePpnbm > 0 || $nominalPpnbm > 0): ?>
-                    <tr>
-                        <td class="lbl">
-                            PPnBM (<?= $ratePpnbm ?>%)<?= $isTermasukPpnbm ? ' (Inklusif)' : '' ?>:
-                        </td>
-                        <td class="val">Rp <?= number_format($nominalPpnbm, 0, ',', '.') ?></td>
+                    <tr id="docRowPpnbm" class="d-none">
+                        <td class="lbl" id="docLabelPpnbm">PPnBM (0%):</td>
+                        <td class="val" id="docNominalPpnbm">Rp 0</td>
                     </tr>
-                    <?php endif; ?>
-                    <tr>
-                        <td class="lbl">
-                            PPN (<?= $ratePajak ?>%)<?= $isTermasukPajak ? ' (Inklusif)' : '' ?>:
-                        </td>
-                        <td class="val">Rp <?= number_format($nominalPajak, 0, ',', '.') ?></td>
+                    <tr id="docRowPpn">
+                        <td class="lbl" id="docLabelPpn">PPN (11%):</td>
+                        <td class="val" id="docNominalPpn">Rp 0</td>
                     </tr>
-                    <?php if ($biayaLain > 0): ?>
-                    <tr>
+                    <tr id="docRowBiayaLain" class="d-none">
                         <td class="lbl">Biaya Lain-lain / Ongkir</td>
-                        <td class="val">Rp <?= number_format($biayaLain, 0, ',', '.') ?></td>
+                        <td class="val" id="docBiayaLain">Rp 0</td>
                     </tr>
-                    <?php endif; ?>
                     <tr class="grand-total-row">
                         <td class="lbl">TOTAL TAGIHAN FAKTUR</td>
-                        <td class="val">Rp <?= number_format($totalTagihan, 0, ',', '.') ?></td>
+                        <td class="val" id="docTotalTagihan">Rp 0</td>
                     </tr>
                 </table>
             </div>
@@ -514,11 +306,9 @@ $terbilangTotal = trim(terbilang($totalTagihan)) . " Rupiah";
             <!-- 1. Dibuat Oleh (Purchasing / Petugas) -->
             <div class="col-4 sig-col">
                 <div class="sig-header-main">Dibuat Oleh</div>
-                <div class="sig-header-sub">
-                    (<?= htmlspecialchars($faktur['nama_jabatan'] ?: 'Staff Purchasing') ?><?= !empty($faktur['nama_divisi']) ? ' - ' . htmlspecialchars($faktur['nama_divisi']) : '' ?>)
-                </div>
+                <div class="sig-header-sub" id="docSigRolePembuat">(Staff Purchasing)</div>
                 <div class="sig-line-box">
-                    ( &nbsp; <span class="sig-person-name"><?= htmlspecialchars($faktur['nama_karyawan'] ?: 'Staff') ?></span> &nbsp; )
+                    ( &nbsp; <span class="sig-person-name" id="docSigPembuat">Staff</span> &nbsp; )
                 </div>
             </div>
 
@@ -536,7 +326,7 @@ $terbilangTotal = trim(terbilang($totalTagihan)) . " Rupiah";
                 <div class="sig-header-main">Diterima / Rekanan</div>
                 <div class="sig-header-sub">(Pihak Rekanan Vendor)</div>
                 <div class="sig-line-box">
-                    ( &nbsp; <span class="sig-person-name"><?= htmlspecialchars($faktur['nama_vendor']) ?></span> &nbsp; )
+                    ( &nbsp; <span class="sig-person-name" id="docSigVendor">Pihak Rekanan Vendor</span> &nbsp; )
                 </div>
             </div>
         </div>
@@ -553,5 +343,226 @@ $terbilangTotal = trim(terbilang($totalTagihan)) . " Rupiah";
 
 </div>
 
+<!-- SCRIPT FETCH DATA API & RENDER PRINT DOCUMENT -->
+<script>
+const BASE_URL = '<?= BASE_URL ?>';
+const idFaktur = <?= $idFaktur ?>;
+
+function escapeHtml(text) {
+    if (!text) return '';
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function formatNumber(num) {
+    return (parseFloat(num) || 0).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
+
+function formatRupiah(num) {
+    return 'Rp ' + (parseFloat(num) || 0).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
+
+function formatTglPanjang(dateStr) {
+    if (!dateStr || dateStr === '0000-00-00') return '-';
+    const bulan = [
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    const d = new Date(dateStr);
+    if (isNaN(d)) return dateStr;
+    return `${d.getDate()} ${bulan[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function terbilang(angka) {
+    angka = Math.abs(parseFloat(angka) || 0);
+    const satuan = ["", "Satu", "Dua", "Tiga", "Empat", "Lima", "Enam", "Tujuh", "Delapan", "Sembilan", "Sepuluh", "Sebelas"];
+    if (angka < 12) return " " + satuan[Math.floor(angka)];
+    if (angka < 20) return terbilang(angka - 10) + " Belas";
+    if (angka < 100) return terbilang(Math.floor(angka / 10)) + " Puluh" + terbilang(angka % 10);
+    if (angka < 200) return " Seratus" + terbilang(angka - 100);
+    if (angka < 1000) return terbilang(Math.floor(angka / 100)) + " Ratus" + terbilang(angka % 100);
+    if (angka < 2000) return " Seribu" + terbilang(angka - 1000);
+    if (angka < 1000000) return terbilang(Math.floor(angka / 1000)) + " Ribu" + terbilang(angka % 1000);
+    if (angka < 1000000000) return terbilang(Math.floor(angka / 1000000)) + " Juta" + terbilang(angka % 1000000);
+    if (angka < 1000000000000) return terbilang(Math.floor(angka / 1000000000)) + " Miliar" + terbilang(angka % 1000000000);
+    if (angka < 1000000000000000) return terbilang(Math.floor(angka / 1000000000000)) + " Triliun" + terbilang(angka % 1000000000000);
+    return "";
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const response = await fetch(`${BASE_URL}/api/faktur_po/index.php?id=${idFaktur}`);
+        const result = await response.json();
+
+        if (!result.success || !result.data) {
+            alert(result.message || 'Gagal memuat data faktur PO.');
+            return;
+        }
+
+        const fp = result.data;
+
+        // Toolbar
+        document.getElementById('toolbarNomorFaktur').textContent = fp.nomor_faktur || '-';
+        document.getElementById('toolbarStatusFaktur').textContent = fp.status || '-';
+        document.title = `Faktur Purchase Order - ${fp.nomor_faktur || ''}`;
+
+        // Header Meta
+        document.getElementById('docNomorFaktur').textContent = fp.nomor_faktur || '-';
+        document.getElementById('docTanggalFaktur').textContent = formatTglPanjang(fp.tanggal_faktur_vendor || fp.created_at);
+
+        // Vendor & Dokumen Info
+        document.getElementById('docNamaVendor').textContent = fp.nama_vendor || '-';
+        document.getElementById('docAlamatVendor').textContent = fp.alamat_vendor || '-';
+        document.getElementById('docNomorFakturVendor').textContent = fp.nomor_faktur_vendor || '-';
+        document.getElementById('docNomorFakturPajak').textContent = fp.nomor_faktur_pajak || '-';
+        document.getElementById('docNomorPo').textContent = fp.nomor_po || '-';
+        
+        let rcvText = fp.nomor_rcv || '-';
+        if (fp.nomor_sj_rcv) {
+            rcvText += ` (SJ: ${fp.nomor_sj_rcv})`;
+        }
+        document.getElementById('docNomorRcv').textContent = rcvText;
+
+        // Right Info
+        document.getElementById('docTop').textContent = `${parseInt(fp.term_of_payment || 0)} Hari`;
+        document.getElementById('docTanggalJatuhTempo').textContent = formatTglPanjang(fp.tanggal_jatuh_tempo);
+        
+        let rekVendor = `${escapeHtml(fp.nama_bank || '-')} • <strong>${escapeHtml(fp.nomor_rekening || '-')}</strong><br>`;
+        rekVendor += `<span class="text-muted" style="font-size: 10.5px;">a.n. ${escapeHtml(fp.atas_nama_rekening || fp.nama_vendor || '-')}</span>`;
+        document.getElementById('docRekeningVendor').innerHTML = rekVendor;
+
+        document.getElementById('docNamaSite').textContent = fp.nama_site || '-';
+        document.getElementById('docStatus').textContent = `[ ${fp.status || '-'} ]`;
+
+        // Render Items Table (No "Rp" in item table cells)
+        const items = fp.items || [];
+        const ratePpnbmPo = parseFloat(fp.rate_ppnbm || fp.pajak_PPnBM || 0);
+
+        if (items.length === 0) {
+            document.getElementById('docItemsTableBody').innerHTML = `
+                <tr>
+                    <td colspan="10" class="text-center py-3 text-muted">Tidak ada rincian barang.</td>
+                </tr>
+            `;
+        } else {
+            let itemsHtml = '';
+            items.forEach((it, idx) => {
+                const qtyPo = parseFloat(it.qty_po) || 0;
+                const qtyRcv = parseFloat(it.qty_rcv) || 0;
+                const qtyRet = parseFloat(it.qty_retur) || 0;
+                const harga = parseFloat(it.harga_satuan) || 0;
+                const disc = parseFloat(it.diskon_item) || 0;
+                const sub = parseFloat(it.subtotal) || 0;
+                const isPpnbmItem = (parseInt(it.PPnBM) === 1 || parseFloat(it.rate_PPnBM) > 0);
+                const itemRatePpnbm = parseFloat(it.rate_PPnBM || ratePpnbmPo);
+
+                itemsHtml += `
+                    <tr>
+                        <td class="text-center font-monospace">${idx + 1}</td>
+                        <td class="font-monospace">${escapeHtml(it.kode_barang || '-')}</td>
+                        <td>
+                            <strong class="text-dark">${escapeHtml(it.nama_barang || '')}</strong>
+                            ${it.nama_kategori && it.nama_kategori !== 'Umum' ? `<span class="text-muted small" style="font-size: 10px;">(${escapeHtml(it.nama_kategori)})</span>` : ''}
+                            ${isPpnbmItem ? `<span class="badge bg-light text-dark border ms-1" style="font-size: 9px;">PPnBM ${itemRatePpnbm}%</span>` : ''}
+                            ${it.keterangan ? `<div class="text-muted small" style="font-size: 10px;">${escapeHtml(it.keterangan)}</div>` : ''}
+                        </td>
+                        <td class="text-center font-monospace">${qtyPo}</td>
+                        <td class="text-center font-monospace fw-bold text-dark">${qtyRcv}</td>
+                        <td class="text-center font-monospace">${qtyRet > 0 ? qtyRet : '-'}</td>
+                        <td class="text-center">${escapeHtml(it.satuan || it.satuan_master || 'Unit')}</td>
+                        <td class="text-end font-monospace">${formatNumber(harga)}</td>
+                        <td class="text-end font-monospace">${disc > 0 ? formatNumber(disc) : '-'}</td>
+                        <td class="text-end font-monospace fw-bold text-dark">${formatNumber(sub)}</td>
+                    </tr>
+                `;
+            });
+            document.getElementById('docItemsTableBody').innerHTML = itemsHtml;
+        }
+
+        // Catatan Faktur
+        if (fp.keterangan && fp.keterangan.trim() !== '') {
+            document.getElementById('docKeteranganContainer').classList.remove('d-none');
+            document.getElementById('docKeterangan').innerHTML = escapeHtml(fp.keterangan).replace(/\n/g, '<br>');
+        }
+
+        // Financial Calculations & Inclusive Tax Handling
+        const subtotalRcv = parseFloat(fp.subtotal_diterima) || 0;
+        const nilaiRetur = parseFloat(fp.nilai_retur) || 0;
+        const diskon = parseFloat(fp.diskon) || 0;
+        const biayaLain = parseFloat(fp.biaya_lain) || 0;
+        const ratePpn = parseFloat(fp.rate_pajak) || 0;
+        const ratePpnbm = parseFloat(fp.rate_ppnbm || fp.pajak_PPnBM) || 0;
+        const isPpnInclusive = parseInt(fp.total_termasuk_pajak) === 1;
+        const isPpnbmInclusive = parseInt(fp.total_termasuk_PPnBM) === 1;
+
+        const dasarSetelahDiskon = Math.max(0, subtotalRcv - nilaiRetur - diskon);
+
+        let divisor = 1.0;
+        if (isPpnbmInclusive && ratePpnbm > 0) divisor += (ratePpnbm / 100);
+        if (isPpnInclusive && ratePpn > 0) divisor += (ratePpn / 100);
+
+        let dpp = parseFloat(fp.dpp) || Math.round(dasarSetelahDiskon / divisor);
+        let nominalPpnbm = parseFloat(fp.nominal_ppnbm) || ((ratePpnbm > 0) ? Math.round(dpp * (ratePpnbm / 100)) : 0);
+        let nominalPpn = parseFloat(fp.nominal_pajak) || ((ratePpn > 0) ? Math.round(dpp * (ratePpn / 100)) : 0);
+        let totalTagihan = parseFloat(fp.total_tagihan) || (dpp + (ratePpnbm > 0 ? nominalPpnbm : 0) + (ratePpn > 0 ? nominalPpn : 0) + biayaLain);
+
+        document.getElementById('docSubtotalRcv').textContent = formatRupiah(subtotalRcv);
+
+        if (nilaiRetur > 0) {
+            document.getElementById('docRowRetur').classList.remove('d-none');
+            document.getElementById('docNilaiRetur').textContent = `- ${formatRupiah(nilaiRetur)}`;
+        }
+
+        if (diskon > 0) {
+            document.getElementById('docRowDiskon').classList.remove('d-none');
+            document.getElementById('docDiskon').textContent = `- ${formatRupiah(diskon)}`;
+        }
+
+        document.getElementById('docDpp').textContent = formatRupiah(dpp);
+
+        // PPnBM
+        const rowPpnbm = document.getElementById('docRowPpnbm');
+        if (ratePpnbm > 0 || nominalPpnbm > 0) {
+            if (rowPpnbm) rowPpnbm.classList.remove('d-none');
+            document.getElementById('docLabelPpnbm').textContent = `PPnBM (${ratePpnbm}%)${isPpnbmInclusive ? ' (Inklusif)' : ''}:`;
+            document.getElementById('docNominalPpnbm').textContent = formatRupiah(nominalPpnbm);
+        } else {
+            if (rowPpnbm) rowPpnbm.classList.add('d-none');
+        }
+
+        // PPN
+        document.getElementById('docLabelPpn').textContent = `PPN (${ratePpn}%)${isPpnInclusive ? ' (Inklusif)' : ''}:`;
+        document.getElementById('docNominalPpn').textContent = formatRupiah(nominalPpn);
+
+        if (biayaLain > 0) {
+            document.getElementById('docRowBiayaLain').classList.remove('d-none');
+            document.getElementById('docBiayaLain').textContent = formatRupiah(biayaLain);
+        }
+
+        document.getElementById('docTotalTagihan').textContent = formatRupiah(totalTagihan);
+        document.getElementById('docTerbilangTotal').textContent = `# ${terbilang(totalTagihan).trim()} Rupiah #`;
+
+        // Signatures
+        const rolePembuat = fp.nama_jabatan ? `(${fp.nama_jabatan}${fp.nama_divisi ? ' - ' + fp.nama_divisi : ''})` : '(Staff Purchasing)';
+        document.getElementById('docSigRolePembuat').textContent = rolePembuat;
+        document.getElementById('docSigPembuat').textContent = fp.nama_pembuat || 'Staff';
+        document.getElementById('docSigVendor').textContent = fp.nama_vendor || 'Pihak Rekanan Vendor';
+
+    } catch (e) {
+        console.error('Error fetching Faktur PO print data:', e);
+        document.getElementById('docItemsTableBody').innerHTML = `
+            <tr>
+                <td colspan="10" class="text-center py-4 text-danger fw-bold">
+                    Terjadi kesalahan saat memproses data dokumen.
+                </td>
+            </tr>
+        `;
+    }
+});
+</script>
 </body>
 </html>
