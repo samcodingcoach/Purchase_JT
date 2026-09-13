@@ -352,18 +352,19 @@ textarea.form-control {
                                 <thead class="table-light">
                                     <tr>
                                         <th class="text-center" style="width: 40px;">No</th>
+                                        <th class="text-center" style="width: 60px;">Foto</th>
                                         <th style="width: 120px;">Kode Barang</th>
                                         <th>Nama Barang</th>
-                                        <th class="text-center" style="width: 95px;">Kts</th>
-                                        <th class="text-center" style="width: 80px;">Satuan</th>
-                                        <th class="text-end" style="width: 140px;">Harga Satuan</th>
-                                        <th class="text-end" style="width: 120px;">Diskon Item</th>
-                                        <th class="text-end" style="width: 150px;">Subtotal</th>
+                                        <th class="text-center" style="width: 85px;">Kts Tagih</th>
+                                        <th class="text-center" style="width: 75px;">Satuan</th>
+                                        <th class="text-end" style="width: 130px;">Harga Satuan</th>
+                                        <th class="text-end" style="width: 110px;">Diskon Item</th>
+                                        <th class="text-end" style="width: 140px;">Subtotal</th>
                                     </tr>
                                 </thead>
                                 <tbody id="matchingItemsBody">
                                     <tr>
-                                        <td colspan="8" class="text-center py-4 text-muted">
+                                        <td colspan="9" class="text-center py-4 text-muted">
                                             Silakan pilih Dokumen Penerimaan (RCV) pada Tab 1 untuk memuat rincian barang.
                                         </td>
                                     </tr>
@@ -433,18 +434,30 @@ textarea.form-control {
                                 <span class="fw-bold text-dark">DPP (Dasar Pengenaan Pajak):</span>
                                 <span class="font-monospace fw-bold text-dark fs-6" id="displayDpp">Rp 0</span>
                             </div>
+
+                            <!-- ROW PPNBM (JIKA BARANG MEWAH) -->
+                            <div class="d-flex justify-content-between align-items-center mb-2 small" id="rowPpnbm" style="display: none !important;">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="text-muted" id="labelPpnbm">PPnBM (0%):</span>
+                                    <span id="badgePpnbmInclusive" class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle" style="font-size:0.68rem; display:none;">Termasuk PPnBM</span>
+                                </div>
+                                <span class="font-monospace fw-semibold text-warning-emphasis" id="displayNominalPpnbm">Rp 0</span>
+                            </div>
+
+                            <!-- ROW PPN -->
                             <div class="d-flex justify-content-between align-items-center mb-2 small">
                                 <div class="d-flex align-items-center gap-2">
                                     <span class="text-muted">Tarif PPN:</span>
                                     <select class="form-select form-select-sm py-0" id="selectRatePajak" style="width: 80px;" onchange="calculateFinancials()">
                                         <option value="0">0%</option>
                                         <option value="11">11%</option>
-                                        <option value="12" selected>12%</option>
+                                        <option value="12">12%</option>
                                     </select>
-                                    <span id="badgePajakInclusive" class="badge bg-info-subtle text-info-emphasis border" style="font-size:0.68rem; display:none;">Termasuk Pajak</span>
+                                    <span id="badgePajakInclusive" class="badge bg-info-subtle text-info-emphasis border border-info-subtle" style="font-size:0.68rem; display:none;">Termasuk PPN</span>
                                 </div>
                                 <span class="font-monospace fw-semibold" id="displayNominalPajak">Rp 0</span>
                             </div>
+
                             <div class="d-flex justify-content-between align-items-center mb-3 small">
                                 <span class="text-muted">Biaya Lain-lain / Ongkir:</span>
                                 <div class="input-group input-group-sm" style="max-width: 170px;">
@@ -511,7 +524,7 @@ function toggleBankDropdown(e) {
     if (e) e.stopPropagation();
     const menu = document.getElementById('bankDropdownMenu');
     if (menu) {
-        menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+        menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
     }
 }
 
@@ -548,23 +561,29 @@ function selectBank(val) {
 }
 
 function toggleRcvDropdown(e) {
-    e.stopPropagation();
+    if (e) e.stopPropagation();
     const menu = document.getElementById('rcvDropdownMenu');
-    const chevron = document.getElementById('rcvChevronIcon');
     if (!menu) return;
-    const isShow = (menu.style.display === 'block');
-    if (isShow) {
+    if (menu.style.display === 'block') {
         closeRcvDropdown();
     } else {
-        menu.style.display = 'block';
-        if (chevron) chevron.style.transform = 'rotate(180deg)';
-        const input = document.getElementById('rcvSearchInput');
-        if (input) {
-            input.value = '';
-            filterRcvList();
-            setTimeout(() => input.focus(), 50);
-        }
+        openRcvDropdown();
     }
+}
+
+function openRcvDropdown() {
+    const menu = document.getElementById('rcvDropdownMenu');
+    const chevron = document.getElementById('rcvChevronIcon');
+    if (menu) menu.style.display = 'block';
+    if (chevron) chevron.style.transform = 'rotate(180deg)';
+    setTimeout(() => {
+        const searchInput = document.getElementById('rcvSearchInput');
+        if (searchInput) {
+            searchInput.value = '';
+            filterRcvList();
+            searchInput.focus();
+        }
+    }, 50);
 }
 
 function closeRcvDropdown() {
@@ -574,29 +593,19 @@ function closeRcvDropdown() {
     if (chevron) chevron.style.transform = 'rotate(0deg)';
 }
 
-function formatIndoDateLong(dateStr) {
-    if (!dateStr) return '-';
-    const d = new Date(dateStr);
-    if (isNaN(d)) return dateStr;
-    const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-    const dd = String(d.getDate()).padStart(2, '0');
-    return `${dd} ${months[d.getMonth()]} ${d.getFullYear()}`;
-}
-
 function populateRcvDropdownOptions(items) {
     const container = document.getElementById('rcvOptionsContainer');
     if (!container) return;
     if (!items || items.length === 0) {
-        container.innerHTML = '<div class="p-3 text-center text-muted small">Tidak ada dokumen penerimaan siap faktur.</div>';
+        container.innerHTML = '<div class="p-3 text-center text-muted small">Tidak ada dokumen RCV yang cocok.</div>';
         return;
     }
 
     let html = '';
     items.forEach(it => {
-        const tglDisplay = formatIndoDateLong(it.tanggal_diterima || it.tanggal_rcv);
-
+        const tglDisplay = formatDate(it.tanggal_diterima || it.tanggal_rcv);
         html += `
-        <div class="p-2 border-bottom rcv-option-item cursor-pointer hover-bg-light rounded" 
+        <div class="rcv-item p-2 border-bottom hover-bg-light" 
              style="cursor: pointer;"
              onclick="selectRcvDoc(${it.id_rcv})">
             <div class="d-flex justify-content-between align-items-center">
@@ -683,15 +692,26 @@ function apply3WayDataToForm(d) {
     if (d.term_of_payment !== undefined && d.term_of_payment !== null) {
         document.getElementById('termOfPayment').value = d.term_of_payment;
     }
+    
+    // Auto sync PPN dan PPnBM dari PO
+    const ratePpnbm = parseInt(d.rate_ppnbm || 0);
     if (d.rate_pajak !== undefined && d.rate_pajak !== null) {
         document.getElementById('selectRatePajak').value = d.rate_pajak;
+    } else {
+        document.getElementById('selectRatePajak').value = (ratePpnbm > 0) ? 12 : 11;
     }
     
-    // Status Termasuk Pajak (Inklusif)
+    // Status Inklusif
     const isTermasukPajak = (parseInt(d.total_termasuk_pajak) === 1);
     const badgeInclusive = document.getElementById('badgePajakInclusive');
     if (badgeInclusive) {
         badgeInclusive.style.display = isTermasukPajak ? 'inline-block' : 'none';
+    }
+
+    const isTermasukPpnbm = (parseInt(d.total_termasuk_PPnBM) === 1);
+    const badgePpnbmInclusive = document.getElementById('badgePpnbmInclusive');
+    if (badgePpnbmInclusive) {
+        badgePpnbmInclusive.style.display = isTermasukPpnbm ? 'inline-block' : 'none';
     }
 
     calculateDueDate();
@@ -730,7 +750,7 @@ function clearRcvSelection(e) {
     active3WayData = null;
     document.getElementById('matchingItemsBody').innerHTML = `
         <tr>
-            <td colspan="11" class="text-center py-4 text-muted">
+            <td colspan="9" class="text-center py-4 text-muted">
                 <i class="bi bi-box-seam fs-3 d-block mb-1 text-secondary"></i>
                 Silakan pilih Dokumen Penerimaan (RCV) pada Tab 1 untuk memuat rincian barang.
             </td>
@@ -743,10 +763,11 @@ function clearRcvSelection(e) {
 function renderMatchingTable(d) {
     const tbody = document.getElementById('matchingItemsBody');
     const items = d.items || [];
-    document.getElementById('badgeItemCount').textContent = `${items.length} Item`;
+    const badgeCount = document.getElementById('badgeItemCount');
+    if (badgeCount) badgeCount.textContent = `${items.length} Item`;
 
     if (items.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-3 text-muted">Tidak ada rincian barang.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center py-3 text-muted">Tidak ada rincian barang.</td></tr>';
         return;
     }
 
@@ -757,16 +778,29 @@ function renderMatchingTable(d) {
         const disc = parseFloat(it.diskon_item) || 0;
         const sub = parseFloat(it.subtotal) || 0;
 
+        let fotoHtml = `<div class="rounded bg-light border d-inline-flex align-items-center justify-content-center text-muted" style="width: 40px; height: 40px;"><i class="bi bi-image" style="font-size: 0.9rem;"></i></div>`;
+        if (it.foto1) {
+            fotoHtml = `<img src="<?= BASE_URL ?>/uploads/barang/${it.foto1}" alt="Foto" class="rounded border" style="width: 40px; height: 40px; object-fit: cover;">`;
+        }
+
+        const isPpnbmItem = (parseInt(it.PPnBM) === 1 || parseFloat(it.rate_PPnBM) > 0);
+        const ppnbmRateVal = parseFloat(it.rate_PPnBM || d.rate_ppnbm || 0);
+
         html += `
         <tr>
-            <td class="text-center">${idx + 1}</td>
-            <td class="font-monospace text-center">${it.kode_barang || '-'}</td>
+            <td class="text-center text-muted">${idx + 1}</td>
+            <td class="text-center p-1">${fotoHtml}</td>
+            <td class="font-monospace text-center small fw-semibold text-secondary">${it.kode_barang || '-'}</td>
             <td>
-                <strong>${it.nama_barang}</strong>
-                ${it.nama_kategori ? `<div class="small text-muted" style="font-size:0.75rem;">${it.nama_kategori}</div>` : ''}
+                <div class="fw-bold text-dark">${it.nama_barang}</div>
+                <div class="d-flex align-items-center gap-1 mt-1">
+                    ${it.nama_kategori ? `<span class="badge bg-light text-secondary border" style="font-size:0.68rem;">${it.nama_kategori}</span>` : ''}
+                    ${it.nama_merk ? `<span class="badge bg-light text-muted border" style="font-size:0.68rem;">${it.nama_merk}</span>` : ''}
+                    ${isPpnbmItem ? `<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle" style="font-size: 0.68rem;"><i class="bi bi-gem me-1"></i>PPnBM ${ppnbmRateVal}%</span>` : ''}
+                </div>
             </td>
             <td class="text-center font-monospace fw-bold text-success fs-6">${qTagih}</td>
-            <td class="text-center">${it.satuan || it.satuan_master || 'Unit'}</td>
+            <td class="text-center text-muted small">${it.satuan || it.satuan_master || 'Unit'}</td>
             <td class="text-end font-monospace">${formatRupiah(harga)}</td>
             <td class="text-end font-monospace text-muted">${disc > 0 ? formatRupiah(disc) : '-'}</td>
             <td class="text-end font-monospace fw-bold text-dark">${formatRupiah(sub)}</td>
@@ -835,8 +869,11 @@ function calculateFinancials() {
         document.getElementById('displaySubtotalDiterima').textContent = 'Rp 0';
         document.getElementById('displayNilaiRetur').textContent = '- Rp 0';
         document.getElementById('displayDpp').textContent = 'Rp 0';
+        document.getElementById('displayNominalPpnbm').textContent = 'Rp 0';
         document.getElementById('displayNominalPajak').textContent = 'Rp 0';
         document.getElementById('displayTotalTagihan').textContent = 'Rp 0';
+        const rowPpnbm = document.getElementById('rowPpnbm');
+        if (rowPpnbm) rowPpnbm.style.setProperty('display', 'none', 'important');
         return;
     }
 
@@ -846,34 +883,48 @@ function calculateFinancials() {
     const diskon = parseFloat(document.getElementById('inputDiskon').value) || 0;
     const biayaLain = parseFloat(document.getElementById('inputBiayaLain').value) || 0;
     const ratePajak = parseInt(document.getElementById('selectRatePajak').value) || 0;
+    const ratePpnbm = parseInt(active3WayData.rate_ppnbm) || 0;
     const isTermasukPajak = (parseInt(active3WayData.total_termasuk_pajak) === 1);
-
-    let dpp = 0;
-    let nominalPajak = 0;
-    let grandTotal = 0;
+    const isTermasukPpnbm = (parseInt(active3WayData.total_termasuk_PPnBM) === 1);
 
     const dasarSetelahDiskon = Math.max(0, subRcv - nilaiRetur - diskon);
 
-    if (ratePajak > 0) {
-        if (isTermasukPajak) {
-            dpp = Math.round(dasarSetelahDiskon / (1 + (ratePajak / 100)));
-            nominalPajak = dasarSetelahDiskon - dpp;
-            grandTotal = dasarSetelahDiskon + biayaLain;
-        } else {
-            dpp = dasarSetelahDiskon;
-            nominalPajak = Math.round(dpp * (ratePajak / 100));
-            grandTotal = dpp + nominalPajak + biayaLain;
-        }
+    let divisor = 1.0;
+    if (isTermasukPpnbm && ratePpnbm > 0) {
+        divisor += (ratePpnbm / 100);
+    }
+    if (isTermasukPajak && ratePajak > 0) {
+        divisor += (ratePajak / 100);
+    }
+
+    const dpp = Math.round(dasarSetelahDiskon / divisor);
+    const nominalPpnbm = (ratePpnbm > 0) ? Math.round(dpp * (ratePpnbm / 100)) : 0;
+    const nominalPajak = (ratePajak > 0) ? Math.round(dpp * (ratePajak / 100)) : 0;
+
+    let grandTotal = 0;
+    if (divisor > 1.0) {
+        grandTotal = dpp + (ratePpnbm > 0 ? nominalPpnbm : 0) + (ratePajak > 0 ? nominalPajak : 0) + biayaLain;
     } else {
-        dpp = dasarSetelahDiskon;
-        nominalPajak = 0;
-        grandTotal = dpp + biayaLain;
+        grandTotal = dpp + nominalPpnbm + nominalPajak + biayaLain;
+    }
+
+    // Tampilkan / Sembunyikan Baris PPnBM
+    const rowPpnbm = document.getElementById('rowPpnbm');
+    const labelPpnbm = document.getElementById('labelPpnbm');
+    const badgePpnbmInclusive = document.getElementById('badgePpnbmInclusive');
+    if (ratePpnbm > 0) {
+        if (rowPpnbm) rowPpnbm.style.removeProperty('display');
+        if (labelPpnbm) labelPpnbm.textContent = `PPnBM (${ratePpnbm}%):`;
+        if (badgePpnbmInclusive) badgePpnbmInclusive.style.display = isTermasukPpnbm ? 'inline-block' : 'none';
+    } else {
+        if (rowPpnbm) rowPpnbm.style.setProperty('display', 'none', 'important');
     }
 
     document.getElementById('displaySubtotalPo').textContent = formatRupiah(subPo);
     document.getElementById('displaySubtotalDiterima').textContent = formatRupiah(subRcv);
     document.getElementById('displayNilaiRetur').textContent = `- ${formatRupiah(nilaiRetur)}`;
     document.getElementById('displayDpp').textContent = formatRupiah(dpp);
+    document.getElementById('displayNominalPpnbm').textContent = formatRupiah(nominalPpnbm);
     document.getElementById('displayNominalPajak').textContent = formatRupiah(nominalPajak);
     document.getElementById('displayTotalTagihan').textContent = formatRupiah(grandTotal);
 }
@@ -923,31 +974,32 @@ async function submitFaktur(statusDokumen) {
     const diskon = parseFloat(document.getElementById('inputDiskon').value) || 0;
     const biayaLain = parseFloat(document.getElementById('inputBiayaLain').value) || 0;
     const ratePajak = parseInt(document.getElementById('selectRatePajak').value) || 0;
+    const ratePpnbm = parseInt(active3WayData.rate_ppnbm) || 0;
     const subRcv = parseFloat(active3WayData.subtotal_diterima) || 0;
     const subPo = parseFloat(active3WayData.subtotal_po) || 0;
     const nilaiRetur = parseFloat(active3WayData.nilai_retur) || 0;
     const isTermasukPajak = (parseInt(active3WayData.total_termasuk_pajak) === 1);
-
-    let dpp = 0;
-    let nominalPajak = 0;
-    let grandTotal = 0;
+    const isTermasukPpnbm = (parseInt(active3WayData.total_termasuk_PPnBM) === 1);
 
     const dasarSetelahDiskon = Math.max(0, subRcv - nilaiRetur - diskon);
 
-    if (ratePajak > 0) {
-        if (isTermasukPajak) {
-            dpp = Math.round(dasarSetelahDiskon / (1 + (ratePajak / 100)));
-            nominalPajak = dasarSetelahDiskon - dpp;
-            grandTotal = dasarSetelahDiskon + biayaLain;
-        } else {
-            dpp = dasarSetelahDiskon;
-            nominalPajak = Math.round(dpp * (ratePajak / 100));
-            grandTotal = dpp + nominalPajak + biayaLain;
-        }
+    let divisor = 1.0;
+    if (isTermasukPpnbm && ratePpnbm > 0) {
+        divisor += (ratePpnbm / 100);
+    }
+    if (isTermasukPajak && ratePajak > 0) {
+        divisor += (ratePajak / 100);
+    }
+
+    const dpp = Math.round(dasarSetelahDiskon / divisor);
+    const nominalPpnbm = (ratePpnbm > 0) ? Math.round(dpp * (ratePpnbm / 100)) : 0;
+    const nominalPajak = (ratePajak > 0) ? Math.round(dpp * (ratePajak / 100)) : 0;
+
+    let grandTotal = 0;
+    if (divisor > 1.0) {
+        grandTotal = dpp + (ratePpnbm > 0 ? nominalPpnbm : 0) + (ratePajak > 0 ? nominalPajak : 0) + biayaLain;
     } else {
-        dpp = dasarSetelahDiskon;
-        nominalPajak = 0;
-        grandTotal = dpp + biayaLain;
+        grandTotal = dpp + nominalPpnbm + nominalPajak + biayaLain;
     }
 
     const payload = {
@@ -971,6 +1023,8 @@ async function submitFaktur(statusDokumen) {
         dpp: dpp,
         rate_pajak: ratePajak,
         nominal_pajak: nominalPajak,
+        rate_ppnbm: ratePpnbm,
+        nominal_ppnbm: nominalPpnbm,
         biaya_lain: biayaLain,
         total_tagihan: grandTotal,
         status: statusDokumen,

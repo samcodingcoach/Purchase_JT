@@ -237,8 +237,10 @@ if ($method === 'POST') {
     $dpp = floatval($input['dpp'] ?? ($subtotalDiterima - $nilaiRetur - $diskon));
     $ratePajak = intval($input['rate_pajak'] ?? 0);
     $nominalPajak = floatval($input['nominal_pajak'] ?? ($dpp * ($ratePajak / 100)));
+    $ratePpnbm = intval($input['rate_ppnbm'] ?? 0);
+    $nominalPpnbm = floatval($input['nominal_ppnbm'] ?? ($ratePpnbm > 0 ? ($dpp * ($ratePpnbm / 100)) : 0));
     $biayaLain = floatval($input['biaya_lain'] ?? 0);
-    $totalTagihan = floatval($input['total_tagihan'] ?? ($dpp + $nominalPajak + $biayaLain));
+    $totalTagihan = floatval($input['total_tagihan'] ?? ($dpp + $nominalPajak + $nominalPpnbm + $biayaLain));
     $keterangan = trim($input['keterangan'] ?? '');
 
     $status = in_array($input['status'] ?? '', ['DRAFT', 'BELUM DIBAYAR']) ? $input['status'] : 'BELUM DIBAYAR';
@@ -305,7 +307,7 @@ if ($method === 'POST') {
                     id_po, id_rcv, id_vendor, id_site,
                     nama_bank, nomor_rekening, atas_nama_rekening, id_karyawan,
                     subtotal_po, subtotal_diterima, nilai_retur, diskon, dpp,
-                    rate_pajak, nominal_pajak, biaya_lain, total_tagihan,
+                    rate_pajak, nominal_pajak, rate_ppnbm, nominal_ppnbm, biaya_lain, total_tagihan,
                     status, terbayar, sisa_tagihan,
                     file_faktur_vendor, file_faktur_pajak, keterangan
                    ) VALUES (
@@ -314,20 +316,20 @@ if ($method === 'POST') {
                     ?, ?, ?, ?,
                     ?, ?, ?, ?,
                     ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?, ?,
                     ?, ?, ?,
                     ?, ?, ?
                    )";
 
         $stmtIns = $conn->prepare($sqlIns);
         $stmtIns->bind_param(
-            "sssssisiiiisssidddddidddsddsss",
+            "sssssisiiiisssidddddididddsddsss",
             $nomorFaktur, $nomorFakturVendor, $nomorFakturPajak,
             $tanggalFaktur, $tanggalTerimaFaktur, $top, $tanggalJatuhTempo,
             $idPo, $idRcv, $idVendor, $idSite,
             $namaBank, $nomorRekening, $atasNamaRekening, $idKaryawan,
             $subtotalPo, $subtotalDiterima, $nilaiRetur, $diskon, $dpp,
-            $ratePajak, $nominalPajak, $biayaLain, $totalTagihan,
+            $ratePajak, $nominalPajak, $ratePpnbm, $nominalPpnbm, $biayaLain, $totalTagihan,
             $status, $terbayar, $sisaTagihan,
             $fileFakturVendor, $fileFakturPajak, $keterangan
         );

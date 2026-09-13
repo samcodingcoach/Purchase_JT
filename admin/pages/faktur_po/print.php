@@ -31,6 +31,8 @@ $sqlMaster = "SELECT
 	purchase_order.nomor_po, 
 	purchase_order.tanggal_po,
 	purchase_order.total_termasuk_pajak,
+	purchase_order.total_termasuk_PPnBM,
+	purchase_order.pajak_PPnBM,
 	receiving_order.id_rcv,
 	receiving_order.nomor_rcv, 
 	receiving_order.nomor_sj AS nomor_sj_rcv,
@@ -56,6 +58,8 @@ $sqlMaster = "SELECT
 	faktur_po.dpp, 
 	faktur_po.rate_pajak, 
 	faktur_po.nominal_pajak, 
+	faktur_po.rate_ppnbm,
+	faktur_po.nominal_ppnbm,
 	faktur_po.biaya_lain,
 	faktur_po.total_tagihan, 
 	faktur_po.terbayar,
@@ -98,6 +102,8 @@ $sqlDetail = "SELECT
 	faktur_po_detail.subtotal, 
 	faktur_po_detail.keterangan, 
 	barang.nama_barang, 
+	barang.PPnBM,
+	barang.rate_PPnBM,
 	merk_barang.nama_merk, 
 	kategori_barang.nama_kategori
 FROM
@@ -126,7 +132,7 @@ $companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
 
 // Helper Functions
 function formatRupiah($num) {
-    return 'Rp ' + (parseFloat(num) || 0).toLocaleString('id-ID');
+    return 'Rp ' . number_format((float)$num, 0, ',', '.');
 }
 function formatTgl($dateStr) {
     if (!$dateStr || $dateStr === '0000-00-00') return '-';
@@ -161,13 +167,16 @@ function terbilang($angka) {
 }
 
 $isTermasukPajak = ((int)($faktur['total_termasuk_pajak'] ?? 0) === 1);
-$ratePajak = (int)$faktur['rate_pajak'];
+$isTermasukPpnbm = ((int)($faktur['total_termasuk_PPnBM'] ?? 0) === 1);
+$ratePajak = (int)($faktur['rate_pajak'] ?? 0);
+$ratePpnbm = (int)($faktur['rate_ppnbm'] ?? ($faktur['pajak_PPnBM'] ?? 0));
 $subtotalPo = (float)$faktur['subtotal_po'];
 $subtotalRcv = (float)$faktur['subtotal_diterima'];
 $nilaiRetur = (float)$faktur['nilai_retur'];
 $diskon = (float)$faktur['diskon'];
 $dpp = (float)$faktur['dpp'];
 $nominalPajak = (float)$faktur['nominal_pajak'];
+$nominalPpnbm = (float)($faktur['nominal_ppnbm'] ?? 0);
 $biayaLain = (float)$faktur['biaya_lain'];
 $totalTagihan = (float)$faktur['total_tagihan'];
 $terbilangTotal = trim(terbilang($totalTagihan)) . " Rupiah";
@@ -278,7 +287,7 @@ $terbilangTotal = trim(terbilang($totalTagihan)) . " Rupiah";
             <div class="doc-title-main">FAKTUR PEMBELIAN BARANG</div>
             <div class="doc-title-sub">
                 <span class="line-side"></span>
-                <span class="sub-text">PURCHASE &nbsp; INVOICE &nbsp; (3-WAY &nbsp; MATCHING)</span>
+                <span class="sub-text">PURCHASE &nbsp; INVOICE</span>
                 <span class="line-side"></span>
             </div>
         </div>
@@ -359,7 +368,7 @@ $terbilangTotal = trim(terbilang($totalTagihan)) . " Rupiah";
         </div>
     </div>
 
-    <!-- TABEL RINCIAN BARANG (3-WAY MATCHING / BERDASARKAN PENERIMAAN BARANG) -->
+    <!-- TABEL RINCIAN BARANG (BERDASARKAN PENERIMAAN BARANG) -->
     <div class="table-title fw-bold text-dark mb-1" style="font-size: 11px; text-transform: uppercase;">
         Rincian Barang &amp; Penagihan Berdasarkan Penerimaan:
     </div>
@@ -391,6 +400,8 @@ $terbilangTotal = trim(terbilang($totalTagihan)) . " Rupiah";
                     $harga = (float)$it['harga_satuan'];
                     $disc = (float)$it['diskon_item'];
                     $sub = (float)$it['subtotal'];
+                    $isItemPpnbm = ((int)($it['PPnBM'] ?? 0) === 1 || (float)($it['rate_PPnBM'] ?? 0) > 0);
+                    $itemPpnbmRate = (float)($it['rate_PPnBM'] ?: $ratePpnbm);
                 ?>
                 <tr>
                     <td class="text-center font-monospace"><?= $idx + 1 ?></td>
@@ -400,6 +411,9 @@ $terbilangTotal = trim(terbilang($totalTagihan)) . " Rupiah";
                         <?php if (!empty($it['nama_kategori']) && $it['nama_kategori'] !== 'Umum'): ?>
                             <span class="text-muted small" style="font-size: 10px;">(<?= htmlspecialchars($it['nama_kategori']) ?>)</span>
                         <?php endif; ?>
+                        <?php if ($isItemPpnbm): ?>
+                            <span class="badge bg-light text-dark border ms-1" style="font-size: 9px;">PPnBM <?= $itemPpnbmRate ?>%</span>
+                        <?php endif; ?>
                         <?php if (!empty($it['keterangan'])): ?>
                             <div class="text-muted small" style="font-size: 10px;"><?= htmlspecialchars($it['keterangan']) ?></div>
                         <?php endif; ?>
@@ -408,9 +422,9 @@ $terbilangTotal = trim(terbilang($totalTagihan)) . " Rupiah";
                     <td class="text-center font-monospace fw-bold text-dark"><?= $qtyRcv ?></td>
                     <td class="text-center font-monospace"><?= $qtyRet > 0 ? $qtyRet : '-' ?></td>
                     <td class="text-center"><?= htmlspecialchars($it['satuan'] ?: 'Unit') ?></td>
-                    <td class="text-end font-monospace">Rp <?= number_format($harga, 0, ',', '.') ?></td>
-                    <td class="text-end font-monospace"><?= $disc > 0 ? ('Rp ' . number_format($disc, 0, ',', '.')) : '-' ?></td>
-                    <td class="text-end font-monospace fw-bold text-dark">Rp <?= number_format($sub, 0, ',', '.') ?></td>
+                    <td class="text-end font-monospace"><?= number_format($harga, 0, ',', '.') ?></td>
+                    <td class="text-end font-monospace"><?= $disc > 0 ? number_format($disc, 0, ',', '.') : '-' ?></td>
+                    <td class="text-end font-monospace fw-bold text-dark"><?= number_format($sub, 0, ',', '.') ?></td>
                 </tr>
                 <?php endforeach; ?>
             <?php endif; ?>
@@ -465,6 +479,14 @@ $terbilangTotal = trim(terbilang($totalTagihan)) . " Rupiah";
                         <td class="lbl">DPP (Dasar Pengenaan Pajak)</td>
                         <td class="val font-monospace fw-bold">Rp <?= number_format($dpp, 0, ',', '.') ?></td>
                     </tr>
+                    <?php if ($ratePpnbm > 0 || $nominalPpnbm > 0): ?>
+                    <tr>
+                        <td class="lbl">
+                            PPnBM (<?= $ratePpnbm ?>%)<?= $isTermasukPpnbm ? ' (Inklusif)' : '' ?>:
+                        </td>
+                        <td class="val">Rp <?= number_format($nominalPpnbm, 0, ',', '.') ?></td>
+                    </tr>
+                    <?php endif; ?>
                     <tr>
                         <td class="lbl">
                             PPN (<?= $ratePajak ?>%)<?= $isTermasukPajak ? ' (Inklusif)' : '' ?>:
@@ -505,7 +527,7 @@ $terbilangTotal = trim(terbilang($totalTagihan)) . " Rupiah";
                 <div class="sig-header-main">Disetujui Oleh</div>
                 <div class="sig-header-sub">(Manager Finance / Direksi)</div>
                 <div class="sig-line-box">
-                    ( &nbsp; <span class="sig-person-name">Pimpinan Perusahaan</span> &nbsp; )
+                    ( &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; )
                 </div>
             </div>
 
