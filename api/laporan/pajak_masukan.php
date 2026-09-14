@@ -37,6 +37,97 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 }
 
 try {
+    $action = trim($_GET['action'] ?? '');
+
+    // MODE REKAPITULASI TAHUNAN PER BULAN
+    if ($action === 'rekapitulasi') {
+        $tahun = isset($_GET['tahun']) && is_numeric($_GET['tahun']) ? (int)$_GET['tahun'] : (int)date('Y');
+
+        $sqlRekap = "SELECT
+                        YEAR(f.tanggal_faktur_pajak) AS tahun,
+                        MONTH(f.tanggal_faktur_pajak) AS bulan,
+                        CASE MONTH(f.tanggal_faktur_pajak)
+                            WHEN 1 THEN 'Januari'
+                            WHEN 2 THEN 'Februari'
+                            WHEN 3 THEN 'Maret'
+                            WHEN 4 THEN 'April'
+                            WHEN 5 THEN 'Mei'
+                            WHEN 6 THEN 'Juni'
+                            WHEN 7 THEN 'Juli'
+                            WHEN 8 THEN 'Agustus'
+                            WHEN 9 THEN 'September'
+                            WHEN 10 THEN 'Oktober'
+                            WHEN 11 THEN 'November'
+                            WHEN 12 THEN 'Desember'
+                        END AS nama_bulan,
+                        COUNT(f.id_faktur) AS jumlah_faktur,
+                        SUM(COALESCE(f.dpp, 0)) AS total_dpp,
+                        SUM(COALESCE(f.nominal_pajak, 0)) AS total_ppn_masukan,
+                        SUM(COALESCE(f.nominal_ppnbm, 0)) AS total_ppnbm,
+                        SUM(COALESCE(f.total_tagihan, 0)) AS total_tagihan
+                    FROM faktur_po f
+                    WHERE f.tanggal_faktur_pajak IS NOT NULL
+                      AND f.status <> 'BATAL' 
+                      AND f.nomor_faktur_pajak IS NOT NULL 
+                      AND TRIM(f.nomor_faktur_pajak) <> ''
+                      AND YEAR(f.tanggal_faktur_pajak) = ?
+                    GROUP BY
+                        YEAR(f.tanggal_faktur_pajak),
+                        MONTH(f.tanggal_faktur_pajak)
+                    ORDER BY
+                        MONTH(f.tanggal_faktur_pajak) ASC";
+
+        $stmtRekap = $conn->prepare($sqlRekap);
+        $stmtRekap->bind_param("i", $tahun);
+        $stmtRekap->execute();
+        $resRekap = $stmtRekap->get_result();
+
+        $rows = [];
+        $grandTotalDpp = 0;
+        $grandTotalPpn = 0;
+        $grandTotalPpnbm = 0;
+        $grandTotalTagihan = 0;
+        $grandTotalFaktur = 0;
+
+        while ($r = $resRekap->fetch_assoc()) {
+            $dpp = (float)$r['total_dpp'];
+            $ppn = (float)$r['total_ppn_masukan'];
+            $ppnbm = (float)$r['total_ppnbm'];
+            $tagihan = (float)$r['total_tagihan'];
+            $cnt = (int)$r['jumlah_faktur'];
+
+            $grandTotalDpp += $dpp;
+            $grandTotalPpn += $ppn;
+            $grandTotalPpnbm += $ppnbm;
+            $grandTotalTagihan += $tagihan;
+            $grandTotalFaktur += $cnt;
+
+            $rows[] = [
+                'tahun' => (int)$r['tahun'],
+                'bulan' => (int)$r['bulan'],
+                'nama_bulan' => $r['nama_bulan'],
+                'jumlah_faktur' => $cnt,
+                'total_dpp' => $dpp,
+                'total_ppn_masukan' => $ppn,
+                'total_ppnbm' => $ppnbm,
+                'total_tagihan' => $tagihan
+            ];
+        }
+        $stmtRekap->close();
+
+        sendJson(true, "Rekapitulasi Pajak Masukan Tahun {$tahun} berhasil dimuat.", [
+            'tahun' => $tahun,
+            'rows' => $rows,
+            'grand_totals' => [
+                'total_faktur' => $grandTotalFaktur,
+                'grand_total_dpp' => $grandTotalDpp,
+                'grand_total_ppn' => $grandTotalPpn,
+                'grand_total_ppnbm' => $grandTotalPpnbm,
+                'grand_total_tagihan' => $grandTotalTagihan
+            ]
+        ]);
+    }
+
     // Parameter Filter
     $tahun = isset($_GET['tahun']) && is_numeric($_GET['tahun']) ? (int)$_GET['tahun'] : (int)date('Y');
     $bulan = isset($_GET['bulan']) && is_numeric($_GET['bulan']) ? (int)$_GET['bulan'] : 0; // 0 = Semua Bulan

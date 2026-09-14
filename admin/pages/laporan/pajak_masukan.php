@@ -28,10 +28,13 @@ require_once __DIR__ . '/../../components/navbar.php';
         </div>
         <div class="d-flex gap-2">
             <button type="button" class="btn btn-outline-secondary filter-btn px-3" onclick="loadPajakReport()">
-                <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+                <i class="bi bi-arrow-clockwise me-1"></i> Refresh Data
+            </button>
+            <button type="button" class="btn btn-outline-primary filter-btn px-3 shadow-sm fw-semibold" onclick="openModalPilihTahunRekap()">
+                <i class="bi bi-file-earmark-bar-graph me-1"></i> Cetak Rekapitulasi
             </button>
             <button type="button" class="btn btn-primary filter-btn px-3 shadow-sm fw-semibold" onclick="printReport()">
-                <i class="bi bi-printer-fill me-1"></i> Cetak / PDF
+                <i class="bi bi-printer-fill me-1"></i> Cetak
             </button>
         </div>
     </div>
@@ -161,6 +164,37 @@ require_once __DIR__ . '/../../components/navbar.php';
             </div>
             <div class="modal-body p-4" id="modalRincianBody">
                 <!-- Populated dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL PILIH TAHUN REKAPITULASI -->
+<div class="modal fade" id="modalPilihTahunRekap" tabindex="-1" aria-labelledby="modalPilihTahunRekapLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <div class="modal-header bg-white py-3 px-4 border-bottom">
+                <h6 class="modal-title fw-bold text-dark mb-0" id="modalPilihTahunRekapLabel">Cetak Rekapitulasi Pajak Masukan</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-3">
+                    <label for="rekapPilihTahun" class="form-label small fw-semibold text-dark">Pilih Tahun Pajak:</label>
+                    <select class="form-select" id="rekapPilihTahun">
+                        <?php
+                        $curYr = (int)date('Y');
+                        for ($y = $curYr - 5; $y <= $curYr + 10; $y++) {
+                            $sel = ($y === $curYr) ? 'selected' : '';
+                            echo "<option value=\"{$y}\" {$sel}>Tahun {$y}</option>";
+                        }
+                        ?>
+                    </select>
+                </div>
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-primary fw-semibold" onclick="submitCetakRekapitulasi()">
+                        <i class="bi bi-printer-fill me-1"></i> Buka Dokumen Rekapitulasi
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -558,6 +592,26 @@ function printReport() {
     const idVendor = document.getElementById('filterVendor').value;
 
     const url = `<?= BASE_URL ?>/admin/pages/laporan/print_pajak_masukan.php?tahun=${tahun}&bulan=${bulan}&id_vendor=${idVendor}&kop=1`;
+    window.open(url, '_blank');
+}
+
+function openModalPilihTahunRekap() {
+    const currentSelectedYear = document.getElementById('filterTahun').value;
+    const rekapYearSelect = document.getElementById('rekapPilihTahun');
+    if (rekapYearSelect && currentSelectedYear) {
+        rekapYearSelect.value = currentSelectedYear;
+    }
+    const modal = new bootstrap.Modal(document.getElementById('modalPilihTahunRekap'));
+    modal.show();
+}
+
+function submitCetakRekapitulasi() {
+    const tahun = document.getElementById('rekapPilihTahun').value;
+    const modalEl = document.getElementById('modalPilihTahunRekap');
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    if (modal) modal.hide();
+
+    const url = `<?= BASE_URL ?>/admin/pages/laporan/print_rekapitulasi_pajak.php?tahun=${tahun}&kop=1`;
     window.open(url, '_blank');
 }
 </script>
