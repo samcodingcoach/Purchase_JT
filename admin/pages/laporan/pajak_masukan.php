@@ -154,24 +154,13 @@ require_once __DIR__ . '/../../components/navbar.php';
 <!-- MODAL RINCIAN FAKTUR PAJAK -->
 <div class="modal fade" id="modalRincianPajak" tabindex="-1" aria-labelledby="modalRincianPajakLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-light py-3">
-                <div class="d-flex align-items-center gap-2">
-                    <div class="badge bg-primary-subtle text-primary p-2 rounded-circle">
-                        <i class="bi bi-receipt-cutoff fs-5"></i>
-                    </div>
-                    <div>
-                        <h6 class="modal-title fw-bold text-dark mb-0" id="modalRincianPajakLabel">Rincian Faktur Pajak Masukan</h6>
-                        <small class="text-muted" id="modalFakturSubTitle">-</small>
-                    </div>
-                </div>
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <div class="modal-header bg-white py-3 px-4 border-bottom">
+                <h5 class="modal-title fw-bold text-dark mb-0" id="modalRincianPajakLabel">Rincian Faktur Pajak Masukan</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4" id="modalRincianBody">
                 <!-- Populated dynamically -->
-            </div>
-            <div class="modal-footer bg-light py-2">
-                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Tutup</button>
             </div>
         </div>
     </div>
@@ -489,69 +478,71 @@ function showRincian(index) {
     const item = cachedData[index];
     if (!item) return;
 
-    document.getElementById('modalFakturSubTitle').innerText = `${item.vendor || '-'} | No. Faktur Pajak: ${item.nomor_faktur_pajak || '-'}`;
+    const ratePpn = parseFloat(item.rate_ppn) || 0;
+    const ratePpnbm = parseFloat(item.rate_ppnbm) || 0;
 
     const body = document.getElementById('modalRincianBody');
     body.innerHTML = `
-        <div class="row g-3 mb-4">
+        <div class="row g-3 mb-3">
             <div class="col-md-6">
-                <table class="table table-sm table-borderless mb-0">
-                    <tr>
-                        <td class="text-muted" style="width: 140px;">No. Faktur Pajak</td>
-                        <td class="fw-bold font-monospace text-dark">${escapeHtml(item.nomor_faktur_pajak || '-')}</td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">Tgl. Faktur Pajak</td>
-                        <td class="fw-bold">${formatDateIndo(item.tanggal_faktur_pajak)}</td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">Vendor</td>
-                        <td class="fw-bold text-primary">${escapeHtml(item.vendor || '-')}</td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">No. Faktur Vendor</td>
-                        <td class="font-monospace fw-bold text-dark">${escapeHtml(item.nomor_faktur_vendor || '-')}</td>
-                    </tr>
-                </table>
+                <div class="card bg-light border-0 rounded-3 p-3 h-100">
+                    <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Informasi Faktur Pajak</h6>
+                    <div class="mb-2">
+                        <span class="text-muted small d-block">Nomor Faktur Pajak:</span>
+                        <strong class="text-dark font-monospace fs-6">${escapeHtml(item.nomor_faktur_pajak || '-')}</strong>
+                    </div>
+                    <div class="mb-2">
+                        <span class="text-muted small d-block">Tanggal Faktur Pajak:</span>
+                        <strong class="text-dark">${formatDateIndo(item.tanggal_faktur_pajak)}</strong>
+                    </div>
+                    <div class="mb-2">
+                        <span class="text-muted small d-block">Nama Vendor / Rekanan:</span>
+                        <strong class="text-primary fs-6">${escapeHtml(item.vendor || '-')}</strong>
+                    </div>
+                    <div>
+                        <span class="text-muted small d-block">Nomor Invoice Vendor:</span>
+                        <span class="font-monospace fw-semibold text-dark">${escapeHtml(item.nomor_faktur_vendor || '-')}</span>
+                    </div>
+                </div>
             </div>
+
             <div class="col-md-6">
-                <table class="table table-sm table-borderless mb-0">
-                    <tr>
-                        <td class="text-muted" style="width: 140px;">No. Purchase Order</td>
-                        <td class="fw-bold font-monospace text-dark">${escapeHtml(item.nomor_po || '-')}</td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">No. Sistem Faktur</td>
-                        <td class="font-monospace">${escapeHtml(item.nomor_faktur || '-')}</td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">Status Transaksi</td>
-                        <td><span class="badge bg-success">${escapeHtml(item.status || 'SELESAI')}</span></td>
-                    </tr>
-                </table>
+                <div class="card bg-light border-0 rounded-3 p-3 h-100">
+                    <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Referensi Pembelian</h6>
+                    <div class="mb-2">
+                        <span class="text-muted small d-block">Nomor Purchase Order:</span>
+                        <strong class="text-dark font-monospace fs-6">${escapeHtml(item.nomor_po || '-')}</strong>
+                    </div>
+                    <div class="mb-2">
+                        <span class="text-muted small d-block">Nomor Faktur Pembelian:</span>
+                        <span class="font-monospace fw-semibold text-dark">${escapeHtml(item.nomor_faktur || '-')}</span>
+                    </div>
+                    <div>
+                        <span class="text-muted small d-block mb-1">Status Faktur:</span>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 fw-semibold">${escapeHtml(item.status || 'SELESAI')}</span>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="card border rounded-3 p-3 bg-light">
-            <h6 class="fw-bold text-dark border-bottom pb-2 mb-3">Rincian Perhitungan Pajak</h6>
-            <div class="row g-2">
+        <div class="card bg-light border-0 rounded-3 p-3">
+            <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Rincian Perhitungan Pajak</h6>
+            <div class="row g-3">
                 <div class="col-6 col-md-3">
-                    <small class="text-muted d-block">Dasar Pengenaan Pajak (DPP)</small>
-                    <span class="fw-bold text-dark font-monospace fs-6">${formatRupiah(item.dpp)}</span>
+                    <span class="text-muted small d-block">DPP</span>
+                    <strong class="text-dark font-monospace fs-6">${formatRupiah(item.dpp)}</strong>
                 </div>
                 <div class="col-6 col-md-3">
-                    <small class="text-muted d-block">Tarif & PPN Masukan</small>
-                    <span class="fw-bold text-success font-monospace fs-6">${formatRupiah(item.ppn_masukan)}</span>
-                    <small class="text-muted d-block">(${parseFloat(item.rate_ppn) || 0}%)</small>
+                    <span class="text-muted small d-block">PPN Masukan (${ratePpn}%)</span>
+                    <strong class="text-success font-monospace fs-6">${formatRupiah(item.ppn_masukan)}</strong>
                 </div>
                 <div class="col-6 col-md-3">
-                    <small class="text-muted d-block">Tarif & PPnBM</small>
-                    <span class="fw-bold text-warning-emphasis font-monospace fs-6">${formatRupiah(item.ppnbm)}</span>
-                    <small class="text-muted d-block">(${parseFloat(item.rate_ppnbm) || 0}%)</small>
+                    <span class="text-muted small d-block">PPnBM (${ratePpnbm}%)</span>
+                    <strong class="text-warning-emphasis font-monospace fs-6">${parseFloat(item.ppnbm) > 0 ? formatRupiah(item.ppnbm) : 'Rp 0'}</strong>
                 </div>
                 <div class="col-6 col-md-3">
-                    <small class="text-muted d-block">Total Tagihan Faktur</small>
-                    <span class="fw-bold text-primary font-monospace fs-6">${formatRupiah(item.total_tagihan)}</span>
+                    <span class="text-muted small d-block">Total Tagihan</span>
+                    <strong class="text-primary font-monospace fs-6">${formatRupiah(item.total_tagihan)}</strong>
                 </div>
             </div>
         </div>

@@ -2,7 +2,7 @@
 /**
  * Halaman Cetak Rekapitulasi Laporan Pajak Masukan (Print / PDF)
  * Path: admin/pages/laporan/print_pajak_masukan.php
- * Format: Standard Black & White Corporate Header & Clean Table
+ * Format: Standard Clean Corporate Table
  */
 
 require_once __DIR__ . '/../../../config/config.php';
@@ -48,25 +48,42 @@ $companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
     <!-- External Print Stylesheet -->
     <link href="<?= BASE_URL ?>/styles/print_document.css" rel="stylesheet">
     <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            color: #000;
+        }
+        .table-pajak {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid #000;
+        }
+        .table-pajak th, .table-pajak td {
+            border: 1px solid #000 !important;
+            padding: 5px 8px !important;
+            font-size: 11px;
+            color: #000;
+        }
+        .table-pajak th {
+            font-weight: bold;
+            text-align: center;
+            background-color: #fff !important;
+        }
+        .table-pajak tfoot td {
+            font-weight: bold !important;
+            font-size: 11.5px !important;
+            border-top: 2px solid #000 !important;
+        }
         @media print {
             .table-pajak th, .table-pajak td {
                 padding: 4px 6px !important;
                 font-size: 10px !important;
             }
             .table-pajak tfoot td {
-                font-weight: bold !important;
                 font-size: 10.5px !important;
-                background-color: #f8f9fa !important;
-                -webkit-print-color-adjust: exact;
             }
-        }
-        .table-pajak th {
-            background-color: #f1f3f5 !important;
-            font-size: 11px;
-            text-transform: uppercase;
-        }
-        .table-pajak td {
-            font-size: 11.5px;
+            .no-print {
+                display: none !important;
+            }
         }
     </style>
 </head>
@@ -115,8 +132,8 @@ $companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
     
     <?php if ($useKop): ?>
     <!-- KOP PERUSAHAAN RESMI -->
-    <div class="kop-container">
-        <div class="kop-left">
+    <div class="kop-container d-flex justify-content-between align-items-center pb-2">
+        <div class="kop-left d-flex align-items-center gap-3">
             <?php if (!empty($companyLogo)): ?>
                 <img src="<?= BASE_URL ?>/<?= htmlspecialchars($companyLogo) ?>" alt="Logo Perusahaan" style="max-height: 55px; max-width: 140px; object-fit: contain;">
             <?php else: ?>
@@ -125,14 +142,14 @@ $companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
                 </div>
             <?php endif; ?>
             <div>
-                <div class="company-title"><?= htmlspecialchars($companyName) ?></div>
-                <div class="company-addr"><?= htmlspecialchars($companyAddr) ?><?= !empty($companyCity) ? ', ' . htmlspecialchars($companyCity) : '' ?></div>
-                <div class="company-contacts">
+                <div class="company-title fw-bold fs-5 text-dark"><?= htmlspecialchars($companyName) ?></div>
+                <div class="company-addr small text-dark"><?= htmlspecialchars($companyAddr) ?><?= !empty($companyCity) ? ', ' . htmlspecialchars($companyCity) : '' ?></div>
+                <div class="company-contacts small text-dark">
                     <?php if (!empty($companyPhone)): ?>
-                        <span><i class="bi bi-telephone-fill"></i> <?= htmlspecialchars($companyPhone) ?></span>
+                        <span class="me-2"><i class="bi bi-telephone-fill"></i> <?= htmlspecialchars($companyPhone) ?></span>
                     <?php endif; ?>
                     <?php if (!empty($companyWa)): ?>
-                        <span><i class="bi bi-whatsapp"></i> <?= htmlspecialchars($companyWa) ?></span>
+                        <span class="me-2"><i class="bi bi-whatsapp"></i> <?= htmlspecialchars($companyWa) ?></span>
                     <?php endif; ?>
                     <?php if (!empty($companyEmail)): ?>
                         <span><i class="bi bi-envelope-fill"></i> <?= htmlspecialchars($companyEmail) ?></span>
@@ -140,17 +157,9 @@ $companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
                 </div>
             </div>
         </div>
-
-        <div class="tagline-container">
-            <div class="tagline-divider"></div>
-            <div class="tagline-text">
-                LAPORAN PAJAK MASUKAN<br>
-                <span>DIVISI KEUANGAN &amp; PERPAJAKAN</span>
-            </div>
-        </div>
     </div>
     
-    <div class="header-divider-line"></div>
+    <div class="header-divider-line mb-3" style="border-bottom: 2px solid #000;"></div>
     <?php else: ?>
     <!-- MODE CETAK TANPA KOP -->
     <div class="no-print alert alert-secondary py-1 px-3 small text-center mb-3">
@@ -159,79 +168,59 @@ $companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
     <?php endif; ?>
 
     <!-- JUDUL DOKUMEN & INFO PERIODE -->
-    <div class="title-box-row mb-3">
-        <div class="title-area">
-            <div class="doc-title-main">REKAPITULASI PAJAK MASUKAN (PPN &amp; PPnBM)</div>
-            <div class="doc-title-sub">
-                <span class="line-side"></span>
-                <span class="sub-text"><?= strtoupper($periodeText) ?></span>
-                <span class="line-side"></span>
-            </div>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h5 class="fw-bold text-dark mb-0">REKAPITULASI PAJAK MASUKAN (PPN &amp; PPNBM)</h5>
+            <div class="small fw-semibold text-dark text-uppercase mt-1"><?= htmlspecialchars($periodeText) ?></div>
         </div>
 
-        <div class="doc-meta-box">
-            <div class="box-row-lbl">Tanggal Cetak</div>
-            <div class="box-row-val font-monospace"><?= date('d/m/Y H:i') ?></div>
-            <div class="box-divider"></div>
-            <div class="box-row-lbl">Dicetak Oleh</div>
-            <div class="box-row-val"><?= htmlspecialchars($user['nama'] ?? 'Finance') ?></div>
+        <div class="border border-dark p-2 text-center" style="min-width: 160px; font-size: 11px;">
+            <div class="text-muted small">Tanggal Cetak</div>
+            <div class="fw-bold font-monospace text-dark"><?= date('d/m/Y H:i') ?></div>
         </div>
     </div>
 
-    <!-- TABEL DATA REKAPITULASI PAJAK MASUKAN -->
-    <div class="table-responsive">
-        <table class="table table-bordered table-pajak align-middle mb-0">
+    <!-- TABEL DATA REKAPITULASI PAJAK MASUKAN SESUAI FORMAT USER -->
+    <div class="table-responsive mb-4">
+        <table class="table-pajak align-middle">
             <thead>
-                <tr class="text-center align-middle">
-                    <th style="width: 30px;">No</th>
-                    <th style="width: 130px;">Tanggal &amp; No. PO</th>
-                    <th style="width: 140px;">No. Faktur Pajak</th>
-                    <th>Nama Rekanan Vendor</th>
-                    <th style="width: 65px;">Tarif</th>
-                    <th style="width: 105px;" class="text-end">DPP</th>
-                    <th style="width: 100px;" class="text-end">PPN Masukan</th>
+                <tr>
+                    <th style="width: 35px;">No</th>
+                    <th style="width: 160px;">TANGGAL FAKTUR</th>
+                    <th>VENDOR</th>
+                    <th style="width: 75px;">TARIF</th>
+                    <th style="width: 115px;" class="text-end">DPP</th>
+                    <th style="width: 110px;" class="text-end">PPN MASUKAN</th>
                     <th style="width: 95px;" class="text-end">PPnBM</th>
-                    <th style="width: 110px;" class="text-end">Total Tagihan</th>
+                    <th style="width: 125px;" class="text-end">TAGIHAN</th>
                 </tr>
             </thead>
             <tbody id="printTableBody">
                 <tr>
-                    <td colspan="9" class="text-center py-4 text-muted">
+                    <td colspan="8" class="text-center py-4 text-muted">
                         <div class="spinner-border spinner-border-sm text-primary me-2"></div> Memuat data laporan pajak masukan...
                     </td>
                 </tr>
             </tbody>
-            <tfoot class="table-light">
-                <tr class="fw-bold">
-                    <td colspan="5" class="text-end py-2">GRAND TOTAL:</td>
-                    <td class="text-end font-monospace py-2" id="printGrandDpp">Rp 0</td>
-                    <td class="text-end font-monospace text-dark py-2" id="printGrandPpn">Rp 0</td>
-                    <td class="text-end font-monospace text-dark py-2" id="printGrandPpnbm">Rp 0</td>
-                    <td class="text-end font-monospace text-primary py-2" id="printGrandTotalTagihan">Rp 0</td>
+            <tfoot>
+                <tr class="fw-bold text-dark">
+                    <td colspan="4" class="text-end py-2 pe-3 text-uppercase">Grand Total:</td>
+                    <td class="text-end font-monospace py-2" id="printGrandDpp">0</td>
+                    <td class="text-end font-monospace py-2" id="printGrandPpn">0</td>
+                    <td class="text-end font-monospace py-2" id="printGrandPpnbm">0</td>
+                    <td class="text-end font-monospace py-2" id="printGrandTotalTagihan">0</td>
                 </tr>
             </tfoot>
         </table>
     </div>
 
-    <!-- TANDA TANGAN / OTORISASI -->
-    <div class="row mt-4 pt-3 text-center" style="font-size: 11.5px; page-break-inside: avoid;">
+    <!-- TANDA TANGAN / OTORISASI (HANYA DIBUAT OLEH) -->
+    <div class="row mt-4 pt-2" style="font-size: 11.5px; page-break-inside: avoid;">
         <div class="col-4">
             <div class="text-muted mb-1">Dibuat Oleh:</div>
             <div class="fw-bold text-dark mb-4">Staff Perpajakan / Finance</div>
-            <div style="height: 50px;"></div>
+            <div style="height: 45px;"></div>
             <div class="fw-bold text-decoration-underline text-dark">( <?= htmlspecialchars($user['nama'] ?? 'Staff Finance') ?> )</div>
-        </div>
-        <div class="col-4">
-            <div class="text-muted mb-1">Diperiksa Oleh:</div>
-            <div class="fw-bold text-dark mb-4">Supervisor / Akunting</div>
-            <div style="height: 50px;"></div>
-            <div class="fw-bold text-decoration-underline text-dark">( ........................................ )</div>
-        </div>
-        <div class="col-4">
-            <div class="text-muted mb-1">Mengetahui &amp; Menyetujui:</div>
-            <div class="fw-bold text-dark mb-4">Finance Manager</div>
-            <div style="height: 50px;"></div>
-            <div class="fw-bold text-decoration-underline text-dark">( ........................................ )</div>
         </div>
     </div>
 
@@ -273,62 +262,56 @@ function renderPrintRows(rows, totals) {
 
     let html = '';
     rows.forEach((r, idx) => {
-        const ratePpnText = parseFloat(r.rate_ppn) > 0 ? `${parseFloat(r.rate_ppn)}%` : '0%';
-        const ratePpnbmText = parseFloat(r.rate_ppnbm) > 0 ? `${parseFloat(r.rate_ppnbm)}%` : '-';
-        const tarifCombined = (parseFloat(r.rate_ppnbm) > 0) ? `${parseFloat(r.rate_ppn)} / ${parseFloat(r.rate_ppnbm)}` : `${parseFloat(r.rate_ppn)}%`;
+        const ratePpn = parseFloat(r.rate_ppn) || 0;
+        const ratePpnbm = parseFloat(r.rate_ppnbm) || 0;
+        const tarifCombined = (ratePpnbm > 0) ? `${ratePpn} / ${ratePpnbm}` : `${ratePpn}`;
+
+        // Format baris ke-2: PO-XXXX / INV / FP
+        const infoParts = [];
+        if (r.nomor_po) infoParts.push(r.nomor_po);
+        if (r.nomor_faktur_vendor) infoParts.push(r.nomor_faktur_vendor);
+        if (r.nomor_faktur_pajak) infoParts.push(r.nomor_faktur_pajak);
+        const subInfo = infoParts.join(' / ');
 
         html += `
         <tr>
             <td class="text-center font-monospace">${idx + 1}</td>
             <td>
-                <div class="fw-bold text-dark">${formatTgl(r.tanggal_faktur_pajak)}</div>
-                <div class="font-monospace text-muted" style="font-size: 10px;">${escapeHtml(r.nomor_po || '-')}</div>
-            </td>
-            <td>
-                <span class="font-monospace fw-bold text-dark">${escapeHtml(r.nomor_faktur_pajak || '-')}</span>
-                ${r.nomor_faktur_vendor ? `<div class="text-muted" style="font-size: 9.5px;">Inv: ${escapeHtml(r.nomor_faktur_vendor)}</div>` : ''}
+                <div class="fw-bold text-dark font-monospace">${escapeHtml(r.tanggal_faktur_pajak || '-')}</div>
+                <div class="font-monospace text-muted" style="font-size: 9.5px;">${escapeHtml(subInfo || '-')}</div>
             </td>
             <td>
                 <strong class="text-dark">${escapeHtml(r.vendor || '-')}</strong>
-                ${r.npwp_vendor && r.npwp_vendor !== '-' ? `<div class="text-muted font-monospace" style="font-size: 9.5px;">NPWP: ${escapeHtml(r.npwp_vendor)}</div>` : ''}
             </td>
             <td class="text-center font-monospace">${tarifCombined}</td>
-            <td class="text-end font-monospace">${formatRupiah(r.dpp)}</td>
-            <td class="text-end font-monospace fw-bold text-dark">${formatRupiah(r.ppn_masukan)}</td>
-            <td class="text-end font-monospace">${parseFloat(r.ppnbm) > 0 ? formatRupiah(r.ppnbm) : '-'}</td>
-            <td class="text-end font-monospace fw-bold text-dark">${formatRupiah(r.total_tagihan)}</td>
+            <td class="text-end font-monospace">${formatAngka(r.dpp)}</td>
+            <td class="text-end font-monospace fw-bold text-dark">${formatAngka(r.ppn_masukan)}</td>
+            <td class="text-end font-monospace">${parseFloat(r.ppnbm) > 0 ? formatAngka(r.ppnbm) : '0'}</td>
+            <td class="text-end font-monospace fw-bold text-dark">${formatAngka(r.total_tagihan)}</td>
         </tr>`;
     });
 
     tbody.innerHTML = html;
 
-    // Totals
+    // Grand Totals
     if (totals) {
-        document.getElementById('printGrandDpp').textContent = formatRupiah(totals.grand_total_dpp);
-        document.getElementById('printGrandPpn').textContent = formatRupiah(totals.grand_total_ppn);
-        document.getElementById('printGrandPpnbm').textContent = formatRupiah(totals.grand_total_ppnbm);
-        document.getElementById('printGrandTotalTagihan').textContent = formatRupiah(totals.grand_total_tagihan);
+        document.getElementById('printGrandDpp').textContent = formatAngka(totals.grand_total_dpp);
+        document.getElementById('printGrandPpn').textContent = formatAngka(totals.grand_total_ppn);
+        document.getElementById('printGrandPpnbm').textContent = formatAngka(totals.grand_total_ppnbm);
+        document.getElementById('printGrandTotalTagihan').textContent = formatAngka(totals.grand_total_tagihan);
     }
 }
 
 function showPrintEmpty(msg) {
     document.getElementById('printTableBody').innerHTML = `
         <tr>
-            <td colspan="9" class="text-center py-4 text-muted">${msg}</td>
+            <td colspan="8" class="text-center py-4 text-muted">${msg}</td>
         </tr>`;
 }
 
-function formatTgl(dateStr) {
-    if (!dateStr) return '-';
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-    return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
-}
-
-function formatRupiah(val) {
+function formatAngka(val) {
     const n = parseFloat(val) || 0;
-    return 'Rp ' + n.toLocaleString('id-ID');
+    return n.toLocaleString('id-ID');
 }
 
 function escapeHtml(str) {
