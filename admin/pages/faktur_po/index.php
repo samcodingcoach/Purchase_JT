@@ -188,7 +188,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                 </ul>
             </div>
 
-            <!-- MODAL BODY DENGAN 5 TAB CONTENT (TANPA ICON DI DALAM KONTEN TAB) -->
+            <!-- MODAL BODY DENGAN 5 TAB CONTENT -->
             <div class="modal-body p-4">
                 <div class="tab-content" id="modalDetailTabContent">
                     
@@ -197,18 +197,18 @@ require_once __DIR__ . '/../../components/navbar.php';
                         <div class="row g-4">
                             <div class="col-md-6">
                                 <div class="card bg-light border-0 rounded-3 p-3 h-100">
-                                    <h6 class="fw-bold text-dark mb-3">Dokumen Penerimaan Barang</h6>
+                                    <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Dokumen Penerimaan Barang (RCV)</h6>
                                     
                                     <div class="mb-2">
-                                        <span class="text-muted small d-block">Dokumen Penerimaan (RCV):</span>
+                                        <span class="text-muted small d-block">Nomor Dokumen RCV:</span>
                                         <strong class="text-primary font-monospace fs-6" id="detailNomorRcv">-</strong>
                                     </div>
                                     <div class="mb-2">
-                                        <span class="text-muted small d-block">No. Surat Jalan Vendor (RCV):</span>
-                                        <strong class="text-dark font-monospace fs-6" id="detailNomorSjRcv">-</strong>
+                                        <span class="text-muted small d-block">No. Surat Jalan Vendor:</span>
+                                        <strong class="text-dark font-monospace" id="detailNomorSjRcv">-</strong>
                                     </div>
                                     <div>
-                                        <span class="text-muted small d-block">Tanggal Penerimaan di Gudang:</span>
+                                        <span class="text-muted small d-block">Tanggal Penerimaan Gudang:</span>
                                         <span class="text-dark font-monospace" id="detailTanggalRcv">-</span>
                                     </div>
                                 </div>
@@ -216,14 +216,14 @@ require_once __DIR__ . '/../../components/navbar.php';
 
                             <div class="col-md-6">
                                 <div class="card bg-light border-0 rounded-3 p-3 h-100">
-                                    <h6 class="fw-bold text-dark mb-3">Referensi Purchase Order (PO) &amp; Lokasi</h6>
+                                    <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Referensi PO &amp; Petugas</h6>
                                     
                                     <div class="mb-2">
                                         <span class="text-muted small d-block">No. Purchase Order (PO):</span>
                                         <strong class="text-primary font-monospace fs-6" id="detailNomorPo">-</strong>
                                     </div>
                                     <div class="mb-2">
-                                        <span class="text-muted small d-block">Lokasi Site / Gudang Tujuan:</span>
+                                        <span class="text-muted small d-block">Lokasi Site / Gudang:</span>
                                         <strong class="text-dark" id="detailSite">-</strong>
                                     </div>
                                     <div>
@@ -240,31 +240,31 @@ require_once __DIR__ . '/../../components/navbar.php';
                         <div class="row g-4">
                             <div class="col-md-6">
                                 <div class="card bg-light border-0 rounded-3 p-3 h-100">
-                                    <h6 class="fw-bold text-dark mb-3">Informasi Vendor</h6>
+                                    <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Informasi Vendor</h6>
                                     <div class="mb-2">
-                                        <span class="text-muted small d-block">Nama Vendor:</span>
+                                        <span class="text-muted small d-block">Nama Perusahaan Vendor:</span>
                                         <strong class="text-dark fs-6" id="detailVendor">-</strong>
                                     </div>
                                     <div class="mb-2">
-                                        <span class="text-muted small d-block">Kontak / Telepon Vendor:</span>
-                                        <span class="text-dark" id="detailTeleponVendor">-</span>
+                                        <span class="text-muted small d-block">Kontak / Telepon:</span>
+                                        <span class="text-dark font-monospace" id="detailTeleponVendor">-</span>
                                     </div>
                                     <div>
-                                        <span class="text-muted small d-block">Status Tagihan Dokumen:</span>
-                                        <div id="detailStatusBadge">-</div>
+                                        <span class="text-muted small d-block">Status Tagihan:</span>
+                                        <div id="detailStatusBadge" class="mt-1">-</div>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="col-md-6">
                                 <div class="card bg-light border-0 rounded-3 p-3 h-100">
-                                    <h6 class="fw-bold text-dark mb-3">Informasi Rekening Bank Tujuan Transfer</h6>
+                                    <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Rekening Bank Tujuan Transfer</h6>
                                     <div class="mb-2">
                                         <span class="text-muted small d-block">Nama Bank:</span>
                                         <strong class="text-dark fs-6" id="detailNamaBank">-</strong>
                                     </div>
                                     <div class="mb-2">
-                                        <span class="text-muted small d-block">Nomor Rekening:</span>
+                                        <span class="text-muted small d-block">Nomor Rekening Vendor:</span>
                                         <div class="font-monospace text-primary fw-bold fs-5" id="detailNomorRekening">-</div>
                                     </div>
                                     <div>
@@ -281,14 +281,14 @@ require_once __DIR__ . '/../../components/navbar.php';
                         <div class="row g-4">
                             <div class="col-md-6">
                                 <div class="card bg-light border-0 rounded-3 p-3 h-100">
-                                    <h6 class="fw-bold text-dark mb-3">Nomor &amp; Waktu Tagihan</h6>
+                                    <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Nomor &amp; Waktu Tagihan</h6>
                                     
                                     <div class="mb-2">
                                         <span class="text-muted small d-block">Nomor Faktur Sistem:</span>
                                         <strong class="text-primary font-monospace fs-6" id="detailNomorFaktur">-</strong>
                                     </div>
                                     <div class="mb-2">
-                                        <span class="text-muted small d-block">Nomor Faktur / Invoice Vendor:</span>
+                                        <span class="text-muted small d-block">Nomor Invoice Vendor:</span>
                                         <strong class="text-dark font-monospace fs-6" id="detailNomorInvoiceVendor">-</strong>
                                     </div>
                                     <div class="mb-2">
@@ -310,26 +310,26 @@ require_once __DIR__ . '/../../components/navbar.php';
 
                             <div class="col-md-6">
                                 <div class="card bg-light border-0 rounded-3 p-3 h-100">
-                                    <h6 class="fw-bold text-dark mb-3">Lampiran Berkas Tagihan</h6>
+                                    <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Lampiran Dokumen Vendor</h6>
                                     
                                     <div class="mb-3">
-                                        <span class="text-muted small d-block">Berkas Invoice / Tagihan Vendor:</span>
-                                        <div id="detailFileInvoiceContainer" class="mt-1">
+                                        <span class="text-muted small d-block mb-1">Berkas Invoice / Tagihan Vendor:</span>
+                                        <div id="detailFileInvoiceContainer">
                                             <a href="#" id="detailFileInvoiceLink" target="_blank" class="btn btn-outline-primary btn-sm px-3 py-1">
-                                                Buka Berkas Tagihan Vendor
+                                                <i class="bi bi-file-earmark-text me-1"></i> Buka Berkas Tagihan
                                             </a>
                                         </div>
-                                        <div id="detailFileInvoiceNone" class="text-muted small mt-1 d-none">Tidak ada lampiran invoice.</div>
+                                        <div id="detailFileInvoiceNone" class="text-muted small d-none">Tidak ada lampiran invoice.</div>
                                     </div>
 
                                     <div>
-                                        <span class="text-muted small d-block">Berkas e-Faktur Pajak:</span>
-                                        <div id="detailFilePajakContainer" class="mt-1">
+                                        <span class="text-muted small d-block mb-1">Berkas e-Faktur Pajak:</span>
+                                        <div id="detailFilePajakContainer">
                                             <a href="#" id="detailFilePajakLink" target="_blank" class="btn btn-outline-primary btn-sm px-3 py-1">
-                                                Buka Berkas e-Faktur Pajak
+                                                <i class="bi bi-file-earmark-pdf me-1"></i> Buka Berkas e-Faktur Pajak
                                             </a>
                                         </div>
-                                        <div id="detailFilePajakNone" class="text-muted small mt-1 d-none">Tidak ada lampiran faktur pajak.</div>
+                                        <div id="detailFilePajakNone" class="text-muted small d-none">Tidak ada lampiran faktur pajak.</div>
                                     </div>
                                 </div>
                             </div>
@@ -338,23 +338,24 @@ require_once __DIR__ . '/../../components/navbar.php';
 
                     <!-- TAB 4: RINCIAN BARANG -->
                     <div class="tab-pane fade" id="modal-pane-rincian" role="tabpanel">
-                        <div class="table-responsive border rounded-3">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead class="table-light small text-muted text-uppercase align-middle">
-                                    <tr class="align-middle">
-                                        <th style="width: 40px;" class="text-center align-middle">No</th>
-                                        <th style="width: 120px;" class="align-middle">Kode</th>
-                                        <th class="align-middle">Nama Barang</th>
-                                        <th style="width: 90px;" class="text-center align-middle text-success">Qty Tagih</th>
-                                        <th style="width: 80px;" class="text-center align-middle">Satuan</th>
-                                        <th style="width: 130px;" class="text-end align-middle">Harga Satuan</th>
-                                        <th style="width: 110px;" class="text-end align-middle">Diskon Item</th>
-                                        <th style="width: 140px;" class="text-end align-middle">Subtotal</th>
+                        <div class="table-responsive border rounded-3 overflow-hidden">
+                            <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                                <thead class="table-light text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">
+                                    <tr>
+                                        <th style="width: 40px;" class="text-center">No</th>
+                                        <th style="width: 120px;">Kode</th>
+                                        <th>Nama Barang &amp; Spesifikasi</th>
+                                        <th style="width: 85px;" class="text-center">Qty PO</th>
+                                        <th style="width: 85px;" class="text-center text-success">Qty RCV</th>
+                                        <th style="width: 75px;" class="text-center">Satuan</th>
+                                        <th style="width: 120px;" class="text-end">Harga Satuan</th>
+                                        <th style="width: 100px;" class="text-end">Diskon Item</th>
+                                        <th style="width: 130px;" class="text-end">Subtotal</th>
                                     </tr>
                                 </thead>
                                 <tbody id="detailFakturItemsBody">
                                     <tr>
-                                        <td colspan="8" class="text-center py-4 text-muted">Memuat rincian barang...</td>
+                                        <td colspan="9" class="text-center py-4 text-muted">Memuat rincian barang...</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -364,16 +365,17 @@ require_once __DIR__ . '/../../components/navbar.php';
                     <!-- TAB 5: CATATAN & FINANSIAL -->
                     <div class="tab-pane fade" id="modal-pane-catatan" role="tabpanel">
                         <div class="row g-4">
-                            <div class="col-lg-6">
+                            <div class="col-lg-5">
                                 <div class="card bg-light border-0 rounded-3 p-3 h-100">
-                                    <h6 class="fw-bold text-dark mb-3">Catatan Faktur Pembelian</h6>
+                                    <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Catatan Faktur Pembelian</h6>
                                     <p class="mb-0 small text-dark" id="detailCatatan" style="white-space: pre-wrap;">-</p>
                                 </div>
                             </div>
 
-                            <div class="col-lg-6">
-                                <div class="card bg-light border-0 rounded-3 p-3">
-                                    <h6 class="fw-bold text-dark mb-3">Ringkasan Finansial Tagihan</h6>
+                            <div class="col-lg-7">
+                                <div class="card border border-light-subtle rounded-3 p-3 shadow-none bg-white">
+                                    <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Ringkasan Finansial Tagihan</h6>
+                                    
                                     <div class="d-flex justify-content-between mb-2 small">
                                         <span class="text-muted">Subtotal Kontrak PO (Ref):</span>
                                         <span class="font-monospace" id="finSubtotalPo">Rp 0</span>
@@ -394,15 +396,25 @@ require_once __DIR__ . '/../../components/navbar.php';
                                         <span class="fw-bold text-dark">DPP (Dasar Pengenaan Pajak):</span>
                                         <span class="font-monospace fw-bold text-dark fs-6" id="finDpp">Rp 0</span>
                                     </div>
-                                    <div class="d-flex justify-content-between mb-2 small">
-                                        <span class="text-muted" id="finLabelPpn">PPN:</span>
-                                        <span class="font-monospace" id="finNominalPajak">Rp 0</span>
+
+                                    <!-- INFORMASI PPNBM -->
+                                    <div class="d-flex justify-content-between mb-2 small text-dark d-none" id="finRowPpnbm">
+                                        <span id="finLabelPpnbm">PPnBM:</span>
+                                        <span class="font-monospace fw-semibold" id="finNominalPpnbm">Rp 0</span>
                                     </div>
+
+                                    <!-- INFORMASI PPN -->
+                                    <div class="d-flex justify-content-between mb-2 small text-dark" id="finRowPpn">
+                                        <span id="finLabelPpn">PPN:</span>
+                                        <span class="font-monospace fw-semibold" id="finNominalPajak">Rp 0</span>
+                                    </div>
+
                                     <div class="d-flex justify-content-between mb-2 small d-none" id="finRowBiayaLain">
                                         <span class="text-muted">Biaya Lain-lain / Ongkir:</span>
                                         <span class="font-monospace" id="finBiayaLain">Rp 0</span>
                                     </div>
-                                    <div class="d-flex justify-content-between pt-2 border-top border-2 border-dark">
+                                    
+                                    <div class="d-flex justify-content-between pt-2 border-top border-2 border-dark align-items-center mt-2">
                                         <span class="fw-bold fs-6 text-dark">TOTAL TAGIHAN:</span>
                                         <span class="font-monospace fw-bold text-primary fs-5" id="finTotalTagihan">Rp 0</span>
                                     </div>
@@ -788,22 +800,29 @@ function renderModalDetailContent(d) {
     document.getElementById('modalItemCountBadge').textContent = `${items.length} Item`;
     let itemsHtml = '';
     items.forEach((it, idx) => {
+        const qtyPo = parseFloat(it.qty_po) || 0;
+        const qtyRcv = parseFloat(it.qty_tagih || it.qty_rcv) || 0;
+        const isPpnbmItem = (parseInt(it.PPnBM) === 1 || parseFloat(it.rate_PPnBM) > 0);
+        const itemRatePpnbm = parseFloat(it.rate_PPnBM || d.rate_ppnbm || d.pajak_PPnBM || 0);
+
         itemsHtml += `
         <tr>
-            <td class="text-center">${idx + 1}</td>
-            <td class="font-monospace">${it.kode_barang || '-'}</td>
+            <td class="text-center font-monospace">${idx + 1}</td>
+            <td class="font-monospace">${escapeHtml(it.kode_barang || '-')}</td>
             <td>
-                <strong>${it.nama_barang}</strong>
-                ${it.nama_kategori ? `<div class="small text-muted" style="font-size:0.75rem;">${it.nama_kategori}</div>` : ''}
+                <strong class="text-dark">${escapeHtml(it.nama_barang || '')}</strong>
+                ${it.nama_kategori && it.nama_kategori !== 'Umum' ? `<span class="badge bg-light text-muted border ms-1" style="font-size:0.7rem;">${escapeHtml(it.nama_kategori)}</span>` : ''}
+                ${isPpnbmItem ? `<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle ms-1" style="font-size:0.7rem;">PPnBM ${itemRatePpnbm}%</span>` : ''}
             </td>
-            <td class="text-center font-monospace fw-bold text-success">${parseFloat(it.qty_tagih)}</td>
-            <td class="text-center">${it.satuan || 'Unit'}</td>
+            <td class="text-center font-monospace">${qtyPo}</td>
+            <td class="text-center font-monospace fw-bold text-success">${qtyRcv}</td>
+            <td class="text-center">${escapeHtml(it.satuan || it.satuan_master || 'Unit')}</td>
             <td class="text-end font-monospace">${formatRupiah(it.harga_satuan)}</td>
             <td class="text-end font-monospace">${parseFloat(it.diskon_item) > 0 ? formatRupiah(it.diskon_item) : '-'}</td>
             <td class="text-end font-monospace fw-bold">${formatRupiah(it.subtotal)}</td>
         </tr>`;
     });
-    document.getElementById('detailFakturItemsBody').innerHTML = itemsHtml || '<tr><td colspan="8" class="text-center py-3 text-muted">Tidak ada data rincian barang.</td></tr>';
+    document.getElementById('detailFakturItemsBody').innerHTML = itemsHtml || '<tr><td colspan="9" class="text-center py-4 text-muted">Tidak ada data rincian barang.</td></tr>';
 
     // 5. Tab 5: Catatan & Finansial
     document.getElementById('detailCatatan').textContent = d.keterangan || 'Tidak ada catatan khusus.';
@@ -828,9 +847,37 @@ function renderModalDetailContent(d) {
         rowDiskon.classList.add('d-none');
     }
 
-    document.getElementById('finDpp').textContent = formatRupiah(d.dpp);
-    document.getElementById('finLabelPpn').textContent = `PPN (${d.rate_pajak || 0}%):`;
-    document.getElementById('finNominalPajak').textContent = formatRupiah(d.nominal_pajak);
+    const ratePpn = parseFloat(d.rate_pajak) || 0;
+    const ratePpnbm = parseFloat(d.rate_ppnbm || d.pajak_PPnBM) || 0;
+    const isPpnInclusive = parseInt(d.total_termasuk_pajak) === 1;
+    const isPpnbmInclusive = parseInt(d.total_termasuk_PPnBM) === 1;
+
+    const subtotalRcv = parseFloat(d.subtotal_diterima) || 0;
+    const dasarSetelahDiskon = Math.max(0, subtotalRcv - nilaiRetur - diskon);
+
+    let divisor = 1.0;
+    if (isPpnbmInclusive && ratePpnbm > 0) divisor += (ratePpnbm / 100);
+    if (isPpnInclusive && ratePpn > 0) divisor += (ratePpn / 100);
+
+    let dpp = parseFloat(d.dpp) || Math.round(dasarSetelahDiskon / divisor);
+    let nominalPpnbm = parseFloat(d.nominal_ppnbm) || ((ratePpnbm > 0) ? Math.round(dpp * (ratePpnbm / 100)) : 0);
+    let nominalPpn = parseFloat(d.nominal_pajak) || ((ratePpn > 0) ? Math.round(dpp * (ratePpn / 100)) : 0);
+
+    document.getElementById('finDpp').textContent = formatRupiah(dpp);
+
+    // PPnBM Display
+    const rowPpnbm = document.getElementById('finRowPpnbm');
+    if (ratePpnbm > 0 || nominalPpnbm > 0) {
+        if (rowPpnbm) rowPpnbm.classList.remove('d-none');
+        document.getElementById('finLabelPpnbm').textContent = `PPnBM (${ratePpnbm}%)${isPpnbmInclusive ? ' (Inklusif)' : ''}:`;
+        document.getElementById('finNominalPpnbm').textContent = formatRupiah(nominalPpnbm);
+    } else {
+        if (rowPpnbm) rowPpnbm.classList.add('d-none');
+    }
+
+    // PPN Display
+    document.getElementById('finLabelPpn').textContent = `PPN (${ratePpn}%)${isPpnInclusive ? ' (Inklusif)' : ''}:`;
+    document.getElementById('finNominalPajak').textContent = formatRupiah(nominalPpn);
 
     const biayaLain = parseFloat(d.biaya_lain) || 0;
     const rowBiayaLain = document.getElementById('finRowBiayaLain');

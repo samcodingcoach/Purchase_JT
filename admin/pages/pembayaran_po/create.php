@@ -183,41 +183,43 @@ textarea.form-control {
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
 
-                                <!-- RIWAYAT ANGSURAN SEBELUMNYA -->
-                                <div id="fakturHistoryContainer" class="mt-3" style="display: none;">
-                                    <div class="card border border-light-subtle rounded-3 shadow-none overflow-hidden bg-white">
-                                        <div class="card-header bg-light-subtle py-2 px-3 border-bottom d-flex justify-content-between align-items-center">
-                                            <div class="d-flex align-items-center gap-2">
-                                                <i class="bi bi-clock-history text-primary"></i>
-                                                <span class="fw-bold text-dark small">Riwayat Pembayaran Sebelumnya</span>
-                                            </div>
-                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace px-2 py-1" id="fakturHistoryCount">0 Transaksi</span>
-                                        </div>
-                                        <div class="table-responsive">
-                                            <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.8125rem;">
-                                                <thead class="table-light text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">
-                                                    <tr>
-                                                        <th style="width: 32px;" class="text-center">No</th>
-                                                        <th style="min-width: 120px;">Kode Bayar</th>
-                                                        <th style="min-width: 90px;" class="text-center">Tgl Bayar</th>
-                                                        <th style="min-width: 90px;">Kas / Bank</th>
-                                                        <th style="min-width: 105px;" class="text-end">Nominal</th>
-                                                        <th style="min-width: 105px;" class="text-end">Sisa Tagihan</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody id="fakturHistoryTableBody">
-                                                </tbody>
-                                                <tfoot class="table-light border-top">
-                                                    <tr class="fw-bold">
-                                                        <td colspan="4" class="text-end text-muted small py-2">Total Terbayar:</td>
-                                                        <td class="text-end font-monospace text-success py-2" id="fakturHistoryTotalTerbayar">Rp 0</td>
-                                                        <td></td>
-                                                    </tr>
-                                                </tfoot>
-                                            </table>
-                                        </div>
+                        <!-- RIWAYAT ANGSURAN SEBELUMNYA (FULL WIDTH / MELEBAR MERGE KEDUA KOLOM) -->
+                        <div id="fakturHistoryContainer" class="mt-4" style="display: none;">
+                            <div class="card border border-light-subtle rounded-3 shadow-none overflow-hidden bg-white">
+                                <div class="card-header bg-light-subtle py-2 px-3 border-bottom d-flex justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="fw-bold text-dark small">Riwayat Mutasi &amp; Pembayaran Sebelumnya</span>
                                     </div>
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace px-2 py-1" id="fakturHistoryCount">0 Transaksi</span>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.8125rem;">
+                                        <thead class="table-light text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">
+                                            <tr>
+                                                <th style="width: 40px;" class="text-center">No</th>
+                                                <th style="min-width: 140px;">Kode Bayar</th>
+                                                <th style="min-width: 130px;" class="text-center">Tanggal Pembayaran</th>
+                                                <th style="min-width: 130px;">Kas / Bank Asal</th>
+                                                <th style="min-width: 120px;">No. Ref</th>
+                                                <th style="min-width: 130px;" class="text-end">Transfer</th>
+                                                <th style="min-width: 120px;" class="text-end">Diskon</th>
+                                                <th style="min-width: 130px;" class="text-end">Sisa Tagihan</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="fakturHistoryTableBody">
+                                        </tbody>
+                                        <tfoot class="table-light border-top">
+                                            <tr class="fw-bold">
+                                                <td colspan="5" class="text-end text-muted small py-2">Total Akumulasi Terbayar:</td>
+                                                <td class="text-end font-monospace text-success py-2" id="fakturHistoryTotalTerbayar">Rp 0</td>
+                                                <td class="text-end font-monospace text-danger py-2" id="fakturHistoryTotalDiskon">Rp 0</td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
                                 </div>
                             </div>
                         </div>
@@ -232,8 +234,9 @@ textarea.form-control {
                     <!-- TAB 2: RINCIAN PEMBAYARAN -->
                     <div class="tab-pane fade" id="tab-nominal" role="tabpanel">
                         <div class="row g-4">
+                            <!-- Kolom Kiri: Skema & Tanggal Transaksi -->
                             <div class="col-lg-6">
-                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Skema &amp; Waktu Pembayaran</h6>
+                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Skema &amp; Tanggal Pembayaran</h6>
 
                                 <!-- SKEMA PEMBAYARAN -->
                                 <div class="mb-3">
@@ -250,7 +253,7 @@ textarea.form-control {
                                             <input type="radio" class="btn-check" name="jenis_pembayaran" id="jenisKredit" value="0" onchange="handleJenisPembayaranChange()">
                                             <label class="btn btn-outline-warning w-100 p-2 text-start rounded-3" for="jenisKredit">
                                                 <div class="fw-bold small">Kredit / Sebagian</div>
-                                                <div class="text-muted" style="font-size: 0.72rem;">Angsuran (Maks. s/d TOP)</div>
+                                                <div class="text-muted" style="font-size: 0.72rem;">Angsuran / Termin</div>
                                             </label>
                                         </div>
                                     </div>
@@ -259,12 +262,26 @@ textarea.form-control {
                                 <div class="mb-3">
                                     <label class="form-label small fw-semibold text-dark">Tanggal Pembayaran <span class="text-danger">*</span></label>
                                     <input type="date" class="form-control" id="tanggalBayar" name="tanggal_bayar" value="<?= date('Y-m-d') ?>" required onchange="validateDueDateLimit()">
-                                    <div class="form-text small text-muted">Untuk pembayaran kredit/sebagian, tanggal bayar tidak boleh melewati tanggal jatuh tempo TOP Faktur.</div>
+                                </div>
+
+                                <!-- DISKON PEMBAYARAN -->
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold text-dark">Diskon / Potongan Pembayaran</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text font-monospace text-danger fw-bold">- Rp</span>
+                                        <input type="text" class="form-control text-end font-monospace fw-bold text-danger" id="nominalDiskon" placeholder="0" oninput="handleDiskonInput(this)">
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold text-dark">Keterangan / Alasan Diskon</label>
+                                    <input type="text" class="form-control" id="keteranganDiskon" placeholder="Contoh: Diskon Pelunasan Awal / Negosiasi / Pembulatan">
                                 </div>
                             </div>
 
+                            <!-- Kolom Kanan: Rincian Nominal, Biaya Admin & Estimasi Sisa Tagihan -->
                             <div class="col-lg-6">
-                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Nominal &amp; Kalkulasi Finansial</h6>
+                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Nominal &amp; Ringkasan Kalkulasi</h6>
 
                                 <div class="mb-3">
                                     <label class="form-label small fw-semibold text-dark">Nominal Pembayaran Transfer <span class="text-danger">*</span></label>
@@ -272,20 +289,38 @@ textarea.form-control {
                                         <span class="input-group-text font-monospace fw-bold">Rp</span>
                                         <input type="text" class="form-control text-end font-monospace fw-bold fs-6 text-primary" id="nominalPengiriman" placeholder="0" required oninput="handleNominalInput(this)">
                                     </div>
-                                    <div class="form-text small text-muted">Otomatis berpemisah ribuan saat diketik.</div>
                                 </div>
 
                                 <div class="mb-3">
-                                    <label class="form-label small fw-semibold text-dark">Biaya Admin Bank (Jika Ada)</label>
+                                    <label class="form-label small fw-semibold text-dark">Biaya Admin Bank</label>
                                     <div class="input-group">
                                         <span class="input-group-text font-monospace">Rp</span>
                                         <input type="text" class="form-control text-end font-monospace" id="biayaAdmin" value="0" placeholder="0" oninput="handleBiayaAdminInput(this)">
                                     </div>
                                 </div>
 
-                                <div class="mb-3">
-                                    <label class="form-label small fw-semibold text-dark">Estimasi Sisa Tagihan Sesudah Transaksi</label>
-                                    <input type="text" class="form-control font-monospace fw-bold bg-light" id="displaySisaSesudah" value="Rp 0" readonly>
+                                <!-- KARTU ESTIMASI & RINGKASAN TAGIHAN -->
+                                <div class="card border border-light-subtle rounded-3 bg-light p-3 mt-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                                        <span class="text-muted small">Total Tagihan Berjalan:</span>
+                                        <span class="font-monospace fw-semibold text-dark" id="calcTagihanAwal">Rp 0</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center mb-1 text-primary">
+                                        <span class="small">Nominal Pembayaran:</span>
+                                        <span class="font-monospace fw-bold" id="calcNominalBayar">Rp 0</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom text-danger">
+                                        <span class="small">Diskon Pembayaran:</span>
+                                        <span class="font-monospace fw-bold" id="calcNominalDiskon">Rp 0</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center pt-1">
+                                        <span class="fw-bold small text-dark">Estimasi Sisa Tagihan:</span>
+                                        <span class="font-monospace fw-bold fs-6 text-danger" id="displaySisaSesudah">Rp 0</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center pt-2 mt-2 border-top text-secondary" style="font-size: 0.75rem;">
+                                        <span>Total Pengeluaran Kas (Transfer + Admin):</span>
+                                        <span class="font-monospace fw-semibold" id="calcTotalKasKeluar">Rp 0</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -305,7 +340,6 @@ textarea.form-control {
                         <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom flex-wrap gap-2">
                             <div>
                                 <h6 class="fw-bold text-dark mb-0">Rekening Vendor (Tujuan Transfer Pembayaran)</h6>
-                                <div class="small text-muted">Secara default diambil dari data Faktur PO dan dapat dialihkan ke Rekening Master Vendor atau diubah manual.</div>
                             </div>
                             <div class="d-flex gap-2">
                                 <button type="button" class="btn btn-outline-primary btn-sm px-3" onclick="applyRekeningFromFaktur()" title="Gunakan rekening yang tercatat pada Faktur PO">
@@ -648,16 +682,21 @@ async function selectFaktur(idFaktur) {
             const histContainer = document.getElementById('fakturHistoryContainer');
             const histCount = document.getElementById('fakturHistoryCount');
             const histTotalTerbayar = document.getElementById('fakturHistoryTotalTerbayar');
+            const histTotalDiskon = document.getElementById('fakturHistoryTotalDiskon');
 
             if (f.history_pembayaran && f.history_pembayaran.length > 0) {
                 let histHtml = '';
                 let totalNominal = 0;
+                let totalDiskon = 0;
                 f.history_pembayaran.forEach((h, idx) => {
                     const nominal = parseFloat(h.nominal_pengiriman) || 0;
+                    const diskon = parseFloat(h.nominal_diskon) || 0;
                     const sisa = parseFloat(h.sisa_piutang) || 0;
                     totalNominal += nominal;
+                    totalDiskon += diskon;
                     const bankKas = h.bank_pengirim ? `<span class="badge bg-light text-dark border font-monospace" style="font-size: 0.75rem;">${escapeHtml(h.bank_pengirim)}</span>` : '<span class="text-muted small">-</span>';
-                    
+                    const noRef = h.no_ref ? `<span class="font-monospace text-muted small">${escapeHtml(h.no_ref)}</span>` : '<span class="text-muted small">-</span>';
+
                     histHtml += `
                     <tr>
                         <td class="text-center text-muted font-monospace small">${idx + 1}</td>
@@ -666,17 +705,24 @@ async function selectFaktur(idFaktur) {
                         </td>
                         <td class="text-center font-monospace text-secondary small">${formatDate(h.tanggal_bayar)}</td>
                         <td>${bankKas}</td>
+                        <td>${noRef}</td>
                         <td class="text-end font-monospace fw-bold text-success">${formatRupiah(nominal)}</td>
-                        <td class="text-end font-monospace text-danger">${formatRupiah(sisa)}</td>
+                        <td class="text-end font-monospace ${diskon > 0 ? 'text-danger fw-bold' : 'text-muted'}">${diskon > 0 ? formatRupiah(diskon) : '-'}</td>
+                        <td class="text-end font-monospace text-danger fw-semibold">${formatRupiah(sisa)}</td>
                     </tr>`;
                 });
                 histBody.innerHTML = histHtml;
                 if (histCount) histCount.textContent = `${f.history_pembayaran.length} Transaksi`;
                 if (histTotalTerbayar) histTotalTerbayar.textContent = formatRupiah(totalNominal);
+                if (histTotalDiskon) histTotalDiskon.textContent = formatRupiah(totalDiskon);
                 histContainer.style.display = 'block';
             } else {
                 histContainer.style.display = 'none';
             }
+
+            // Reset Diskon Input
+            document.getElementById('nominalDiskon').value = '';
+            document.getElementById('keteranganDiskon').value = '';
 
             // Sync Nominal Pembayaran jika 1x Bayar (Lunas)
             handleJenisPembayaranChange();
@@ -747,8 +793,15 @@ function clearFakturSelection(e) {
     document.getElementById('dispSisaTagihan').textContent = 'Rp 0';
 
     document.getElementById('fakturHistoryContainer').style.display = 'none';
+    document.getElementById('nominalDiskon').value = '';
+    document.getElementById('keteranganDiskon').value = '';
     document.getElementById('nominalPengiriman').value = '';
-    document.getElementById('displaySisaSesudah').value = 'Rp 0';
+    document.getElementById('biayaAdmin').value = '0';
+    document.getElementById('displaySisaSesudah').textContent = 'Rp 0';
+    if (document.getElementById('calcTagihanAwal')) document.getElementById('calcTagihanAwal').textContent = 'Rp 0';
+    if (document.getElementById('calcNominalBayar')) document.getElementById('calcNominalBayar').textContent = 'Rp 0';
+    if (document.getElementById('calcNominalDiskon')) document.getElementById('calcNominalDiskon').textContent = 'Rp 0';
+    if (document.getElementById('calcTotalKasKeluar')) document.getElementById('calcTotalKasKeluar').textContent = 'Rp 0';
 }
 
 // -------------------------------------------------------------
@@ -772,28 +825,44 @@ function handleNominalInput(input) {
     calculateRemainingBalance();
 }
 
+function handleDiskonInput(input) {
+    let raw = parseRawNumber(input.value);
+    input.value = raw > 0 ? raw.toLocaleString('id-ID') : '';
+
+    const isLunas = document.getElementById('jenisLunas').checked;
+    if (isLunas && currentSelectedFaktur) {
+        const sisa = parseFloat(currentSelectedFaktur.sisa_tagihan) || 0;
+        const sisaSetelahDiskon = Math.max(0, sisa - raw);
+        document.getElementById('nominalPengiriman').value = sisaSetelahDiskon > 0 ? sisaSetelahDiskon.toLocaleString('id-ID') : '0';
+    }
+    calculateRemainingBalance();
+}
+
 function handleBiayaAdminInput(input) {
     let raw = parseRawNumber(input.value);
     input.value = raw > 0 ? raw.toLocaleString('id-ID') : '0';
+    calculateRemainingBalance();
 }
 
 function handleJenisPembayaranChange() {
     const isLunas = document.getElementById('jenisLunas').checked;
     const nominalInput = document.getElementById('nominalPengiriman');
+    const diskonVal = parseRawNumber(document.getElementById('nominalDiskon').value);
 
     if (!currentSelectedFaktur) return;
 
     const sisa = parseFloat(currentSelectedFaktur.sisa_tagihan) || 0;
+    const sisaSetelahDiskon = Math.max(0, sisa - diskonVal);
 
     if (isLunas) {
-        nominalInput.value = sisa > 0 ? sisa.toLocaleString('id-ID') : '0';
+        nominalInput.value = sisaSetelahDiskon > 0 ? sisaSetelahDiskon.toLocaleString('id-ID') : '0';
         nominalInput.readOnly = true;
     } else {
         nominalInput.readOnly = false;
         let currentVal = parseRawNumber(nominalInput.value);
-        if (currentVal >= sisa || currentVal === 0) {
-            let half = Math.round(sisa / 2);
-            nominalInput.value = half.toLocaleString('id-ID');
+        if (currentVal >= sisaSetelahDiskon || currentVal === 0) {
+            let half = Math.round(sisaSetelahDiskon / 2);
+            nominalInput.value = half > 0 ? half.toLocaleString('id-ID') : '';
         }
     }
     calculateRemainingBalance();
@@ -804,9 +873,30 @@ function calculateRemainingBalance() {
     if (!currentSelectedFaktur) return;
     const sisaTagihan = parseFloat(currentSelectedFaktur.sisa_tagihan) || 0;
     const nominalBayar = parseRawNumber(document.getElementById('nominalPengiriman').value);
-    const sisaSesudah = Math.max(0, sisaTagihan - nominalBayar);
+    const nominalDiskon = parseRawNumber(document.getElementById('nominalDiskon').value);
+    const biayaAdmin = parseRawNumber(document.getElementById('biayaAdmin').value);
     
-    document.getElementById('displaySisaSesudah').value = formatRupiah(sisaSesudah);
+    // Perhitungan Sisa Tagihan Faktur: Hanya dikurangi Pembayaran Transfer + Diskon
+    // Biaya Admin TIDAK mengurangi hutang/tagihan faktur
+    const totalPengurangTagihan = nominalBayar + nominalDiskon;
+    const sisaSesudah = Math.max(0, sisaTagihan - totalPengurangTagihan);
+    
+    // Update Tampilan Kalkulasi Tab 2
+    if (document.getElementById('calcTagihanAwal')) {
+        document.getElementById('calcTagihanAwal').textContent = formatRupiah(sisaTagihan);
+    }
+    if (document.getElementById('calcNominalBayar')) {
+        document.getElementById('calcNominalBayar').textContent = formatRupiah(nominalBayar);
+    }
+    if (document.getElementById('calcNominalDiskon')) {
+        document.getElementById('calcNominalDiskon').textContent = formatRupiah(nominalDiskon);
+    }
+    if (document.getElementById('displaySisaSesudah')) {
+        document.getElementById('displaySisaSesudah').textContent = formatRupiah(sisaSesudah);
+    }
+    if (document.getElementById('calcTotalKasKeluar')) {
+        document.getElementById('calcTotalKasKeluar').textContent = formatRupiah(nominalBayar + biayaAdmin);
+    }
 }
 
 function validateDueDateLimit() {
@@ -954,8 +1044,11 @@ async function submitPayment() {
     }
 
     const nominal = parseRawNumber(document.getElementById('nominalPengiriman').value);
-    if (nominal <= 0) {
-        showToast('Nominal pembayaran harus lebih besar dari 0.', 'warning');
+    const nominalDiskon = parseRawNumber(document.getElementById('nominalDiskon').value);
+    const keteranganDiskon = document.getElementById('keteranganDiskon').value.trim();
+
+    if (nominal <= 0 && nominalDiskon <= 0) {
+        showToast('Nominal pembayaran transfer atau potongan diskon harus lebih besar dari 0.', 'warning');
         goToTab('tab-nominal');
         document.getElementById('nominalPengiriman').focus();
         return;
@@ -982,6 +1075,9 @@ async function submitPayment() {
         jenis_pembayaran: document.getElementById('jenisLunas').checked ? 1 : 0,
         tanggal_bayar: document.getElementById('tanggalBayar').value,
         nominal_pengiriman: nominal,
+        nominal_diskon: nominalDiskon,
+        keterangan_diskon: keteranganDiskon,
+        biayaAdmin: parseRawNumber(document.getElementById('biayaAdmin').value),
         biaya_admin: parseRawNumber(document.getElementById('biayaAdmin').value),
         bank_pengirim: bankPengirim,
         norek_pengirim: document.getElementById('norekPengirim').value.trim(),

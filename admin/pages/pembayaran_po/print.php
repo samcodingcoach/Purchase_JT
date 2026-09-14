@@ -206,9 +206,13 @@ $companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
             <div>
                 <div class="text-uppercase fw-bold text-dark" style="font-size: 10.5px; letter-spacing: 0.5px;">
-                    Jumlah Uang Yang Dibayarkan (Transaksi Ini) :
+                    Jumlah Uang Yang Ditransfer (Kas Keluar) :
                 </div>
                 <div class="fs-4 fw-bold text-dark font-monospace mt-1" id="docNominalTransfer">Rp 0</div>
+                <div id="docRowDiskonPayment" class="d-none mt-1" style="font-size: 11px;">
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle fw-bold">Potongan Diskon: <span id="docNominalDiskon">Rp 0</span></span>
+                    <span class="text-muted ms-1" id="docKetDiskon"></span>
+                </div>
             </div>
             <div class="text-end" style="font-size: 11.5px;">
                 <div>Kas / Bank Pengirim: <strong class="font-monospace text-dark" id="docBankAsal">-</strong> (No. Rek: <span class="font-monospace text-dark" id="docNorekAsal">-</span>)</div>
@@ -216,7 +220,7 @@ $companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
             </div>
         </div>
         <div class="mt-2 pt-2 border-top border-dark small text-dark" style="border-top: 1px dashed #333 !important;">
-            <strong>Terbilang:</strong> <em id="docTerbilang"># Nol Rupiah #</em>
+            <strong>Terbilang (Nominal Transfer):</strong> <em id="docTerbilang"># Nol Rupiah #</em>
         </div>
     </div>
 
@@ -227,18 +231,19 @@ $companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
     <table class="table-items-main mb-3">
         <thead>
             <tr>
-                <th style="width: 35px;">NO.</th>
-                <th style="width: 120px;">KODE BAYAR</th>
-                <th style="width: 100px;">TGL BAYAR</th>
-                <th style="width: 110px;">BANK ASAL</th>
-                <th style="width: 100px;">NO. REF</th>
-                <th style="width: 130px;" class="text-end">JUMLAH DIBAYAR</th>
-                <th style="width: 130px;" class="text-end">SISA HUTANG</th>
+                <th style="width: 30px;">NO.</th>
+                <th style="width: 110px;">KODE BAYAR</th>
+                <th style="width: 90px;">TGL BAYAR</th>
+                <th style="width: 100px;">BANK ASAL</th>
+                <th style="width: 90px;">NO. REF</th>
+                <th style="width: 110px;" class="text-end">TRANSFER</th>
+                <th style="width: 95px;" class="text-end">DISKON</th>
+                <th style="width: 110px;" class="text-end">SISA HUTANG</th>
             </tr>
         </thead>
         <tbody id="docHistoryTableBody">
             <tr>
-                <td colspan="7" class="text-center py-3 text-muted">Memuat data rincian pembayaran...</td>
+                <td colspan="8" class="text-center py-3 text-muted">Memuat data rincian pembayaran...</td>
             </tr>
         </tbody>
         <tfoot id="docHistoryTableFoot">
@@ -379,6 +384,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Financials & Status
         const nominal = parseFloat(pay.nominal_pengiriman) || 0;
+        const diskon = parseFloat(pay.nominal_diskon) || 0;
+        const ketDiskon = pay.keterangan_diskon || '';
         const biayaAdmin = parseFloat(pay.biaya_admin) || 0;
         const totalTagihan = parseFloat(pay.total_tagihan) || 0;
         const sisaPiutang = parseFloat(pay.sisa_piutang) || 0;
@@ -389,6 +396,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Box Penekanan Pembayaran Saat Ini
         document.getElementById('docNominalTransfer').textContent = formatRupiah(nominal);
+        
+        if (diskon > 0) {
+            document.getElementById('docRowDiskonPayment').classList.remove('d-none');
+            document.getElementById('docNominalDiskon').textContent = formatRupiah(diskon);
+            document.getElementById('docKetDiskon').textContent = ketDiskon ? `(${escapeHtml(ketDiskon)})` : '';
+        } else {
+            document.getElementById('docRowDiskonPayment').classList.add('d-none');
+        }
+
         document.getElementById('docBankAsal').textContent = pay.bank_pengirim || '-';
         document.getElementById('docNorekAsal').textContent = pay.norek_pengirim || '-';
         document.getElementById('docNoRef').textContent = pay.no_ref || '-';
@@ -404,6 +420,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         let rowsHtml = '';
         let cumulativePaid = 0;
+        let cumulativeDiskon = 0;
 
         if (historyList.length === 0) {
             // Jika tidak ada list, render transaksi saat ini
@@ -415,16 +432,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <td class="font-monospace">${escapeHtml(pay.bank_pengirim || '-')}</td>
                     <td class="font-monospace">${escapeHtml(pay.no_ref || '-')}</td>
                     <td class="text-end font-monospace">${formatRupiah(nominal)}</td>
+                    <td class="text-end font-monospace ${diskon > 0 ? 'text-danger' : ''}">${diskon > 0 ? formatRupiah(diskon) : '-'}</td>
                     <td class="text-end font-monospace">${formatRupiah(sisaPiutang)}</td>
                 </tr>
             `;
             cumulativePaid = nominal;
+            cumulativeDiskon = diskon;
         } else {
             historyList.forEach((h, idx) => {
                 const isCurrent = (parseInt(h.id_pembayaran_detail) === ID_DETAIL);
                 const hNominal = parseFloat(h.nominal_pengiriman) || 0;
+                const hDiskon = parseFloat(h.nominal_diskon) || 0;
                 const hSisa = parseFloat(h.sisa_piutang) || 0;
                 cumulativePaid += hNominal;
+                cumulativeDiskon += hDiskon;
 
                 if (isCurrent) {
                     rowsHtml += `
@@ -438,6 +459,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <td class="font-monospace">${escapeHtml(h.bank_pengirim || '-')}</td>
                             <td class="font-monospace">${escapeHtml(h.no_ref || '-')}</td>
                             <td class="text-end font-monospace fs-6"><strong>${formatRupiah(hNominal)}</strong></td>
+                            <td class="text-end font-monospace ${hDiskon > 0 ? 'text-danger' : ''}"><strong>${hDiskon > 0 ? formatRupiah(hDiskon) : '-'}</strong></td>
                             <td class="text-end font-monospace"><strong>${formatRupiah(hSisa)}</strong></td>
                         </tr>
                     `;
@@ -450,6 +472,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <td class="font-monospace">${escapeHtml(h.bank_pengirim || '-')}</td>
                             <td class="font-monospace">${escapeHtml(h.no_ref || '-')}</td>
                             <td class="text-end font-monospace">${formatRupiah(hNominal)}</td>
+                            <td class="text-end font-monospace ${hDiskon > 0 ? 'text-danger' : ''}">${hDiskon > 0 ? formatRupiah(hDiskon) : '-'}</td>
                             <td class="text-end font-monospace">${formatRupiah(hSisa)}</td>
                         </tr>
                     `;
@@ -463,15 +486,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         tfoot.innerHTML = `
             <tr style="border-top: 2px solid #000; font-weight: bold; background: #fafafa;">
                 <td colspan="5" class="text-end font-monospace">TOTAL NILAI TAGIHAN FAKTUR :</td>
-                <td colspan="2" class="text-end font-monospace">${formatRupiah(totalTagihan)}</td>
+                <td colspan="3" class="text-end font-monospace">${formatRupiah(totalTagihan)}</td>
             </tr>
             <tr style="font-weight: bold; background: #fafafa;">
                 <td colspan="5" class="text-end font-monospace">TOTAL TERBAYAR S.D. SAAT INI :</td>
-                <td colspan="2" class="text-end font-monospace">${formatRupiah(totalTerbayarFaktur || cumulativePaid)}</td>
+                <td colspan="3" class="text-end font-monospace">${formatRupiah(totalTerbayarFaktur || (cumulativePaid + cumulativeDiskon))}</td>
             </tr>
             <tr style="border-top: 1px solid #333; font-weight: bold; background: #f0f0f0;">
                 <td colspan="5" class="text-end font-monospace">SISA TAGIHAN / HUTANG FAKTUR :</td>
-                <td colspan="2" class="text-end font-monospace fs-6">${formatRupiah(sisaPiutang)}</td>
+                <td colspan="3" class="text-end font-monospace fs-6">${formatRupiah(sisaPiutang)}</td>
             </tr>
         `;
 

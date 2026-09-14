@@ -176,6 +176,14 @@ textarea.form-control {
                                     <label class="form-label small fw-semibold text-dark">Skema Pembayaran</label>
                                     <input type="text" class="form-control bg-light font-monospace fw-semibold" id="editSkema" readonly>
                                 </div>
+                                <div class="mb-3" id="editDiskonWrapper">
+                                    <label class="form-label small fw-semibold text-dark">Diskon Pembayaran (Potongan Tagihan)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text font-monospace text-danger fw-bold">- Rp</span>
+                                        <input type="text" class="form-control text-end font-monospace fw-bold text-danger bg-light" id="editNominalDiskon" readonly>
+                                    </div>
+                                    <div class="form-text small text-muted mt-1" id="editKetDiskonDisplay"></div>
+                                </div>
                             </div>
 
                             <div class="col-lg-6">
@@ -465,6 +473,18 @@ function populateForm(d) {
     document.getElementById('editTanggalBayar').value = formatDateTime(d.tanggal_bayar);
     document.getElementById('editSkema').value = parseInt(d.jenis_pembayaran) === 1 ? '1x Bayar (Lunas)' : 'Kredit / Termin';
     document.getElementById('editNominalPengiriman').value = formatThousands(d.nominal_pengiriman);
+    
+    const diskonVal = parseFloat(d.nominal_diskon) || 0;
+    const wrapDiskon = document.getElementById('editDiskonWrapper');
+    if (diskonVal > 0) {
+        wrapDiskon.style.display = 'block';
+        document.getElementById('editNominalDiskon').value = formatThousands(diskonVal);
+        document.getElementById('editKetDiskonDisplay').textContent = d.keterangan_diskon ? `Alasan: ${d.keterangan_diskon}` : '';
+    } else {
+        document.getElementById('editNominalDiskon').value = '0';
+        document.getElementById('editKetDiskonDisplay').textContent = 'Tidak ada potongan diskon pada transaksi ini.';
+    }
+
     document.getElementById('editBiayaAdmin').value = formatThousands(d.biaya_admin);
 
     document.getElementById('editBankPengirim').value = d.bank_pengirim || '';

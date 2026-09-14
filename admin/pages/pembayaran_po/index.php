@@ -297,10 +297,6 @@ require_once __DIR__ . '/../../components/navbar.php';
                     <!-- Diisi dinamis oleh JS -->
                 </div>
             </div>
-
-            <div class="modal-footer bg-light border-top py-2 px-4 d-flex justify-content-end">
-                <button type="button" class="btn btn-secondary btn-sm px-4" data-bs-dismiss="modal">Tutup</button>
-            </div>
         </div>
     </div>
 </div>
@@ -578,7 +574,7 @@ function renderModalContent(d) {
             <div class="row g-3">
                 <div class="col-md-6">
                     <div class="card bg-light border-0 rounded-3 p-3 h-100">
-                        <h6 class="fw-bold text-dark mb-3">Waktu &amp; Skema</h6>
+                        <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Waktu &amp; Skema</h6>
                         <div class="mb-2">
                             <span class="text-muted small d-block">Kode Pembayaran:</span>
                             <strong class="text-primary font-monospace fs-6">${d.kode_pembayaran}</strong>
@@ -600,20 +596,33 @@ function renderModalContent(d) {
 
                 <div class="col-md-6">
                     <div class="card bg-light border-0 rounded-3 p-3 h-100">
-                        <h6 class="fw-bold text-dark mb-3">Kalkulasi Finansial</h6>
+                        <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Kalkulasi Finansial</h6>
+                        
                         <div class="mb-2">
-                            <span class="text-muted small d-block">Nominal Transfer Ini:</span>
+                            <span class="text-muted small d-block">Nominal Transfer Pembayaran:</span>
                             <strong class="text-primary font-monospace fs-5">${formatRupiah(d.nominal_pengiriman)}</strong>
                         </div>
+
+                        <!-- DISKON PEMBAYARAN -->
                         <div class="mb-2">
-                            <span class="text-muted small d-block">Biaya Admin Bank:</span>
+                            <span class="text-muted small d-block">Diskon / Potongan Tagihan:</span>
+                            <strong class="font-monospace ${parseFloat(d.nominal_diskon || 0) > 0 ? 'text-danger' : 'text-muted'}">
+                                ${parseFloat(d.nominal_diskon || 0) > 0 ? '- ' + formatRupiah(d.nominal_diskon) : 'Rp 0'}
+                            </strong>
+                            ${d.keterangan_diskon ? `<div class="mt-1"><span class="badge bg-danger-subtle text-danger border border-danger-subtle" style="font-size: 0.72rem;">${escapeHtml(d.keterangan_diskon)}</span></div>` : ''}
+                        </div>
+
+                        <div class="mb-2">
+                            <span class="text-muted small d-block">Biaya Admin Bank (Operasional Kas):</span>
                             <span class="font-monospace text-muted">${formatRupiah(d.biaya_admin)}</span>
                         </div>
-                        <div class="mb-2">
-                            <span class="text-muted small d-block">Total Beban Kas:</span>
+
+                        <div class="mb-2 pt-2 border-top">
+                            <span class="text-muted small d-block">Total Beban Kas Keluar (Transfer + Admin):</span>
                             <strong class="font-monospace text-dark">${formatRupiah(parseFloat(d.nominal_pengiriman) + parseFloat(d.biaya_admin || 0))}</strong>
                         </div>
-                        <div>
+
+                        <div class="pt-2 border-top">
                             <span class="text-muted small d-block">Sisa Tagihan Faktur:</span>
                             <strong class="font-monospace fs-6 ${sisa <= 0 ? 'text-success' : 'text-danger'}">${formatRupiah(d.sisa_piutang)}</strong>
                         </div>

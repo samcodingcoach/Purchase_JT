@@ -90,7 +90,8 @@ if ($method === 'GET') {
         // Ambil Riwayat Seluruh Pembayaran untuk Faktur Ini
         $idFakturDoc = (int)$detail['id_faktur'];
         $sqlHist = "SELECT ppd.id_pembayaran_detail, ppd.kode_pembayaran, ppd.tanggal_bayar,
-                           ppd.nominal_pengiriman, ppd.biaya_admin, ppd.sisa_piutang,
+                           ppd.nominal_pengiriman, ppd.nominal_diskon, ppd.keterangan_diskon,
+                           ppd.biaya_admin, ppd.sisa_piutang,
                            ppd.bank_pengirim, ppd.no_ref, k.nama_karyawan AS nama_pembuat
                     FROM payment_purchase_detail ppd
                     JOIN payment_purchase pp ON ppd.id_pembayaran = pp.id_pembayaran
@@ -169,6 +170,7 @@ if ($method === 'GET') {
     // Data List
     $sqlList = "SELECT ppd.*,
                        pp.id_faktur, pp.status_pembayaran, pp.jenis_pembayaran,
+                       pp.total_diskon AS master_total_diskon, pp.total_bayar AS master_total_bayar,
                        fp.nomor_faktur, fp.nomor_faktur_vendor, fp.total_tagihan,
                        fp.tanggal_faktur_vendor, fp.tanggal_jatuh_tempo,
                        fp.status AS status_faktur,
@@ -186,23 +188,25 @@ if ($method === 'GET') {
                 LEFT JOIN karyawan k ON ppd.id_karyawan = k.id_karyawan
                 LEFT JOIN karyawan ka ON ppd.id_karyawan_approved = ka.id_karyawan
                 $where
-                ORDER BY ppd.id_pembayaran_detail DESC
+                ORDER BY ppd.tanggal_bayar DESC, ppd.id_pembayaran_detail DESC
                 LIMIT ? OFFSET ?";
-
+    
     $paramsList = array_merge($params, [$limit, $offset]);
     $typesList = $types . "ii";
 
     $stmtL = $conn->prepare($sqlList);
     $stmtL->bind_param($typesList, ...$paramsList);
     $stmtL->execute();
-    $rows = $stmtL->get_result()->fetch_all(MYSQLI_ASSOC);
+    $list = $stmtL->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmtL->close();
 
-    // Ringkasan Metrik Finansial
+    // Summary Metrics
     $sqlMetrics = "SELECT 
-                    COALESCE(SUM(ppd.nominal_pengiriman), 0) AS total_kas_keluar,
-                    COALESCE(SUM(ppd.biaya_admin), 0) AS total_biaya_admin,
                     COUNT(DISTINCT ppd.id_pembayaran_detail) AS total_transaksi,
+                    COALESCE(SUM(ppd.nominal_pengiriman), 0) AS total_kas_keluar,
+                    COALESCE(SUM(ppd.nominal_pengiriman), 0) AS total_nominal_bayar,
+                    COALESCE(SUM(ppd.nominal_diskon), 0) AS total_nominal_diskon,
+                    COALESCE(SUM(ppd.biaya_admin), 0) AS total_biaya_admin,
                     (SELECT COUNT(*) FROM faktur_po WHERE status = 'LUNAS') AS total_faktur_lunas,
                     (SELECT COUNT(*) FROM faktur_po WHERE status = 'SEBAGIAN DIBAYAR') AS total_faktur_kredit,
                     (SELECT COALESCE(SUM(sisa_tagihan), 0) FROM faktur_po WHERE status NOT IN ('LUNAS', 'BATAL')) AS total_sisa_hutang
@@ -210,8 +214,9 @@ if ($method === 'GET') {
     $resM = $conn->query($sqlMetrics);
     $metrics = $resM ? $resM->fetch_assoc() : [];
 
-    sendJson(true, 'Daftar pembayaran berhasil dimuat.', [
-        'rows' => $rows,
+    sendJson(true, 'Data riwayat pembayaran PO berhasil dimuat.', [
+        'rows' => $list,
+        'items' => $list,
         'pagination' => [
             'total' => $totalRows,
             'page' => $page,
@@ -230,7 +235,7 @@ if (in_array($method, ['POST', 'PUT', 'DELETE'])) {
 }
 
 // -------------------------------------------------------------
-// 2. POST: Catat Transaksi Pembayaran Baru (1x Lunas / Kredit)
+// 2. POST: Tambah Transaksi Pembayaran PO Baru
 // -------------------------------------------------------------
 if ($method === 'POST') {
     $rawInput = file_get_contents('php://input');
@@ -241,51 +246,50 @@ if ($method === 'POST') {
     }
 
     $idFaktur = intval($input['id_faktur'] ?? 0);
-    $jenisPembayaran = isset($input['jenis_pembayaran']) ? intval($input['jenis_pembayaran']) : 1; // 1=1x bayar (lunas), 0=kredit (sebagian)
+    $jenisPembayaran = isset($input['jenis_pembayaran']) ? intval($input['jenis_pembayaran']) : 1; // 1=Lunas, 0=Kredit
     $tanggalBayar = trim($input['tanggal_bayar'] ?? date('Y-m-d H:i:s'));
-    if (strlen($tanggalBayar) === 10) {
-        $tanggalBayar .= ' ' . date('H:i:s');
-    }
-
-    $idKaryawanApproved = !empty($input['id_karyawan_approved']) ? intval($input['id_karyawan_approved']) : null;
+    $nominalPengiriman = floatval($input['nominal_pengiriman'] ?? 0);
+    $nominalDiskon = max(0, floatval($input['nominal_diskon'] ?? 0));
+    $keteranganDiskon = trim($input['keterangan_diskon'] ?? '');
+    $biayaAdmin = floatval($input['biaya_admin'] ?? 0);
     $bankPengirim = trim($input['bank_pengirim'] ?? '');
     $norekPengirim = trim($input['norek_pengirim'] ?? '');
     $anPengirim = trim($input['an_pengirim'] ?? '');
-    $nominalPengiriman = floatval($input['nominal_pengiriman'] ?? 0);
-    $biayaAdmin = floatval($input['biaya_admin'] ?? 0);
     $noRef = trim($input['no_ref'] ?? '');
+    $idKaryawanApproved = intval($input['id_karyawan_approved'] ?? 0);
     $keterangan = trim($input['keterangan'] ?? '');
 
-    // Input Rekening Tujuan Vendor
+    // Rekening Vendor Tujuan
     $bankTujuan = trim($input['bank_tujuan'] ?? '');
     $norekTujuan = trim($input['norek_tujuan'] ?? '');
     $anPengiriman = trim($input['an_pengiriman'] ?? '');
 
-    // Validasi Dasar
+    // Validasi Wajib
     if ($idFaktur <= 0) {
-        sendJson(false, 'Dokumen Faktur PO wajib dipilih.', null, 422);
+        sendJson(false, 'Faktur PO wajib dipilih.', null, 422);
     }
-    if ($nominalPengiriman <= 0) {
-        sendJson(false, 'Nominal pembayaran harus lebih besar dari 0.', null, 422);
+    if ($nominalPengiriman <= 0 && $nominalDiskon <= 0) {
+        sendJson(false, 'Nominal pembayaran atau diskon harus lebih besar dari 0.', null, 422);
     }
     if (empty($bankPengirim)) {
-        sendJson(false, 'Nama Bank Pengirim wajib dipilih atau diisi.', null, 422);
+        sendJson(false, 'Bank Pengirim wajib diisi.', null, 422);
     }
-    if (empty($idKaryawanApproved)) {
-        sendJson(false, 'Pejabat/Finance yang menyetujui transfer secara lisan wajib dipilih.', null, 422);
+    if ($idKaryawanApproved <= 0) {
+        sendJson(false, 'Pejabat/Finance yang menyetujui wajib dipilih.', null, 422);
     }
 
-    // Ambil Data Faktur Existing & Master Vendor
-    $stmtF = $conn->prepare("SELECT fp.id_faktur, fp.nomor_faktur, fp.total_tagihan, fp.terbayar, fp.sisa_tagihan, 
-                                    fp.tanggal_faktur_vendor, fp.tanggal_jatuh_tempo, fp.term_of_payment, fp.status,
-                                    fp.nama_bank, fp.nomor_rekening, fp.atas_nama_rekening,
-                                    v.nama_bank AS bank_vendor_master, v.nomor_rekening AS norek_vendor_master,
-                                    v.nama_perusahaan AS nama_vendor
-                             FROM faktur_po fp
-                             JOIN vendor v ON fp.id_vendor = v.id_vendor
-                             WHERE fp.id_faktur = ? FOR UPDATE");
+    // Validasi Tanggal
+    if (strlen($tanggalBayar) === 10) {
+        $tanggalBayar .= ' ' . date('H:i:s');
+    }
+
     $conn->begin_transaction();
 
+    // Kunci row Faktur PO untuk mencegah race condition
+    $stmtF = $conn->prepare("SELECT fp.*, v.nama_bank AS bank_vendor_master, v.nomor_rekening AS norek_vendor_master, v.nama_perusahaan AS nama_vendor 
+                             FROM faktur_po fp 
+                             JOIN vendor v ON fp.id_vendor = v.id_vendor 
+                             WHERE fp.id_faktur = ? FOR UPDATE");
     $stmtF->bind_param("i", $idFaktur);
     $stmtF->execute();
     $faktur = $stmtF->get_result()->fetch_assoc();
@@ -302,9 +306,11 @@ if ($method === 'POST') {
     }
 
     $sisaTagihanExisting = floatval($faktur['sisa_tagihan']);
-    if ($nominalPengiriman > $sisaTagihanExisting) {
+    $totalPengurangTagihan = $nominalPengiriman + $nominalDiskon;
+
+    if ($totalPengurangTagihan > $sisaTagihanExisting) {
         $conn->rollback();
-        sendJson(false, "Nominal pembayaran (Rp " . number_format($nominalPengiriman, 0, ',', '.') . ") melebihi sisa tagihan faktur (Rp " . number_format($sisaTagihanExisting, 0, ',', '.') . ").", null, 422);
+        sendJson(false, "Total pengurang tagihan (Transfer: Rp " . number_format($nominalPengiriman, 0, ',', '.') . " + Diskon: Rp " . number_format($nominalDiskon, 0, ',', '.') . ") melebihi sisa tagihan faktur (Rp " . number_format($sisaTagihanExisting, 0, ',', '.') . ").", null, 422);
     }
 
     // Default Fallback Rekening Tujuan: 1. Faktur PO, 2. Master Vendor
@@ -353,24 +359,27 @@ if ($method === 'POST') {
 
     try {
         // 1. Cek atau Buat Record Master di payment_purchase
-        $stmtC = $conn->prepare("SELECT id_pembayaran FROM payment_purchase WHERE id_faktur = ? LIMIT 1");
+        $stmtC = $conn->prepare("SELECT id_pembayaran, total_bayar, total_diskon FROM payment_purchase WHERE id_faktur = ? LIMIT 1");
         $stmtC->bind_param("i", $idFaktur);
         $stmtC->execute();
         $existingMaster = $stmtC->get_result()->fetch_assoc();
         $stmtC->close();
 
-        $sisaPiutangBaru = max(0, $sisaTagihanExisting - $nominalPengiriman);
+        $sisaPiutangBaru = max(0, $sisaTagihanExisting - $totalPengurangTagihan);
         $statusPembayaranBaru = ($sisaPiutangBaru <= 0) ? 1 : 0; // 1=lunas, 0=belum
 
         if ($existingMaster) {
             $idPembayaran = (int)$existingMaster['id_pembayaran'];
-            $stmtUpM = $conn->prepare("UPDATE payment_purchase SET status_pembayaran = ?, jenis_pembayaran = ? WHERE id_pembayaran = ?");
-            $stmtUpM->bind_param("iii", $statusPembayaranBaru, $jenisPembayaran, $idPembayaran);
+            $totalBayarMaster = floatval($existingMaster['total_bayar']) + $nominalPengiriman;
+            $totalDiskonMaster = floatval($existingMaster['total_diskon']) + $nominalDiskon;
+
+            $stmtUpM = $conn->prepare("UPDATE payment_purchase SET status_pembayaran = ?, jenis_pembayaran = ?, total_bayar = ?, total_diskon = ? WHERE id_pembayaran = ?");
+            $stmtUpM->bind_param("iiddi", $statusPembayaranBaru, $jenisPembayaran, $totalBayarMaster, $totalDiskonMaster, $idPembayaran);
             $stmtUpM->execute();
             $stmtUpM->close();
         } else {
-            $stmtInsM = $conn->prepare("INSERT INTO payment_purchase (id_faktur, status_pembayaran, jenis_pembayaran) VALUES (?, ?, ?)");
-            $stmtInsM->bind_param("iii", $idFaktur, $statusPembayaranBaru, $jenisPembayaran);
+            $stmtInsM = $conn->prepare("INSERT INTO payment_purchase (id_faktur, status_pembayaran, jenis_pembayaran, total_bayar, total_diskon) VALUES (?, ?, ?, ?, ?)");
+            $stmtInsM->bind_param("iiidd", $idFaktur, $statusPembayaranBaru, $jenisPembayaran, $nominalPengiriman, $nominalDiskon);
             $stmtInsM->execute();
             $idPembayaran = $conn->insert_id;
             $stmtInsM->close();
@@ -382,24 +391,24 @@ if ($method === 'POST') {
 
         $sqlD = "INSERT INTO payment_purchase_detail (
                     id_pembayaran, kode_pembayaran, tanggal_bayar, id_karyawan, id_karyawan_approved,
-                    bank_pengirim, norek_pengirim, an_pengirim, nominal_pengiriman, biaya_admin,
-                    no_ref, file_bukti_bayar, sisa_piutang, keterangan,
+                    bank_pengirim, norek_pengirim, an_pengirim, nominal_pengiriman, nominal_diskon, keterangan_diskon,
+                    biaya_admin, no_ref, file_bukti_bayar, sisa_piutang, keterangan,
                     bank_tujuan, norek_tujuan, an_pengiriman
-                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmtD = $conn->prepare($sqlD);
         $stmtD->bind_param(
-            "issiisssddssdssss",
+            "issiisssddsddssdsss",
             $idPembayaran, $kodePembayaran, $tanggalBayar, $idKaryawanInput, $idKaryawanApproved,
-            $bankPengirim, $norekPengirim, $anPengirim, $nominalPengiriman, $biayaAdmin,
-            $noRef, $fileBuktiBayar, $sisaPiutangBaru, $keterangan,
+            $bankPengirim, $norekPengirim, $anPengirim, $nominalPengiriman, $nominalDiskon, $keteranganDiskon,
+            $biayaAdmin, $noRef, $fileBuktiBayar, $sisaPiutangBaru, $keterangan,
             $bankTujuan, $norekTujuan, $anPengiriman
         );
         $stmtD->execute();
         $idDetailBaru = $conn->insert_id;
         $stmtD->close();
 
-        // 3. Update Status & Finansial di faktur_po
-        $terbayarBaru = floatval($faktur['terbayar']) + $nominalPengiriman;
+        // 3. Update Status & Finansial di faktur_po (DPP, PPN, PPnBM tetap terkunci dan tidak berubah)
+        $terbayarBaru = floatval($faktur['terbayar']) + $totalPengurangTagihan;
         $statusFakturBaru = ($sisaPiutangBaru <= 0) ? 'LUNAS' : 'SEBAGIAN DIBAYAR';
 
         $stmtUpF = $conn->prepare("UPDATE faktur_po SET terbayar = ?, sisa_tagihan = ?, status = ?, updated_at = NOW() WHERE id_faktur = ?");
@@ -409,18 +418,21 @@ if ($method === 'POST') {
 
         $conn->commit();
 
+        $descDiskon = ($nominalDiskon > 0) ? " + Diskon Pembayaran Rp " . number_format($nominalDiskon, 0, ',', '.') : "";
         logActivity($conn, [
             'modul' => 'PAYMENT',
             'aksi' => ($statusFakturBaru === 'LUNAS' ? 'PELUNASAN' : 'PEMBAYARAN_SEBAGIAN'),
             'id_referensi' => $idDetailBaru,
             'nomor_referensi' => $kodePembayaran,
-            'deskripsi' => "Mencatat transaksi pembayaran {$kodePembayaran} senilai Rp " . number_format($nominalPengiriman, 0, ',', '.') . " untuk Faktur {$faktur['nomor_faktur']} (Status Faktur: {$statusFakturBaru})",
+            'deskripsi' => "Mencatat transaksi pembayaran {$kodePembayaran} transfer Rp " . number_format($nominalPengiriman, 0, ',', '.') . "{$descDiskon} untuk Faktur {$faktur['nomor_faktur']} (Status Faktur: {$statusFakturBaru})",
             'data_sesudahnya' => [
                 'id_pembayaran_detail' => $idDetailBaru,
                 'kode_pembayaran' => $kodePembayaran,
                 'id_faktur' => $idFaktur,
                 'nomor_faktur' => $faktur['nomor_faktur'],
                 'nominal_pengiriman' => $nominalPengiriman,
+                'nominal_diskon' => $nominalDiskon,
+                'keterangan_diskon' => $keteranganDiskon,
                 'biaya_admin' => $biayaAdmin,
                 'sisa_piutang' => $sisaPiutangBaru,
                 'status_faktur' => $statusFakturBaru,
@@ -434,6 +446,7 @@ if ($method === 'POST') {
             'id_pembayaran' => $idPembayaran,
             'kode_pembayaran' => $kodePembayaran,
             'nominal_pengiriman' => $nominalPengiriman,
+            'nominal_diskon' => $nominalDiskon,
             'sisa_piutang' => $sisaPiutangBaru,
             'status_faktur' => $statusFakturBaru
         ]);
