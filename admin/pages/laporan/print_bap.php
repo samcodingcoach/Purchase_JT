@@ -69,7 +69,7 @@ $companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
             </button>
             
             <button type="button" class="btn btn-primary btn-sm px-4 fw-bold shadow-sm" onclick="window.print()">
-                <i class="bi bi-printer-fill me-1"></i> Cetak Dokumen (Print / PDF)
+                <i class="bi bi-printer-fill me-1"></i> Cetak
             </button>
         </div>
     </div>

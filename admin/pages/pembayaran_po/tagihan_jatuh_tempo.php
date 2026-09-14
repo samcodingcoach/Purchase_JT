@@ -89,7 +89,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                 <i class="bi bi-envelope-exclamation me-1"></i> Kirim Peringatan (H-3 &amp; Lewat Tempo)
             </button>
             <button type="button" class="btn btn-light border btn-sm shadow-sm" onclick="loadTagihanData()" title="Refresh">
-                <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+                <i class="bi bi-arrow-clockwise me-1"></i> Refresh Data
             </button>
         </div>
     </div>

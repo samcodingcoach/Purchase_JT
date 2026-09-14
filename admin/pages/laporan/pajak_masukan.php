@@ -28,7 +28,7 @@ require_once __DIR__ . '/../../components/navbar.php';
         </div>
         <div class="d-flex gap-2">
             <button type="button" class="btn btn-outline-secondary filter-btn px-3" onclick="loadPajakReport()">
-                <i class="bi bi-arrow-clockwise me-1"></i> Refresh Data
+                <i class="bi bi-arrow-clockwise me-1"></i> Refresh Data Data
             </button>
             <button type="button" class="btn btn-outline-primary filter-btn px-3 shadow-sm fw-semibold" onclick="openModalPilihTahunRekap()">
                 <i class="bi bi-file-earmark-bar-graph me-1"></i> Cetak Rekapitulasi

@@ -33,7 +33,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                 <i class="bi bi-plus-lg me-1"></i> Buat Retur PO
             </a>
             <button type="button" class="btn btn-outline-secondary btn-sm px-3 shadow-sm" onclick="loadReturList(1)">
-                <i class="bi bi-arrow-clockwise me-1"></i> Refresh Data
+                <i class="bi bi-arrow-clockwise me-1"></i> Refresh Data Data
             </button>
         </div>
     </div>

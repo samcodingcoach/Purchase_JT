@@ -434,7 +434,7 @@ require_once __DIR__ . '/../../components/navbar.php';
             <!-- MODAL FOOTER -->
             <div class="modal-footer bg-light py-2 px-4 d-flex justify-content-between">
                 <a href="#" id="modalBtnPrint" class="btn btn-outline-dark btn-sm px-3 fw-semibold" target="_blank">
-                    <i class="bi bi-printer me-1"></i> Cetak Faktur (Print / PDF)
+                    <i class="bi bi-printer me-1"></i> Cetak
                 </a>
                 <button type="button" class="btn btn-secondary btn-sm px-4" data-bs-dismiss="modal">Tutup</button>
             </div>

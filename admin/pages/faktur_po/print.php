@@ -46,7 +46,7 @@ $companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
     <div class="container d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div class="d-flex align-items-center gap-3">
             <span class="fw-bold fs-6">
-                <i class="bi bi-printer text-info me-1"></i> Cetak Faktur Purchase Order
+                <i class="bi bi-printer text-info me-1"></i> Cetak
             </span>
             <span class="badge bg-secondary font-monospace" id="toolbarNomorFaktur">...</span>
             <span class="badge bg-primary" id="toolbarStatusFaktur">...</span>
@@ -68,7 +68,7 @@ $companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
             </a>
             
             <button type="button" class="btn btn-primary btn-sm px-4 fw-bold shadow-sm" onclick="window.print()">
-                <i class="bi bi-printer-fill me-1"></i> Cetak Dokumen (Print / PDF)
+                <i class="bi bi-printer-fill me-1"></i> Cetak
             </button>
         </div>
     </div>

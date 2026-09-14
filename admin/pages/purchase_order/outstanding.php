@@ -24,7 +24,7 @@ require_once __DIR__ . '/../../components/navbar.php';
         </div>
         <div>
             <button type="button" class="btn btn-primary btn-sm fw-semibold" onclick="loadOutstandingData()">
-                <i class="bi bi-arrow-clockwise me-1"></i> Refresh Data
+                <i class="bi bi-arrow-clockwise me-1"></i> Refresh Data Data
             </button>
         </div>
     </div>

@@ -28,7 +28,7 @@ require_once __DIR__ . '/../../components/navbar.php';
         </div>
         <div class="d-flex align-items-center gap-2">
             <button type="button" class="btn btn-outline-secondary btn-sm px-3 shadow-sm" onclick="loadPoList(1)">
-                <i class="bi bi-arrow-clockwise me-1"></i> Refresh Data
+                <i class="bi bi-arrow-clockwise me-1"></i> Refresh Data Data
             </button>
         </div>
     </div>
