@@ -1,19 +1,31 @@
 <?php
 /**
- * Cetak Berita Acara Penyesuaian Stok (Stock Adjustment)
+ * Halaman Cetak Berita Acara Penyesuaian Stok (Stock Adjustment)
  * Path: admin/pages/adjustment_stok/print.php
+ * Format: Terintegrasi External CSS (styles/print_document.css) sesuai template standar sistem
  */
 
 require_once __DIR__ . '/../../../config/config.php';
-require_once __DIR__ . '/../../../config/session.php';
 require_once __DIR__ . '/../../../config/koneksi.php';
+require_once __DIR__ . '/../../../config/session.php';
 
 $user = requireAuth([ROLE_ADMIN, ROLE_LOGISTIK, ROLE_MEKANIK, ROLE_MANAGER]);
-
 $id = isset($_GET['id']) && is_numeric($_GET['id']) ? (int)$_GET['id'] : 0;
+$useKop = !isset($_GET['kop']) || (int)$_GET['kop'] === 1;
+
 if ($id <= 0) {
     die('ID Adjustment tidak valid.');
 }
+
+// Ambil Data Profil Perusahaan
+$profile = getCompanyProfile($conn);
+$companyName = !empty($profile['nama']) ? $profile['nama'] : 'PT Jaya Teknis Indonesia';
+$companyAddr = !empty($profile['alamat']) ? $profile['alamat'] : 'Jl. Perak Timur No. 100, Surabaya';
+$companyCity = trim((!empty($profile['kota']) ? $profile['kota'] : '') . (!empty($profile['provinsi']) ? ', ' . $profile['provinsi'] : ''));
+$companyPhone = !empty($profile['telepon1']) ? $profile['telepon1'] : '';
+$companyWa = !empty($profile['whatsapp']) ? $profile['whatsapp'] : '';
+$companyEmail = !empty($profile['email']) ? $profile['email'] : 'logistik@jayateknis.co.id';
+$companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
 
 // Query Header
 $stmt = $conn->prepare("
@@ -28,11 +40,11 @@ $stmt = $conn->prepare("
         a.tanggal_approved,
         s.nama_site,
         s.kode_site AS inisial_site,
-        k_created.nama_lengkap AS pembuat_nama,
-        k_created.username AS pembuat_user,
+        k_created.nama_karyawan AS pembuat_nama,
+        k_created.kode_karyawan AS pembuat_kode,
         j_created.nama_jabatan AS pembuat_jabatan,
-        k_app.nama_lengkap AS approver_nama,
-        k_app.username AS approver_user,
+        k_app.nama_karyawan AS approver_nama,
+        k_app.kode_karyawan AS approver_kode,
         j_app.nama_jabatan AS approver_jabatan
     FROM adjustment_stok a
     LEFT JOIN site s ON a.id_site = s.id_site
@@ -51,6 +63,37 @@ $stmt->close();
 
 if (!$header) {
     die('Data Adjustment tidak ditemukan.');
+}
+
+// Validasi Status: Hanya boleh dicetak jika sudah APPROVED (disetujui)
+if ($header['status'] !== 'APPROVED') {
+    http_response_code(403);
+    echo '
+    <!DOCTYPE html>
+    <html lang="id">
+    <head>
+        <meta charset="UTF-8">
+        <title>Dokumen Belum Disetujui</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    </head>
+    <body class="bg-light d-flex align-items-center justify-content-center min-vh-100 p-3">
+        <div class="card shadow-sm border-0 text-center p-4" style="max-width: 480px;">
+            <div class="card-body">
+                <i class="bi bi-exclamation-triangle text-warning display-4 d-block mb-3"></i>
+                <h5 class="fw-bold text-dark mb-2">Dokumen Belum Disetujui</h5>
+                <p class="text-muted small mb-4">
+                    Berita Acara Penyesuaian Stok <strong>' . htmlspecialchars($header['nomor_adjustment']) . '</strong> saat ini berstatus <span class="badge bg-secondary">' . htmlspecialchars($header['status']) . '</span> dan belum dapat dicetak sampai disetujui oleh Divisi Logistik.
+                </p>
+                <div class="d-flex justify-content-center gap-2">
+                    <button type="button" class="btn btn-secondary btn-sm px-4" onclick="window.close()">Tutup Halaman</button>
+                    <a href="' . BASE_URL . '/admin/pages/adjustment_stok/index.php" class="btn btn-primary btn-sm px-4">Kembali ke Daftar</a>
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>';
+    exit;
 }
 
 // Query Detail
@@ -81,12 +124,18 @@ $stmtDtl->bind_param("i", $id);
 $stmtDtl->execute();
 $resDtl = $stmtDtl->get_result();
 $items = [];
+$totalKtsPenyesuaian = 0;
 $totalNilaiSelisih = 0;
+
 while ($r = $resDtl->fetch_assoc()) {
     $items[] = $r;
+    $totalKtsPenyesuaian += abs((float)$r['qty_adjustment']);
     $totalNilaiSelisih += (float)$r['subtotal_adjustment'];
 }
 $stmtDtl->close();
+
+$kolomKtsTitle = ($header['jenis_adjustment'] === 'PENGURANGAN') ? 'Kts Kurang' : 'Kts Tambah';
+$isPengurangan = ($header['jenis_adjustment'] === 'PENGURANGAN');
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -94,238 +143,262 @@ $stmtDtl->close();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Berita Acara Stock Adjustment - <?= htmlspecialchars($header['nomor_adjustment']) ?></title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            font-size: 12px;
-            color: #111;
-            margin: 20px;
-            line-height: 1.4;
-        }
-        .header-box {
-            text-align: center;
-            border-bottom: 2px solid #222;
-            padding-bottom: 8px;
-            margin-bottom: 15px;
-        }
-        .header-box h2 {
-            margin: 0 0 4px 0;
-            font-size: 16px;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-        }
-        .header-box p {
-            margin: 0;
-            font-size: 11px;
-            color: #555;
-        }
-        .info-table {
-            width: 100%;
-            margin-bottom: 15px;
-            font-size: 12px;
-        }
-        .info-table td {
-            padding: 3px 6px;
-            vertical-align: top;
-        }
-        .table-data {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-            font-size: 11px;
-        }
-        .table-data th, .table-data td {
-            border: 1px solid #444;
-            padding: 5px 6px;
-        }
-        .table-data th {
-            background-color: #f2f2f2;
-            text-align: center;
-            font-weight: bold;
-        }
-        .text-center { text-align: center; }
-        .text-end { text-align: right; }
-        .font-monospace { font-family: 'Courier New', monospace; }
-        .fw-bold { font-weight: bold; }
-        
-        .signature-table {
-            width: 100%;
-            margin-top: 30px;
-            page-break-inside: avoid;
-        }
-        .signature-table td {
-            width: 33.33%;
-            text-align: center;
-            vertical-align: top;
-        }
-        .sign-space {
-            height: 65px;
-        }
-
-        .status-stamp {
-            display: inline-block;
-            padding: 3px 8px;
-            font-weight: bold;
-            border-radius: 3px;
-            border: 1px solid;
-            font-size: 11px;
-        }
-        .status-APPROVED { border-color: #198754; color: #198754; }
-        .status-PENDING { border-color: #ffc107; color: #b58105; }
-        .status-DRAFT { border-color: #6c757d; color: #6c757d; }
-        .status-REJECTED { border-color: #dc3545; color: #dc3545; }
-        .status-BATAL { border-color: #dc3545; color: #dc3545; }
-
-        @media print {
-            .no-print { display: none !important; }
-            body { margin: 10mm 15mm; }
-        }
-    </style>
+    <!-- Bootstrap CSS & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <!-- External Print Stylesheet Standard -->
+    <link href="<?= BASE_URL ?>/styles/print_document.css" rel="stylesheet">
 </head>
-<body>
+<body class="print-mode">
 
-    <!-- Tombol Cetak -->
-    <div class="no-print" style="margin-bottom: 20px; text-align: right;">
-        <button onclick="window.print()" style="padding: 6px 16px; background-color: #0d6efd; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold;">
-            Cetak Dokumen
-        </button>
-        <button onclick="window.close()" style="padding: 6px 14px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; margin-left: 5px;">
-            Tutup
-        </button>
+<!-- TOOLBAR KONTROL CETAK (NO PRINT) -->
+<div class="container-fluid no-print py-2 bg-dark text-white mb-3 shadow-sm">
+    <div class="container d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-3">
+            <span class="fw-bold fs-6">
+                <i class="bi bi-printer text-info me-1"></i> Berita Acara Stock Adjustment
+            </span>
+            <span class="badge bg-secondary font-monospace"><?= htmlspecialchars($header['nomor_adjustment']) ?></span>
+            <span class="badge <?= $header['status'] === 'APPROVED' ? 'bg-success' : ($header['status'] === 'PENDING' ? 'bg-warning text-dark' : 'bg-secondary') ?>"><?= $header['status'] ?></span>
+        </div>
+        
+        <div class="d-flex align-items-center gap-2">
+            <!-- Switch Kop Surat -->
+            <div class="btn-group btn-group-sm me-2" role="group">
+                <a href="?id=<?= $id ?>&kop=1" class="btn <?= $useKop ? 'btn-light fw-bold text-dark' : 'btn-outline-light' ?>">
+                    <i class="bi bi-file-earmark-richtext me-1"></i> Dengan Kop
+                </a>
+                <a href="?id=<?= $id ?>&kop=0" class="btn <?= !$useKop ? 'btn-light fw-bold text-dark' : 'btn-outline-light' ?>">
+                    <i class="bi bi-file-earmark me-1"></i> Tanpa Kop
+                </a>
+            </div>
+
+            <a href="<?= BASE_URL ?>/admin/pages/adjustment_stok/index.php" class="btn btn-outline-light btn-sm px-3">
+                <i class="bi bi-arrow-left me-1"></i> Kembali
+            </a>
+            
+            <button type="button" class="btn btn-primary btn-sm px-4 fw-bold shadow-sm" onclick="window.print()">
+                <i class="bi bi-printer-fill me-1"></i> Cetak Dokumen (Print / PDF)
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- CONTAINER UTAMA DOKUMEN -->
+<div class="print-wrapper <?= !$useKop ? 'no-kop' : '' ?>" id="printContainer">
+    
+    <?php if ($useKop): ?>
+    <!-- KOP SURAT (SESUAI PROFIL PERUSAHAAN) -->
+    <div class="kop-container">
+        <div class="kop-left">
+            <?php if (!empty($companyLogo) && file_exists(__DIR__ . '/../../../uploads/profile/' . $companyLogo)): ?>
+                <img src="<?= BASE_URL ?>/uploads/profile/<?= htmlspecialchars($companyLogo) ?>" alt="Logo" style="width: 54px; height: 54px; object-fit: contain; flex-shrink: 0;">
+            <?php else: ?>
+                <svg width="54" height="54" viewBox="0 0 100 100" style="flex-shrink: 0;">
+                    <polygon points="50,4 92,27 92,73 50,96 8,73 8,27" fill="none" stroke="#000" stroke-width="8" stroke-linejoin="round"/>
+                    <polyline points="8,27 50,50 92,27" fill="none" stroke="#000" stroke-width="8" stroke-linejoin="round"/>
+                    <line x1="50" y1="50" x2="50" y2="96" stroke="#000" stroke-width="8"/>
+                    <polygon points="50,22 74,35 50,48 26,35" fill="#000"/>
+                    <polygon points="26,41 46,51 46,76 26,65" fill="#000"/>
+                    <polygon points="74,41 54,51 54,76 74,65" fill="#000"/>
+                </svg>
+            <?php endif; ?>
+
+            <div>
+                <div class="company-title"><?= htmlspecialchars($companyName) ?></div>
+                <div class="company-addr"><?= htmlspecialchars($companyAddr) ?><?= $companyCity ? ' - ' . htmlspecialchars($companyCity) : '' ?></div>
+                <div class="company-contacts">
+                    <?php if (!empty($companyPhone)): ?>
+                        <span><i class="bi bi-telephone-fill"></i> <?= htmlspecialchars($companyPhone) ?></span>
+                    <?php endif; ?>
+                    <?php if (!empty($companyWa)): ?>
+                        <span><i class="bi bi-whatsapp"></i> <?= htmlspecialchars($companyWa) ?></span>
+                    <?php endif; ?>
+                    <?php if (!empty($companyEmail)): ?>
+                        <span><i class="bi bi-envelope-fill"></i> <?= htmlspecialchars($companyEmail) ?></span>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+
+        <div class="tagline-container">
+            <div class="tagline-divider"></div>
+            <div class="tagline-text">
+                SOLUSI<br>LOGISTIK<br>UNTUK<br>INDUSTRI
+            </div>
+        </div>
+    </div>
+    
+    <div class="header-divider-line"></div>
+    <?php else: ?>
+    <!-- MODE CETAK TANPA KOP -->
+    <div class="no-print alert alert-secondary py-1 px-3 small text-center mb-3">
+        <i class="bi bi-info-circle me-1"></i> <strong>Mode Cetak Tanpa Kop Surat Aktif</strong>: Bagian atas dikosongkan untuk dicetak pada kertas berkop resmi perusahaan.
+    </div>
+    <?php endif; ?>
+
+    <!-- JUDUL DOKUMEN & KOTAK NOMOR DOKUMEN -->
+    <div class="title-box-row">
+        <div class="title-area">
+            <div class="doc-title-main">BERITA ACARA PENYESUAIAN STOK</div>
+            <div class="doc-title-sub">
+                <span class="line-side"></span>
+                <span class="sub-text">STOCK &nbsp; ADJUSTMENT &nbsp; REPORT</span>
+                <span class="line-side"></span>
+            </div>
+        </div>
+
+        <div class="doc-meta-box">
+            <div class="box-row-lbl">No. Dokumen</div>
+            <div class="box-row-val font-monospace"><?= htmlspecialchars($header['nomor_adjustment']) ?></div>
+            <div class="box-divider"></div>
+            <div class="box-row-lbl">Tanggal</div>
+            <div class="box-row-val"><?= date('d/m/Y', strtotime($header['tanggal_adjustment'])) ?></div>
+        </div>
     </div>
 
-    <!-- Header Perusahaan -->
-    <div class="header-box">
-        <h2>BERITA ACARA PENYESUAIAN STOK (STOCK ADJUSTMENT)</h2>
-        <p>PT JAYA TEKNIK UTAMA - SISTEM MANAJEMEN LOGISTIK &amp; PERSEDIAAN</p>
+    <!-- METADATA 2 KOLOM -->
+    <div class="info-grid">
+        <div class="info-col-left">
+            <table class="table-meta-details">
+                <tr>
+                    <td class="lbl">Lokasi Site / Gudang</td>
+                    <td class="colon">:</td>
+                    <td class="val fw-bold"><?= htmlspecialchars($header['nama_site']) ?></td>
+                </tr>
+                <tr>
+                    <td class="lbl">Jenis Penyesuaian</td>
+                    <td class="colon">:</td>
+                    <td class="val fw-bold"><?= htmlspecialchars($header['jenis_adjustment']) ?></td>
+                </tr>
+                <tr>
+                    <td class="lbl">Alasan Penyesuaian</td>
+                    <td class="colon">:</td>
+                    <td class="val"><?= htmlspecialchars($header['alasan']) ?></td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="info-col-right">
+            <table class="table-meta-details">
+                <tr>
+                    <td class="lbl">Petugas Pembuat</td>
+                    <td class="colon">:</td>
+                    <td class="val">
+                        <?= htmlspecialchars($header['pembuat_nama'] ?: '-') ?>
+                        <?= !empty($header['pembuat_kode']) ? '<span class="text-muted font-monospace">(' . htmlspecialchars($header['pembuat_kode']) . ')</span>' : '' ?>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="lbl">Jabatan Pembuat</td>
+                    <td class="colon">:</td>
+                    <td class="val"><?= htmlspecialchars($header['pembuat_jabatan'] ?: '-') ?></td>
+                </tr>
+                <tr>
+                    <td class="lbl">Status Dokumen</td>
+                    <td class="colon">:</td>
+                    <td class="val fw-bold"><?= htmlspecialchars($header['status']) ?></td>
+                </tr>
+            </table>
+        </div>
     </div>
 
-    <!-- Metadata Informasi Dokumen -->
-    <table class="info-table">
-        <tr>
-            <td style="width: 18%;" class="fw-bold">No. Transaksi</td>
-            <td style="width: 2%;">:</td>
-            <td style="width: 35%;" class="fw-bold font-monospace"><?= htmlspecialchars($header['nomor_adjustment']) ?></td>
-            <td style="width: 18%;" class="fw-bold">Lokasi Site / Gudang</td>
-            <td style="width: 2%;">:</td>
-            <td style="width: 25%;"><?= htmlspecialchars($header['nama_site']) ?> (<?= htmlspecialchars($header['inisial_site'] ?: '-') ?>)</td>
-        </tr>
-        <tr>
-            <td class="fw-bold">Tanggal Penyesuaian</td>
-            <td>:</td>
-            <td><?= date('d/m/Y H:i', strtotime($header['tanggal_adjustment'])) ?></td>
-            <td class="fw-bold">Jenis Penyesuaian</td>
-            <td>:</td>
-            <td class="fw-bold"><?= htmlspecialchars($header['jenis_adjustment']) ?></td>
-        </tr>
-        <tr>
-            <td class="fw-bold">Alasan Penyesuaian</td>
-            <td>:</td>
-            <td><?= htmlspecialchars($header['alasan']) ?></td>
-            <td class="fw-bold">Status Dokumen</td>
-            <td>:</td>
-            <td>
-                <span class="status-stamp status-<?= $header['status'] ?>"><?= $header['status'] ?></span>
-            </td>
-        </tr>
-        <?php if (!empty($header['keterangan'])): ?>
-        <tr>
-            <td class="fw-bold">Keterangan</td>
-            <td>:</td>
-            <td colspan="4"><?= nl2br(htmlspecialchars($header['keterangan'])) ?></td>
-        </tr>
-        <?php endif; ?>
-    </table>
-
-    <!-- Tabel Rincian Barang -->
-    <table class="table-data">
+    <!-- TABEL BARANG UTAMA -->
+    <table class="table-items-main">
         <thead>
             <tr>
-                <th style="width: 30px;">No</th>
-                <th style="width: 90px;">Kode</th>
-                <th>Nama Barang / Deskripsi</th>
-                <th style="width: 60px;">Satuan</th>
-                <th style="width: 70px;">Stok Sistem</th>
-                <th style="width: 70px;">Qty Fisik</th>
-                <th style="width: 75px;">Selisih (+/-)</th>
-                <th style="width: 70px;">Stok Akhir</th>
-                <th style="width: 95px;">Estimasi Harga</th>
-                <th style="width: 105px;">Subtotal Selisih</th>
+                <th style="width: 35px;">No</th>
+                <th>Nama Barang</th>
+                <th style="width: 65px;">Satuan</th>
+                <th style="width: 80px;">Kts Sistem</th>
+                <th style="width: 90px;"><?= $kolomKtsTitle ?></th>
+                <th style="width: 80px;">Kts Akhir</th>
+                <th style="width: 105px;">Harga</th>
+                <th style="width: 140px;">Catatan</th>
             </tr>
         </thead>
         <tbody>
             <?php if (empty($items)): ?>
                 <tr>
-                    <td colspan="10" class="text-center" style="padding: 15px;">Tidak ada rincian barang.</td>
+                    <td colspan="8" class="text-center" style="padding: 15px;">Tidak ada rincian barang.</td>
                 </tr>
             <?php else: ?>
                 <?php foreach ($items as $idx => $item): 
-                    $adj = (float)$item['qty_adjustment'];
-                    $adjDisplay = ($adj > 0 ? '+' : '') . number_format($adj, 0, ',', '.');
+                    $qtyAdj = (float)$item['qty_adjustment'];
+                    $displayAdj = ($isPengurangan ? '-' : '+') . number_format(abs($qtyAdj), 0, ',', '.');
                 ?>
                 <tr>
                     <td class="text-center"><?= $idx + 1 ?></td>
-                    <td class="font-monospace text-center"><?= htmlspecialchars($item['kode_barang']) ?></td>
                     <td>
                         <strong><?= htmlspecialchars($item['nama_barang']) ?></strong>
-                        <?php if (!empty($item['keterangan'])): ?>
-                            <br><small style="color:#555;">Catatan: <?= htmlspecialchars($item['keterangan']) ?></small>
-                        <?php endif; ?>
                     </td>
                     <td class="text-center"><?= htmlspecialchars($item['satuan']) ?></td>
-                    <td class="text-end font-monospace"><?= number_format($item['qty_sistem'], 0, ',', '.') ?></td>
-                    <td class="text-end font-monospace"><?= number_format($item['qty_fisik'], 0, ',', '.') ?></td>
-                    <td class="text-end font-monospace fw-bold"><?= $adjDisplay ?></td>
-                    <td class="text-end font-monospace"><?= number_format($item['qty_akhir'], 0, ',', '.') ?></td>
-                    <td class="text-end font-monospace">Rp <?= number_format($item['harga_satuan'], 0, ',', '.') ?></td>
-                    <td class="text-end font-monospace">Rp <?= number_format($item['subtotal_adjustment'], 0, ',', '.') ?></td>
+                    <td class="text-center font-monospace"><?= number_format($item['qty_sistem'], 0, ',', '.') ?></td>
+                    <td class="text-center font-monospace fw-bold"><?= $displayAdj ?></td>
+                    <td class="text-center font-monospace fw-bold"><?= number_format($item['qty_akhir'], 0, ',', '.') ?></td>
+                    <td class="text-end font-monospace"><?= number_format($item['harga_satuan'], 0, ',', '.') ?></td>
+                    <td style="color: #444;"><?= htmlspecialchars($item['keterangan'] ?: '-') ?></td>
                 </tr>
                 <?php endforeach; ?>
             <?php endif; ?>
         </tbody>
-        <tfoot>
-            <tr class="fw-bold" style="background-color: #f9f9f9;">
-                <td colspan="9" class="text-end" style="padding: 6px 10px;">TOTAL NILAI PENYESUAIAN:</td>
-                <td class="text-end font-monospace" style="padding: 6px 10px;">Rp <?= number_format($totalNilaiSelisih, 0, ',', '.') ?></td>
-            </tr>
-        </tfoot>
     </table>
 
-    <!-- Tanda Tangan Pengesahan -->
-    <table class="signature-table">
-        <tr>
-            <td>
-                <div>Diajukan Oleh,</div>
-                <div style="font-size: 11px; color: #555;">(Mekanik / Petugas Input)</div>
-                <div class="sign-space"></div>
-                <div class="fw-bold" style="text-decoration: underline;">
-                    <?= htmlspecialchars($header['pembuat_nama'] ?: $header['pembuat_user'] ?: 'Petugas') ?>
+    <!-- KOTAK KETERANGAN & CATATAN -->
+    <?php if (!empty($header['keterangan'])): ?>
+    <div class="catatan-penerimaan-section">
+        <div class="notes-title">Keterangan Kronologi / Catatan Tambahan:</div>
+        <div class="catatan-box">
+            <?= nl2br(htmlspecialchars($header['keterangan'])) ?>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- TANDA TANGAN (3 KOLOM RESMI) -->
+    <div class="sig-section">
+        <div class="row g-0">
+            <div class="col-4 sig-col">
+                <div class="sig-header-main">Dibuat Oleh,</div>
+                <div class="sig-header-sub">Petugas Pembuat</div>
+                <div class="sig-line-box">
+                    <span class="sig-person-name"><?= htmlspecialchars($header['pembuat_nama'] ?: 'Petugas') ?></span>
                 </div>
-                <div style="font-size: 11px; color: #555;"><?= htmlspecialchars($header['pembuat_jabatan'] ?: 'Staff Mekanik') ?></div>
-            </td>
-            <td>
-                <div>Diperiksa / Saksi,</div>
-                <div style="font-size: 11px; color: #555;">(Supervisor / Kepala Mekanik)</div>
-                <div class="sign-space"></div>
-                <div class="fw-bold" style="text-decoration: underline;">( ..................................... )</div>
-                <div style="font-size: 11px; color: #555;">Supervisor / Site Leader</div>
-            </td>
-            <td>
-                <div>Disetujui Oleh,</div>
-                <div style="font-size: 11px; color: #555;">(Kepala / Admin Logistik)</div>
-                <div class="sign-space"></div>
-                <div class="fw-bold" style="text-decoration: underline;">
-                    <?= htmlspecialchars($header['approver_nama'] ?: $header['approver_user'] ?: '( Belum Disetujui )') ?>
+                <div class="sig-footer-note"><?= htmlspecialchars($header['pembuat_jabatan'] ?: 'Staff Mekanik') ?></div>
+            </div>
+
+            <div class="col-4 sig-col">
+                <div class="sig-header-main">Diperiksa / Saksi,</div>
+                <div class="sig-header-sub">Supervisor / Site Leader</div>
+                <div class="sig-line-box">
+                    <span class="sig-person-name">( ..................................... )</span>
                 </div>
-                <div style="font-size: 11px; color: #555;">
+                <div class="sig-footer-note">Supervisor / Site Leader</div>
+            </div>
+
+            <div class="col-4 sig-col">
+                <div class="sig-header-main">Disetujui Oleh,</div>
+                <div class="sig-header-sub">Divisi Logistik &amp; Persediaan</div>
+                <div class="sig-line-box">
+                    <span class="sig-person-name"><?= htmlspecialchars($header['approver_nama'] ?: '( Belum Disetujui )') ?></span>
+                </div>
+                <div class="sig-footer-note">
                     <?= htmlspecialchars($header['approver_jabatan'] ?: 'Bagian Logistik & Persediaan') ?>
                     <?php if ($header['tanggal_approved']): ?>
                         <br><small><?= date('d/m/Y H:i', strtotime($header['tanggal_approved'])) ?></small>
                     <?php endif; ?>
                 </div>
-            </td>
-        </tr>
-    </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER BAWAH DOKUMEN -->
+    <div class="footer-line-container">
+        <div class="footer-right">
+            Dicetak pada: <?= date('d/m/Y H:i') ?> | User: <?= htmlspecialchars($user['nama_karyawan'] ?? $user['username']) ?>
+        </div>
+    </div>
+
+</div>
 
 </body>
 </html>

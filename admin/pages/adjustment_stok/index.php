@@ -130,13 +130,13 @@ require_once __DIR__ . '/../../components/navbar.php';
                     <thead class="table-light">
                         <tr class="text-muted small text-uppercase align-middle">
                             <th class="ps-3 py-2 text-center" style="width: 45px;">No</th>
-                            <th class="py-2" style="min-width: 190px;">No. Adjustment &amp; Tgl</th>
-                            <th class="py-2" style="min-width: 170px;">Site / Gudang</th>
-                            <th class="py-2" style="min-width: 170px;">Pembuat</th>
-                            <th class="py-2" style="min-width: 150px;">Alasan &amp; Jenis</th>
-                            <th class="py-2 text-center" style="width: 110px;">Item / Selisih</th>
-                            <th class="py-2 text-center" style="width: 130px;">Status</th>
-                            <th class="pe-3 py-2 text-center" style="width: 120px;">Aksi</th>
+                            <th class="py-2" style="width: 110px;">Tanggal</th>
+                            <th class="py-2" style="min-width: 150px;">No. Adj</th>
+                            <th class="py-2" style="min-width: 150px;">Site</th>
+                            <th class="py-2 text-center" style="width: 130px;">Jenis</th>
+                            <th class="py-2 text-center" style="width: 120px;">Status</th>
+                            <th class="py-2 text-center" style="width: 90px;">Kts</th>
+                            <th class="pe-3 py-2 text-center" style="width: 90px;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="adjustmentTableBody">
@@ -161,13 +161,16 @@ require_once __DIR__ . '/../../components/navbar.php';
 
 <!-- MODAL RINCIAN ADJUSTMENT STOK -->
 <div class="modal fade" id="modalDetailAdjustment" tabindex="-1" aria-labelledby="modalDetailAdjustmentLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-xl">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow-lg rounded-3">
-            <div class="modal-header bg-white py-3 px-4 border-bottom d-flex justify-content-between align-items-center">
+            <div class="modal-header bg-white pt-3 pb-2 px-4 border-0 d-flex justify-content-between align-items-center">
                 <h5 class="modal-title fw-bold text-dark mb-0" id="modalDetailAdjustmentLabel">Rincian Stock Adjustment</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="d-flex align-items-center gap-2">
+                    <div id="modalDetailHeaderStatus"></div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
             </div>
-            <div class="modal-body p-4" id="modalDetailBody">
+            <div class="modal-body px-4 pt-1 pb-4" id="modalDetailBody">
                 <!-- Diisi dinamis via JS -->
             </div>
             <div class="modal-footer bg-light py-2 px-4 d-flex justify-content-between" id="modalDetailFooter">
@@ -249,8 +252,6 @@ async function loadAdjustmentList(page = 1) {
         const data = json.data;
         cachedData = data.rows || [];
 
-
-
         // Render Dropdown Sites if empty
         if (data.filter_options && data.filter_options.sites) {
             const siteSel = document.getElementById('filterSite');
@@ -294,40 +295,57 @@ async function loadAdjustmentList(page = 1) {
 
             // Jenis Badge
             let jenisBadge = '';
-            if (row.jenis_adjustment === 'PENAMBAHAN') jenisBadge = '<span class="badge bg-success text-white small me-1">+ TAMBAH</span>';
-            else if (row.jenis_adjustment === 'PENGURANGAN') jenisBadge = '<span class="badge bg-danger text-white small me-1">- KURANG</span>';
-            else jenisBadge = '<span class="badge bg-primary text-white small me-1">SET STOK</span>';
+            if (row.jenis_adjustment === 'PENAMBAHAN') jenisBadge = '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 fw-semibold">PENAMBAHAN</span>';
+            else if (row.jenis_adjustment === 'PENGURANGAN') jenisBadge = '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 fw-semibold">PENGURANGAN</span>';
+            else jenisBadge = '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1 fw-semibold">SET STOK</span>';
+
+            const totalKts = Math.abs(Number(row.total_qty_adjustment) || 0);
+            let ktsBadge = '';
+            if (row.jenis_adjustment === 'PENAMBAHAN') {
+                ktsBadge = `<span class="badge bg-success-subtle text-success border border-success-subtle fw-bold">+${totalKts.toLocaleString('id-ID')}</span>`;
+            } else if (row.jenis_adjustment === 'PENGURANGAN') {
+                ktsBadge = `<span class="badge bg-danger-subtle text-danger border border-danger-subtle fw-bold">-${totalKts.toLocaleString('id-ID')}</span>`;
+            } else {
+                ktsBadge = `<span class="badge bg-light text-dark border fw-bold">${totalKts.toLocaleString('id-ID')}</span>`;
+            }
+
+            // Print Button (hanya aktif jika APPROVED)
+            let printBtn = '';
+            if (row.status === 'APPROVED') {
+                printBtn = `
+                    <a href="<?= BASE_URL ?>/admin/pages/adjustment_stok/print.php?id=${row.id_adjustment}" target="_blank" class="btn btn-sm btn-outline-secondary p-0 d-inline-flex align-items-center justify-content-center" title="Cetak Berita Acara" style="width: 28px; height: 28px;">
+                        <i class="bi bi-printer small"></i>
+                    </a>
+                `;
+            } else {
+                printBtn = `
+                    <button type="button" class="btn btn-sm btn-light text-muted p-0 d-inline-flex align-items-center justify-content-center border" title="Cetak hanya tersedia setelah disetujui (APPROVED)" disabled style="width: 28px; height: 28px; opacity: 0.5; cursor: not-allowed;">
+                        <i class="bi bi-printer small"></i>
+                    </button>
+                `;
+            }
 
             html += `
                 <tr class="align-middle">
                     <td class="ps-3 py-2 text-center text-muted fw-semibold">${no}</td>
+                    <td class="py-2 font-monospace text-dark">${formatDateYMD(row.tanggal_adjustment)}</td>
                     <td class="py-2">
-                        <div class="fw-bold font-monospace text-primary cursor-pointer hover-underline" onclick="viewDetail(${row.id_adjustment})">${escapeHtml(row.nomor_adjustment)}</div>
-                        <div class="small text-muted font-monospace">${formatDateYMD(row.tanggal_adjustment)}</div>
+                        <span class="fw-bold font-monospace text-primary cursor-pointer hover-underline" onclick="viewDetail(${row.id_adjustment})">${escapeHtml(row.nomor_adjustment)}</span>
                     </td>
                     <td class="py-2">
                         <div class="fw-semibold text-dark">${escapeHtml(row.nama_site)}</div>
                     </td>
-                    <td class="py-2">
-                        <div class="fw-semibold text-dark">${escapeHtml(row.nama_pembuat)}</div>
-                        <div class="small text-muted">${escapeHtml(row.jabatan_pembuat)}</div>
-                    </td>
-                    <td class="py-2">
-                        <div class="mb-1">${jenisBadge}</div>
-                        <div class="small text-dark text-truncate" style="max-width: 180px;" title="${escapeHtml(row.alasan)}">${escapeHtml(row.alasan)}</div>
-                    </td>
-                    <td class="py-2 text-center font-monospace">
-                        <span class="badge bg-light text-dark border fw-bold">${row.total_item} Item</span>
-                    </td>
+                    <td class="py-2 text-center">${jenisBadge}</td>
                     <td class="py-2 text-center">${statusBadge}</td>
+                    <td class="py-2 text-center font-monospace">
+                        ${ktsBadge}
+                    </td>
                     <td class="pe-3 py-2 text-center">
                         <div class="d-flex justify-content-center gap-1">
                             <button type="button" class="btn btn-sm btn-outline-primary p-0 d-inline-flex align-items-center justify-content-center" title="Lihat Rincian" onclick="viewDetail(${row.id_adjustment})" style="width: 28px; height: 28px;">
                                 <i class="bi bi-eye-fill small"></i>
                             </button>
-                            <a href="<?= BASE_URL ?>/admin/pages/adjustment_stok/print.php?id=${row.id_adjustment}" target="_blank" class="btn btn-sm btn-outline-secondary p-0 d-inline-flex align-items-center justify-content-center" title="Cetak Dokumen" style="width: 28px; height: 28px;">
-                                <i class="bi bi-printer small"></i>
-                            </a>
+                            ${printBtn}
                         </div>
                     </td>
                 </tr>
@@ -378,8 +396,10 @@ function renderPagination(totalRecords, totalPages, curPage, perPage) {
 async function viewDetail(id) {
     const body = document.getElementById('modalDetailBody');
     const footer = document.getElementById('modalDetailFooter');
+    const headerStatus = document.getElementById('modalDetailHeaderStatus');
+    if (headerStatus) headerStatus.innerHTML = '';
     body.innerHTML = `<div class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div> Memuat rincian adjustment...</div>`;
-    footer.innerHTML = `<button type="button" class="btn btn-secondary btn-sm px-4" data-bs-dismiss="modal">Tutup</button>`;
+    footer.innerHTML = `<button type="button" class="btn btn-secondary btn-sm px-4 ms-auto" data-bs-dismiss="modal">Tutup</button>`;
 
     const modal = new bootstrap.Modal(document.getElementById('modalDetailAdjustment'));
     modal.show();
@@ -401,117 +421,183 @@ async function viewDetail(id) {
         else if (d.status === 'BATAL') statusBadge = '<span class="badge bg-dark px-2 py-1">BATAL</span>';
         else statusBadge = '<span class="badge bg-secondary px-2 py-1">DRAFT</span>';
 
+        // Render Status di Header sebelum tombol X
+        if (headerStatus) {
+            if (d.status === 'PENDING' && USER_ROLE === 'MEKANIK') {
+                headerStatus.innerHTML = `<span class="badge bg-warning-subtle text-warning-emphasis border px-2 py-1 small"><i class="bi bi-info-circle me-1"></i>Menunggu persetujuan Divisi Logistik</span>`;
+            } else {
+                headerStatus.innerHTML = statusBadge;
+            }
+        }
+
+        // Hitung total kts penyesuaian & total harga
+        let sumKtsPenyesuaian = 0;
+        let sumHarga = 0;
+
         let itemsHtml = '';
         (d.items || []).forEach((it, i) => {
-            const diffSign = it.qty_adjustment > 0 ? `+${it.qty_adjustment}` : `${it.qty_adjustment}`;
-            const diffColor = it.qty_adjustment > 0 ? 'text-success' : (it.qty_adjustment < 0 ? 'text-danger' : 'text-muted');
+            const qtyAdj = Number(it.qty_adjustment) || 0;
+            const harga = Number(it.harga_satuan) || 0;
+            sumKtsPenyesuaian += Math.abs(qtyAdj);
+            sumHarga += harga;
+
+            const isTambah = d.jenis_adjustment === 'PENAMBAHAN';
+            const ktsLabel = isTambah ? `+${Math.abs(qtyAdj)}` : `-${Math.abs(qtyAdj)}`;
+            const ktsClass = isTambah ? 'text-success' : 'text-danger';
 
             itemsHtml += `
                 <tr class="align-middle">
                     <td class="text-center font-monospace">${i + 1}</td>
                     <td>
-                        <div class="fw-bold font-monospace text-dark">${escapeHtml(it.kode_barang || '-')}</div>
-                        <div class="small text-dark">${escapeHtml(it.nama_barang)}</div>
+                        <div class="fw-semibold text-dark">${escapeHtml(it.nama_barang)}</div>
                     </td>
-                    <td class="text-center font-monospace">${it.satuan}</td>
-                    <td class="text-center font-monospace fw-semibold text-muted">${it.qty_sistem}</td>
-                    <td class="text-center font-monospace fw-bold text-dark">${it.qty_fisik}</td>
-                    <td class="text-center font-monospace fw-bold ${diffColor}">${diffSign}</td>
+                    <td class="text-center">${escapeHtml(it.satuan || 'PCS')}</td>
+                    <td class="text-center font-monospace text-muted">${it.qty_sistem}</td>
+                    <td class="text-center font-monospace fw-bold ${ktsClass}">${ktsLabel}</td>
                     <td class="text-center font-monospace fw-bold text-primary">${it.qty_akhir}</td>
-                    <td class="text-end font-monospace text-muted">${formatRupiah(it.harga_satuan)}</td>
-                    <td class="text-end font-monospace fw-bold text-dark">${formatRupiah(it.subtotal_adjustment)}</td>
+                    <td class="text-end font-monospace">${harga.toLocaleString('id-ID')}</td>
+                    <td class="text-muted small">${escapeHtml(it.keterangan || '-')}</td>
                 </tr>
             `;
         });
 
+        const kolomKtsTitle = d.jenis_adjustment === 'PENGURANGAN' ? 'Kts Kurang' : 'Kts Tambah';
+
         body.innerHTML = `
-            <div class="row g-3 mb-4">
-                <div class="col-md-6">
-                    <div class="card bg-light border-0 rounded-3 p-3 h-100">
-                        <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Informasi Dokumen</h6>
-                        <div class="mb-2">
-                            <span class="text-muted small d-block">Nomor Adjustment:</span>
-                            <strong class="text-primary font-monospace fs-6">${escapeHtml(d.nomor_adjustment)}</strong>
+            <!-- NAV TABS -->
+            <ul class="nav nav-tabs nav-fill mb-3" id="detailTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active fw-semibold" id="tab-info-btn" data-bs-toggle="tab" data-bs-target="#tab-info" type="button" role="tab">
+                        <i class="bi bi-info-circle me-1"></i> 1. Informasi Dokumen
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold" id="tab-barang-btn" data-bs-toggle="tab" data-bs-target="#tab-barang" type="button" role="tab">
+                        <i class="bi bi-box-seam me-1"></i> 2. Rincian Barang (${(d.items || []).length})
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold" id="tab-catatan-btn" data-bs-toggle="tab" data-bs-target="#tab-catatan" type="button" role="tab">
+                        <i class="bi bi-chat-left-text me-1"></i> 3. Keterangan &amp; Log
+                    </button>
+                </li>
+            </ul>
+
+            <!-- TAB CONTENT -->
+            <div class="tab-content pt-2" id="detailTabContent">
+                <!-- TAB 1: INFORMASI DOKUMEN -->
+                <div class="tab-pane fade show active" id="tab-info" role="tabpanel">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="card bg-light border-0 rounded-3 p-3 h-100">
+                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Informasi Transaksi</h6>
+                                <div class="mb-2">
+                                    <span class="text-muted small d-block">Nomor Adjustment:</span>
+                                    <strong class="text-primary font-monospace fs-6">${escapeHtml(d.nomor_adjustment)}</strong>
+                                </div>
+                                <div class="mb-2">
+                                    <span class="text-muted small d-block">Tanggal Penyesuaian:</span>
+                                    <span class="text-dark font-monospace">${formatDateYMD(d.tanggal_adjustment)}</span>
+                                </div>
+                                <div class="mb-2">
+                                    <span class="text-muted small d-block">Lokasi Gudang / Site:</span>
+                                    <strong class="text-dark">${escapeHtml(d.nama_site)}</strong>
+                                </div>
+                                <div>
+                                    <span class="text-muted small d-block">Jenis Penyesuaian:</span>
+                                    <span class="badge ${d.jenis_adjustment === 'PENAMBAHAN' ? 'bg-success' : 'bg-danger'} px-2 py-1">${escapeHtml(d.jenis_adjustment)}</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="mb-2">
-                            <span class="text-muted small d-block">Tanggal Adjustment:</span>
-                            <span class="text-dark font-monospace">${formatDateYMD(d.tanggal_adjustment)}</span>
-                        </div>
-                        <div class="mb-2">
-                            <span class="text-muted small d-block">Site / Lokasi Gudang:</span>
-                            <strong class="text-dark">${escapeHtml(d.nama_site)}</strong>
-                        </div>
-                        <div>
-                            <span class="text-muted small d-block">Jenis Penyesuaian:</span>
-                            <span class="badge bg-primary px-2 py-1">${escapeHtml(d.jenis_adjustment)}</span>
+
+                        <div class="col-md-6">
+                            <div class="card bg-light border-0 rounded-3 p-3 h-100">
+                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Otorisasi &amp; Status</h6>
+                                <div class="mb-2">
+                                    <span class="text-muted small d-block">Petugas Pembuat:</span>
+                                    <strong class="text-dark">${escapeHtml(d.nama_pembuat || '-')}</strong>
+                                    ${d.kode_pembuat ? `<small class="text-muted font-monospace">(${escapeHtml(d.kode_pembuat)})</small>` : ''}
+                                </div>
+                                <div class="mb-2">
+                                    <span class="text-muted small d-block">Status Dokumen:</span>
+                                    <div>${statusBadge}</div>
+                                </div>
+                                <div class="mb-2">
+                                    <span class="text-muted small d-block">Disetujui Oleh:</span>
+                                    <span class="text-dark fw-semibold">${escapeHtml(d.nama_approver || '-')}</span>
+                                    ${d.tanggal_approved ? `<small class="text-muted font-monospace">(${formatDateYMD(d.tanggal_approved)})</small>` : ''}
+                                </div>
+                                <div>
+                                    <span class="text-muted small d-block">Total Jenis Barang:</span>
+                                    <span class="badge bg-light text-dark border fw-bold">${(d.items || []).length} Item</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="col-md-6">
-                    <div class="card bg-light border-0 rounded-3 p-3 h-100">
-                        <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Otorisasi &amp; Status</h6>
-                        <div class="mb-2">
-                            <span class="text-muted small d-block">Dibuat Oleh:</span>
-                            <strong class="text-dark">${escapeHtml(d.nama_pembuat)}</strong>
-                            <small class="text-muted">(${escapeHtml(d.jabatan_pembuat)})</small>
-                        </div>
-                        <div class="mb-2">
-                            <span class="text-muted small d-block">Status Dokumen:</span>
-                            <div>${statusBadge}</div>
-                        </div>
-                        <div class="mb-2">
-                            <span class="text-muted small d-block">Disetujui Oleh:</span>
-                            <span class="text-dark fw-semibold">${escapeHtml(d.nama_approver || '-')}</span>
-                            ${d.tanggal_approved ? `<small class="text-muted font-monospace">(${formatDateYMD(d.tanggal_approved)})</small>` : ''}
-                        </div>
-                        <div>
-                            <span class="text-muted small d-block">Alasan / Catatan:</span>
-                            <span class="text-dark">${escapeHtml(d.alasan)} ${d.keterangan ? `<br><small class="text-muted">${escapeHtml(d.keterangan)}</small>` : ''}</span>
-                        </div>
+                <!-- TAB 2: RINCIAN BARANG -->
+                <div class="tab-pane fade" id="tab-barang" role="tabpanel">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold text-dark small text-uppercase">Daftar Barang Penyesuaian</span>
+                        <span class="badge bg-secondary">${(d.items || []).length} Item</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered align-middle mb-0 shadow-none" style="font-size: 0.875rem; min-width: 650px; border-collapse: collapse;">
+                            <thead class="table-light text-muted small text-uppercase">
+                                <tr>
+                                    <th style="width: 45px;" class="text-center">No</th>
+                                    <th style="min-width: 200px;">Nama Barang</th>
+                                    <th style="width: 80px;" class="text-center">Satuan</th>
+                                    <th style="width: 95px;" class="text-center">Kts Sistem</th>
+                                    <th style="width: 105px;" class="text-center">${kolomKtsTitle}</th>
+                                    <th style="width: 95px;" class="text-center text-primary">Kts Akhir</th>
+                                    <th style="width: 120px;" class="text-end">Harga</th>
+                                    <th style="min-width: 140px;">Catatan</th>
+                                </tr>
+                            </thead>
+                            <tbody>${itemsHtml || '<tr><td colspan="8" class="text-center py-3 text-muted">Tidak ada rincian barang.</td></tr>'}</tbody>
+                        </table>
                     </div>
                 </div>
-            </div>
 
-            <div class="card border rounded-3 overflow-hidden">
-                <div class="card-header bg-light py-2">
-                    <h6 class="fw-bold text-dark mb-0 small text-uppercase">Daftar Barang Penyesuaian (${(d.items || []).length} Item)</h6>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
-                        <thead class="table-light text-muted small text-uppercase">
-                            <tr>
-                                <th style="width: 40px;" class="text-center">No</th>
-                                <th>Kode &amp; Nama Barang</th>
-                                <th style="width: 70px;" class="text-center">Satuan</th>
-                                <th style="width: 90px;" class="text-center">Stok Sistem</th>
-                                <th style="width: 90px;" class="text-center">Stok Fisik</th>
-                                <th style="width: 90px;" class="text-center">Selisih</th>
-                                <th style="width: 90px;" class="text-center text-primary">Stok Akhir</th>
-                                <th style="width: 120px;" class="text-end">Estimasi Harga</th>
-                                <th style="width: 130px;" class="text-end">Total Selisih</th>
-                            </tr>
-                        </thead>
-                        <tbody>${itemsHtml}</tbody>
-                        <tfoot class="table-light fw-bold">
-                            <tr>
-                                <td colspan="8" class="text-end py-2 pe-3 text-uppercase">Grand Total Nilai Selisih:</td>
-                                <td class="text-end font-monospace py-2 text-dark">${formatRupiah(d.total_nilai_adjustment)}</td>
-                            </tr>
-                        </tfoot>
-                    </table>
+                <!-- TAB 3: KETERANGAN & ALASAN -->
+                <div class="tab-pane fade" id="tab-catatan" role="tabpanel">
+                    <div class="card bg-light border-0 rounded-3 p-3">
+                        <div class="mb-3">
+                            <label class="form-label text-muted small fw-semibold text-uppercase">Alasan Penyesuaian</label>
+                            <div class="p-2 bg-white border rounded text-dark">${escapeHtml(d.alasan || '-')}</div>
+                        </div>
+                        <div>
+                            <label class="form-label text-muted small fw-semibold text-uppercase">Keterangan Tambahan / Kronologi</label>
+                            <div class="p-2 bg-white border rounded text-dark" style="min-height: 80px; white-space: pre-line;">${escapeHtml(d.keterangan || '-')}</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
 
         // Action Buttons in Footer
-        let buttonsHtml = `
-            <div>
+        let modalPrintBtn = '';
+        if (d.status === 'APPROVED') {
+            modalPrintBtn = `
                 <a href="<?= BASE_URL ?>/admin/pages/adjustment_stok/print.php?id=${d.id_adjustment}" target="_blank" class="btn btn-outline-dark btn-sm px-3 fw-semibold">
                     <i class="bi bi-printer me-1"></i> Cetak Berita Acara
                 </a>
+            `;
+        } else {
+            modalPrintBtn = `
+                <button type="button" class="btn btn-outline-secondary btn-sm px-3" disabled title="Cetak hanya dapat dilakukan setelah dokumen disetujui (APPROVED)">
+                    <i class="bi bi-printer me-1"></i> Cetak Berita Acara
+                </button>
+            `;
+        }
+
+        let buttonsHtml = `
+            <div>
+                ${modalPrintBtn}
             </div>
-            <div class="d-flex gap-2">
+            <div class="d-flex align-items-center gap-2">
         `;
 
         // Tombol Ajukan (DRAFT -> PENDING)
@@ -536,8 +622,6 @@ async function viewDetail(id) {
                     <i class="bi bi-check-circle me-1"></i> Setujui (Approve &amp; Update Stok)
                 </button>
             `;
-        } else if (d.status === 'PENDING' && USER_ROLE === 'MEKANIK') {
-            buttonsHtml += `<span class="badge bg-warning-subtle text-warning-emphasis border p-2 small align-self-center"><i class="bi bi-info-circle me-1"></i>Menunggu persetujuan Divisi Logistik</span>`;
         }
 
         buttonsHtml += `<button type="button" class="btn btn-secondary btn-sm px-4" data-bs-dismiss="modal">Tutup</button></div>`;
