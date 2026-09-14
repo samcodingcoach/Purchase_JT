@@ -41,7 +41,7 @@ $companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rekapitulasi Pajak Masukan - <?= htmlspecialchars($companyName) ?></title>
+    <title>Pajak Masukan - <?= htmlspecialchars($companyName) ?></title>
     <!-- Bootstrap CSS & Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
@@ -94,7 +94,7 @@ $companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
     <div class="container d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div class="d-flex align-items-center gap-3">
             <span class="fw-bold fs-6">
-                <i class="bi bi-printer text-info me-1"></i> Cetak Rekapitulasi Pajak Masukan (PPN / PPnBM)
+                <i class="bi bi-printer text-info me-1"></i> Cetak Pajak Masukan (PPN / PPnBM)
             </span>
         </div>
         
@@ -170,7 +170,7 @@ $companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
     <!-- JUDUL DOKUMEN & INFO PERIODE -->
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-            <h5 class="fw-bold text-dark mb-0">REKAPITULASI PAJAK MASUKAN (PPN &amp; PPNBM)</h5>
+            <h5 class="fw-bold text-dark mb-0">PAJAK MASUKAN (PPN &amp; PPNBM)</h5>
             <div class="small fw-semibold text-dark text-uppercase mt-1"><?= htmlspecialchars($periodeText) ?></div>
         </div>
 
