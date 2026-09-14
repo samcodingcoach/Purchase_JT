@@ -225,6 +225,7 @@ if ($method === 'POST') {
 
     $nomorFakturVendor = trim($input['nomor_faktur_vendor'] ?? '');
     $nomorFakturPajak = trim($input['nomor_faktur_pajak'] ?? '');
+    $tanggalFakturPajak = !empty($input['tanggal_faktur_pajak']) ? trim($input['tanggal_faktur_pajak']) : null;
     $tanggalFaktur = trim($input['tanggal_faktur'] ?? date('Y-m-d'));
     $tanggalTerimaFaktur = trim($input['tanggal_terima_faktur'] ?? date('Y-m-d'));
     $top = max(0, intval($input['term_of_payment'] ?? 0));
@@ -305,7 +306,7 @@ if ($method === 'POST') {
         $terbayar = 0;
 
         $sqlIns = "INSERT INTO faktur_po (
-                    nomor_faktur, nomor_faktur_vendor, nomor_faktur_pajak,
+                    nomor_faktur, nomor_faktur_vendor, nomor_faktur_pajak, tanggal_faktur_pajak,
                     tanggal_faktur_vendor, tanggal_terima_faktur_vendor, term_of_payment, tanggal_jatuh_tempo,
                     id_po, id_rcv, id_vendor, id_site,
                     nama_bank, nomor_rekening, atas_nama_rekening, id_karyawan,
@@ -314,7 +315,7 @@ if ($method === 'POST') {
                     status, terbayar, sisa_tagihan,
                     file_faktur_vendor, file_faktur_pajak, keterangan
                    ) VALUES (
-                    ?, ?, ?,
+                    ?, ?, ?, ?,
                     ?, ?, ?, ?,
                     ?, ?, ?, ?,
                     ?, ?, ?, ?,
@@ -326,8 +327,8 @@ if ($method === 'POST') {
 
         $stmtIns = $conn->prepare($sqlIns);
         $stmtIns->bind_param(
-            "sssssisiiiisssidddddididddsddsss",
-            $nomorFaktur, $nomorFakturVendor, $nomorFakturPajak,
+            "ssssssisiiiisssidddddididddsddsss",
+            $nomorFaktur, $nomorFakturVendor, $nomorFakturPajak, $tanggalFakturPajak,
             $tanggalFaktur, $tanggalTerimaFaktur, $top, $tanggalJatuhTempo,
             $idPo, $idRcv, $idVendor, $idSite,
             $namaBank, $nomorRekening, $atasNamaRekening, $idKaryawan,
@@ -437,6 +438,7 @@ if ($method === 'PUT') {
 
     $nomorFakturVendor = trim($input['nomor_faktur_vendor'] ?? '');
     $nomorFakturPajak = trim($input['nomor_faktur_pajak'] ?? '');
+    $tanggalFakturPajak = !empty($input['tanggal_faktur_pajak']) ? trim($input['tanggal_faktur_pajak']) : null;
     $tanggalFaktur = trim($input['tanggal_faktur'] ?? ($input['tanggal_faktur_vendor'] ?? date('Y-m-d')));
     $tanggalTerimaFaktur = trim($input['tanggal_terima_faktur'] ?? ($input['tanggal_terima_faktur_vendor'] ?? date('Y-m-d')));
     $top = max(0, intval($input['term_of_payment'] ?? 0));
@@ -452,8 +454,10 @@ if ($method === 'PUT') {
     $dpp = floatval($input['dpp'] ?? ($subtotalDiterima - $nilaiRetur - $diskon));
     $ratePajak = intval($input['rate_pajak'] ?? 0);
     $nominalPajak = floatval($input['nominal_pajak'] ?? ($dpp * ($ratePajak / 100)));
+    $ratePpnbm = intval($input['rate_ppnbm'] ?? 0);
+    $nominalPpnbm = floatval($input['nominal_ppnbm'] ?? ($ratePpnbm > 0 ? ($dpp * ($ratePpnbm / 100)) : 0));
     $biayaLain = floatval($input['biaya_lain'] ?? 0);
-    $totalTagihan = floatval($input['total_tagihan'] ?? ($dpp + $nominalPajak + $biayaLain));
+    $totalTagihan = floatval($input['total_tagihan'] ?? ($dpp + $nominalPajak + $nominalPpnbm + $biayaLain));
     $keterangan = trim($input['keterangan'] ?? '');
 
     // Status target edit hanya boleh DRAFT atau BELUM DIBAYAR
@@ -474,15 +478,15 @@ if ($method === 'PUT') {
     }
 
     $paramsUp = [
-        $nomorFakturVendor, $nomorFakturPajak,
+        $nomorFakturVendor, $nomorFakturPajak, $tanggalFakturPajak,
         $tanggalFaktur, $tanggalTerimaFaktur, $top, $tanggalJatuhTempo,
         $namaBank, $nomorRekening, $atasNamaRekening,
         $subtotalPo, $subtotalDiterima, $nilaiRetur, $diskon, $dpp,
-        $ratePajak, $nominalPajak, $biayaLain, $totalTagihan,
+        $ratePajak, $nominalPajak, $ratePpnbm, $nominalPpnbm, $biayaLain, $totalTagihan,
         $statusTarget, $terbayar, $sisaTagihan,
         $keterangan
     ];
-    $typesUp = "ssssissssdddddidddsdss";
+    $typesUp = "ssssssissssdddddididddsddss";
 
     $fileFieldsSql = "";
     if (!empty($input['file_faktur_vendor_base64'])) {
@@ -513,11 +517,11 @@ if ($method === 'PUT') {
     $conn->begin_transaction();
     try {
         $sqlUp = "UPDATE faktur_po SET
-                    nomor_faktur_vendor = ?, nomor_faktur_pajak = ?,
+                    nomor_faktur_vendor = ?, nomor_faktur_pajak = ?, tanggal_faktur_pajak = ?,
                     tanggal_faktur_vendor = ?, tanggal_terima_faktur_vendor = ?, term_of_payment = ?, tanggal_jatuh_tempo = ?,
                     nama_bank = ?, nomor_rekening = ?, atas_nama_rekening = ?,
                     subtotal_po = ?, subtotal_diterima = ?, nilai_retur = ?, diskon = ?, dpp = ?,
-                    rate_pajak = ?, nominal_pajak = ?, biaya_lain = ?, total_tagihan = ?,
+                    rate_pajak = ?, nominal_pajak = ?, rate_ppnbm = ?, nominal_ppnbm = ?, biaya_lain = ?, total_tagihan = ?,
                     status = ?, terbayar = ?, sisa_tagihan = ?,
                     keterangan = ?
                     {$fileFieldsSql},

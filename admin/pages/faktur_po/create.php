@@ -282,12 +282,16 @@ textarea.form-control {
                                         <div class="form-text small text-muted">Nomor invoice fisik resmi dari vendor.</div>
                                     </div>
                                     <div class="col-sm-6">
+                                        <label class="form-label small fw-semibold text-dark">Tanggal Invoice Vendor <span class="text-danger">*</span></label>
+                                        <input type="date" class="form-control form-control-sm" id="tanggalFaktur" name="tanggal_faktur" value="<?= date('Y-m-d') ?>" onchange="calculateDueDate()" required>
+                                    </div>
+                                    <div class="col-sm-6">
                                         <label class="form-label small fw-semibold text-dark">No. Seri e-Faktur Pajak</label>
                                         <input type="text" class="form-control form-control-sm font-monospace" id="nomorFakturPajak" name="nomor_faktur_pajak" placeholder="Contoh: 010.000-26.12345678">
                                     </div>
                                     <div class="col-sm-6">
-                                        <label class="form-label small fw-semibold text-dark">Tanggal Invoice Vendor <span class="text-danger">*</span></label>
-                                        <input type="date" class="form-control form-control-sm" id="tanggalFaktur" name="tanggal_faktur" value="<?= date('Y-m-d') ?>" onchange="calculateDueDate()" required>
+                                        <label class="form-label small fw-semibold text-dark">Tanggal e-Faktur Pajak</label>
+                                        <input type="date" class="form-control form-control-sm" id="tanggalFakturPajak" name="tanggal_faktur_pajak" value="<?= date('Y-m-d') ?>">
                                     </div>
                                     <div class="col-sm-6">
                                         <label class="form-label small fw-semibold text-dark">Tanggal Terima Fisik Tagihan <span class="text-danger">*</span></label>
@@ -1010,6 +1014,7 @@ async function submitFaktur(statusDokumen) {
         id_po_retur: document.getElementById('hiddenIdPoRetur').value ? parseInt(document.getElementById('hiddenIdPoRetur').value) : null,
         nomor_faktur_vendor: nomorFakturVendor,
         nomor_faktur_pajak: document.getElementById('nomorFakturPajak').value.trim(),
+        tanggal_faktur_pajak: document.getElementById('tanggalFakturPajak').value || null,
         tanggal_faktur: document.getElementById('tanggalFaktur').value,
         tanggal_terima_faktur: document.getElementById('tanggalTerimaFaktur').value,
         term_of_payment: parseInt(document.getElementById('termOfPayment').value) || 0,

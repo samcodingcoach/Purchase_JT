@@ -166,6 +166,11 @@ $companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
                     <td class="colon">:</td>
                     <td class="val font-monospace" id="docNomorFakturPajak">-</td>
                 </tr>
+                <tr id="docRowTglFakturPajak" class="d-none">
+                    <td class="lbl">Tanggal Faktur Pajak</td>
+                    <td class="colon">:</td>
+                    <td class="val font-monospace" id="docTanggalFakturPajak">-</td>
+                </tr>
                 <tr>
                     <td class="lbl">No. Purchase Order (PO)</td>
                     <td class="colon">:</td>
@@ -419,6 +424,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('docAlamatVendor').textContent = fp.alamat_vendor || '-';
         document.getElementById('docNomorFakturVendor').textContent = fp.nomor_faktur_vendor || '-';
         document.getElementById('docNomorFakturPajak').textContent = fp.nomor_faktur_pajak || '-';
+        if (fp.tanggal_faktur_pajak) {
+            document.getElementById('docRowTglFakturPajak').classList.remove('d-none');
+            document.getElementById('docTanggalFakturPajak').textContent = formatTglPanjang(fp.tanggal_faktur_pajak);
+        } else {
+            document.getElementById('docRowTglFakturPajak').classList.add('d-none');
+        }
         document.getElementById('docNomorPo').textContent = fp.nomor_po || '-';
         
         let rcvText = fp.nomor_rcv || '-';

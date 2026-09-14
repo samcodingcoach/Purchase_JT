@@ -266,12 +266,16 @@ textarea.form-control {
                                         <input type="text" class="form-control form-control-sm font-monospace fw-bold text-dark" id="nomorFakturVendor" name="nomor_faktur_vendor" value="<?= htmlspecialchars($faktur['nomor_faktur_vendor'] ?: '') ?>" placeholder="Contoh: INV-2026/08/991" required <?= $isLocked ? 'readonly' : '' ?>>
                                     </div>
                                     <div class="col-sm-6">
+                                        <label class="form-label small fw-semibold text-dark">Tanggal Invoice Vendor <span class="text-danger">*</span></label>
+                                        <input type="date" class="form-control form-control-sm" id="tanggalFaktur" name="tanggal_faktur" value="<?= $faktur['tanggal_faktur_vendor'] ?: date('Y-m-d') ?>" onchange="calculateDueDate()" required <?= $isLocked ? 'readonly' : '' ?>>
+                                    </div>
+                                    <div class="col-sm-6">
                                         <label class="form-label small fw-semibold text-dark">No. Seri e-Faktur Pajak</label>
                                         <input type="text" class="form-control form-control-sm font-monospace" id="nomorFakturPajak" name="nomor_faktur_pajak" value="<?= htmlspecialchars($faktur['nomor_faktur_pajak'] ?: '') ?>" placeholder="Contoh: 010.000-26.12345678" <?= $isLocked ? 'readonly' : '' ?>>
                                     </div>
                                     <div class="col-sm-6">
-                                        <label class="form-label small fw-semibold text-dark">Tanggal Invoice Vendor <span class="text-danger">*</span></label>
-                                        <input type="date" class="form-control form-control-sm" id="tanggalFaktur" name="tanggal_faktur" value="<?= $faktur['tanggal_faktur_vendor'] ?: date('Y-m-d') ?>" onchange="calculateDueDate()" required <?= $isLocked ? 'readonly' : '' ?>>
+                                        <label class="form-label small fw-semibold text-dark">Tanggal e-Faktur Pajak</label>
+                                        <input type="date" class="form-control form-control-sm" id="tanggalFakturPajak" name="tanggal_faktur_pajak" value="<?= $faktur['tanggal_faktur_pajak'] ?: date('Y-m-d') ?>" <?= $isLocked ? 'readonly' : '' ?>>
                                     </div>
                                     <div class="col-sm-6">
                                         <label class="form-label small fw-semibold text-dark">Tanggal Terima Fisik Tagihan <span class="text-danger">*</span></label>
@@ -667,6 +671,7 @@ async function submitEditFaktur(statusDokumen) {
         id_site: parseInt(document.getElementById('hiddenIdSite').value),
         nomor_faktur_vendor: nomorFakturVendor,
         nomor_faktur_pajak: document.getElementById('nomorFakturPajak').value.trim(),
+        tanggal_faktur_pajak: document.getElementById('tanggalFakturPajak').value || null,
         tanggal_faktur: document.getElementById('tanggalFaktur').value,
         tanggal_terima_faktur: document.getElementById('tanggalTerimaFaktur').value,
         term_of_payment: parseInt(document.getElementById('termOfPayment').value) || 0,

@@ -112,19 +112,18 @@ require_once __DIR__ . '/../../components/navbar.php';
                     <thead class="table-light">
                         <tr>
                             <th class="text-center" style="width: 40px;">No</th>
-                            <th style="width: 140px;">No. Faktur</th>
-                            <th style="width: 120px;">Tanggal</th>
+                            <th style="width: 150px;">No. Faktur</th>
                             <th>Vendor</th>
-                            <th style="width: 120px;">Jatuh Tempo</th>
+                            <th style="width: 130px;">Jatuh Tempo</th>
                             <th class="text-center" style="width: 130px;">Aging</th>
                             <th class="text-center" style="width: 130px;">Status</th>
-                            <th class="text-end" style="width: 150px;">Total Tagihan</th>
-                            <th class="text-center" style="width: 100px;">Action</th>
+                            <th class="text-end" style="width: 160px;">Total Tagihan</th>
+                            <th class="text-center" style="width: 110px;">Action</th>
                         </tr>
                     </thead>
                     <tbody id="fakturTableBody">
                         <tr>
-                            <td colspan="9" class="text-center py-4 text-muted">
+                            <td colspan="8" class="text-center py-4 text-muted">
                                 <div class="spinner-border spinner-border-sm text-primary me-2"></div> Memuat data faktur...
                             </td>
                         </tr>
@@ -291,9 +290,15 @@ require_once __DIR__ . '/../../components/navbar.php';
                                         <span class="text-muted small d-block">Nomor Invoice Vendor:</span>
                                         <strong class="text-dark font-monospace fs-6" id="detailNomorInvoiceVendor">-</strong>
                                     </div>
-                                    <div class="mb-2">
-                                        <span class="text-muted small d-block">No. Seri e-Faktur Pajak:</span>
-                                        <span class="text-dark font-monospace fw-semibold" id="detailNomorFakturPajak">-</span>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-sm-6">
+                                            <span class="text-muted small d-block">No. Seri e-Faktur Pajak:</span>
+                                            <span class="text-dark font-monospace fw-semibold" id="detailNomorFakturPajak">-</span>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <span class="text-muted small d-block">Tanggal e-Faktur Pajak:</span>
+                                            <span class="text-dark font-monospace" id="detailTanggalFakturPajak">-</span>
+                                        </div>
                                     </div>
                                     <div class="row g-2">
                                         <div class="col-6">
@@ -614,9 +619,6 @@ function renderTable(rows, pagination) {
                 </div>
             </td>
             <td>
-                <span class="text-dark">${formatDate(tglFaktur)}</span>
-            </td>
-            <td>
                 <div class="fw-semibold text-dark">${r.nama_vendor}</div>
             </td>
             <td>
@@ -657,7 +659,7 @@ function renderTable(rows, pagination) {
 function showEmptyTable(message) {
     document.getElementById('fakturTableBody').innerHTML = `
         <tr>
-            <td colspan="9" class="text-center py-4 text-muted">
+            <td colspan="8" class="text-center py-4 text-muted">
                 <i class="bi bi-inbox fs-3 d-block mb-1 text-secondary"></i>
                 ${message}
             </td>
@@ -769,6 +771,7 @@ function renderModalDetailContent(d) {
     document.getElementById('detailNomorFaktur').textContent = d.nomor_faktur || '-';
     document.getElementById('detailNomorInvoiceVendor').textContent = d.nomor_faktur_vendor || '-';
     document.getElementById('detailNomorFakturPajak').textContent = d.nomor_faktur_pajak || '-';
+    document.getElementById('detailTanggalFakturPajak').textContent = d.tanggal_faktur_pajak ? formatDate(d.tanggal_faktur_pajak) : '-';
     document.getElementById('detailTanggalFaktur').textContent = formatDate(d.tanggal_faktur_vendor || d.tanggal_faktur);
     document.getElementById('detailJatuhTempo').textContent = `${formatDate(d.tanggal_jatuh_tempo)} (${d.term_of_payment || 0} Hari)`;
 
