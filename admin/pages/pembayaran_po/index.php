@@ -119,7 +119,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                 <i class="bi bi-plus-lg me-1"></i> Catat Pembayaran Baru
             </a>
             <button type="button" class="btn btn-outline-secondary btn-sm px-3 shadow-sm" onclick="loadPaymentList(1)" style="height: 38px; display: inline-flex; align-items: center;">
-                <i class="bi bi-arrow-clockwise me-1"></i> Refresh Data Data
+                <i class="bi bi-arrow-clockwise me-1"></i> Refresh Data
             </button>
         </div>
     </div>

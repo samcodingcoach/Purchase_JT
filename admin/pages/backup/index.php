@@ -110,7 +110,7 @@ require_once __DIR__ . '/../../components/navbar.php';
         </div>
         <div class="d-flex gap-2">
             <button type="button" class="btn btn-outline-secondary btn-sm px-3 fw-semibold shadow-sm" onclick="loadBackupData(1)">
-                <i class="bi bi-arrow-clockwise me-1"></i> Refresh Data Data
+                <i class="bi bi-arrow-clockwise me-1"></i> Refresh Data
             </button>
             <button type="button" class="btn btn-primary btn-sm px-3 fw-semibold shadow-sm" onclick="openBackupModal()">
                 <i class="bi bi-cloud-arrow-up-fill me-1"></i> Buat Backup
