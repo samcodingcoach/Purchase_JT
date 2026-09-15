@@ -46,7 +46,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                             <th style="min-width: 200px;">Nama Penomoran</th>
                             <th style="min-width: 160px;">Tipe Transaksi</th>
                             <th style="min-width: 150px;">Tipe Reset</th>
-                            <th style="min-width: 220px;">Contoh Hasil Real-time</th>
+                            <th style="min-width: 220px;">Format</th>
                             <th class="text-center" style="width: 120px;">Aksi</th>
                         </tr>
                     </thead>
