@@ -14,6 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
+require_once __DIR__ . '/../../config/penomoran_helper.php';
 require_once __DIR__ . '/../middleware/auth.php';
 
 $currentUser = apiAuth();
@@ -130,32 +131,10 @@ if ($hasLuxuryItem && count(array_unique($luxuryRates)) > 1) {
     jsonResponse(false, 'Tarif PPnBM barang dalam satu RO harus sama (tidak boleh berbeda).', null, 422);
 }
 
-// 3. Generate Nomor RO jika kosong (Format: RO-YYMM-0000)
+// 3. Generate Nomor RO jika kosong (Menggunakan tabel penomoran)
 if (empty($nomorRo)) {
-    $time = strtotime($tanggalRo);
-    $yymm = date('ym', $time);
-    $prefix = "RO-{$yymm}-";
-
-    $stmtSeq = $conn->prepare("SELECT nomor FROM request_order WHERE nomor LIKE ? ORDER BY id_request DESC LIMIT 100");
-    $searchPattern = $prefix . "%";
-    $stmtSeq->bind_param("s", $searchPattern);
-    $stmtSeq->execute();
-    $resSeq = $stmtSeq->get_result();
-
-    $maxSequence = 0;
-    while ($row = $resSeq->fetch_assoc()) {
-        $numStr = $row['nomor'] ?? '';
-        if (preg_match('/^RO-\d{4}-(\d+)$/i', $numStr, $matches)) {
-            $seq = (int)$matches[1];
-            if ($seq > $maxSequence) {
-                $maxSequence = $seq;
-            }
-        }
-    }
-    $stmtSeq->close();
-
-    $nextSequence = $maxSequence + 1;
-    $nomorRo = $prefix . str_pad($nextSequence, 4, '0', STR_PAD_LEFT);
+    $gen = generateNomorTransaksi($conn, 'REQUEST', $tanggalRo);
+    $nomorRo = $gen['success'] ? $gen['nomor'] : ('RO-' . date('ym') . '-0001');
 }
 
 // 4. Mulai Database Transaction

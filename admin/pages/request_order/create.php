@@ -66,13 +66,10 @@ require_once __DIR__ . '/../../components/navbar.php';
                                         <label class="form-label small fw-bold text-dark">Nomor RO <span class="text-danger">*</span></label>
                                         <div class="input-group input-group-sm">
                                             <span class="input-group-text bg-white"><i class="bi bi-hash"></i></span>
-                                            <input type="text" class="form-control font-monospace fw-bold text-primary" id="roNomor" required placeholder="Ketik manual atau klik generate">
-                                            <button type="button" class="btn btn-outline-primary" onclick="fetchNextRoNumber()" title="Generate Otomatis">
+                                            <input type="text" class="form-control font-monospace fw-bold text-primary bg-light" id="roNomor" readonly required placeholder="Otomatis digenerate">
+                                            <button type="button" class="btn btn-outline-primary" onclick="fetchNextRoNumber()" title="Generate Ulang">
                                                 <i class="bi bi-arrow-clockwise me-1"></i> Generate
                                             </button>
-                                        </div>
-                                        <div class="form-text small text-muted" style="font-size: 0.73rem;">
-                                             Format otomatis: <code>RO-YYMM-0000</code> (Reset setiap bulan). Anda juga dapat mengetik nomor kustom.
                                         </div>
                                     </div>
 
@@ -442,7 +439,7 @@ function goToTab(tabButtonId) {
 }
 
 // -------------------------------------------------------------
-// 1. GENERATE NOMOR RO (Format: RO-YYMM-0000, Reset per Bulan)
+// 1. GENERATE NOMOR RO (Menggunakan Pengaturan Tabel Penomoran)
 // -------------------------------------------------------------
 async function fetchNextRoNumber() {
     const inputNomor = document.getElementById('roNomor');
@@ -455,16 +452,12 @@ async function fetchNextRoNumber() {
     } else {
         const d = new Date(selectedDate);
         const yymm = String(d.getFullYear()).slice(-2) + String(d.getMonth() + 1).padStart(2, '0');
-        inputNomor.value = `RO-${yymm}-0001`;
+        inputNomor.value = `PR/${yymm}${String(d.getDate()).padStart(2, '0')}/00001`;
     }
 }
 
 function onTanggalRoChange() {
-    // Regenerate nomor jika user belum mengubah ke format kustom yang sangat spesifik
-    const currentNomor = document.getElementById('roNomor').value.trim();
-    if (!currentNomor || currentNomor.startsWith('RO-')) {
-        fetchNextRoNumber();
-    }
+    fetchNextRoNumber();
 }
 
 // -------------------------------------------------------------
