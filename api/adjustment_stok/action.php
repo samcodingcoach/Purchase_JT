@@ -125,29 +125,57 @@ try {
         $stmtApprove->close();
 
         // EKSEKUSI PEMBARUAN STOK FISIK KE TABEL `barang_stok`
-        $qDetails = $conn->query("SELECT id_barang, qty_akhir FROM adjustment_stok_detail WHERE id_adjustment = {$id}");
+        $jenisAdjustment = $adj['jenis_adjustment'];
+        $qDetails = $conn->query("SELECT id_barang, qty_sistem, qty_fisik, qty_adjustment, qty_akhir FROM adjustment_stok_detail WHERE id_adjustment = {$id}");
         while ($d = $qDetails->fetch_assoc()) {
             $idBarang = (int)$d['id_barang'];
-            $qtyAkhir = (float)$d['qty_akhir'];
+            $qtyFisik = (float)$d['qty_fisik'];
+            $storedQtyAdj = (float)$d['qty_adjustment'];
 
-            // Cek apakah data barang_stok per site sudah ada
-            $qCheckStok = $conn->query("SELECT id_stok FROM barang_stok WHERE id_barang = {$idBarang} AND id_site = {$idSite} LIMIT 1");
-            if ($qCheckStok && $qCheckStok->num_rows > 0) {
+            // Cek data barang_stok per site
+            $currentStokDb = 0;
+            $qCheckStok = $conn->query("SELECT id_stok, stok FROM barang_stok WHERE id_barang = {$idBarang} AND id_site = {$idSite} LIMIT 1");
+            $hasExistingStok = ($qCheckStok && $qCheckStok->num_rows > 0);
+            
+            if ($hasExistingStok) {
+                $rowStok = $qCheckStok->fetch_assoc();
+                $currentStokDb = (float)$rowStok['stok'];
+            }
+
+            // Hitung stok baru berdasarkan jenis penyesuaian
+            if ($jenisAdjustment === 'PENAMBAHAN') {
+                $qtyAdj = abs($storedQtyAdj > 0 ? $storedQtyAdj : $qtyFisik);
+                $newStok = $currentStokDb + $qtyAdj;
+            } elseif ($jenisAdjustment === 'PENGURANGAN') {
+                $qtyAdj = -abs($storedQtyAdj < 0 ? $storedQtyAdj : $qtyFisik);
+                $newStok = max(0, $currentStokDb + $qtyAdj);
+            } else { // SET_STOK
+                $newStok = $qtyFisik;
+                $qtyAdj = $newStok - $currentStokDb;
+            }
+
+            if ($hasExistingStok) {
                 // Update stok
                 $stmtStok = $conn->prepare("UPDATE barang_stok SET stok = ? WHERE id_barang = ? AND id_site = ?");
-                $stmtStok->bind_param("dii", $qtyAkhir, $idBarang, $idSite);
+                $stmtStok->bind_param("dii", $newStok, $idBarang, $idSite);
                 $stmtStok->execute();
                 $stmtStok->close();
             } else {
                 // Insert stok baru
                 $stmtStokIns = $conn->prepare("INSERT INTO barang_stok (id_barang, id_site, stok) VALUES (?, ?, ?)");
-                $stmtStokIns->bind_param("iid", $idBarang, $idSite, $qtyAkhir);
+                $stmtStokIns->bind_param("iid", $idBarang, $idSite, $newStok);
                 $stmtStokIns->execute();
                 $stmtStokIns->close();
             }
+
+            // Sinkronisasi rincian detail agar qty_sistem, qty_adjustment, dan qty_akhir presisi
+            $stmtUpdDetail = $conn->prepare("UPDATE adjustment_stok_detail SET qty_sistem = ?, qty_adjustment = ?, qty_akhir = ? WHERE id_adjustment = ? AND id_barang = ?");
+            $stmtUpdDetail->bind_param("dddii", $currentStokDb, $qtyAdj, $newStok, $id, $idBarang);
+            $stmtUpdDetail->execute();
+            $stmtUpdDetail->close();
         }
 
-        logActivityAdj($conn, $idKaryawan, $user['nama'] ?? $user['username'], $user['role'], 'APPROVE', $id, $noAdj, "Menyetujui Stock Adjustment {$noAdj} dan memperbarui saldo stok fisik pada Site ID: {$idSite}");
+        logActivityAdj($conn, $idKaryawan, $user['nama'] ?? $user['username'], $user['role'], 'APPROVE', $id, $noAdj, "Menyetujui Stock Adjustment {$noAdj} ({$jenisAdjustment}) dan memperbarui saldo stok fisik pada Site ID: {$idSite}");
 
         $conn->commit();
         sendJson(true, "Stock Adjustment {$noAdj} telah DISETUJUI dan saldo stok barang telah diperbarui secara otomatis.", ['status' => 'APPROVED']);
@@ -194,6 +222,32 @@ try {
 
         $conn->commit();
         sendJson(true, "Stock Adjustment {$noAdj} berhasil dibatalkan.", ['status' => 'BATAL']);
+    }
+
+    // ==========================================
+    // 5. ACTION: DELETE (DRAFT/PENDING -> HAPUS DARI DB)
+    // ==========================================
+    elseif ($action === 'DELETE') {
+        if (!in_array($currentStatus, ['DRAFT', 'PENDING'])) {
+            sendJson(false, "Hanya transaksi berstatus DRAFT atau PENDING yang dapat dihapus.", null, 422);
+        }
+
+        // Hapus rincian detail barang
+        $stmtDelDetail = $conn->prepare("DELETE FROM adjustment_stok_detail WHERE id_adjustment = ?");
+        $stmtDelDetail->bind_param("i", $id);
+        $stmtDelDetail->execute();
+        $stmtDelDetail->close();
+
+        // Hapus header transaksi
+        $stmtDelHead = $conn->prepare("DELETE FROM adjustment_stok WHERE id_adjustment = ?");
+        $stmtDelHead->bind_param("i", $id);
+        $stmtDelHead->execute();
+        $stmtDelHead->close();
+
+        logActivityAdj($conn, $idKaryawan, $user['nama'] ?? $user['username'], $user['role'], 'DELETE', $id, $noAdj, "Menghapus Stock Adjustment {$noAdj} (Status awal: {$currentStatus})");
+
+        $conn->commit();
+        sendJson(true, "Stock Adjustment {$noAdj} berhasil dihapus permanen.", ['status' => 'DELETED']);
     }
 
     else {

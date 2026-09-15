@@ -97,6 +97,7 @@ try {
     }
 
     $idKaryawan = $user['id_karyawan'] ?? $user['id'] ?? 1;
+    $idKaryawanApproved = isset($data['id_karyawan_approved']) && is_numeric($data['id_karyawan_approved']) && (int)$data['id_karyawan_approved'] > 0 ? (int)$data['id_karyawan_approved'] : null;
 
     // Database Transaction
     $conn->begin_transaction();
@@ -105,12 +106,12 @@ try {
 
     // 1. Insert Header
     $stmtHead = $conn->prepare("INSERT INTO adjustment_stok (
-        nomor_adjustment, tanggal_adjustment, id_site, jenis_adjustment, alasan, keterangan, status, id_karyawan
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        nomor_adjustment, tanggal_adjustment, id_site, jenis_adjustment, alasan, keterangan, status, id_karyawan, id_karyawan_approved
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
     if (!$stmtHead) {
         throw new Exception("Gagal prepare header: " . $conn->error);
     }
-    $stmtHead->bind_param("ssissssi", $nomorAdj, $tanggalAdj, $idSite, $jenisAdjustment, $alasan, $keterangan, $statusTarget, $idKaryawan);
+    $stmtHead->bind_param("ssissssii", $nomorAdj, $tanggalAdj, $idSite, $jenisAdjustment, $alasan, $keterangan, $statusTarget, $idKaryawan, $idKaryawanApproved);
     if (!$stmtHead->execute()) {
         throw new Exception("Gagal insert header: " . $stmtHead->error);
     }

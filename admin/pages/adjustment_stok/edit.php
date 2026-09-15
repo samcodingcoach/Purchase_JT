@@ -1,47 +1,50 @@
 <?php
-/**
- * Buat Transaksi Penyesuaian Stok (Stock Adjustment) Baru
- * Path: admin/pages/adjustment_stok/create.php
- * Khusus Role: ADMIN, LOGISTIK, MEKANIK, MANAGER
- * (Catatan: Hak Approval hanya dimiliki oleh LOGISTIK dan ADMIN)
- */
-
 require_once __DIR__ . '/../../../config/config.php';
 require_once __DIR__ . '/../../../config/session.php';
 
-// Auth Protection
+// Cek otorisasi role
 $user = requireAuth([ROLE_ADMIN, ROLE_LOGISTIK, ROLE_MEKANIK, ROLE_MANAGER]);
-$pageTitle = 'Buat Stock Adjustment';
-$pageHeading = 'Formulir Penyesuaian Stok Barang';
+$pageTitle = 'Edit Stock Adjustment - PT Jembatan Translog';
 
-$namaPembuat = $user['nama'] ?? $user['nama_lengkap'] ?? $user['username'] ?? 'Petugas';
-$kodeKaryawan = $user['kode_karyawan'] ?? '';
-$displayPetugas = $namaPembuat . ($kodeKaryawan ? " ({$kodeKaryawan})" : "");
+$idAdjustment = isset($_GET['id']) && is_numeric($_GET['id']) ? (int)$_GET['id'] : 0;
+if ($idAdjustment <= 0) {
+    echo '<div class="container-fluid py-4"><div class="alert alert-danger">ID Stock Adjustment tidak valid. <a href="index.php" class="alert-link">Kembali</a></div></div>';
+    require_once __DIR__ . '/../../components/footer.php';
+    exit;
+}
 
 require_once __DIR__ . '/../../components/header.php';
 require_once __DIR__ . '/../../components/sidebar.php';
 require_once __DIR__ . '/../../components/navbar.php';
 ?>
 
-<div class="container-fluid px-0">
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+<div class="container-fluid py-3">
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-            <h4 class="fw-bold text-dark mb-0">Formulir Stock Adjustment</h4>
+            <h4 class="fw-bold text-dark mb-0">Edit Stock Adjustment</h4>
         </div>
-        <div>
+        <div class="d-flex gap-2">
             <a href="<?= BASE_URL ?>/admin/pages/adjustment_stok/index.php" class="btn btn-outline-secondary btn-sm px-3">
                 <i class="bi bi-arrow-left me-1"></i> Kembali ke Daftar
             </a>
         </div>
     </div>
 
-    <!-- MAIN FORM DENGAN NAV TABS -->
+    <!-- ALERT ERROR JIKA STATUS TERKUNCI -->
+    <div id="alertLockedStatus" class="alert alert-warning d-none">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        Dokumen ini berstatus <strong id="lockedStatusName"></strong> dan sudah terkunci sehingga tidak dapat diedit lagi.
+    </div>
+
+    <!-- FORM UTAMA -->
     <form id="formAdjustment" onsubmit="handleSaveAdjustment(event)">
-        <div class="card border-0 shadow-sm rounded-3">
-            
-            <!-- Nav Tabs Header -->
-            <div class="card-header bg-white pt-3 pb-0 px-4 border-bottom">
-                <ul class="nav nav-tabs border-bottom-0" id="adjFormTabs" role="tablist">
+        <input type="hidden" id="idAdjustment" value="<?= $idAdjustment ?>">
+
+        <div class="card border-0 shadow-sm rounded-3 mb-4">
+            <!-- TAB HEADERS -->
+            <div class="card-header bg-white border-bottom p-0">
+                <ul class="nav nav-tabs card-header-tabs m-0 px-3 pt-2" id="adjTab" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active fw-bold text-dark" id="tab-dokumen" data-bs-toggle="tab" data-bs-target="#pane-dokumen" type="button" role="tab">
                             <i class="bi bi-file-earmark-text-fill me-2 text-primary"></i>1. Informasi Penyesuaian
@@ -92,13 +95,13 @@ require_once __DIR__ . '/../../components/navbar.php';
                                             <div class="col-7">
                                                 <div class="input-group input-group-sm">
                                                     <span class="input-group-text bg-white"><i class="bi bi-calendar3"></i></span>
-                                                    <input type="date" class="form-control" id="tanggalAdjustmentDate" required value="<?= date('Y-m-d') ?>">
+                                                    <input type="date" class="form-control" id="tanggalAdjustmentDate" required>
                                                 </div>
                                             </div>
                                             <div class="col-5">
                                                 <div class="input-group input-group-sm">
                                                     <span class="input-group-text bg-white"><i class="bi bi-clock"></i></span>
-                                                    <input type="text" class="form-control text-center font-monospace" id="tanggalAdjustmentTime" required maxlength="5" placeholder="HH:MM" value="<?= date('H:i') ?>">
+                                                    <input type="text" class="form-control text-center font-monospace" id="tanggalAdjustmentTime" required maxlength="5" placeholder="HH:MM">
                                                 </div>
                                             </div>
                                         </div>
@@ -106,7 +109,7 @@ require_once __DIR__ . '/../../components/navbar.php';
 
                                     <div class="mb-2">
                                         <label class="form-label small fw-bold text-dark">Petugas Pembuat</label>
-                                        <input type="text" class="form-control form-control-sm bg-white" readonly value="<?= htmlspecialchars($displayPetugas) ?>">
+                                        <input type="text" class="form-control form-control-sm bg-white" id="displayPetugas" readonly value="-">
                                     </div>
                                 </div>
                             </div>
@@ -121,7 +124,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                                     <div class="mb-3">
                                         <label class="form-label small fw-bold text-dark">Jenis Penyesuaian <span class="text-danger">*</span></label>
                                         <select class="form-select form-select-sm fw-semibold" id="jenisAdjustment" required onchange="handleJenisAdjustmentChange()">
-                                            <option value="PENAMBAHAN" selected>PENAMBAHAN</option>
+                                            <option value="PENAMBAHAN">PENAMBAHAN</option>
                                             <option value="PENGURANGAN">PENGURANGAN</option>
                                         </select>
                                     </div>
@@ -237,13 +240,22 @@ require_once __DIR__ . '/../../components/navbar.php';
                     <div class="tab-pane fade" id="pane-persetujuan" role="tabpanel">
                         <div class="row g-4">
                             <div class="col-md-6">
-                                <div class="p-3 bg-light rounded-3 border">
-                                   
-
-                                    <div class="mb-2">
+                                <div class="p-3 bg-light rounded-3 border h-100">
+                                    <div class="mb-3">
                                         <label class="form-label small fw-bold text-dark">Disetujui Oleh (Kepala Site / Head of) <span class="text-danger">*</span></label>
                                         <select class="form-select form-select-sm fw-semibold" id="idKaryawanApproved" required>
                                             <option value="">-- Pilih Site pada Tab 1 terlebih dahulu --</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-2">
+                                        <label class="form-label small fw-bold text-dark">Status Dokumen <span class="text-danger">*</span></label>
+                                        <select class="form-select form-select-sm fw-semibold" id="statusDocument" required>
+                                            <option value="DRAFT">DRAFT</option>
+                                            <option value="PENDING">PENDING</option>
+                                            <option value="APPROVED">APPROVED</option>
+                                            <option value="REJECTED">REJECT</option>
+                                            <option value="BATAL">BATAL</option>
                                         </select>
                                     </div>
                                 </div>
@@ -255,12 +267,9 @@ require_once __DIR__ . '/../../components/navbar.php';
                             <button type="button" class="btn btn-outline-secondary btn-sm px-3" onclick="goToTab('tab-keterangan')">
                                 <i class="bi bi-arrow-left me-1"></i> Kembali ke Alasan &amp; Keterangan
                             </button>
-                            <div class="d-flex gap-2">
-                                <button type="button" class="btn btn-light border btn-sm px-3" onclick="handleSaveAction('DRAFT')">
-                                    <i class="bi bi-floppy me-1"></i> Simpan Draft
-                                </button>
-                                <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold shadow-sm" onclick="handleSaveAction('PENDING')">
-                                    <i class="bi bi-send-check me-1"></i> Simpan &amp; Ajukan Approval
+                            <div>
+                                <button type="submit" class="btn btn-primary btn-sm px-4 fw-semibold shadow-sm" id="btnSubmitUpdate">
+                                    <i class="bi bi-check2-circle me-1"></i> Update Data
                                 </button>
                             </div>
                         </div>
@@ -277,9 +286,7 @@ require_once __DIR__ . '/../../components/navbar.php';
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
             <div class="modal-header bg-light py-3 px-4 border-bottom">
-                <h6 class="modal-title fw-bold text-dark mb-0">
-                    Catatan Rincian Barang
-                </h6>
+                <h6 class="modal-title fw-bold text-dark mb-0">Catatan Rincian Barang</h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
@@ -303,7 +310,6 @@ require_once __DIR__ . '/../../components/navbar.php';
     </div>
 </div>
 
-<!-- STYLING AUTOCOMPLETE & SEARCH DROPDOWN -->
 <style>
 .table-container {
     overflow: visible !important;
@@ -369,13 +375,13 @@ require_once __DIR__ . '/../../components/navbar.php';
 </style>
 
 <script>
+const ID_ADJUSTMENT = <?= $idAdjustment ?>;
 let nextRowIndex = 0;
 let itemSearchTimeout = null;
+let currentAdjData = null;
 
 document.addEventListener('DOMContentLoaded', () => {
-    loadSitesList();
-    addNewItemRow();
-    updateThQtyHeader();
+    loadAdjustmentDetail();
 
     // Close dropdowns when clicking outside
     document.addEventListener('click', (e) => {
@@ -404,6 +410,81 @@ async function loadSitesList() {
     } catch (e) {
         console.error('Error load sites:', e);
         siteSelect.innerHTML = '<option value="">Gagal memuat site</option>';
+    }
+}
+
+async function loadAdjustmentDetail() {
+    try {
+        await loadSitesList();
+
+        const res = await fetch(`<?= BASE_URL ?>/api/adjustment_stok/detail.php?id=${ID_ADJUSTMENT}`);
+        const json = await res.json();
+        if (!json.success || !json.data) {
+            alert(json.message || 'Gagal memuat data adjustment stok.');
+            window.location.href = '<?= BASE_URL ?>/admin/pages/adjustment_stok/index.php';
+            return;
+        }
+
+        currentAdjData = json.data;
+
+        // Cek status
+        if (currentAdjData.status !== 'DRAFT' && currentAdjData.status !== 'PENDING') {
+            document.getElementById('alertLockedStatus').classList.remove('d-none');
+            document.getElementById('lockedStatusName').innerText = currentAdjData.status;
+            document.querySelectorAll('#formAdjustment input, #formAdjustment select, #formAdjustment textarea, #formAdjustment button').forEach(el => {
+                el.disabled = true;
+            });
+        }
+
+        // Set header info
+        const headerNomorAdjEl = document.getElementById('headerNomorAdj');
+        if (headerNomorAdjEl) {
+            headerNomorAdjEl.innerText = currentAdjData.nomor_adjustment || '-';
+        }
+        document.getElementById('displayPetugas').value = currentAdjData.nama_pembuat || '-';
+        document.getElementById('idSite').value = currentAdjData.id_site || '';
+        document.getElementById('jenisAdjustment').value = currentAdjData.jenis_adjustment || 'PENAMBAHAN';
+        document.getElementById('alasan').value = currentAdjData.alasan || '';
+        document.getElementById('keterangan').value = currentAdjData.keterangan || '';
+        
+        const statusDocEl = document.getElementById('statusDocument');
+        if (statusDocEl) {
+            statusDocEl.value = currentAdjData.status || 'DRAFT';
+        }
+
+        // Update Approver Options khusus untuk site ini
+        updateApproverOptions();
+
+        if (currentAdjData.tanggal_adjustment) {
+            const parts = currentAdjData.tanggal_adjustment.split(' ');
+            document.getElementById('tanggalAdjustmentDate').value = parts[0] || '';
+            document.getElementById('tanggalAdjustmentTime').value = (parts[1] || '00:00').substring(0, 5);
+        }
+
+        updateThQtyHeader();
+
+        // Render Items
+        const tbody = document.getElementById('tbodyAdjItems');
+        tbody.innerHTML = '';
+        if (currentAdjData.items && currentAdjData.items.length > 0) {
+            currentAdjData.items.forEach(it => {
+                addNewItemRow({
+                    id_barang: it.id_barang,
+                    nama_barang: it.nama_barang,
+                    satuan: it.satuan,
+                    stok_sistem: it.qty_sistem,
+                    qty: Math.abs(it.qty_adjustment),
+                    harga_satuan: it.harga_satuan,
+                    keterangan: it.keterangan
+                });
+            });
+        } else {
+            addNewItemRow();
+        }
+
+    } catch (e) {
+        console.error('Error load detail:', e);
+        alert('Terjadi kesalahan saat mengambil data.');
     }
 }
 
@@ -547,7 +628,7 @@ function addNewItemRow(data = {}) {
         </td>
         <td class="text-center">
             <div class="d-flex justify-content-center gap-1">
-                <button type="button" class="btn btn-outline-secondary btn-sm p-1 btn-catatan-modal" onclick="openCatatanModal('${rowId}')" title="Catatan Item">
+                <button type="button" class="btn ${data.keterangan ? 'btn-primary' : 'btn-outline-secondary'} btn-sm p-1 btn-catatan-modal" onclick="openCatatanModal('${rowId}')" title="Catatan Item">
                     <i class="bi bi-chat-left-text"></i>
                 </button>
                 <button type="button" class="btn btn-outline-danger btn-sm p-1" onclick="removeItemRow('${rowId}')" title="Hapus Baris">
@@ -578,7 +659,7 @@ function openCatatanModal(rowId) {
     const tr = document.getElementById(rowId);
     if (!tr) return;
 
-    const namaBarang = tr.querySelector('.item-nama-barang')?.value.trim() || 'Barang Baru (Belum Dipilih)';
+    const namaBarang = tr.querySelector('.item-nama-barang')?.value.trim() || 'Barang (Belum Dipilih)';
     const catatan = tr.querySelector('.item-catatan')?.value || '';
 
     document.getElementById('modalTargetRowId').value = rowId;
@@ -772,10 +853,8 @@ function recalculateAllRows() {
     updateTableFooterTotals();
 }
 
-let pendingStatusAction = 'DRAFT';
-
-function handleSaveAction(status) {
-    pendingStatusAction = status;
+function handleSaveAdjustment(e) {
+    if (e) e.preventDefault();
     const form = document.getElementById('formAdjustment');
     if (form.checkValidity()) {
         executeSaveAdjustment();
@@ -791,11 +870,6 @@ function handleSaveAction(status) {
     }
 }
 
-function handleSaveAdjustment(e) {
-    e.preventDefault();
-    executeSaveAdjustment();
-}
-
 async function executeSaveAdjustment() {
     const siteId = document.getElementById('idSite').value;
     const jenisAdj = document.getElementById('jenisAdjustment').value;
@@ -804,6 +878,7 @@ async function executeSaveAdjustment() {
     const alasan = document.getElementById('alasan').value.trim();
     const keterangan = document.getElementById('keterangan').value.trim();
     const idKaryawanApproved = document.getElementById('idKaryawanApproved')?.value;
+    const statusDoc = document.getElementById('statusDocument')?.value || 'DRAFT';
 
     if (!siteId) {
         showToast('Silakan pilih Lokasi Gudang / Site pada Tab 1 terlebih dahulu.', 'warning');
@@ -856,19 +931,27 @@ async function executeSaveAdjustment() {
         return;
     }
 
+    const btnSubmit = document.getElementById('btnSubmitUpdate');
+    const origBtnHtml = btnSubmit ? btnSubmit.innerHTML : '';
+    if (btnSubmit) {
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Mengupdate...';
+    }
+
     const payload = {
+        id_adjustment: ID_ADJUSTMENT,
         id_site: parseInt(siteId),
         jenis_adjustment: jenisAdj,
         tanggal_adjustment: `${tglDate} ${tglTime}:00`,
         alasan: alasan,
         keterangan: keterangan,
-        status: pendingStatusAction,
+        status: statusDoc,
         id_karyawan_approved: idKaryawanApproved ? parseInt(idKaryawanApproved) : null,
         items: items
     };
 
     try {
-        const res = await fetch('<?= BASE_URL ?>/api/adjustment_stok/create.php', {
+        const res = await fetch('<?= BASE_URL ?>/api/adjustment_stok/update.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -878,16 +961,21 @@ async function executeSaveAdjustment() {
 
         const result = await res.json();
         if (result.success) {
-            showToast(result.message || 'Transaksi Stock Adjustment berhasil disimpan.', 'success');
+            showToast(result.message || 'Perubahan Stock Adjustment berhasil disimpan.', 'success');
             setTimeout(() => {
                 window.location.href = '<?= BASE_URL ?>/admin/pages/adjustment_stok/index.php';
             }, 800);
         } else {
-            showToast(result.message || 'Terjadi kesalahan pada server.', 'error');
+            showToast(result.message || 'Terjadi kesalahan pada server.', 'danger');
         }
     } catch (err) {
         console.error(err);
-        showToast('Gagal menghubungi server.', 'error');
+        showToast('Gagal menghubungi server.', 'danger');
+    } finally {
+        if (btnSubmit) {
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = origBtnHtml;
+        }
     }
 }
 

@@ -7,7 +7,6 @@
 
 require_once __DIR__ . '/../../../config/config.php';
 require_once __DIR__ . '/../../../config/session.php';
-require_once __DIR__ . '/../../../config/koneksi.php';
 
 // Auth Protection
 $user = requireAuth([ROLE_ADMIN, ROLE_LOGISTIK, ROLE_MEKANIK, ROLE_MANAGER]);
@@ -173,8 +172,30 @@ require_once __DIR__ . '/../../components/navbar.php';
             <div class="modal-body px-4 pt-1 pb-4" id="modalDetailBody">
                 <!-- Diisi dinamis via JS -->
             </div>
-            <div class="modal-footer bg-light py-2 px-4 d-flex justify-content-between" id="modalDetailFooter">
-                <!-- Tombol Action Dinamis -->
+        </div>
+    </div>
+</div>
+
+<!-- MODAL KONFIRMASI HAPUS STOCK ADJUSTMENT -->
+<div class="modal fade" id="modalConfirmDeleteAdjustment" tabindex="-1" aria-labelledby="modalConfirmDeleteAdjustmentLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <div class="modal-body p-4 text-center">
+                <div class="mb-3">
+                    <div class="d-inline-flex align-items-center justify-content-center bg-danger-subtle text-danger rounded-circle" style="width: 64px; height: 64px;">
+                        <i class="bi bi-trash3-fill fs-2"></i>
+                    </div>
+                </div>
+                <h5 class="fw-bold text-dark mb-2" id="modalConfirmDeleteAdjustmentLabel">Konfirmasi Hapus</h5>
+                <p class="text-muted small mb-4">
+                    Apakah Anda yakin ingin menghapus transaksi Stock Adjustment <strong id="deleteTargetNomor" class="font-monospace text-danger"></strong>? Data yang dihapus tidak dapat dikembalikan.
+                </p>
+                <div class="d-flex justify-content-center gap-2">
+                    <button type="button" class="btn btn-light border btn-sm px-4 fw-semibold" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-danger btn-sm px-4 fw-semibold shadow-sm" id="btnConfirmDeleteAction" onclick="executeDeleteAdjustment()">
+                        <i class="bi bi-trash me-1"></i> Ya, Hapus Data
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -325,6 +346,22 @@ async function loadAdjustmentList(page = 1) {
                 `;
             }
 
+            // Edit & Delete Button (hanya aktif jika DRAFT atau PENDING)
+            let editBtn = '';
+            let deleteBtn = '';
+            if (row.status === 'DRAFT' || row.status === 'PENDING') {
+                editBtn = `
+                    <a href="<?= BASE_URL ?>/admin/pages/adjustment_stok/edit.php?id=${row.id_adjustment}" class="btn btn-sm btn-outline-warning p-0 d-inline-flex align-items-center justify-content-center" title="Edit Data" style="width: 28px; height: 28px;">
+                        <i class="bi bi-pencil small"></i>
+                    </a>
+                `;
+                deleteBtn = `
+                    <button type="button" class="btn btn-sm btn-outline-danger p-0 d-inline-flex align-items-center justify-content-center" title="Hapus Data" onclick="deleteAdjustment(${row.id_adjustment}, '${escapeHtml(row.nomor_adjustment)}')" style="width: 28px; height: 28px;">
+                        <i class="bi bi-trash small"></i>
+                    </button>
+                `;
+            }
+
             html += `
                 <tr class="align-middle">
                     <td class="ps-3 py-2 text-center text-muted fw-semibold">${no}</td>
@@ -345,6 +382,8 @@ async function loadAdjustmentList(page = 1) {
                             <button type="button" class="btn btn-sm btn-outline-primary p-0 d-inline-flex align-items-center justify-content-center" title="Lihat Rincian" onclick="viewDetail(${row.id_adjustment})" style="width: 28px; height: 28px;">
                                 <i class="bi bi-eye-fill small"></i>
                             </button>
+                            ${editBtn}
+                            ${deleteBtn}
                             ${printBtn}
                         </div>
                     </td>
@@ -395,11 +434,9 @@ function renderPagination(totalRecords, totalPages, curPage, perPage) {
 
 async function viewDetail(id) {
     const body = document.getElementById('modalDetailBody');
-    const footer = document.getElementById('modalDetailFooter');
     const headerStatus = document.getElementById('modalDetailHeaderStatus');
     if (headerStatus) headerStatus.innerHTML = '';
     body.innerHTML = `<div class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div> Memuat rincian adjustment...</div>`;
-    footer.innerHTML = `<button type="button" class="btn btn-secondary btn-sm px-4 ms-auto" data-bs-dismiss="modal">Tutup</button>`;
 
     const modal = new bootstrap.Modal(document.getElementById('modalDetailAdjustment'));
     modal.show();
@@ -531,6 +568,42 @@ async function viewDetail(id) {
                                     <span class="text-muted small d-block">Total Jenis Barang:</span>
                                     <span class="badge bg-light text-dark border fw-bold">${(d.items || []).length} Item</span>
                                 </div>
+
+                                <!-- Action Workflow Buttons (Jika Draft / Pending) -->
+                                ${d.status === 'DRAFT' ? `
+                                    <div class="mt-3 pt-2 border-top d-flex flex-wrap gap-2">
+                                        <a href="<?= BASE_URL ?>/admin/pages/adjustment_stok/edit.php?id=${d.id_adjustment}" class="btn btn-warning btn-sm fw-semibold text-dark">
+                                            <i class="bi bi-pencil me-1"></i> Edit Data
+                                        </a>
+                                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteAdjustment(${d.id_adjustment}, '${escapeHtml(d.nomor_adjustment)}')">
+                                            <i class="bi bi-trash me-1"></i> Hapus
+                                        </button>
+                                        <button type="button" class="btn btn-primary btn-sm fw-semibold ms-auto" onclick="processAction(${d.id_adjustment}, 'SUBMIT')">
+                                            <i class="bi bi-send-fill me-1"></i> Ajukan Approval
+                                        </button>
+                                    </div>
+                                ` : ''}
+
+                                ${d.status === 'PENDING' ? `
+                                    <div class="mt-3 pt-2 border-top d-flex flex-wrap gap-2">
+                                        <a href="<?= BASE_URL ?>/admin/pages/adjustment_stok/edit.php?id=${d.id_adjustment}" class="btn btn-warning btn-sm fw-semibold text-dark">
+                                            <i class="bi bi-pencil me-1"></i> Edit Data
+                                        </a>
+                                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteAdjustment(${d.id_adjustment}, '${escapeHtml(d.nomor_adjustment)}')">
+                                            <i class="bi bi-trash me-1"></i> Hapus
+                                        </button>
+                                        ${(USER_ROLE === 'LOGISTIK' || USER_ROLE === 'ADMIN') ? `
+                                            <div class="ms-auto d-flex gap-2">
+                                                <button type="button" class="btn btn-danger btn-sm fw-semibold" onclick="processAction(${d.id_adjustment}, 'REJECT')">
+                                                    <i class="bi bi-x-circle me-1"></i> Tolak
+                                                </button>
+                                                <button type="button" class="btn btn-success btn-sm fw-semibold" onclick="processAction(${d.id_adjustment}, 'APPROVE')">
+                                                    <i class="bi bi-check-circle me-1"></i> Setujui &amp; Update Stok
+                                                </button>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                ` : ''}
                             </div>
                         </div>
                     </div>
@@ -577,59 +650,70 @@ async function viewDetail(id) {
             </div>
         `;
 
-        // Action Buttons in Footer
-        let modalPrintBtn = '';
-        if (d.status === 'APPROVED') {
-            modalPrintBtn = `
-                <a href="<?= BASE_URL ?>/admin/pages/adjustment_stok/print.php?id=${d.id_adjustment}" target="_blank" class="btn btn-outline-dark btn-sm px-3 fw-semibold">
-                    <i class="bi bi-printer me-1"></i> Cetak Berita Acara
-                </a>
-            `;
-        } else {
-            modalPrintBtn = `
-                <button type="button" class="btn btn-outline-secondary btn-sm px-3" disabled title="Cetak hanya dapat dilakukan setelah dokumen disetujui (APPROVED)">
-                    <i class="bi bi-printer me-1"></i> Cetak Berita Acara
-                </button>
-            `;
-        }
-
-        let buttonsHtml = `
-            <div>
-                ${modalPrintBtn}
-            </div>
-            <div class="d-flex align-items-center gap-2">
-        `;
-
-        // Tombol Ajukan (DRAFT -> PENDING)
-        if (d.status === 'DRAFT') {
-            buttonsHtml += `
-                <button type="button" class="btn btn-warning btn-sm px-3 fw-semibold text-dark" onclick="processAction(${d.id_adjustment}, 'SUBMIT')">
-                    <i class="bi bi-send-fill me-1"></i> Ajukan Approval
-                </button>
-                <button type="button" class="btn btn-outline-danger btn-sm px-3" onclick="processAction(${d.id_adjustment}, 'BATAL')">
-                    Batalkan
-                </button>
-            `;
-        }
-
-        // TOMBOL APPROVE & REJECT: KHUSUS ROLE LOGISTIK & ADMIN
-        if (d.status === 'PENDING' && (USER_ROLE === 'LOGISTIK' || USER_ROLE === 'ADMIN')) {
-            buttonsHtml += `
-                <button type="button" class="btn btn-danger btn-sm px-3 fw-semibold" onclick="processAction(${d.id_adjustment}, 'REJECT')">
-                    <i class="bi bi-x-circle me-1"></i> Tolak (Reject)
-                </button>
-                <button type="button" class="btn btn-success btn-sm px-3 fw-semibold" onclick="processAction(${d.id_adjustment}, 'APPROVE')">
-                    <i class="bi bi-check-circle me-1"></i> Setujui (Approve &amp; Update Stok)
-                </button>
-            `;
-        }
-
-        buttonsHtml += `<button type="button" class="btn btn-secondary btn-sm px-4" data-bs-dismiss="modal">Tutup</button></div>`;
-        footer.innerHTML = buttonsHtml;
-
     } catch (e) {
         console.error('Error detail adjustment:', e);
         body.innerHTML = `<div class="alert alert-danger">Terjadi kesalahan saat memuat detail.</div>`;
+    }
+}
+
+let targetDeleteId = null;
+
+function deleteAdjustment(id, noAdj) {
+    targetDeleteId = id;
+    const nomorEl = document.getElementById('deleteTargetNomor');
+    if (nomorEl) nomorEl.textContent = noAdj || '';
+    const modalEl = document.getElementById('modalConfirmDeleteAdjustment');
+    if (modalEl) {
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+    }
+}
+
+async function executeDeleteAdjustment() {
+    if (!targetDeleteId) return;
+
+    const btn = document.getElementById('btnConfirmDeleteAction');
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menghapus...';
+    }
+
+    try {
+        const res = await fetch('<?= BASE_URL ?>/api/adjustment_stok/action.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id_adjustment: targetDeleteId, action: 'DELETE' })
+        });
+        const json = await res.json();
+        
+        // Hide delete modal
+        const delModalEl = document.getElementById('modalConfirmDeleteAdjustment');
+        if (delModalEl) {
+            const delModal = bootstrap.Modal.getInstance(delModalEl);
+            if (delModal) delModal.hide();
+        }
+
+        if (json.success) {
+            showToast(json.message || 'Transaksi Stock Adjustment berhasil dihapus.', 'success');
+            // Hide detail modal if open
+            const detailModalEl = document.getElementById('modalDetailAdjustment');
+            if (detailModalEl) {
+                const detailModal = bootstrap.Modal.getInstance(detailModalEl);
+                if (detailModal) detailModal.hide();
+            }
+            loadAdjustmentList(currentPage);
+        } else {
+            showToast(json.message || 'Gagal menghapus data.', 'danger');
+        }
+    } catch (e) {
+        showToast('Terjadi kesalahan saat menghubungi server.', 'danger');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
+        targetDeleteId = null;
     }
 }
 
@@ -654,15 +738,17 @@ async function processAction(id, actionType) {
             body: JSON.stringify({ id_adjustment: id, action: actionType, catatan: catatan })
         });
         const json = await res.json();
-        alert(json.message);
         if (json.success) {
+            showToast(json.message, 'success');
             const modalEl = document.getElementById('modalDetailAdjustment');
             const modal = bootstrap.Modal.getInstance(modalEl);
             if (modal) modal.hide();
             loadAdjustmentList(currentPage);
+        } else {
+            showToast(json.message || 'Gagal memproses aksi.', 'danger');
         }
     } catch (e) {
-        alert('Terjadi kesalahan: ' + e.message);
+        showToast('Terjadi kesalahan: ' + e.message, 'danger');
     }
 }
 </script>

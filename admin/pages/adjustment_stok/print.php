@@ -26,6 +26,19 @@ $companyPhone = !empty($profile['telepon1']) ? $profile['telepon1'] : '';
 $companyWa = !empty($profile['whatsapp']) ? $profile['whatsapp'] : '';
 $companyEmail = !empty($profile['email']) ? $profile['email'] : 'logistik@jayateknis.co.id';
 $companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
+$logoWebPath = '';
+$hasLogo = false;
+
+if (!empty($companyLogo)) {
+    $cleanPath = ltrim($companyLogo, '/\\');
+    if (file_exists(__DIR__ . '/../../../' . $cleanPath)) {
+        $logoWebPath = BASE_URL . '/' . $cleanPath;
+        $hasLogo = true;
+    } elseif (file_exists(__DIR__ . '/../../../uploads/profile/' . $cleanPath)) {
+        $logoWebPath = BASE_URL . '/uploads/profile/' . $cleanPath;
+        $hasLogo = true;
+    }
+}
 
 // Query Header
 $stmt = $conn->prepare("
@@ -68,23 +81,36 @@ if (!$header) {
 // Validasi Status: Hanya boleh dicetak jika sudah APPROVED (disetujui)
 if ($header['status'] !== 'APPROVED') {
     http_response_code(403);
+    
+    $statusTitle = 'Dokumen Belum Disetujui';
+    $statusDesc = 'Berita Acara Penyesuaian Stok <strong>' . htmlspecialchars($header['nomor_adjustment']) . '</strong> saat ini berstatus <span class="badge bg-secondary">' . htmlspecialchars($header['status']) . '</span> dan belum dapat dicetak sampai disetujui (APPROVED).';
+    $statusIcon = 'bi-exclamation-triangle text-warning';
+
+    if ($header['status'] === 'REJECTED') {
+        $statusTitle = 'Dokumen Ditolak (REJECTED)';
+        $statusDesc = 'Berita Acara Penyesuaian Stok <strong>' . htmlspecialchars($header['nomor_adjustment']) . '</strong> telah <strong>DITOLAK</strong> sehingga tidak dapat dicetak.';
+        $statusIcon = 'bi-x-octagon text-danger';
+    } elseif ($header['status'] === 'BATAL') {
+        $statusTitle = 'Dokumen Dibatalkan (BATAL)';
+        $statusDesc = 'Berita Acara Penyesuaian Stok <strong>' . htmlspecialchars($header['nomor_adjustment']) . '</strong> telah <strong>DIBATALKAN</strong> sehingga tidak dapat dicetak.';
+        $statusIcon = 'bi-dash-circle text-danger';
+    }
+
     echo '
     <!DOCTYPE html>
     <html lang="id">
     <head>
         <meta charset="UTF-8">
-        <title>Dokumen Belum Disetujui</title>
+        <title>' . htmlspecialchars($statusTitle) . '</title>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     </head>
     <body class="bg-light d-flex align-items-center justify-content-center min-vh-100 p-3">
         <div class="card shadow-sm border-0 text-center p-4" style="max-width: 480px;">
             <div class="card-body">
-                <i class="bi bi-exclamation-triangle text-warning display-4 d-block mb-3"></i>
-                <h5 class="fw-bold text-dark mb-2">Dokumen Belum Disetujui</h5>
-                <p class="text-muted small mb-4">
-                    Berita Acara Penyesuaian Stok <strong>' . htmlspecialchars($header['nomor_adjustment']) . '</strong> saat ini berstatus <span class="badge bg-secondary">' . htmlspecialchars($header['status']) . '</span> dan belum dapat dicetak sampai disetujui oleh Divisi Logistik.
-                </p>
+                <i class="bi ' . $statusIcon . ' display-4 d-block mb-3"></i>
+                <h5 class="fw-bold text-dark mb-2">' . htmlspecialchars($statusTitle) . '</h5>
+                <p class="text-muted small mb-4">' . $statusDesc . '</p>
                 <div class="d-flex justify-content-center gap-2">
                     <button type="button" class="btn btn-secondary btn-sm px-4" onclick="window.close()">Tutup Halaman</button>
                     <a href="' . BASE_URL . '/admin/pages/adjustment_stok/index.php" class="btn btn-primary btn-sm px-4">Kembali ke Daftar</a>
@@ -191,8 +217,8 @@ $isPengurangan = ($header['jenis_adjustment'] === 'PENGURANGAN');
     <!-- KOP SURAT (SESUAI PROFIL PERUSAHAAN) -->
     <div class="kop-container">
         <div class="kop-left">
-            <?php if (!empty($companyLogo) && file_exists(__DIR__ . '/../../../uploads/profile/' . $companyLogo)): ?>
-                <img src="<?= BASE_URL ?>/uploads/profile/<?= htmlspecialchars($companyLogo) ?>" alt="Logo" style="width: 54px; height: 54px; object-fit: contain; flex-shrink: 0;">
+            <?php if ($hasLogo): ?>
+                <img src="<?= htmlspecialchars($logoWebPath) ?>" alt="Logo" style="width: 54px; height: 54px; object-fit: contain; flex-shrink: 0;">
             <?php else: ?>
                 <svg width="54" height="54" viewBox="0 0 100 100" style="flex-shrink: 0;">
                     <polygon points="50,4 92,27 92,73 50,96 8,73 8,27" fill="none" stroke="#000" stroke-width="8" stroke-linejoin="round"/>
@@ -271,33 +297,20 @@ $isPengurangan = ($header['jenis_adjustment'] === 'PENGURANGAN');
                     <td class="colon">:</td>
                     <td class="val fw-bold"><?= htmlspecialchars($header['jenis_adjustment']) ?></td>
                 </tr>
-                <tr>
-                    <td class="lbl">Alasan Penyesuaian</td>
-                    <td class="colon">:</td>
-                    <td class="val"><?= htmlspecialchars($header['alasan']) ?></td>
-                </tr>
             </table>
         </div>
 
         <div class="info-col-right">
             <table class="table-meta-details">
                 <tr>
-                    <td class="lbl">Petugas Pembuat</td>
-                    <td class="colon">:</td>
-                    <td class="val">
-                        <?= htmlspecialchars($header['pembuat_nama'] ?: '-') ?>
-                        <?= !empty($header['pembuat_kode']) ? '<span class="text-muted font-monospace">(' . htmlspecialchars($header['pembuat_kode']) . ')</span>' : '' ?>
-                    </td>
-                </tr>
-                <tr>
-                    <td class="lbl">Jabatan Pembuat</td>
-                    <td class="colon">:</td>
-                    <td class="val"><?= htmlspecialchars($header['pembuat_jabatan'] ?: '-') ?></td>
-                </tr>
-                <tr>
                     <td class="lbl">Status Dokumen</td>
                     <td class="colon">:</td>
                     <td class="val fw-bold"><?= htmlspecialchars($header['status']) ?></td>
+                </tr>
+                <tr>
+                    <td class="lbl">Alasan Penyesuaian</td>
+                    <td class="colon">:</td>
+                    <td class="val"><?= htmlspecialchars($header['alasan']) ?></td>
                 </tr>
             </table>
         </div>
@@ -354,10 +367,10 @@ $isPengurangan = ($header['jenis_adjustment'] === 'PENGURANGAN');
     </div>
     <?php endif; ?>
 
-    <!-- TANDA TANGAN (3 KOLOM RESMI) -->
+    <!-- TANDA TANGAN (2 KOLOM RESMI) -->
     <div class="sig-section">
-        <div class="row g-0">
-            <div class="col-4 sig-col">
+        <div class="row g-0 justify-content-between">
+            <div class="col-5 sig-col">
                 <div class="sig-header-main">Dibuat Oleh,</div>
                 <div class="sig-header-sub">Petugas Pembuat</div>
                 <div class="sig-line-box">
@@ -366,23 +379,14 @@ $isPengurangan = ($header['jenis_adjustment'] === 'PENGURANGAN');
                 <div class="sig-footer-note"><?= htmlspecialchars($header['pembuat_jabatan'] ?: 'Staff Mekanik') ?></div>
             </div>
 
-            <div class="col-4 sig-col">
-                <div class="sig-header-main">Diperiksa / Saksi,</div>
-                <div class="sig-header-sub">Supervisor / Site Leader</div>
-                <div class="sig-line-box">
-                    <span class="sig-person-name">( ..................................... )</span>
-                </div>
-                <div class="sig-footer-note">Supervisor / Site Leader</div>
-            </div>
-
-            <div class="col-4 sig-col">
+            <div class="col-5 sig-col">
                 <div class="sig-header-main">Disetujui Oleh,</div>
-                <div class="sig-header-sub">Divisi Logistik &amp; Persediaan</div>
+                <div class="sig-header-sub">Kepala Site / Logistik</div>
                 <div class="sig-line-box">
                     <span class="sig-person-name"><?= htmlspecialchars($header['approver_nama'] ?: '( Belum Disetujui )') ?></span>
                 </div>
                 <div class="sig-footer-note">
-                    <?= htmlspecialchars($header['approver_jabatan'] ?: 'Bagian Logistik & Persediaan') ?>
+                    <?= htmlspecialchars($header['approver_jabatan'] ?: 'Kepala Site') ?>
                     <?php if ($header['tanggal_approved']): ?>
                         <br><small><?= date('d/m/Y H:i', strtotime($header['tanggal_approved'])) ?></small>
                     <?php endif; ?>
@@ -391,10 +395,12 @@ $isPengurangan = ($header['jenis_adjustment'] === 'PENGURANGAN');
         </div>
     </div>
 
-    <!-- FOOTER BAWAH DOKUMEN -->
+    <!-- FOOTER BAWAH -->
     <div class="footer-line-container">
         <div class="footer-right">
-            Dicetak pada: <?= date('d/m/Y H:i') ?> | User: <?= htmlspecialchars($user['nama_karyawan'] ?? $user['username']) ?>
+            <div class="fw-bold">Halaman 1 dari 1</div>
+            <div>Dicetak: <?= date('d/m/Y H:i') ?></div>
+            <div>Purchasing Management System - <?= htmlspecialchars($companyName) ?></div>
         </div>
     </div>
 
