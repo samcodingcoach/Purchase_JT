@@ -148,7 +148,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                             <!-- Kolom Kiri: Identitas Dokumen & PO -->
                             <div class="col-md-6">
                                 <div class="card bg-light border-0 rounded-3 p-3 h-100">
-                                    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-card-heading me-2 text-primary"></i>Identitas Penerimaan</h6>
+                                    <h6 class="fw-bold text-dark mb-3">Identitas Penerimaan</h6>
                                     
                                     <div class="mb-2">
                                         <span class="text-muted small d-block">Nomor Receiving (RCV):</span>
@@ -159,7 +159,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                                         <strong class="text-dark font-monospace fs-6" id="detailNomorSpb">-</strong>
                                         <div id="detailFileSjContainer" class="mt-1 d-none">
                                             <a href="#" id="detailFileSjLink" target="_blank" class="btn btn-outline-primary btn-sm py-0 px-2" style="font-size: 0.75rem;">
-                                                <i class="bi bi-file-earmark-pdf me-1 text-danger"></i> Buka Dokumen Surat Jalan
+                                                Buka Dokumen Surat Jalan
                                             </a>
                                         </div>
                                     </div>
@@ -181,7 +181,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                             <!-- Kolom Kanan: Pengirim & Lokasi Penerimaan -->
                             <div class="col-md-6">
                                 <div class="card bg-light border-0 rounded-3 p-3 h-100">
-                                    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-geo-alt me-2 text-primary"></i>Pengirim &amp; Lokasi Penerimaan</h6>
+                                    <h6 class="fw-bold text-dark mb-3">Pengirim &amp; Lokasi Penerimaan</h6>
                                     
                                     <div class="mb-2">
                                         <span class="text-muted small d-block">Vendor Pengirim:</span>
@@ -202,7 +202,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                             <!-- Catatan Penerimaan -->
                             <div class="col-12">
                                 <div class="bg-light p-3 rounded-3 border-0">
-                                    <span class="text-muted small d-block mb-1 fw-bold"><i class="bi bi-chat-left-text me-1 text-primary"></i> Catatan Penerimaan:</span>
+                                    <span class="text-muted small d-block mb-1 fw-bold">Catatan Penerimaan:</span>
                                     <p class="mb-0 small text-dark" id="detailCatatan">-</p>
                                 </div>
                             </div>
@@ -234,14 +234,6 @@ require_once __DIR__ . '/../../components/navbar.php';
                     </div>
 
                 </div>
-            </div>
-
-            <!-- MODAL FOOTER -->
-            <div class="modal-footer bg-light py-2 px-3 d-flex justify-content-between">
-                <button type="button" id="modalBtnPrint" class="btn btn-outline-primary btn-sm px-3 fw-semibold">
-                    <i class="bi bi-printer me-1"></i> Cetak Surat Penerimaan Barang
-                </button>
-                <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">Tutup</button>
             </div>
         </div>
     </div>
@@ -541,7 +533,8 @@ async function openDetailModal(idRcv) {
     document.getElementById('detailAlamatSite').textContent = '-';
     document.getElementById('detailCatatan').textContent = '-';
     document.getElementById('modalItemCountBadge').textContent = '0';
-    document.getElementById('modalBtnPrint').onclick = () => openPrintModal(idRcv, 'RCV');
+    const btnPrintEl = document.getElementById('modalBtnPrint');
+    if (btnPrintEl) btnPrintEl.onclick = () => openPrintModal(idRcv, 'RCV');
 
     document.getElementById('detailReceivingItemsBody').innerHTML = `
         <tr>
@@ -562,7 +555,7 @@ async function openDetailModal(idRcv) {
 
     document.getElementById('detailNomorReceiving').textContent = rcv.nomor_rcv || '-';
     document.getElementById('detailNomorSpb').textContent = rcv.nomor_sj || '-';
-    document.getElementById('modalBtnPrint').onclick = () => openPrintModal(idRcv, rcv.nomor_rcv || 'RCV');
+    if (btnPrintEl) btnPrintEl.onclick = () => openPrintModal(idRcv, rcv.nomor_rcv || 'RCV');
     
     // Set Surat Jalan File Link
     const sjContainer = document.getElementById('detailFileSjContainer');

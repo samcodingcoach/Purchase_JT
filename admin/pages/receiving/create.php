@@ -53,6 +53,16 @@ require_once __DIR__ . '/../../components/navbar.php';
                             <span class="badge bg-primary text-white ms-2" id="tabItemCountBadge">0</span>
                         </button>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold text-dark" id="tab-surat-jalan" data-bs-toggle="tab" data-bs-target="#pane-surat-jalan" type="button" role="tab">
+                            <i class="bi bi-truck me-2 text-primary"></i>3. Surat Jalan
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold text-dark" id="tab-keterangan" data-bs-toggle="tab" data-bs-target="#pane-keterangan" type="button" role="tab">
+                            <i class="bi bi-chat-left-text me-2 text-primary"></i>4. Keterangan
+                        </button>
+                    </li>
                 </ul>
             </div>
 
@@ -66,22 +76,16 @@ require_once __DIR__ . '/../../components/navbar.php';
                             <!-- KOLOM KIRI: IDENTITAS DOKUMEN & PO -->
                             <div class="col-md-6">
                                 <div class="p-3 bg-light rounded-3 border h-100">
-                                    <h6 class="fw-bold text-dark mb-3">
-                                        <i class="bi bi-card-heading text-primary me-2"></i>Identitas Penerimaan &amp; PO
-                                    </h6>
+                                    <h6 class="fw-bold text-dark mb-3">Identitas Penerimaan</h6>
                                     
                                     <!-- Nomor RCV -->
                                     <div class="mb-3">
                                         <label class="form-label small fw-bold text-dark">Nomor Receiving (RCV) <span class="text-danger">*</span></label>
                                         <div class="input-group input-group-sm">
-                                            <span class="input-group-text bg-white"><i class="bi bi-hash"></i></span>
-                                            <input type="text" class="form-control font-monospace fw-bold text-primary" id="rcvNomor" required placeholder="Generate otomatis atau ketik manual">
-                                            <button type="button" class="btn btn-outline-primary" onclick="fetchNextRcvNumber()" title="Generate Otomatis">
-                                                <i class="bi bi-arrow-clockwise me-1"></i> Generate
+                                            <input type="text" class="form-control font-monospace fw-bold text-primary bg-light" id="rcvNomor" readonly required placeholder="Memuat nomor RCV...">
+                                            <button type="button" class="btn btn-outline-secondary" onclick="fetchNextRcvNumber()" title="Generate Ulang Nomor">
+                                                <i class="bi bi-arrow-clockwise"></i>
                                             </button>
-                                        </div>
-                                        <div class="form-text small text-muted" style="font-size: 0.73rem;">
-                                            Format: <code>RCV-YYMM-0000</code>.
                                         </div>
                                     </div>
 
@@ -91,7 +95,6 @@ require_once __DIR__ . '/../../components/navbar.php';
                                         <div class="rcv-po-search-wrapper position-relative" id="rcvPoSearchWrapper">
                                             <input type="hidden" id="selectPo" name="id_po" value="" required>
                                             <div class="input-group input-group-sm">
-                                                <span class="input-group-text bg-white"><i class="bi bi-cart-check text-primary"></i></span>
                                                 <input type="text" class="form-control fw-semibold" id="rcvPoSearchInput" 
                                                        placeholder="Ketik untuk mencari Nomor PO atau Nama Vendor..." 
                                                        autocomplete="off" 
@@ -108,43 +111,20 @@ require_once __DIR__ . '/../../components/navbar.php';
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="form-text small text-muted" style="font-size: 0.73rem;">
-                                            Ketik nomor PO atau nama vendor untuk mencari dokumen.
-                                        </div>
                                     </div>
 
                                     <!-- Tanggal Penerimaan Fisik -->
-                                    <div class="mb-3">
+                                    <div class="mb-0">
                                         <label for="rcvTanggalDiterima" class="form-label small fw-bold text-dark">Tanggal Diterima Fisik <span class="text-danger">*</span></label>
-                                        <div class="input-group input-group-sm">
-                                            <span class="input-group-text bg-white"><i class="bi bi-calendar-check"></i></span>
-                                            <input type="date" class="form-control" id="rcvTanggalDiterima" required value="<?= date('Y-m-d') ?>" onchange="onTanggalRcvChange()">
-                                        </div>
-                                    </div>
-
-                                    <!-- Site Tujuan (Readonly) -->
-                                    <div class="mb-2">
-                                        <label class="form-label small text-muted">Site / Gudang Tujuan</label>
-                                        <input type="text" class="form-control form-control-sm bg-white" id="displaySite" readonly value="-">
+                                        <input type="date" class="form-control form-control-sm" id="rcvTanggalDiterima" required value="<?= date('Y-m-d') ?>" onchange="onTanggalRcvChange()">
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- KOLOM KANAN: SURAT JALAN & PETUGAS LOGISTIK -->
+                            <!-- KOLOM KANAN: INFORMASI VENDOR & LOKASI -->
                             <div class="col-md-6">
                                 <div class="p-3 bg-light rounded-3 border h-100">
-                                    <h6 class="fw-bold text-dark mb-3">
-                                        <i class="bi bi-truck text-primary me-2"></i>Surat Jalan Vendor &amp; Petugas
-                                    </h6>
-
-                                    <!-- Nomor SPB / Surat Jalan Vendor -->
-                                    <div class="mb-3">
-                                        <label for="rcvNomorSj" class="form-label small fw-bold text-dark">No. Surat Pengantar Barang (SPB) / Surat Jalan Vendor <span class="text-danger">*</span></label>
-                                        <div class="input-group input-group-sm">
-                                            <span class="input-group-text bg-white"><i class="bi bi-file-earmark-text"></i></span>
-                                            <input type="text" class="form-control font-monospace fw-bold" id="rcvNomorSj" placeholder="Contoh: SJ-2026/VND/088" required>
-                                        </div>
-                                    </div>
+                                    <h6 class="fw-bold text-dark mb-3">Informasi Vendor &amp; Lokasi</h6>
 
                                     <!-- Vendor Pengirim (Readonly) -->
                                     <div class="mb-3">
@@ -152,16 +132,16 @@ require_once __DIR__ . '/../../components/navbar.php';
                                         <input type="text" class="form-control form-control-sm bg-white" id="displayVendor" readonly value="-">
                                     </div>
 
-                                    <!-- Petugas Logistik Penerima -->
+                                    <!-- Site Tujuan (Readonly) -->
                                     <div class="mb-3">
-                                        <label class="form-label small text-muted">Petugas Penerima (Logistik)</label>
-                                        <input type="text" class="form-control form-control-sm bg-white fw-semibold" readonly value="<?= htmlspecialchars($user['nama'] ?? $user['username'] ?? 'Petugas Logistik') ?>">
+                                        <label class="form-label small text-muted">Site / Gudang Tujuan</label>
+                                        <input type="text" class="form-control form-control-sm bg-white" id="displaySite" readonly value="-">
                                     </div>
 
-                                    <!-- Catatan Penerimaan -->
-                                    <div class="mb-2">
-                                        <label for="rcvKeterangan" class="form-label small fw-bold text-dark">Catatan / Keterangan Penerimaan</label>
-                                        <textarea class="form-control form-control-sm" id="rcvKeterangan" rows="2" placeholder="Catatan kondisi pengiriman, ekspedisi/kurir, dsb..."></textarea>
+                                    <!-- Petugas Logistik Penerima -->
+                                    <div class="mb-0">
+                                        <label class="form-label small text-muted">Petugas Penerima (Logistik)</label>
+                                        <input type="text" class="form-control form-control-sm bg-white fw-semibold" readonly value="<?= htmlspecialchars($user['nama'] ?? $user['username'] ?? 'Petugas Logistik') ?>">
                                     </div>
                                 </div>
                             </div>
@@ -172,9 +152,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                     <!-- TAB 2: VERIFIKASI FISIK MATERIAL & QC -->
                     <div class="tab-pane fade" id="pane-verifikasi-material" role="tabpanel">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="fw-bold text-dark mb-0">
-                                Rincian Barang
-                            </h6>
+                            <h6 class="fw-bold text-dark mb-0">Rincian Barang</h6>
                             <span class="badge bg-secondary-subtle text-secondary" id="countItemDetailBadge">0 Item</span>
                         </div>
 
@@ -194,7 +172,6 @@ require_once __DIR__ . '/../../components/navbar.php';
                                 <tbody id="receivingItemTableBody">
                                     <tr>
                                         <td colspan="7" class="text-center py-5 text-muted">
-                                            <i class="bi bi-arrow-up-circle fs-3 d-block mb-2 text-primary"></i>
                                             Silakan pilih dokumen Purchase Order (PO) pada Tab 1 terlebih dahulu.
                                         </td>
                                     </tr>
@@ -203,31 +180,56 @@ require_once __DIR__ . '/../../components/navbar.php';
                         </div>
                     </div>
 
+                    <!-- TAB 3: SURAT JALAN -->
+                    <div class="tab-pane fade" id="pane-surat-jalan" role="tabpanel">
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="p-3 bg-light rounded-3 border h-100">
+                                    <h6 class="fw-bold text-dark mb-3">Surat Jalan Dari Vendor</h6>
+
+                                    <!-- Nomor SPB / Surat Jalan Vendor -->
+                                    <div class="mb-3">
+                                        <label for="rcvNomorSj" class="form-label small fw-bold text-dark">No. Surat Pengantar Barang (SPB) / Surat Jalan Vendor <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control form-control-sm font-monospace fw-bold" id="rcvNomorSj" placeholder="Nomor Surat Jalan Vendor..." required>
+                                    </div>
+
+                                    <!-- Upload File Surat Jalan Dari Vendor -->
+                                    <div class="mb-2">
+                                        <label class="form-label small fw-bold text-dark">Upload File Surat Jalan Dari Vendor</label>
+                                        <input type="file" id="inputUploadSj" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFileSjChange(event)">
+                                        <div class="form-text small text-muted">Format: PDF, JPG, PNG (Maks. 2 MB)</div>
+                                    </div>
+
+                                    <div id="fileSjPreviewBadge" class="d-none align-items-center justify-content-between bg-white border rounded p-2 small mt-2">
+                                        <div>
+                                            <div class="font-monospace text-dark fw-semibold" id="fileSjName" style="font-size: 0.82rem;">file.pdf</div>
+                                            <span class="text-muted small" id="fileSjSize" style="font-size: 0.72rem;">(0 MB)</span>
+                                        </div>
+                                        <button type="button" class="btn btn-outline-danger btn-sm px-2 py-1" onclick="clearFileSj()" title="Hapus File"><i class="bi bi-trash-fill"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 4: KETERANGAN -->
+                    <div class="tab-pane fade" id="pane-keterangan" role="tabpanel">
+                        <div class="p-3 bg-light rounded-3 border">
+                            <h6 class="fw-bold text-dark mb-3">Catatan / Keterangan Penerimaan</h6>
+                            <div class="mb-0">
+                                <textarea class="form-control" id="rcvKeterangan" rows="5" placeholder="Keterangan / catatan penerimaan..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
-            <!-- FOOTER ACTION BUTTONS DENGAN TOMBOL UPLOAD SURAT JALAN -->
-            <div class="card-footer bg-light p-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <!-- Upload Surat Jalan Vendor (.pdf / .jpg, max 2MB) -->
-                <div class="d-flex align-items-center gap-2">
-                    <input type="file" id="inputUploadSj" accept=".pdf,.jpg,.jpeg,.png" style="display: none;" onchange="handleFileSjChange(event)">
-                    <button type="button" class="btn btn-outline-primary btn-sm px-3 shadow-xs" onclick="document.getElementById('inputUploadSj').click()" id="btnUploadSj">
-                        <i class="bi bi-paperclip me-1"></i> Upload Surat Jalan (.pdf / .jpg)
-                    </button>
-                    <div id="fileSjPreviewBadge" class="d-none align-items-center gap-1 bg-white border rounded px-2 py-1 small">
-                        <i class="bi bi-file-earmark-check text-success"></i>
-                        <span class="font-monospace text-dark fw-semibold" id="fileSjName" style="font-size: 0.78rem;">file.pdf</span>
-                        <span class="text-muted small" id="fileSjSize" style="font-size: 0.72rem;">(0 MB)</span>
-                        <button type="button" class="btn btn-link btn-sm text-danger p-0 ms-1" onclick="clearFileSj()" title="Hapus File"><i class="bi bi-x-circle-fill"></i></button>
-                    </div>
-                </div>
-
-                <!-- Action Simpan -->
-                <div>
-                    <button type="submit" class="btn btn-primary btn-sm px-4 fw-bold shadow-sm" id="btnSubmitReceiving" disabled>
-                        <i class="bi bi-check2-circle me-1"></i> Simpan Penerimaan
-                    </button>
-                </div>
+            <!-- FOOTER ACTION BUTTONS -->
+            <div class="card-footer bg-light p-3 border-top d-flex justify-content-end align-items-center">
+                <button type="submit" class="btn btn-primary btn-sm px-4 fw-bold shadow-sm" id="btnSubmitReceiving" disabled>
+                    <i class="bi bi-check2-circle me-1"></i> Simpan
+                </button>
             </div>
         </div>
     </form>
@@ -339,9 +341,8 @@ function handleFileSjChange(e) {
 
     // Validasi Ekstensi (.pdf, .jpg, .jpeg, .png)
     const ext = file.name.split('.').pop().toLowerCase();
-    const allowed = ['pdf', 'jpg', 'jpeg', 'png'];
-    if (!allowed.includes(ext)) {
-        showToast('Format file tidak didukung. Silakan gunakan format .pdf, .jpg, atau .png.', 'warning');
+    if (file.size > 2 * 1024 * 1024) {
+        showToast('Ukuran file surat jalan maksimal 2 MB.', 'warning');
         clearFileSj();
         return;
     }
@@ -349,21 +350,27 @@ function handleFileSjChange(e) {
     selectedFileSj = file;
     const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
 
-    document.getElementById('fileSjName').textContent = file.name;
-    document.getElementById('fileSjSize').textContent = `(${sizeMb} MB)`;
-    document.getElementById('fileSjPreviewBadge').classList.remove('d-none');
-    document.getElementById('fileSjPreviewBadge').classList.add('d-flex');
-    document.getElementById('btnUploadSj').classList.add('btn-outline-success');
-    document.getElementById('btnUploadSj').classList.remove('btn-outline-primary');
+    const nameEl = document.getElementById('fileSjName');
+    const sizeEl = document.getElementById('fileSjSize');
+    const badgeEl = document.getElementById('fileSjPreviewBadge');
+
+    if (nameEl) nameEl.textContent = file.name;
+    if (sizeEl) sizeEl.textContent = `(${sizeMb} MB)`;
+    if (badgeEl) {
+        badgeEl.classList.remove('d-none');
+        badgeEl.classList.add('d-flex');
+    }
 }
 
 function clearFileSj() {
     selectedFileSj = null;
-    document.getElementById('inputUploadSj').value = '';
-    document.getElementById('fileSjPreviewBadge').classList.add('d-none');
-    document.getElementById('fileSjPreviewBadge').classList.remove('d-flex');
-    document.getElementById('btnUploadSj').classList.remove('btn-outline-success');
-    document.getElementById('btnUploadSj').classList.add('btn-outline-primary');
+    const input = document.getElementById('inputUploadSj');
+    if (input) input.value = '';
+    const badgeEl = document.getElementById('fileSjPreviewBadge');
+    if (badgeEl) {
+        badgeEl.classList.add('d-none');
+        badgeEl.classList.remove('d-flex');
+    }
 }
 
 // -------------------------------------------------------------
@@ -734,12 +741,12 @@ async function handleSaveReceiving(e) {
         } else {
             showToast(res ? res.message : 'Gagal menyimpan penerimaan barang.', 'danger');
             btnSubmit.disabled = false;
-            btnSubmit.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Simpan Penerimaan';
+            btnSubmit.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Simpan';
         }
     } catch (err) {
         showToast('Terjadi kesalahan koneksi server.', 'danger');
         btnSubmit.disabled = false;
-        btnSubmit.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Simpan Penerimaan';
+        btnSubmit.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Simpan';
     }
 }
 

@@ -116,19 +116,13 @@ $conn->begin_transaction();
 try {
     // 3. Generate Nomor Receiving Unik jika kosong
     if (empty($nomorRcv)) {
-        $prefix = "RCV-" . date('ym') . "-";
-        $stmtGen = $conn->prepare("SELECT nomor_rcv FROM receiving_order WHERE nomor_rcv LIKE CONCAT(?, '%') ORDER BY id_rcv DESC LIMIT 1");
-        $stmtGen->bind_param("s", $prefix);
-        $stmtGen->execute();
-        $lastRcv = $stmtGen->get_result()->fetch_assoc();
-        $stmtGen->close();
-
-        $nextNum = 1;
-        if ($lastRcv && !empty($lastRcv['nomor_rcv'])) {
-            $lastSeq = (int)substr($lastRcv['nomor_rcv'], strlen($prefix));
-            $nextNum = $lastSeq + 1;
+        require_once __DIR__ . '/../../config/penomoran_helper.php';
+        $gen = generateNomorTransaksi($conn, 'RECEIVING', $tanggalDiterima);
+        if ($gen['success']) {
+            $nomorRcv = $gen['nomor'];
+        } else {
+            throw new Exception('Gagal membuat nomor Penerimaan Barang (Receiving) otomatis: ' . ($gen['message'] ?? ''));
         }
-        $nomorRcv = $prefix . str_pad($nextNum, 4, '0', STR_PAD_LEFT);
     }
 
     // 4. Hitung Status Dokumen Receiving (1 = diterima semua, 0 = diterima sebagian / ada cacat)

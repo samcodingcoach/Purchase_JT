@@ -2,7 +2,7 @@
 /**
  * API Receiving: Generate Nomor RCV Otomatis
  * Path: api/receiving/get_next_number.php
- * Format: RCV-YYMM-XXXX
+ * Menggunakan format dinamis dari tabel `penomoran` (Tipe: RECEIVING)
  */
 
 header('Content-Type: application/json; charset=utf-8');
@@ -16,30 +16,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
+require_once __DIR__ . '/../../config/config.php';
+require_once __DIR__ . '/../../config/penomoran_helper.php';
 require_once __DIR__ . '/../middleware/auth.php';
 
 apiAuth([ROLE_ADMIN, ROLE_LOGISTIK, ROLE_MANAGER]);
 
-$tanggal = isset($_GET['tanggal']) && !empty($_GET['tanggal']) ? $_GET['tanggal'] : date('Y-m-d');
-$yearMonth = date('ym', strtotime($tanggal));
-$prefix = "RCV-{$yearMonth}-";
-
-$stmt = $conn->prepare("SELECT nomor_rcv FROM receiving_order WHERE nomor_rcv LIKE CONCAT(?, '%') ORDER BY id_rcv DESC LIMIT 1");
-$stmt->bind_param("s", $prefix);
-$stmt->execute();
-$row = $stmt->get_result()->fetch_assoc();
-$stmt->close();
-
-$nextSeq = 1;
-if ($row && !empty($row['nomor_rcv'])) {
-    $lastSeqStr = substr($row['nomor_rcv'], strlen($prefix));
-    $nextSeq = (int)$lastSeqStr + 1;
+$tanggal = trim($_GET['tanggal'] ?? $_GET['date'] ?? '');
+if (empty($tanggal) || !strtotime($tanggal)) {
+    $tanggal = date('Y-m-d');
 }
 
-$nextNumber = $prefix . str_pad($nextSeq, 4, '0', STR_PAD_LEFT);
+$gen = generateNomorTransaksi($conn, 'RECEIVING', $tanggal);
 
-jsonResponse(true, 'Nomor Receiving berhasil digenerate.', [
-    'nomor_rcv' => $nextNumber,
-    'prefix' => $prefix,
-    'sequence' => $nextSeq
-]);
+if ($gen['success']) {
+    jsonResponse(true, 'Nomor Receiving berhasil digenerate.', [
+        'nomor_rcv' => $gen['nomor'],
+        'format' => $gen['format'],
+        'counter' => $gen['counter'],
+        'digit_counter' => $gen['digit_counter'],
+        'tipe_reset' => $gen['tipe_reset']
+    ], 200);
+} else {
+    jsonResponse(false, $gen['message'] ?? 'Gagal generate nomor Receiving.', null, 500);
+}
