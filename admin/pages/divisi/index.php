@@ -193,12 +193,12 @@ async function loadDivisi() {
                     <td><span class="badge bg-primary-subtle text-primary">Level ${item.level}</span></td>
                     <td>${headOfText}</td>
                     <td class="text-center">
-                        <div class="btn-group btn-group-sm">
-                            <button class="btn btn-outline-secondary py-1 px-2" onclick="openEditDivisiModal(${idx})" title="Edit Data">
-                                <i class="bi bi-pencil-square"></i>
+                        <div class="d-inline-flex gap-1">
+                            <button class="btn btn-outline-warning btn-sm px-2 py-1 shadow-xs text-dark" onclick="openEditDivisiModal(${idx})" title="Edit Data">
+                                <i class="bi bi-pencil-fill"></i>
                             </button>
-                            <button class="btn btn-outline-danger py-1 px-2" onclick="deleteDivisi(${item.id_divisi}, '${item.nama_divisi.replace(/'/g, "\\'")}')" title="Hapus">
-                                <i class="bi bi-trash"></i>
+                            <button class="btn btn-outline-danger btn-sm px-2 py-1 shadow-xs" onclick="deleteDivisi(${item.id_divisi}, '${item.nama_divisi.replace(/'/g, "\\'")}')" title="Hapus">
+                                <i class="bi bi-x-octagon-fill"></i>
                             </button>
                         </div>
                     </td>

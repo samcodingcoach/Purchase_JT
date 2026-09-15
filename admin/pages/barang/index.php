@@ -907,15 +907,15 @@ async function loadBarang() {
                         </span>
                     </td>
                     <td class="text-center">
-                        <div class="btn-group btn-group-sm">
-                            <button class="btn btn-outline-primary py-1 px-2" onclick="showBarangDetail(${idx})" title="Lihat Rincian">
-                                <i class="bi bi-eye"></i>
+                        <div class="d-inline-flex gap-1">
+                            <button class="btn btn-outline-primary btn-sm px-2 py-1 shadow-xs" onclick="showBarangDetail(${idx})" title="Lihat Rincian">
+                                <i class="bi bi-eye-fill"></i>
                             </button>
-                            <button class="btn btn-outline-secondary py-1 px-2" onclick="openEditBarangModal(${idx})" title="Edit Data">
-                                <i class="bi bi-pencil-square"></i>
+                            <button class="btn btn-outline-warning btn-sm px-2 py-1 shadow-xs text-dark" onclick="openEditBarangModal(${idx})" title="Edit Data">
+                                <i class="bi bi-pencil-fill"></i>
                             </button>
-                            <button class="btn btn-outline-danger py-1 px-2" onclick="deleteBarang(${item.id_barang}, '${item.nama_barang.replace(/'/g, "\\'")}')" title="Hapus">
-                                <i class="bi bi-trash"></i>
+                            <button class="btn btn-outline-danger btn-sm px-2 py-1 shadow-xs" onclick="deleteBarang(${item.id_barang}, '${item.nama_barang.replace(/'/g, "\\'")}')" title="Hapus">
+                                <i class="bi bi-x-octagon-fill"></i>
                             </button>
                         </div>
                     </td>

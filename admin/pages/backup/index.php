@@ -631,20 +631,20 @@ async function loadBackupData(page = 1) {
                             ${tanggalRestoreText}
                         </td>
                         <td class="text-center">
-                            <div class="btn-group btn-group-sm">
-                                <button type="button" class="btn btn-outline-primary py-1 px-2" title="Lihat Rincian" onclick='openDetailModal(${JSON.stringify(item)})'>
-                                    <i class="bi bi-eye"></i>
+                            <div class="d-inline-flex gap-1">
+                                <button type="button" class="btn btn-outline-primary btn-sm px-2 py-1 shadow-xs" title="Lihat Rincian" onclick='openDetailModal(${JSON.stringify(item)})'>
+                                    <i class="bi bi-eye-fill"></i>
                                 </button>
                                 ${item.file_exists ? `
-                                <a href="<?= BASE_URL ?>/api/backup/download.php?id=${item.id_backup}" class="btn btn-outline-secondary py-1 px-2" title="Unduh Berkas SQL">
+                                <a href="<?= BASE_URL ?>/api/backup/download.php?id=${item.id_backup}" class="btn btn-outline-secondary btn-sm px-2 py-1 shadow-xs" title="Unduh Berkas SQL">
                                     <i class="bi bi-download"></i>
                                 </a>
-                                <button type="button" class="btn btn-outline-warning py-1 px-2" title="Pulihkan Database (Restore)" onclick='openRestoreModal(${JSON.stringify(item)})'>
+                                <button type="button" class="btn btn-outline-warning btn-sm px-2 py-1 shadow-xs text-dark" title="Pulihkan Database (Restore)" onclick='openRestoreModal(${JSON.stringify(item)})'>
                                     <i class="bi bi-arrow-counterclockwise"></i>
                                 </button>
                                 ` : ''}
-                                <button type="button" class="btn btn-outline-danger py-1 px-2" title="Hapus Riwayat" onclick="deleteBackup(${item.id_backup}, '${escapeHtml(item.nama_file)}')">
-                                    <i class="bi bi-trash"></i>
+                                <button type="button" class="btn btn-outline-danger btn-sm px-2 py-1 shadow-xs" title="Hapus Riwayat" onclick="deleteBackup(${item.id_backup}, '${escapeHtml(item.nama_file)}')">
+                                    <i class="bi bi-x-octagon-fill"></i>
                                 </button>
                             </div>
                         </td>

@@ -334,14 +334,14 @@ async function loadAdjustmentList(page = 1) {
             let printBtn = '';
             if (row.status === 'APPROVED') {
                 printBtn = `
-                    <a href="<?= BASE_URL ?>/admin/pages/adjustment_stok/print.php?id=${row.id_adjustment}" target="_blank" class="btn btn-sm btn-outline-secondary p-0 d-inline-flex align-items-center justify-content-center" title="Cetak Berita Acara" style="width: 28px; height: 28px;">
-                        <i class="bi bi-printer small"></i>
+                    <a href="<?= BASE_URL ?>/admin/pages/adjustment_stok/print.php?id=${row.id_adjustment}" target="_blank" class="btn btn-outline-secondary btn-sm px-2 py-1 shadow-xs" title="Cetak Berita Acara">
+                        <i class="bi bi-printer-fill"></i>
                     </a>
                 `;
             } else {
                 printBtn = `
-                    <button type="button" class="btn btn-sm btn-light text-muted p-0 d-inline-flex align-items-center justify-content-center border" title="Cetak hanya tersedia setelah disetujui (APPROVED)" disabled style="width: 28px; height: 28px; opacity: 0.5; cursor: not-allowed;">
-                        <i class="bi bi-printer small"></i>
+                    <button type="button" class="btn btn-light btn-sm px-2 py-1 text-muted border opacity-50 shadow-xs" title="Cetak hanya tersedia setelah disetujui (APPROVED)" disabled>
+                        <i class="bi bi-printer-fill"></i>
                     </button>
                 `;
             }
@@ -351,13 +351,13 @@ async function loadAdjustmentList(page = 1) {
             let deleteBtn = '';
             if (row.status === 'DRAFT' || row.status === 'PENDING') {
                 editBtn = `
-                    <a href="<?= BASE_URL ?>/admin/pages/adjustment_stok/edit.php?id=${row.id_adjustment}" class="btn btn-sm btn-outline-warning p-0 d-inline-flex align-items-center justify-content-center" title="Edit Data" style="width: 28px; height: 28px;">
-                        <i class="bi bi-pencil small"></i>
+                    <a href="<?= BASE_URL ?>/admin/pages/adjustment_stok/edit.php?id=${row.id_adjustment}" class="btn btn-outline-warning btn-sm px-2 py-1 shadow-xs text-dark" title="Edit Data">
+                        <i class="bi bi-pencil-fill"></i>
                     </a>
                 `;
                 deleteBtn = `
-                    <button type="button" class="btn btn-sm btn-outline-danger p-0 d-inline-flex align-items-center justify-content-center" title="Hapus Data" onclick="deleteAdjustment(${row.id_adjustment}, '${escapeHtml(row.nomor_adjustment)}')" style="width: 28px; height: 28px;">
-                        <i class="bi bi-trash small"></i>
+                    <button type="button" class="btn btn-outline-danger btn-sm px-2 py-1 shadow-xs" title="Hapus Data" onclick="deleteAdjustment(${row.id_adjustment}, '${escapeHtml(row.nomor_adjustment)}')">
+                        <i class="bi bi-trash-fill"></i>
                     </button>
                 `;
             }
@@ -378,9 +378,9 @@ async function loadAdjustmentList(page = 1) {
                         ${ktsBadge}
                     </td>
                     <td class="pe-3 py-2 text-center">
-                        <div class="d-flex justify-content-center gap-1">
-                            <button type="button" class="btn btn-sm btn-outline-primary p-0 d-inline-flex align-items-center justify-content-center" title="Lihat Rincian" onclick="viewDetail(${row.id_adjustment})" style="width: 28px; height: 28px;">
-                                <i class="bi bi-eye-fill small"></i>
+                        <div class="d-inline-flex gap-1">
+                            <button type="button" class="btn btn-outline-primary btn-sm px-2 py-1 shadow-xs" title="Lihat Rincian" onclick="viewDetail(${row.id_adjustment})">
+                                <i class="bi bi-eye-fill"></i>
                             </button>
                             ${editBtn}
                             ${deleteBtn}

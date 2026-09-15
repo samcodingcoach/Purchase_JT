@@ -452,9 +452,11 @@ async function loadReturList(page = 1) {
                     <td class="text-end fw-bold text-dark font-monospace pe-3">${formatRupiah(item.total)}</td>
                     <td class="text-center">${getStatusBadge(item.status)}</td>
                     <td class="text-center">
-                        <a href="<?= BASE_URL ?>/admin/pages/retur_po/detail.php?id=${item.id_po_retur}" class="btn btn-outline-primary btn-sm px-2 py-1 shadow-sm" title="Lihat Detail & Tindak Lanjut">
-                            <i class="bi bi-eye"></i>
-                        </a>
+                        <div class="d-inline-flex gap-1">
+                            <a href="<?= BASE_URL ?>/admin/pages/retur_po/detail.php?id=${item.id_po_retur}" class="btn btn-outline-primary btn-sm px-2 py-1 shadow-xs" title="Lihat Detail &amp; Tindak Lanjut">
+                                <i class="bi bi-eye-fill"></i>
+                            </a>
+                        </div>
                     </td>
                 </tr>`;
             });

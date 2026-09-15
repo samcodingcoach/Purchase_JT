@@ -548,13 +548,13 @@ function renderTableRows(items, offset) {
                 </td>
                 <td class="text-center text-nowrap">${statusBadge}</td>
                 <td class="text-center text-nowrap">
-                    <div class="d-flex justify-content-center gap-1">
-                        <button type="button" class="btn btn-outline-secondary btn-sm px-2 py-1" onclick="openDetailModal(${ro.id_request})" title="Lihat Detail RO">
-                            <i class="bi bi-eye"></i>
+                    <div class="d-inline-flex gap-1">
+                        <button type="button" class="btn btn-outline-primary btn-sm px-2 py-1 shadow-xs" onclick="openDetailModal(${ro.id_request})" title="Lihat Detail RO">
+                            <i class="bi bi-eye-fill"></i>
                         </button>
                         ${canEdit ? `
-                            <a href="${BASE_URL}/admin/pages/request_order/edit.php?id=${ro.id_request}" class="btn btn-outline-primary btn-sm px-2 py-1" title="Edit / Tinjau Request Order">
-                                <i class="bi bi-pencil"></i>
+                            <a href="${BASE_URL}/admin/pages/request_order/edit.php?id=${ro.id_request}" class="btn btn-outline-warning btn-sm px-2 py-1 shadow-xs text-dark" title="Edit / Tinjau Request Order">
+                                <i class="bi bi-pencil-fill"></i>
                             </a>
                         ` : ''}
                         ${btnProsesPo}

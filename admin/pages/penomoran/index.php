@@ -255,12 +255,12 @@ async function loadPenomoranList(page = 1) {
                         <span class="fw-bold font-monospace text-dark">${escapeHtml(previewRealtime)}</span>
                     </td>
                     <td class="text-center">
-                        <div class="btn-group btn-group-sm">
-                            <a href="<?= BASE_URL ?>/admin/pages/penomoran/edit.php?id=${item.id_nomor}" class="btn btn-outline-secondary py-1 px-2" title="Edit Data">
-                                <i class="bi bi-pencil-square"></i>
+                        <div class="d-inline-flex gap-1">
+                            <a href="<?= BASE_URL ?>/admin/pages/penomoran/edit.php?id=${item.id_nomor}" class="btn btn-outline-warning btn-sm px-2 py-1 shadow-xs text-dark" title="Edit Format Penomoran">
+                                <i class="bi bi-pencil-fill"></i>
                             </a>
-                            <button type="button" class="btn btn-outline-danger py-1 px-2" title="Hapus" onclick="confirmDelete(${item.id_nomor}, '${escapeHtml(item.nama_penomoran)}')">
-                                <i class="bi bi-trash"></i>
+                            <button type="button" class="btn btn-outline-danger btn-sm px-2 py-1 shadow-xs" title="Hapus Format Penomoran" onclick="confirmDelete(${item.id_nomor}, '${escapeHtml(item.nama_penomoran)}')">
+                                <i class="bi bi-x-octagon-fill"></i>
                             </button>
                         </div>
                     </td>

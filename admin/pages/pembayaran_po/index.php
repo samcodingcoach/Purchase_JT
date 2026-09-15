@@ -402,15 +402,15 @@ function renderPaymentTable(rows, pagination) {
                 ${formatRupiah(nominal)}
             </td>
             <td class="text-center">
-                <div class="d-flex justify-content-center gap-1">
-                    <button type="button" class="btn btn-outline-primary btn-sm px-2 py-1 shadow-none" onclick="viewPaymentDetail(${r.id_pembayaran_detail})" title="Detail Transaksi">
-                        <i class="bi bi-eye"></i>
+                <div class="d-inline-flex gap-1">
+                    <button type="button" class="btn btn-outline-primary btn-sm px-2 py-1 shadow-xs" onclick="viewPaymentDetail(${r.id_pembayaran_detail})" title="Detail Transaksi">
+                        <i class="bi bi-eye-fill"></i>
                     </button>
-                    <a href="<?= BASE_URL ?>/admin/pages/pembayaran_po/edit.php?id=${r.id_pembayaran_detail}" class="btn btn-outline-warning btn-sm px-2 py-1 shadow-none" title="Edit Pembayaran">
-                        <i class="bi bi-pencil"></i>
+                    <a href="<?= BASE_URL ?>/admin/pages/pembayaran_po/edit.php?id=${r.id_pembayaran_detail}" class="btn btn-outline-warning btn-sm px-2 py-1 shadow-xs text-dark" title="Edit Pembayaran">
+                        <i class="bi bi-pencil-fill"></i>
                     </a>
-                    <a href="<?= BASE_URL ?>/admin/pages/pembayaran_po/print.php?id=${r.id_pembayaran_detail}" target="_blank" class="btn btn-outline-secondary btn-sm px-2 py-1 shadow-none" title="Cetak Bukti Pembayaran">
-                        <i class="bi bi-printer"></i>
+                    <a href="<?= BASE_URL ?>/admin/pages/pembayaran_po/print.php?id=${r.id_pembayaran_detail}" target="_blank" class="btn btn-outline-secondary btn-sm px-2 py-1 shadow-xs" title="Cetak Bukti Pembayaran">
+                        <i class="bi bi-printer-fill"></i>
                     </a>
                 </div>
             </td>

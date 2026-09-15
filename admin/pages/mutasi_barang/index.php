@@ -498,18 +498,18 @@ function renderTable(items, pagination) {
 
                 <!-- 8. Aksi -->
                 <td class="pe-3 text-center">
-                    <div class="btn-group btn-group-sm">
-                        <button type="button" class="btn btn-outline-primary" onclick="showMutasiDetail(${item.id_mutasi})" title="Lihat Detail">
-                            <i class="bi bi-eye"></i>
+                    <div class="d-inline-flex gap-1">
+                        <button type="button" class="btn btn-outline-primary btn-sm px-2 py-1 shadow-xs" onclick="showMutasiDetail(${item.id_mutasi})" title="Lihat Detail">
+                            <i class="bi bi-eye-fill"></i>
                         </button>
                         ${canPrint ? `
-                            <a href="<?= BASE_URL ?>/admin/pages/mutasi_barang/print_surat.php?id_mutasi=${item.id_mutasi}" target="_blank" class="btn btn-outline-secondary" title="Cetak Surat Keterangan Mutasi">
-                                <i class="bi bi-printer"></i>
+                            <a href="<?= BASE_URL ?>/admin/pages/mutasi_barang/print_surat.php?id_mutasi=${item.id_mutasi}" target="_blank" class="btn btn-outline-secondary btn-sm px-2 py-1 shadow-xs" title="Cetak Surat Keterangan Mutasi">
+                                <i class="bi bi-printer-fill"></i>
                             </a>
                         ` : ''}
                         ${item.status === 'DRAFT' ? `
-                            <button type="button" class="btn btn-outline-danger" onclick="deleteMutasi(${item.id_mutasi}, '${item.kode_mutasi}')" title="Hapus Mutasi">
-                                <i class="bi bi-trash"></i>
+                            <button type="button" class="btn btn-outline-danger btn-sm px-2 py-1 shadow-xs" onclick="deleteMutasi(${item.id_mutasi}, '${item.kode_mutasi}')" title="Hapus Mutasi">
+                                <i class="bi bi-trash-fill"></i>
                             </button>
                         ` : ''}
                     </div>

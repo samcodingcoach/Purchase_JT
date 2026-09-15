@@ -362,15 +362,15 @@ function renderSmtpTableRows(items) {
                     </div>
                 </td>
                 <td class="text-center">
-                    <div class="d-flex justify-content-center gap-1">
-                        <button type="button" class="btn btn-outline-info btn-sm p-1 px-2" onclick="testSmtpConnectionDirect(${item.id_stmp}, '${item.stmp_server}', '${item.port}')" title="Test Koneksi & Autentikasi Host">
-                            <i class="bi bi-lightning-charge"></i>
+                    <div class="d-inline-flex gap-1">
+                        <button type="button" class="btn btn-outline-info btn-sm px-2 py-1 shadow-xs" onclick="testSmtpConnectionDirect(${item.id_stmp}, '${item.stmp_server}', '${item.port}')" title="Test Koneksi &amp; Autentikasi Host">
+                            <i class="bi bi-lightning-charge-fill"></i>
                         </button>
-                        <button type="button" class="btn btn-outline-warning btn-sm p-1 px-2" onclick="openEditSmtpModal(${item.id_stmp})" title="Edit SMTP">
-                            <i class="bi bi-pencil-square"></i>
+                        <button type="button" class="btn btn-outline-warning btn-sm px-2 py-1 shadow-xs text-dark" onclick="openEditSmtpModal(${item.id_stmp})" title="Edit SMTP">
+                            <i class="bi bi-pencil-fill"></i>
                         </button>
-                        <button type="button" class="btn btn-outline-danger btn-sm p-1 px-2" onclick="deleteSmtpServer(${item.id_stmp}, '${item.nama_provider}')" title="Hapus SMTP">
-                            <i class="bi bi-trash3"></i>
+                        <button type="button" class="btn btn-outline-danger btn-sm px-2 py-1 shadow-xs" onclick="deleteSmtpServer(${item.id_stmp}, '${item.nama_provider}')" title="Hapus SMTP">
+                            <i class="bi bi-x-octagon-fill"></i>
                         </button>
                     </div>
                 </td>

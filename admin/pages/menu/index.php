@@ -565,12 +565,14 @@ function renderMenuTable(items) {
                 <td class="text-center">${aksesBadge}</td>
                 <td class="text-center">${terlihatBadge}</td>
                 <td class="text-center">
-                    <button class="btn btn-outline-primary btn-sm p-1 px-2 me-1" onclick="openEditMenuModal(${idx})" title="Edit Menu">
-                        <i class="bi bi-pencil"></i>
-                    </button>
-                    <button class="btn btn-outline-danger btn-sm p-1 px-2" onclick="deleteMenu(${m.id_levelmenu}, '${m.nama_menu.replace(/'/g, "\\'")}')" title="Hapus Menu">
-                        <i class="bi bi-trash"></i>
-                    </button>
+                    <div class="d-inline-flex gap-1">
+                        <button class="btn btn-outline-warning btn-sm px-2 py-1 shadow-xs text-dark" onclick="openEditMenuModal(${idx})" title="Edit Menu">
+                            <i class="bi bi-pencil-fill"></i>
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm px-2 py-1 shadow-xs" onclick="deleteMenu(${m.id_levelmenu}, '${m.nama_menu.replace(/'/g, "\\'")}')" title="Hapus Menu">
+                            <i class="bi bi-x-octagon-fill"></i>
+                        </button>
+                    </div>
                 </td>
             </tr>
         `;

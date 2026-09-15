@@ -395,17 +395,17 @@ function renderInfoTable(items, pagination) {
 
         // Action Buttons
         let actionButtonsHtml = `
-            <button type="button" class="btn btn-outline-info p-1 px-2" onclick="openPreviewModal(${idx})" title="Lihat Rincian Pengumuman">
-                <i class="bi bi-eye"></i>
+            <button type="button" class="btn btn-outline-primary btn-sm px-2 py-1 shadow-xs" onclick="openPreviewModal(${idx})" title="Lihat Rincian Pengumuman">
+                <i class="bi bi-eye-fill"></i>
             </button>
         `;
         if (canEdit) {
             actionButtonsHtml += `
-                <button type="button" class="btn btn-outline-primary p-1 px-2" onclick="openEditInfoModal(${idx})" title="Edit Pengumuman">
-                    <i class="bi bi-pencil"></i>
+                <button type="button" class="btn btn-outline-warning btn-sm px-2 py-1 shadow-xs text-dark" onclick="openEditInfoModal(${idx})" title="Edit Pengumuman">
+                    <i class="bi bi-pencil-fill"></i>
                 </button>
-                <button type="button" class="btn btn-outline-danger p-1 px-2" onclick="deleteInfo(${item.id_info}, '${escapeHtml(item.judul)}')" title="Hapus Pengumuman">
-                    <i class="bi bi-trash"></i>
+                <button type="button" class="btn btn-outline-danger btn-sm px-2 py-1 shadow-xs" onclick="deleteInfo(${item.id_info}, '${escapeHtml(item.judul)}')" title="Hapus Pengumuman">
+                    <i class="bi bi-x-octagon-fill"></i>
                 </button>
             `;
         }
@@ -439,7 +439,7 @@ function renderInfoTable(items, pagination) {
                     <div class="text-muted" style="font-size: 0.75rem;"><i class="bi bi-person me-1"></i>${escapeHtml(item.pembuat)}</div>
                 </td>
                 <td class="text-center">
-                    <div class="btn-group btn-group-sm">
+                    <div class="d-inline-flex gap-1">
                         ${actionButtonsHtml}
                     </div>
                 </td>

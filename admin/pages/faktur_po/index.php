@@ -590,17 +590,17 @@ function renderTable(rows, pagination) {
 
         const isLocked = ['SEBAGIAN DIBAYAR', 'LUNAS', 'BATAL'].includes(r.status) || (parseFloat(r.terbayar) > 0);
         const editBtnHtml = isLocked
-            ? `<button type="button" class="btn btn-outline-secondary btn-sm px-2 py-1 shadow-none opacity-50" disabled title="Faktur berstatus ${r.status} dan terkunci dari perubahan"><i class="bi bi-pencil"></i></button>`
-            : `<a href="<?= BASE_URL ?>/admin/pages/faktur_po/edit.php?id=${r.id_faktur}" class="btn btn-outline-warning btn-sm px-2 py-1 shadow-none" title="Edit Faktur"><i class="bi bi-pencil"></i></a>`;
+            ? `<button type="button" class="btn btn-light btn-sm px-2 py-1 text-muted border opacity-50 shadow-xs" disabled title="Faktur berstatus ${r.status} dan terkunci dari perubahan"><i class="bi bi-lock-fill"></i></button>`
+            : `<a href="<?= BASE_URL ?>/admin/pages/faktur_po/edit.php?id=${r.id_faktur}" class="btn btn-outline-warning btn-sm px-2 py-1 shadow-xs text-dark" title="Edit Faktur"><i class="bi bi-pencil-fill"></i></a>`;
 
         const canPay = CAN_PAY_ROLE && !['LUNAS', 'BATAL', 'DRAFT'].includes(r.status) && (parseFloat(r.sisa_tagihan) > 0);
         const payBtnHtml = canPay
-            ? `<a href="<?= BASE_URL ?>/admin/pages/pembayaran_po/create.php?id_faktur=${r.id_faktur}" class="btn btn-outline-success btn-sm px-2 py-1 shadow-none" title="Catat Pembayaran ke Vendor"><i class="bi bi-cash-coin"></i></a>`
+            ? `<a href="<?= BASE_URL ?>/admin/pages/pembayaran_po/create.php?id_faktur=${r.id_faktur}" class="btn btn-outline-success btn-sm px-2 py-1 shadow-xs" title="Catat Pembayaran ke Vendor"><i class="bi bi-cash-coin"></i></a>`
             : '';
 
         const canCancel = ['ADMIN', 'FINANCE', 'MANAGER'].includes(CURRENT_USER_ROLE) && r.status !== 'BATAL' && (parseFloat(r.terbayar || 0) === 0);
         const cancelBtnHtml = canCancel
-            ? `<button type="button" class="btn btn-outline-danger btn-sm px-2 py-1 shadow-none" onclick="openCancelFakturModal(${r.id_faktur}, '${escapeHtml(r.nomor_faktur)}', '${escapeHtml(r.nama_vendor || '')}', '${escapeHtml(formatRupiah(totalTagihan))}')" title="Batalkan Faktur &amp; Terbitkan BAP"><i class="bi bi-x-octagon"></i></button>`
+            ? `<button type="button" class="btn btn-outline-danger btn-sm px-2 py-1 shadow-xs" onclick="openCancelFakturModal(${r.id_faktur}, '${escapeHtml(r.nomor_faktur)}', '${escapeHtml(r.nama_vendor || '')}', '${escapeHtml(formatRupiah(totalTagihan))}')" title="Batalkan Faktur &amp; Terbitkan BAP"><i class="bi bi-x-octagon-fill"></i></button>`
             : '';
 
         // Cek apakah data sudah pernah diedit/diupdate (created_at != updated_at)
@@ -611,7 +611,7 @@ function renderTable(rows, pagination) {
 
         html += `
         <tr>
-            <td class="text-center">${no}</td>
+            <td class="text-center font-monospace text-muted small">${no}</td>
             <td>
                 <div class="d-inline-flex align-items-center flex-wrap gap-1">
                     <strong class="font-monospace text-primary cursor-pointer hover-underline" style="cursor: pointer;" onclick="viewFakturDetail(${r.id_faktur})" title="Klik untuk lihat detail">${r.nomor_faktur}</strong>
@@ -634,12 +634,12 @@ function renderTable(rows, pagination) {
                 ${formatRupiah(totalTagihan)}
             </td>
             <td class="text-center">
-                <div class="d-flex justify-content-center gap-1">
-                    <button type="button" class="btn btn-outline-primary btn-sm px-2 py-1 shadow-none" onclick="viewFakturDetail(${r.id_faktur})" title="View Detail Faktur">
-                        <i class="bi bi-eye"></i>
+                <div class="d-inline-flex gap-1">
+                    <button type="button" class="btn btn-outline-primary btn-sm px-2 py-1 shadow-xs" onclick="viewFakturDetail(${r.id_faktur})" title="View Detail Faktur">
+                        <i class="bi bi-eye-fill"></i>
                     </button>
-                    <a href="<?= BASE_URL ?>/admin/pages/faktur_po/print.php?id=${r.id_faktur}" class="btn btn-outline-dark btn-sm px-2 py-1 shadow-none" target="_blank" title="Cetak Faktur Purchase Order">
-                        <i class="bi bi-printer"></i>
+                    <a href="<?= BASE_URL ?>/admin/pages/faktur_po/print.php?id=${r.id_faktur}" class="btn btn-outline-dark btn-sm px-2 py-1 shadow-xs" target="_blank" title="Cetak Faktur Purchase Order">
+                        <i class="bi bi-printer-fill"></i>
                     </a>
                     ${payBtnHtml}
                     ${editBtnHtml}
