@@ -26,11 +26,11 @@ require_once __DIR__ . '/../../components/navbar.php';
             <h4 class="fw-bold text-dark mb-0">Pengaturan Format Penomoran</h4>
         </div>
         <div class="d-flex gap-2">
-            <a href="<?= BASE_URL ?>/admin/pages/penomoran/create.php" class="btn btn-primary btn-sm px-3 fw-semibold shadow-sm">
-                Tambah Format Penomoran
+            <a href="<?= BASE_URL ?>/admin/pages/penomoran/create.php" class="btn btn-primary btn-sm px-3 fw-semibold shadow-sm d-inline-flex align-items-center">
+                <i class="bi bi-plus-circle-fill me-2"></i> Tambah Format
             </a>
-            <button type="button" class="btn btn-outline-secondary btn-sm px-3 shadow-sm" onclick="loadPenomoranList()">
-                Refresh
+            <button type="button" class="btn btn-outline-secondary btn-sm px-3 shadow-sm d-inline-flex align-items-center" onclick="loadPenomoranList(currentPage)">
+                <i class="bi bi-arrow-clockwise me-2"></i> Refresh Data
             </button>
         </div>
     </div>

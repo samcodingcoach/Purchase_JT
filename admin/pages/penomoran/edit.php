@@ -156,7 +156,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                 <!-- Tombol Aksi Bawah -->
                 <div class="d-flex justify-content-end mt-4 pt-3 border-top">
                     <button type="submit" class="btn btn-primary btn-sm px-4 fw-semibold shadow-sm" id="btnSubmit">
-                        <i class="bi bi-check2-circle me-1"></i> Update Format
+                        <i class="bi bi-check2-circle me-2"></i> Update Format
                     </button>
                 </div>
             </div>

@@ -11,7 +11,7 @@ require_once __DIR__ . '/../../../config/session.php';
 // Auth Protection Khusus ADMIN
 $user = requireAuth([ROLE_ADMIN]);
 
-$pageTitle = 'Tambah Format Penomoran - PT Jembatan Translog';
+$pageTitle = 'Tambah Format Penomoran';
 
 require_once __DIR__ . '/../../components/header.php';
 require_once __DIR__ . '/../../components/sidebar.php';
@@ -22,7 +22,7 @@ require_once __DIR__ . '/../../components/navbar.php';
     <!-- HEADER -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h4 class="fw-bold text-dark mb-0">Tambah Format Penomoran</h4>
+            <h4 class="fw-bold text-dark mb-0">Tambah Format</h4>
         </div>
         <div class="d-flex gap-2">
             <a href="<?= BASE_URL ?>/admin/pages/penomoran/index.php" class="btn btn-outline-secondary btn-sm px-3">
@@ -132,7 +132,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                 <!-- Tombol Aksi Bawah -->
                 <div class="d-flex justify-content-end mt-4 pt-3 border-top">
                     <button type="submit" class="btn btn-primary btn-sm px-4 fw-semibold shadow-sm" id="btnSubmit">
-                        <i class="bi bi-save me-1"></i> Simpan Format
+                        <i class="bi bi-save me-2"></i> Simpan Format
                     </button>
                 </div>
             </div>
