@@ -213,10 +213,10 @@ require_once __DIR__ . '/../../components/navbar.php';
                                     <thead class="table-light small text-muted text-uppercase">
                                         <tr>
                                             <th class="text-center" style="width: 45px;">#</th>
-                                            <th style="min-width: 260px;">Barang &amp; Spesifikasi</th>
+                                            <th style="min-width: 250px;">Barang &amp; Spesifikasi</th>
                                             <th class="text-center" style="width: 90px;">Qty</th>
                                             <th style="width: 170px;">Harga Satuan (Rp)</th>
-                                            <th style="width: 140px;">Diskon Item (Rp)</th>
+                                            <th style="width: 160px;">Diskon Item (Rp)</th>
                                             <th class="text-end" style="width: 160px;">Subtotal (Rp)</th>
                                         </tr>
                                     </thead>
@@ -813,12 +813,15 @@ function renderRoData() {
                 </td>
                 <td>
                     <div class="input-group input-group-sm">
-                        <span class="input-group-text bg-light font-monospace" style="font-size: 0.75rem;">Rp</span>
+                        <span class="input-group-text bg-light font-monospace text-muted px-2" style="font-size: 0.75rem;">Rp</span>
                         <input type="text" class="form-control form-control-sm font-monospace text-end item-harga" value="${formatThousand(defaultHarga)}" oninput="handlePriceInput(this)" placeholder="0" required>
                     </div>
                 </td>
                 <td>
-                    <input type="text" class="form-control form-control-sm font-monospace text-end item-diskon" value="0" oninput="handleDiscountInput(this)" placeholder="0">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light font-monospace text-muted px-2" style="font-size: 0.75rem;">Rp</span>
+                        <input type="text" class="form-control form-control-sm font-monospace text-end item-diskon text-danger" value="0" oninput="handleDiscountInput(this)" placeholder="0">
+                    </div>
                 </td>
                 <td class="text-end font-monospace fw-bold text-dark item-subtotal-display">
                     ${formatRupiah(subtotal)}

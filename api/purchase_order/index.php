@@ -262,19 +262,35 @@ if ($method === 'GET') {
     while ($row = $res->fetch_assoc()) {
         $subtotal = (float)($row['subtotal_barang'] ?? 0);
         $diskon = (float)($row['diskon'] ?? 0);
-        $dpp = max(0, $subtotal - $diskon);
-        $pajakRate = (float)($row['pajak'] ?? 0);
-        $isInc = ((int)($row['total_termasuk_pajak'] ?? 0) === 1);
-        
-        $grandTotal = $dpp;
-        if ($pajakRate > 0) {
-            if (!$isInc) {
-                $grandTotal += ($dpp * ($pajakRate / 100));
-            }
+        $dasarSetelahDiskon = max(0, $subtotal - $diskon);
+
+        $ratePpn = (float)($row['pajak'] ?? 0);
+        $isPpnInclusive = ((int)($row['total_termasuk_pajak'] ?? 0) === 1);
+
+        $ratePpnbm = (float)($row['pajak_PPnBM'] ?? 0);
+        $isPpnbmInclusive = ((int)($row['total_termasuk_PPnBM'] ?? 0) === 1);
+
+        // Hitung pembagi untuk inklusif
+        $divisor = 1.0;
+        if ($isPpnbmInclusive && $ratePpnbm > 0) {
+            $divisor += ($ratePpnbm / 100);
+        }
+        if ($isPpnInclusive && $ratePpn > 0) {
+            $divisor += ($ratePpn / 100);
+        }
+
+        $dpp = $dasarSetelahDiskon / $divisor;
+        $nominalPpnbm = ($ratePpnbm > 0) ? ($dpp * ($ratePpnbm / 100)) : 0;
+        $nominalPpn = ($ratePpn > 0) ? ($dpp * ($ratePpn / 100)) : 0;
+
+        if ($divisor > 1.0) {
+            $grandTotal = $dpp + ($ratePpnbm > 0 ? $nominalPpnbm : 0) + ($ratePpn > 0 ? $nominalPpn : 0);
+        } else {
+            $grandTotal = $dpp + $nominalPpnbm + $nominalPpn;
         }
 
         $row['grand_total'] = $grandTotal;
-        $row['grand_total_formatted'] = 'Rp ' . number_format($grandTotal, 0, ',', '.');
+        $row['grand_total_formatted'] = number_format($grandTotal, 0, ',', '.');
         $items[] = $row;
     }
     $stmt->close();

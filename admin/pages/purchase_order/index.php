@@ -630,7 +630,7 @@ async function loadPoList(page = 1) {
         const vendorName = item.nama_vendor ? escapeHtml(item.nama_vendor) : '<span class="text-muted italic">Vendor Umum</span>';
         const siteName = item.nama_site ? escapeHtml(item.nama_site) : '-';
         const tgl = item.tanggal_po ? item.tanggal_po.split(' ')[0] : '-';
-        const nilaiFormatted = item.grand_total_formatted || ('Rp ' + formatNumber(item.grand_total || 0));
+        const nilaiFormatted = formatNumber(item.grand_total || 0);
 
         const prio = (item.prioritas || 'NORMAL').toUpperCase();
         const prioBadge = (prio === 'URGENT') 

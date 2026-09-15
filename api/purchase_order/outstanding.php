@@ -219,21 +219,30 @@ while ($row = $result->fetch_assoc()) {
     // Kalkulasi Finansial
     $subtotal = (float)$row['subtotal_barang'];
     $diskon = (float)$row['diskon'];
-    $dpp = max(0, $subtotal - $diskon);
-    $ratePajak = (float)$row['pajak'];
-    $isInclusive = ((int)$row['total_termasuk_pajak'] === 1);
+    $dasarSetelahDiskon = max(0, $subtotal - $diskon);
 
-    $nominalPajak = 0;
-    $grandTotal = $dpp;
-    if ($ratePajak > 0) {
-        if ($isInclusive) {
-            $dppReal = $dpp / (1 + ($ratePajak / 100));
-            $nominalPajak = $dpp - $dppReal;
-            $grandTotal = $dpp;
-        } else {
-            $nominalPajak = $dpp * ($ratePajak / 100);
-            $grandTotal = $dpp + $nominalPajak;
-        }
+    $ratePpn = (float)($row['pajak'] ?? 0);
+    $isPpnInclusive = ((int)($row['total_termasuk_pajak'] ?? 0) === 1);
+
+    $ratePpnbm = (float)($row['pajak_PPnBM'] ?? 0);
+    $isPpnbmInclusive = ((int)($row['total_termasuk_PPnBM'] ?? 0) === 1);
+
+    $divisor = 1.0;
+    if ($isPpnbmInclusive && $ratePpnbm > 0) {
+        $divisor += ($ratePpnbm / 100);
+    }
+    if ($isPpnInclusive && $ratePpn > 0) {
+        $divisor += ($ratePpn / 100);
+    }
+
+    $dpp = $dasarSetelahDiskon / $divisor;
+    $nominalPpnbm = ($ratePpnbm > 0) ? ($dpp * ($ratePpnbm / 100)) : 0;
+    $nominalPpn = ($ratePpn > 0) ? ($dpp * ($ratePpn / 100)) : 0;
+
+    if ($divisor > 1.0) {
+        $grandTotal = $dpp + ($ratePpnbm > 0 ? $nominalPpnbm : 0) + ($ratePpn > 0 ? $nominalPpn : 0);
+    } else {
+        $grandTotal = $dpp + $nominalPpnbm + $nominalPpn;
     }
 
     $items[] = [
