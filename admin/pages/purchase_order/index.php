@@ -510,6 +510,57 @@ require_once __DIR__ . '/../../components/navbar.php';
     </div>
 </div>
 
+<!-- MODAL UPDATE STATUS PURCHASE ORDER -->
+<div class="modal fade" id="modalUpdateStatusPo" tabindex="-1" aria-labelledby="modalUpdateStatusPoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 480px;">
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <div class="modal-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="modal-title fw-bold text-dark mb-0" id="modalUpdateStatusPoLabel">Update Status PO</h6>
+                    <div class="text-muted small font-monospace" style="font-size: 0.78rem;" id="updateStatusNomorPo">PO-XXXX-XXXX</div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace px-2 py-1" id="updateStatusBadgeCurrent">DISETUJUI INTERNAL</span>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+            <form id="formUpdateStatusPo" onsubmit="event.preventDefault(); submitUpdateStatusPo();">
+                <input type="hidden" id="updateStatusPoId">
+                <div class="modal-body p-4">
+                    <!-- Pilihan Status Baru -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Status Baru <span class="text-danger">*</span></label>
+                        <select class="form-select form-select-sm" id="selectNewStatusPo" required onchange="handleNewStatusChange(this.value)">
+                            <option value="DIPROSES VENDOR" selected>DIPROSES VENDOR</option>
+                            <option value="REVIEW VENDOR">REVIEW VENDOR</option>
+                            <option value="REVIEW INTERNAL">REVIEW INTERNAL</option>
+                            <option value="TIDAK DISETUJUI INTERNAL">TIDAK DISETUJUI INTERNAL</option>
+                            <option value="BATAL">BATAL</option>
+                        </select>
+                    </div>
+
+                    <!-- Input Estimasi Pengiriman (Muncul jika DIPROSES VENDOR) -->
+                    <div class="mb-3" id="wrapperEstimasiPengiriman">
+                        <label class="form-label small fw-semibold text-dark">Estimasi Pengiriman</label>
+                        <input type="date" class="form-control form-control-sm" id="inputEstimasiPengiriman" value="<?= date('Y-m-d') ?>">
+                    </div>
+
+                    <!-- Catatan / Keterangan -->
+                    <div class="mb-0">
+                        <label class="form-label small fw-semibold text-dark">Keterangan</label>
+                        <textarea class="form-control form-control-sm" id="inputCatatanStatusPo" rows="3" placeholder="Keterangan opsional..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2 px-3 d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary btn-sm px-4 fw-semibold" id="btnSubmitUpdateStatusPo">
+                        <i class="bi bi-check2-circle me-1"></i> Simpan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <?php require_once __DIR__ . '/../../components/footer.php'; ?>
 
 <!-- Client-side Logic Script for Purchase Order List -->
@@ -519,10 +570,12 @@ let currentPage = 1;
 let currentLimit = 10;
 let modalDetailInstance = null;
 let modalCancelPoInstance = null;
+let modalUpdateStatusInstance = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
     modalDetailInstance = new bootstrap.Modal(document.getElementById('modalDetailPo'));
     modalCancelPoInstance = new bootstrap.Modal(document.getElementById('modalCancelPo'));
+    modalUpdateStatusInstance = new bootstrap.Modal(document.getElementById('modalUpdateStatusPo'));
 
     // Inisialisasi Filter Site
     await loadSiteOptions();
@@ -625,7 +678,7 @@ async function loadPoList(page = 1) {
 
     items.forEach((item, idx) => {
         const no = startIndex + idx + 1;
-        const statusBadge = renderStatusBadge(item.status);
+        const statusBadge = renderStatusBadge(item.status, item);
         const nomorPo = item.nomor_po ? escapeHtml(item.nomor_po) : '-';
         const vendorName = item.nama_vendor ? escapeHtml(item.nama_vendor) : '<span class="text-muted italic">Vendor Umum</span>';
         const siteName = item.nama_site ? escapeHtml(item.nama_site) : '-';
@@ -714,8 +767,20 @@ async function loadPoList(page = 1) {
 // -------------------------------------------------------------
 // RENDER STATUS BADGE
 // -------------------------------------------------------------
-function renderStatusBadge(status) {
+function renderStatusBadge(status, item = null) {
     const st = (status || '').toUpperCase();
+    if (st === 'DISETUJUI INTERNAL' && item) {
+        const idPo = item.id_po;
+        const nomorPo = item.nomor_po ? escapeHtml(item.nomor_po) : '';
+        const vendorName = item.nama_vendor ? escapeHtml(item.nama_vendor) : '';
+        const currentStatus = escapeHtml(item.status || '');
+        return `<button type="button" class="btn btn-link p-0 text-decoration-none border-0 bg-transparent" onclick="openUpdateStatusModal(${idPo}, '${nomorPo}', '${vendorName}', '${currentStatus}')" title="Klik untuk Update Status Dokumen PO">
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 shadow-xs" style="cursor: pointer; transition: all 0.2s ease;">
+                <i class="bi bi-check2-circle me-1"></i>DISETUJUI INTERNAL <i class="bi bi-pencil-square ms-1 text-primary opacity-75"></i>
+            </span>
+        </button>`;
+    }
+
     switch (st) {
         case 'DRAFT':
             return '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1"><i class="bi bi-pencil me-1"></i>DRAFT</span>';
@@ -723,6 +788,8 @@ function renderStatusBadge(status) {
             return '<span class="badge bg-warning-subtle text-dark border border-warning-subtle px-2 py-1"><i class="bi bi-hourglass-split me-1"></i>REVIEW INTERNAL</span>';
         case 'DISETUJUI INTERNAL':
             return '<span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1"><i class="bi bi-check2-circle me-1"></i>DISETUJUI INTERNAL</span>';
+        case 'REVIEW VENDOR':
+            return '<span class="badge bg-warning-subtle text-dark border border-warning-subtle px-2 py-1"><i class="bi bi-clock-history me-1"></i>REVIEW VENDOR</span>';
         case 'DIPROSES VENDOR':
             return '<span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1"><i class="bi bi-truck me-1"></i>DIPROSES VENDOR</span>';
         case 'DITERIMA':
@@ -1121,6 +1188,70 @@ async function submitCancelPo(e) {
     } finally {
         btn.disabled = false;
         btn.innerHTML = origText;
+    }
+}
+// -------------------------------------------------------------
+// UPDATE STATUS PURCHASE ORDER MODAL HANDLERS
+// -------------------------------------------------------------
+function handleNewStatusChange(val) {
+    const wrapper = document.getElementById('wrapperEstimasiPengiriman');
+    if (wrapper) {
+        if (val === 'DIPROSES VENDOR') {
+            wrapper.classList.remove('d-none');
+        } else {
+            wrapper.classList.add('d-none');
+        }
+    }
+}
+
+function openUpdateStatusModal(idPo, nomorPo, vendor, currentStatus) {
+    document.getElementById('updateStatusPoId').value = idPo;
+    document.getElementById('updateStatusNomorPo').textContent = nomorPo || '-';
+    document.getElementById('updateStatusBadgeCurrent').textContent = currentStatus || 'DISETUJUI INTERNAL';
+    document.getElementById('selectNewStatusPo').value = 'DIPROSES VENDOR';
+    document.getElementById('inputCatatanStatusPo').value = '';
+    handleNewStatusChange('DIPROSES VENDOR');
+    modalUpdateStatusInstance.show();
+}
+
+async function submitUpdateStatusPo() {
+    const idPo = document.getElementById('updateStatusPoId').value;
+    const newStatus = document.getElementById('selectNewStatusPo').value;
+    const catatan = document.getElementById('inputCatatanStatusPo').value.trim();
+    const tglKirim = document.getElementById('inputEstimasiPengiriman')?.value || '';
+
+    if (!idPo || !newStatus) {
+        showToast('Pilih status baru dokumen.', 'warning');
+        return;
+    }
+
+    const btn = document.getElementById('btnSubmitUpdateStatusPo');
+    const origHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...';
+
+    try {
+        const payload = {
+            id_po: parseInt(idPo),
+            status: newStatus,
+            keterangan: catatan,
+            tanggal_pengiriman: (newStatus === 'DIPROSES VENDOR') ? tglKirim : null
+        };
+
+        const res = await apiRequest('/api/purchase_order/update_status.php', 'POST', payload);
+
+        if (res && res.success) {
+            modalUpdateStatusInstance.hide();
+            showToast(res.message, 'success');
+            loadPoList(currentPage);
+        } else {
+            showToast(res ? res.message : 'Gagal memperbarui status Purchase Order.', 'danger');
+        }
+    } catch (err) {
+        showToast('Terjadi kesalahan: ' + err.message, 'danger');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = origHtml;
     }
 }
 </script>
