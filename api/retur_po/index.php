@@ -17,6 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once __DIR__ . '/../middleware/auth.php';
 require_once __DIR__ . '/../../config/activity_logger.php';
+require_once __DIR__ . '/../../config/penomoran_helper.php';
 
 $currentUser = apiAuth([ROLE_LOGISTIK, ROLE_ADMIN, ROLE_MANAGER]);
 $method = $_SERVER['REQUEST_METHOD'];
@@ -365,29 +366,16 @@ if ($method === 'POST') {
 
     $conn->begin_transaction();
     try {
-        // 1. Generate Nomor Retur Unik: RET-YYMM-XXXX
-        $time = strtotime($tanggalRetur);
-        $yymm = date('ym', $time);
-        $prefix = "RET-{$yymm}-";
-
-        $stmtSeq = $conn->prepare("SELECT nomor_po_retur FROM retur_po WHERE nomor_po_retur LIKE ? ORDER BY id_po_retur DESC LIMIT 100");
-        $searchPattern = $prefix . "%";
-        $stmtSeq->bind_param("s", $searchPattern);
-        $stmtSeq->execute();
-        $resSeq = $stmtSeq->get_result();
-
-        $maxSequence = 0;
-        while ($row = $resSeq->fetch_assoc()) {
-            $numStr = $row['nomor_po_retur'] ?? '';
-            if (preg_match('/^RET-\d{4}-(\d+)$/i', $numStr, $matches)) {
-                $seq = (int)$matches[1];
-                if ($seq > $maxSequence) { $maxSequence = $seq; }
+        // 1. Ambil / Generate Nomor Retur Transaksi Dinamis Sesuai Format Penomoran
+        $nomorRetur = trim($post['nomor_po_retur'] ?? '');
+        if (empty($nomorRetur)) {
+            $gen = generateNomorTransaksi($conn, 'RETUR PO', $tanggalRetur);
+            if ($gen['success'] && !empty($gen['nomor'])) {
+                $nomorRetur = $gen['nomor'];
+            } else {
+                $nomorRetur = 'RT/' . str_pad(1, 4, '0', STR_PAD_LEFT) . '/' . date('ymd', strtotime($tanggalRetur));
             }
         }
-        $stmtSeq->close();
-
-        $nextSequence = $maxSequence + 1;
-        $nomorRetur = $prefix . str_pad($nextSequence, 4, '0', STR_PAD_LEFT);
 
         // 2. Hitung Total & Validasi Items
         $totalSubtotal = 0;

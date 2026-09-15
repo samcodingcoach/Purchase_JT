@@ -62,7 +62,7 @@ require_once __DIR__ . '/../../components/navbar.php';
     <!-- HEADER -->
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
         <div>
-            <h4 class="fw-bold text-dark mb-0">Retur Purchase Order (PO)</h4>
+            <h4 class="fw-bold text-dark mb-0">Retur Purchase Order</h4>
         </div>
         <div class="d-flex gap-2">
             <a href="<?= BASE_URL ?>/admin/pages/retur_po/index.php" class="btn btn-outline-secondary btn-sm px-3 shadow-sm">
@@ -112,8 +112,19 @@ require_once __DIR__ . '/../../components/navbar.php';
                         <div class="row g-4">
                             <!-- Kolom Kiri: Sumber Dokumen -->
                             <div class="col-lg-6">
-                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-link-45deg text-primary me-2"></i>Dokumen Asal Penerimaan (Receiving)</h6>
+                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Dokumen Asal Penerimaan (Receiving)</h6>
                                 
+                                <!-- Nomor Retur PO (Otomatis & Dinamis) -->
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold text-dark">Nomor Retur PO <span class="text-danger">*</span></label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="text" class="form-control font-monospace fw-bold text-danger bg-light" id="inputNomorRetur" readonly required placeholder="Memuat nomor Retur...">
+                                        <button type="button" class="btn btn-outline-secondary" onclick="fetchNextReturNumber()" title="Generate Ulang Nomor">
+                                            <i class="bi bi-arrow-clockwise"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
                                 <div class="mb-3 position-relative" id="rcvSearchableWrapper">
                                     <label class="form-label small fw-semibold text-dark">
                                         Pilih Dokumen Penerimaan (RCV) <span class="text-danger">*</span>
@@ -125,7 +136,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                                     <!-- Trigger Search Box (Searchable UI) -->
                                     <div class="rcv-custom-select d-flex align-items-center justify-content-between p-2 px-3 border rounded-3 bg-white cursor-pointer shadow-sm" id="rcvTriggerBox" onclick="toggleRcvDropdown(event)">
                                         <div id="rcvSelectedDisplay" class="text-truncate me-2">
-                                            <span class="text-muted"><i class="bi bi-search me-2 text-primary"></i>Cari Dokumen Penerimaan (No. RCV, PO, Vendor)...</span>
+                                            <span class="text-muted">Cari Dokumen Penerimaan (No. RCV, PO, Vendor)...</span>
                                         </div>
                                         <div class="d-flex align-items-center gap-1">
                                             <button type="button" class="btn btn-sm btn-link text-danger p-0 me-1" id="rcvClearBtn" onclick="clearRcvSelection(event)" style="display: none;" title="Hapus Pilihan">
@@ -138,8 +149,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                                     <!-- Searchable Dropdown Menu -->
                                     <div class="rcv-dropdown-menu shadow-lg border rounded-3 p-2 bg-white" id="rcvDropdownMenu" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 1050;">
                                         <div class="input-group input-group-sm mb-2">
-                                            <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
-                                            <input type="text" class="form-control form-control-sm border-start-0" id="rcvSearchInput" placeholder="Ketik No. RCV, No. PO, Vendor, atau Barang..." autocomplete="off" oninput="filterRcvList()">
+                                            <input type="text" class="form-control form-control-sm" id="rcvSearchInput" placeholder="Ketik No. RCV, No. PO, Vendor, atau Barang..." autocomplete="off" oninput="filterRcvList()">
                                         </div>
                                         <div class="overflow-auto" id="rcvOptionsContainer" style="max-height: 260px;">
                                             <!-- Options populated dynamically by JS -->
@@ -162,7 +172,7 @@ require_once __DIR__ . '/../../components/navbar.php';
 
                             <!-- Kolom Kanan: Detail Lokasi & Waktu Retur -->
                             <div class="col-lg-6">
-                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-geo-alt text-primary me-2"></i>Lokasi &amp; Waktu Pengiriman</h6>
+                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Lokasi &amp; Waktu Pengiriman</h6>
 
                                 <div class="mb-3">
                                     <label class="form-label small fw-semibold text-muted">Site / Lokasi Fisik Barang</label>
@@ -172,7 +182,7 @@ require_once __DIR__ . '/../../components/navbar.php';
 
                                 <div class="mb-3">
                                     <label class="form-label small fw-semibold text-dark">Tanggal Kirim Retur <span class="text-danger">*</span></label>
-                                    <input type="date" class="form-control form-control-sm" id="inputTanggalRetur" value="<?= date('Y-m-d') ?>" required>
+                                    <input type="date" class="form-control form-control-sm" id="inputTanggalRetur" value="<?= date('Y-m-d') ?>" onchange="fetchNextReturNumber()" required>
                                 </div>
 
                                 <div>
@@ -194,7 +204,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                         <div class="row g-4">
                             <!-- Kolom Kiri: Info Vendor -->
                             <div class="col-lg-6">
-                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-building text-primary me-2"></i>Identitas Vendor</h6>
+                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Identitas Vendor</h6>
 
                                 <div class="mb-3">
                                     <label class="form-label small fw-semibold text-muted">Nama Perusahaan Vendor</label>
@@ -215,7 +225,7 @@ require_once __DIR__ . '/../../components/navbar.php';
 
                             <!-- Kolom Kanan: Skema Kompensasi -->
                             <div class="col-lg-6">
-                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-arrow-repeat text-primary me-2"></i>Skema Kompensasi Retur</h6>
+                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Skema Kompensasi</h6>
 
                                 <div class="mb-3">
                                     <label class="form-label small fw-semibold text-dark mb-2">Skema yang Disepakati Bersama Vendor <span class="text-danger">*</span></label>
@@ -251,7 +261,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                         <div class="row g-4">
                             <!-- Kolom Kiri: Metode & Biaya Pengiriman -->
                             <div class="col-lg-6">
-                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-truck text-primary me-2"></i>Metode &amp; Armada Pengiriman</h6>
+                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Metode &amp; Armada Pengiriman</h6>
 
                                 <div class="mb-3">
                                     <label class="form-label small fw-semibold text-dark mb-2">Penanggung Jawab / Jalur Pengiriman <span class="text-danger">*</span></label>
@@ -282,7 +292,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                                     <label class="form-label small fw-semibold text-dark">Biaya Pengiriman Retur (IDR)</label>
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text bg-light fw-bold text-muted">Rp</span>
-                                        <input type="number" class="form-control form-control-sm" id="inputBiayaRetur" value="0" min="0" step="500" placeholder="0">
+                                        <input type="text" class="form-control form-control-sm text-end fw-semibold" id="inputBiayaRetur" value="0" placeholder="0" oninput="formatBiayaReturInput(this)">
                                     </div>
                                     <div class="form-text small text-muted">Isi 0 jika ongkos kirim ditanggung oleh pihak vendor.</div>
                                 </div>
@@ -290,18 +300,18 @@ require_once __DIR__ . '/../../components/navbar.php';
 
                             <!-- Kolom Kanan: Dokumen Jalan & Pajak -->
                             <div class="col-lg-6">
-                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-card-checklist text-primary me-2"></i>Dokumen Surat Jalan &amp; Faktur</h6>
+                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Dokumen Surat Jalan &amp; Faktur</h6>
 
                                 <div class="mb-3">
                                     <label class="form-label small fw-semibold text-muted">No. Surat Jalan Pengembalian / Retur (Opsional)</label>
                                     <input type="text" class="form-control form-control-sm" id="inputNoSjRetur" placeholder="Contoh: SJ-RET-2026-001">
-                                    <div class="form-text small text-muted">Nomor surat jalan fisik saat barang dikirim keluar dari gudang.</div>
+                                    
                                 </div>
 
                                 <div class="mb-3">
                                     <label class="form-label small fw-semibold text-muted">No. Nota Retur Pajak (Opsional)</label>
                                     <input type="text" class="form-control form-control-sm" id="inputNoNotaPajak" placeholder="Untuk e-Faktur Pembatalan Pajak">
-                                    <div class="form-text small text-muted">Nomor nota retur resmi untuk pelaporan SPT PPN bila ada pemotongan faktur.</div>
+                                    
                                 </div>
                             </div>
                         </div>
@@ -315,17 +325,12 @@ require_once __DIR__ . '/../../components/navbar.php';
 
                     <!-- TAB 4: RINCIAN BARANG -->
                     <div class="tab-pane fade" id="tab-items" role="tabpanel">
-                        <div class="alert alert-info py-2 px-3 small border-0 shadow-sm rounded-3 mb-3 d-flex align-items-center">
-                            <i class="bi bi-info-circle-fill fs-5 text-primary me-2"></i>
-                            <div>
-                                <strong>Petunjuk Kuantitas Retur:</strong> Masukkan jumlah fisik barang rusak/cacat yang dikembalikan ke vendor (misal: <strong>1</strong>). Jumlah inilah yang akan menjadi dasar nilai klaim dan otomatis <strong>memotong tagihan Faktur PO menjadi Rp 0</strong> (tidak perlu dibayar).
-                            </div>
-                        </div>
+                        
 
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="fw-bold text-dark mb-0"><i class="bi bi-list-check text-primary me-2"></i>Daftar Barang yang Diretur</h6>
+                            <h6 class="fw-bold text-dark mb-0">Daftar Barang Retur</h6>
                             <button type="button" class="btn btn-outline-primary btn-sm" onclick="openAddItemModal()">
-                                <i class="bi bi-plus-lg me-1"></i> Tambah Barang Lain dari RCV
+                                <i class="bi bi-plus-lg me-1"></i> Tambah Barang
                             </button>
                         </div>
 
@@ -385,7 +390,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                     <div class="tab-pane fade" id="tab-persetujuan" role="tabpanel">
                         <div class="row">
                             <div class="col-lg-6">
-                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom"><i class="bi bi-shield-check text-success me-2"></i>Pejabat Penyetuju (Approval)</h6>
+                               
 
                                 <div class="mb-3">
                                     <label class="form-label small fw-semibold text-dark">Pilih Pejabat yang Menyetujui Retur <span class="text-danger">*</span></label>
@@ -654,12 +659,21 @@ let ratePajak = 0;
 let rcvLookupList = <?= json_encode($rcvOptions, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
 let selectedRcvId = null;
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    await fetchNextReturNumber();
     renderRcvOptions(rcvLookupList);
     if (rcvLookupList && rcvLookupList.length === 1) {
         selectRcvOption(rcvLookupList[0].id_rcv);
     }
 });
+
+async function fetchNextReturNumber() {
+    const tgl = document.getElementById('inputTanggalRetur').value || '';
+    const res = await apiRequest(`/api/retur_po/get_next_number.php?tanggal=${encodeURIComponent(tgl)}`);
+    if (res && res.success && res.data && res.data.nomor_po_retur) {
+        document.getElementById('inputNomorRetur').value = res.data.nomor_po_retur;
+    }
+}
 
 // Click outside untuk menutup dropdown searchable
 document.addEventListener('click', (e) => {
@@ -873,6 +887,16 @@ function resetRcvDisplay() {
     document.getElementById('inputPicVendor').value = '';
     ratePajak = 0;
     renderItemsTable();
+}
+
+function formatBiayaReturInput(input) {
+    let raw = input.value.replace(/\D/g, '');
+    if (raw === '') {
+        input.value = '0';
+        return;
+    }
+    const num = parseInt(raw, 10);
+    input.value = new Intl.NumberFormat('id-ID').format(num);
 }
 
 function selectPengirimanCard(val) {
@@ -1217,7 +1241,7 @@ async function submitReturForm(targetStatus) {
     const pengirimanRadio = document.querySelector('input[name="pengiriman_retur"]:checked');
     const pengirimanRetur = (pengirimanHidden && pengirimanHidden.value) ? pengirimanHidden.value : (pengirimanRadio ? pengirimanRadio.value : 'Vendor');
     const biayaReturInput = document.getElementById('inputBiayaRetur');
-    const biayaRetur = biayaReturInput ? (parseFloat(biayaReturInput.value) || 0) : 0;
+    const biayaRetur = biayaReturInput ? (parseFloat(biayaReturInput.value.replace(/\D/g, '')) || 0) : 0;
     const approverEl = document.getElementById('selectKaryawanApproved');
     let idKaryawanApproved = approverEl ? parseInt(approverEl.value) : 0;
     const tanggalRetur = document.getElementById('inputTanggalRetur').value;
@@ -1249,7 +1273,9 @@ async function submitReturForm(targetStatus) {
         return;
     }
 
+    const nomorRetur = (document.getElementById('inputNomorRetur') ? document.getElementById('inputNomorRetur').value : '').trim();
     const payload = {
+        nomor_po_retur: nomorRetur,
         id_po: idPo,
         id_rcv: idRcv,
         id_vendor: idVendor,
