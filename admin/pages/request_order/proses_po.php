@@ -83,12 +83,11 @@ require_once __DIR__ . '/../../components/navbar.php';
                                     <label class="form-label small fw-bold">Nomor Purchase Order <span class="text-danger">*</span></label>
                                     <div class="input-group">
                                         <span class="input-group-text bg-light font-monospace"><i class="bi bi-upc-scan"></i></span>
-                                        <input type="text" class="form-control font-monospace fw-bold" id="inputNomorPo" name="nomor_po" required placeholder="PO-2608-0001">
+                                        <input type="text" class="form-control font-monospace fw-bold bg-light" id="inputNomorPo" name="nomor_po" readonly required placeholder="Memuat nomor PO...">
                                         <button type="button" class="btn btn-outline-secondary" onclick="fetchNextPoNumber()" title="Generate Ulang Nomor">
                                             <i class="bi bi-arrow-clockwise"></i>
                                         </button>
                                     </div>
-                                    <div class="form-text small text-muted">Format: PO-YYMM-XXXX (Otomatis terisi).</div>
                                 </div>
 
                                 <div class="col-md-6">
@@ -105,7 +104,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                                     <label class="form-label small fw-bold">Tanggal Purchase Order <span class="text-danger">*</span></label>
                                     <div class="input-group">
                                         <span class="input-group-text bg-light"><i class="bi bi-calendar3"></i></span>
-                                        <input type="date" class="form-control" id="inputTanggalPo" name="tanggal_po" value="<?= date('Y-m-d') ?>" required>
+                                        <input type="date" class="form-control" id="inputTanggalPo" name="tanggal_po" value="<?= date('Y-m-d') ?>" onchange="fetchNextPoNumber()" required>
                                     </div>
                                 </div>
 
@@ -936,7 +935,8 @@ function renderRoData() {
 // FETCH NEXT PO NUMBER
 // -------------------------------------------------------------
 async function fetchNextPoNumber() {
-    const res = await apiRequest('/api/purchase_order/get_next_number.php');
+    const tanggalPo = document.getElementById('inputTanggalPo')?.value || '';
+    const res = await apiRequest(`/api/purchase_order/get_next_number.php?date=${encodeURIComponent(tanggalPo)}`);
     if (res && res.success && res.data && res.data.nomor_po) {
         document.getElementById('inputNomorPo').value = res.data.nomor_po;
     }
@@ -1301,10 +1301,11 @@ async function handleSaveDraftPo() {
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Menyimpan Draft...';
 
-    // 1. Ambil nomor draft PO (DRF-PO-YYMM-01)
+    // 1. Ambil nomor draft PO
     let draftNomor = document.getElementById('inputNomorPo').value.trim();
-    if (!draftNomor.startsWith('DRF-PO-')) {
-        const resDraftNum = await apiRequest('/api/purchase_order/get_next_number.php?draft=1');
+    if (!draftNomor.startsWith('DRF-') && !draftNomor.startsWith('DRF/')) {
+        const tanggalPo = document.getElementById('inputTanggalPo')?.value || '';
+        const resDraftNum = await apiRequest(`/api/purchase_order/get_next_number.php?draft=1&date=${encodeURIComponent(tanggalPo)}`);
         if (resDraftNum && resDraftNum.success && resDraftNum.data && resDraftNum.data.nomor_po) {
             draftNomor = resDraftNum.data.nomor_po;
             document.getElementById('inputNomorPo').value = draftNomor;

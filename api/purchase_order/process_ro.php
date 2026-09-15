@@ -182,16 +182,22 @@ if ($action === 'approve' || $action === 'draft') {
         jsonResponse(false, 'Vendor belum ditentukan pada Request Order.', null, 422);
     }
 
-    // Nomor PO
-    $nomorPo = trim($input['nomor_po'] ?? '');
-    if (empty($nomorPo)) {
-        jsonResponse(false, 'Nomor Purchase Order wajib diisi.', null, 422);
-    }
-
     // Tanggal PO
     $tanggalPo = trim($input['tanggal_po'] ?? date('Y-m-d'));
     if (!strtotime($tanggalPo)) {
         $tanggalPo = date('Y-m-d');
+    }
+
+    // Nomor PO
+    $nomorPo = trim($input['nomor_po'] ?? '');
+    if (empty($nomorPo)) {
+        require_once __DIR__ . '/../../config/penomoran_helper.php';
+        $gen = generateNomorTransaksi($conn, 'PURCHASE', $tanggalPo);
+        if ($gen['success']) {
+            $nomorPo = $isDraft ? ('DRF/' . $gen['nomor']) : $gen['nomor'];
+        } else {
+            jsonResponse(false, 'Gagal membuat nomor Purchase Order otomatis.', null, 500);
+        }
     }
 
     $idKaryawan = $currentUser['id_karyawan'] ?? $ro['id_karyawan'];
