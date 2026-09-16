@@ -18,6 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/../../config/config.php';
+require_once __DIR__ . '/../../config/penomoran_helper.php';
 require_once __DIR__ . '/../middleware/auth.php';
 
 $user = apiAuth([ROLE_ADMIN, ROLE_LOGISTIK, ROLE_MEKANIK, ROLE_MANAGER]);
@@ -36,9 +37,16 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     sendJson(false, 'Metode HTTP tidak diizinkan. Gunakan POST.', null, 405);
 }
 
-// Helper auto-generate nomor adjustment ADJ-YYMM-00001
-function generateNomorAdjustment($conn) {
-    $prefix = 'ADJ-' . date('ym') . '-';
+// Helper auto-generate nomor adjustment dinamis
+function generateNomorAdjustment($conn, $tanggal = null) {
+    if (empty($tanggal) || !strtotime($tanggal)) {
+        $tanggal = date('Y-m-d');
+    }
+    $gen = generateNomorTransaksi($conn, 'ADJUSTMENT STOK', $tanggal);
+    if ($gen && !empty($gen['success']) && !empty($gen['nomor'])) {
+        return $gen['nomor'];
+    }
+    $prefix = 'ADJ-' . date('ym', strtotime($tanggal)) . '-';
     $sql = "SELECT nomor_adjustment FROM adjustment_stok WHERE nomor_adjustment LIKE '{$prefix}%' ORDER BY nomor_adjustment DESC LIMIT 1";
     $res = $conn->query($sql);
     if ($res && $res->num_rows > 0) {

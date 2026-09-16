@@ -80,6 +80,16 @@ require_once __DIR__ . '/../../components/navbar.php';
                                     </h6>
 
                                     <div class="mb-3">
+                                        <label class="form-label small fw-bold text-dark">Nomor Adjustment</label>
+                                        <div class="input-group input-group-sm">
+                                            <input type="text" class="form-control font-monospace fw-bold text-primary bg-light" id="nomorAdjustment" readonly placeholder="[Otomatis]">
+                                            <button class="btn btn-outline-secondary" type="button" onclick="fetchNextNomorAdjustment()" title="Refresh Nomor">
+                                                <i class="bi bi-arrow-clockwise"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
                                         <label class="form-label small fw-bold text-dark">Lokasi Gudang / Site <span class="text-danger">*</span></label>
                                         <select class="form-select form-select-sm fw-semibold" id="idSite" required onchange="handleSiteChange()">
                                             <option value="">-- Memuat daftar site... --</option>
@@ -92,7 +102,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                                             <div class="col-7">
                                                 <div class="input-group input-group-sm">
                                                     <span class="input-group-text bg-white"><i class="bi bi-calendar3"></i></span>
-                                                    <input type="date" class="form-control" id="tanggalAdjustmentDate" required value="<?= date('Y-m-d') ?>">
+                                                    <input type="date" class="form-control" id="tanggalAdjustmentDate" required value="<?= date('Y-m-d') ?>" onchange="fetchNextNomorAdjustment()">
                                                 </div>
                                             </div>
                                             <div class="col-5">
@@ -373,6 +383,7 @@ let nextRowIndex = 0;
 let itemSearchTimeout = null;
 
 document.addEventListener('DOMContentLoaded', () => {
+    fetchNextNomorAdjustment();
     loadSitesList();
     addNewItemRow();
     updateThQtyHeader();
@@ -384,6 +395,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+async function fetchNextNomorAdjustment() {
+    const tgl = document.getElementById('tanggalAdjustmentDate')?.value || '';
+    const nomorInput = document.getElementById('nomorAdjustment');
+    if (!nomorInput) return;
+    
+    try {
+        const res = await fetch(`<?= BASE_URL ?>/api/adjustment_stok/get_next_number.php?tanggal=${encodeURIComponent(tgl)}`);
+        const json = await res.json();
+        if (json.success && json.data && json.data.nomor) {
+            nomorInput.value = json.data.nomor;
+        } else {
+            nomorInput.value = '[Otomatis]';
+        }
+    } catch (e) {
+        console.error('Error fetching next nomor adjustment:', e);
+    }
+}
 
 async function loadSitesList() {
     const siteSelect = document.getElementById('idSite');
@@ -856,7 +885,10 @@ async function executeSaveAdjustment() {
         return;
     }
 
+    const nomorAdjInput = document.getElementById('nomorAdjustment')?.value.trim();
+
     const payload = {
+        nomor_adjustment: nomorAdjInput && nomorAdjInput !== '[Otomatis]' ? nomorAdjInput : null,
         id_site: parseInt(siteId),
         jenis_adjustment: jenisAdj,
         tanggal_adjustment: `${tglDate} ${tglTime}:00`,

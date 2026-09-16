@@ -83,6 +83,11 @@ require_once __DIR__ . '/../../components/navbar.php';
                                     </h6>
 
                                     <div class="mb-3">
+                                        <label class="form-label small fw-bold text-dark">Nomor Adjustment</label>
+                                        <input type="text" class="form-control font-monospace fw-bold text-primary bg-light" id="nomorAdjustment" readonly placeholder="[Otomatis]">
+                                    </div>
+
+                                    <div class="mb-3">
                                         <label class="form-label small fw-bold text-dark">Lokasi Gudang / Site <span class="text-danger">*</span></label>
                                         <select class="form-select form-select-sm fw-semibold" id="idSite" required onchange="handleSiteChange()">
                                             <option value="">-- Memuat daftar site... --</option>
@@ -440,6 +445,10 @@ async function loadAdjustmentDetail() {
         const headerNomorAdjEl = document.getElementById('headerNomorAdj');
         if (headerNomorAdjEl) {
             headerNomorAdjEl.innerText = currentAdjData.nomor_adjustment || '-';
+        }
+        const nomorAdjEl = document.getElementById('nomorAdjustment');
+        if (nomorAdjEl) {
+            nomorAdjEl.value = currentAdjData.nomor_adjustment || '-';
         }
         document.getElementById('displayPetugas').value = currentAdjData.nama_pembuat || '-';
         document.getElementById('idSite').value = currentAdjData.id_site || '';

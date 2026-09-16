@@ -19,15 +19,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../config/session.php';
 require_once __DIR__ . '/../../config/koneksi.php';
+require_once __DIR__ . '/../../config/penomoran_helper.php';
 
 // Auth Protection
 $user = requireAuth([ROLE_ADMIN, ROLE_LOGISTIK, ROLE_MANAGER]);
 
 $method = $_SERVER['REQUEST_METHOD'];
 
-// Helper function: Generate Next Kode Mutasi (DI-YYMM-00001)
-function generateNextKodeMutasi($conn) {
-    $prefix = 'DI-' . date('ym') . '-';
+// Helper function: Generate Next Kode Mutasi sesuai tabel penomoran
+function generateNextKodeMutasi($conn, $tanggal = null) {
+    if (empty($tanggal) || !strtotime($tanggal)) {
+        $tanggal = date('Y-m-d');
+    }
+    $gen = generateNomorTransaksi($conn, 'MUTASI BARANG', $tanggal);
+    if ($gen && !empty($gen['success']) && !empty($gen['nomor'])) {
+        return $gen['nomor'];
+    }
+    $prefix = 'DI-' . date('ym', strtotime($tanggal)) . '-';
     $sql = "SELECT kode_mutasi FROM mutasi_order WHERE kode_mutasi LIKE ? ORDER BY kode_mutasi DESC LIMIT 1";
     $stmt = $conn->prepare($sql);
     $likeParam = $prefix . '%';
@@ -53,10 +61,11 @@ try {
 
         // 1.1 Helper: Generate Next Kode Mutasi
         if ($action === 'next_code') {
-            $nextCode = generateNextKodeMutasi($conn);
+            $tgl = trim($_GET['tanggal'] ?? $_GET['date'] ?? '');
+            $nextCode = generateNextKodeMutasi($conn, $tgl);
             echo json_encode([
                 'success' => true,
-                'data' => ['next_code' => $nextCode]
+                'data' => ['next_code' => $nextCode, 'kode_mutasi' => $nextCode]
             ]);
             exit;
         }
@@ -745,13 +754,11 @@ try {
             }
         }
 
-        // 2.3 CREATE BARU MUTASI ORDER
+        $tglMutasi = trim($body['tanggal_mutasi'] ?? date('Y-m-d H:i:s'));
         $kodeMutasi = trim($body['kode_mutasi'] ?? '');
         if (empty($kodeMutasi)) {
-            $kodeMutasi = generateNextKodeMutasi($conn);
+            $kodeMutasi = generateNextKodeMutasi($conn, $tglMutasi);
         }
-        $nomorSurat = trim($body['nomor_surat_mutasi'] ?? '');
-        $tglMutasi = trim($body['tanggal_mutasi'] ?? date('Y-m-d H:i:s'));
         $idSiteAsal = (int)($body['id_site_asal'] ?? 0);
         $idSiteTujuan = (int)($body['id_site_tujuan'] ?? 0);
         $idCreator = (int)($user['id_karyawan'] ?? 1);

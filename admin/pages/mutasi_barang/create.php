@@ -74,9 +74,9 @@ require_once __DIR__ . '/../../components/navbar.php';
                                         <label class="form-label small fw-bold text-dark">Kode Mutasi <span class="text-danger">*</span></label>
                                         <div class="input-group input-group-sm">
                                             <span class="input-group-text bg-white"><i class="bi bi-hash"></i></span>
-                                            <input type="text" class="form-control font-monospace fw-bold text-primary" id="kodeMutasi" required placeholder="DI-YYMM-00000">
-                                            <button type="button" class="btn btn-outline-primary" onclick="fetchNextKodeMutasi()" title="Generate Otomatis">
-                                                <i class="bi bi-arrow-clockwise me-1"></i> Generate
+                                            <input type="text" class="form-control font-monospace fw-bold text-primary bg-light" id="kodeMutasi" required readonly placeholder="Memuat nomor mutasi...">
+                                            <button type="button" class="btn btn-outline-secondary" onclick="fetchNextKodeMutasi()" title="Generate Ulang Nomor">
+                                                <i class="bi bi-arrow-clockwise"></i>
                                             </button>
                                         </div>
                                     </div>
@@ -92,7 +92,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                                             <div class="col-7">
                                                 <div class="input-group input-group-sm">
                                                     <span class="input-group-text bg-white"><i class="bi bi-calendar3"></i></span>
-                                                    <input type="date" class="form-control" id="tanggalMutasiDate" required value="<?= date('Y-m-d') ?>">
+                                                    <input type="date" class="form-control" id="tanggalMutasiDate" required value="<?= date('Y-m-d') ?>" onchange="fetchNextKodeMutasi()">
                                                 </div>
                                             </div>
                                             <div class="col-5">
@@ -374,13 +374,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function fetchNextKodeMutasi() {
+    const tgl = document.getElementById('tanggalMutasiDate') ? document.getElementById('tanggalMutasiDate').value : '';
     try {
-        const res = await fetch(`<?= BASE_URL ?>/api/mutasi_order/index.php?action=next_code`, {
+        const res = await fetch(`<?= BASE_URL ?>/api/mutasi_order/get_next_number.php?tanggal=${encodeURIComponent(tgl || '')}`, {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
         const json = await res.json();
         if (json.success && json.data) {
-            document.getElementById('kodeMutasi').value = json.data.next_code;
+            document.getElementById('kodeMutasi').value = json.data.kode_mutasi || json.data.nomor;
         }
     } catch (e) {
         console.error('Error next code:', e);
