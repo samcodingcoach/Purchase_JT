@@ -110,17 +110,14 @@ require_once __DIR__ . '/../../components/navbar.php';
                     <thead class="table-light">
                         <tr>
                             <th class="text-center" style="width: 50px;">No</th>
-                            <th style="width: 130px;">Tahun</th>
-                            <th style="width: 150px;">Bulan</th>
-                            <th class="text-end" style="width: 200px;">Nilai PPN Keluaran</th>
-                            <th>Keterangan</th>
-                            <th style="width: 180px;">Diinput Oleh</th>
-                            <th class="text-center" style="width: 100px;">Aksi</th>
+                            <th>Periode</th>
+                            <th class="text-end" style="width: 220px;">Nilai</th>
+                            <th class="text-center" style="width: 160px;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="tbodyPajakKeluaran">
                         <tr>
-                            <td colspan="7" class="text-center py-5 text-muted">
+                            <td colspan="4" class="text-center py-5 text-muted">
                                 <div class="spinner-border spinner-border-sm text-primary me-2"></div> Memuat data pajak keluaran...
                             </td>
                         </tr>
@@ -135,6 +132,48 @@ require_once __DIR__ . '/../../components/navbar.php';
             <nav id="paginationControls">
                 <ul class="pagination pagination-sm mb-0" id="paginationList"></ul>
             </nav>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL RINCIAN PAJAK KELUARAN -->
+<div class="modal fade" id="modalDetailRincianPajak" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+        <div class="modal-content border-0 shadow rounded-3">
+            <div class="modal-header py-2 px-3 border-bottom bg-light">
+                <h6 class="modal-title fw-bold text-dark mb-0">
+                    Rincian Pajak Keluaran
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3">
+                <div class="list-group list-group-flush small">
+                    <div class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Periode:</span>
+                        <strong class="text-dark font-monospace" id="rincianPeriode">-</strong>
+                    </div>
+                    <div class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Nilai PPN Keluaran:</span>
+                        <strong class="text-primary font-monospace fs-6" id="rincianNilai">0</strong>
+                    </div>
+                    <div class="list-group-item px-0 py-2">
+                        <span class="text-muted d-block mb-1">Dibuat / Diinput Oleh:</span>
+                        <div class="bg-light p-2 rounded border">
+                            <div class="fw-bold text-dark" id="rincianPembuat">-</div>
+                            <div class="text-muted font-monospace" style="font-size: 0.75rem;" id="rincianJabatanPembuat">-</div>
+                        </div>
+                    </div>
+                    <div class="list-group-item px-0 py-2">
+                        <span class="text-muted d-block mb-1">Keterangan:</span>
+                        <div class="bg-light p-2 rounded border text-secondary" id="rincianKeterangan" style="min-height: 50px; white-space: pre-wrap;">-</div>
+                    </div>
+                    <div class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center text-muted" style="font-size: 0.75rem;">
+                        <span>Waktu Input:</span>
+                        <span class="font-monospace" id="rincianWaktuInput">-</span>
+                    </div>
+                </div>
+            </div>
+            
         </div>
     </div>
 </div>
@@ -217,8 +256,8 @@ require_once __DIR__ . '/../../components/navbar.php';
     <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
         <div class="modal-content border-0 shadow rounded-3">
             <div class="modal-header py-2 px-3 border-bottom">
-                <h6 class="modal-title fw-bold text-danger mb-0">
-                    <i class="bi bi-trash-fill me-1"></i> Hapus Pajak Keluaran
+                <h6 class="modal-title fw-bold mb-0">
+                     Hapus Pajak Keluaran
                 </h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -230,7 +269,6 @@ require_once __DIR__ . '/../../components/navbar.php';
                 </div>
             </div>
             <div class="modal-footer py-2 px-3 bg-light border-0 d-flex justify-content-end gap-2">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
                 <button type="button" class="btn btn-danger btn-sm fw-semibold" id="btnConfirmDeletePajakExecute" onclick="executeDeletePajak()">
                     Hapus
                 </button>
@@ -317,7 +355,7 @@ async function loadPajakList(page = 1) {
             if (items.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="7" class="text-center py-5 text-muted">
+                        <td colspan="4" class="text-center py-5 text-muted">
                             <i class="bi bi-inbox d-block fs-2 mb-2 opacity-50"></i>
                             Tidak ada data pajak keluaran ditemukan.
                         </td>
@@ -329,27 +367,23 @@ async function loadPajakList(page = 1) {
             let html = '';
             items.forEach((item, idx) => {
                 const no = (page - 1) * 15 + idx + 1;
+                const formattedNilai = Number(item.ppn_keluaran || 0).toLocaleString('id-ID');
+                const encodedData = encodeURIComponent(JSON.stringify(item));
+                
                 html += `
                     <tr>
                         <td class="text-center text-muted fw-semibold">${no}</td>
                         <td>
-                            <span class="badge bg-secondary-subtle text-secondary border font-monospace px-2 py-1">${escapeHtml(item.tahun)}</span>
-                        </td>
-                        <td>
-                            <span class="fw-bold text-dark">${escapeHtml(item.nama_bulan)}</span>
-                            <span class="text-muted small font-monospace">(${item.bulan_formatted})</span>
+                            <span class="fw-bold text-dark">${escapeHtml(item.nama_bulan)} ${escapeHtml(item.tahun)}</span>
                         </td>
                         <td class="text-end font-monospace fw-bold text-primary fs-6">
-                            ${formatRupiah(item.ppn_keluaran)}
-                        </td>
-                        <td>
-                            <span class="text-secondary small">${escapeHtml(item.keterangan || '-')}</span>
-                        </td>
-                        <td>
-                            <span class="text-dark fw-semibold small">${escapeHtml(item.nama_karyawan || 'Finance System')}</span>
+                            ${formattedNilai}
                         </td>
                         <td class="text-center">
                             <div class="d-inline-flex gap-1">
+                                <button type="button" class="btn btn-outline-info btn-sm px-2 py-1 shadow-xs text-dark" onclick="showDetailPajak('${encodedData}')" title="Lihat Rincian">
+                                    <i class="bi bi-eye-fill"></i>
+                                </button>
                                 <button type="button" class="btn btn-outline-warning btn-sm px-2 py-1 shadow-xs text-dark" onclick="openModalEditPajak(${item.id_pajak_keluaran})" title="Edit Data">
                                     <i class="bi bi-pencil-fill"></i>
                                 </button>
@@ -365,11 +399,30 @@ async function loadPajakList(page = 1) {
             tbody.innerHTML = html;
             renderPaginationControls(pagination);
         } else {
-            tbody.innerHTML = `<tr><td colspan="7" class="text-center py-5 text-danger">Gagal memuat data: ${json.message || ''}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="4" class="text-center py-5 text-danger">Gagal memuat data: ${json.message || ''}</td></tr>`;
         }
     } catch (e) {
         console.error('Error load pajak keluaran:', e);
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-5 text-danger">Terjadi kesalahan saat memuat data.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center py-5 text-danger">Terjadi kesalahan saat memuat data.</td></tr>`;
+    }
+}
+
+function showDetailPajak(encodedJson) {
+    try {
+        const item = JSON.parse(decodeURIComponent(encodedJson));
+        document.getElementById('rincianPeriode').textContent = `${item.nama_bulan} ${item.tahun}`;
+        document.getElementById('rincianNilai').textContent = Number(item.ppn_keluaran || 0).toLocaleString('id-ID');
+        document.getElementById('rincianPembuat').textContent = item.nama_karyawan || 'Finance System';
+        document.getElementById('rincianJabatanPembuat').textContent = item.nama_jabatan ? `Jabatan: ${item.nama_jabatan}` : (item.kode_karyawan ? `Kode: ${item.kode_karyawan}` : 'Staff');
+        document.getElementById('rincianKeterangan').textContent = item.keterangan ? item.keterangan : '(Tidak ada catatan/keterangan tambahan)';
+        document.getElementById('rincianWaktuInput').textContent = item.created_at || '-';
+
+        const modalEl = document.getElementById('modalDetailRincianPajak');
+        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+        modal.show();
+    } catch (e) {
+        console.error('Error show detail:', e);
+        showToast('Gagal menampilkan rincian data.', 'danger');
     }
 }
 
@@ -430,7 +483,7 @@ async function openModalEditPajak(id) {
             document.getElementById('inputPpnKeluaran').value = Number(d.ppn_keluaran || 0).toLocaleString('id-ID');
             document.getElementById('inputKeterangan').value = d.keterangan || '';
 
-            document.getElementById('modalPajakFormLabel').innerHTML = '<i class="bi bi-pencil-square text-warning me-1"></i> Edit Pajak Keluaran';
+            document.getElementById('modalPajakFormLabel').innerHTML = 'Edit Pajak Keluaran';
 
             const modalEl = document.getElementById('modalPajakForm');
             if (!formModalInstance) formModalInstance = new bootstrap.Modal(modalEl);
@@ -475,13 +528,16 @@ async function submitPajakForm(e) {
 
         if (json.success) {
             showToast(json.message || 'Data berhasil disimpan!', 'success');
-            if (formModalInstance) formModalInstance.hide();
+            const modalEl = document.getElementById('modalPajakForm');
+            const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+            if (modal) modal.hide();
             loadPajakList(currentPage);
         } else {
             showToast(json.message || 'Gagal menyimpan data.', 'danger');
         }
     } catch (err) {
-        showToast('Terjadi kesalahan koneksi.', 'danger');
+        console.error('Error submit pajak:', err);
+        showToast('Terjadi kesalahan koneksi atau server.', 'danger');
     } finally {
         btn.disabled = false;
         btn.innerHTML = originalText;

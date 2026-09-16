@@ -224,7 +224,14 @@ if ($method === 'POST') {
         $stmt->close();
 
         // Log Aktivitas
-        logActivity($conn, 'PAJAK KELUARAN', "Menambahkan data pajak keluaran periode {$bulanPad}/{$tahun} senilai Rp " . number_format($ppnKeluaran, 0, ',', '.'), $user['id_karyawan'] ?? null);
+        logActivity($conn, [
+            'modul' => 'PAJAK_KELUARAN',
+            'aksi' => 'CREATE',
+            'id_referensi' => $newId,
+            'nomor_referensi' => "{$bulanPad}/{$tahun}",
+            'deskripsi' => "Menambahkan data pajak keluaran periode {$bulanPad}/{$tahun} senilai Rp " . number_format($ppnKeluaran, 0, ',', '.'),
+            'id_karyawan' => $idKaryawan
+        ]);
 
         sendJson(true, 'Data pajak keluaran berhasil disimpan.', [
             'id_pajak_keluaran' => $newId,
@@ -306,7 +313,14 @@ if ($method === 'PUT') {
         $stmt->close();
 
         // Log Aktivitas
-        logActivity($conn, 'PAJAK KELUARAN', "Memperbarui data pajak keluaran ID #{$id} (Periode {$bulanPad}/{$tahun} senilai Rp " . number_format($ppnKeluaran, 0, ',', '.') . ")", $user['id_karyawan'] ?? null);
+        logActivity($conn, [
+            'modul' => 'PAJAK_KELUARAN',
+            'aksi' => 'UPDATE',
+            'id_referensi' => $id,
+            'nomor_referensi' => "{$bulanPad}/{$tahun}",
+            'deskripsi' => "Memperbarui data pajak keluaran ID #{$id} (Periode {$bulanPad}/{$tahun} senilai Rp " . number_format($ppnKeluaran, 0, ',', '.') . ")",
+            'id_karyawan' => $user['id_karyawan'] ?? null
+        ]);
 
         sendJson(true, 'Data pajak keluaran berhasil diperbarui.', [
             'id_pajak_keluaran' => $id,
@@ -351,7 +365,14 @@ if ($method === 'DELETE' || ($method === 'POST' && isset($_GET['action']) && $_G
         $stmtDel->close();
 
         // Log Aktivitas
-        logActivity($conn, 'PAJAK KELUARAN', "Menghapus data pajak keluaran ID #{$id} (Periode {$current['bulan']}/{$current['tahun']})", $user['id_karyawan'] ?? null);
+        logActivity($conn, [
+            'modul' => 'PAJAK_KELUARAN',
+            'aksi' => 'DELETE',
+            'id_referensi' => $id,
+            'nomor_referensi' => "{$current['bulan']}/{$current['tahun']}",
+            'deskripsi' => "Menghapus data pajak keluaran ID #{$id} (Periode {$current['bulan']}/{$current['tahun']})",
+            'id_karyawan' => $user['id_karyawan'] ?? null
+        ]);
 
         sendJson(true, 'Data pajak keluaran berhasil dihapus.');
     } else {
