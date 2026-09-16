@@ -64,7 +64,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                 <!-- Filter Tahun -->
                 <div class="col-md-3 col-6">
                     <select class="form-select filter-select font-monospace fw-semibold" id="filterTahun" onchange="loadPajakList(1)">
-                        <option value="0">-- Semua Tahun --</option>
+                        <option value="0">Semua Tahun</option>
                         <?php
                         $curYr = (int)date('Y');
                         for ($y = $curYr - 5; $y <= $curYr + 5; $y++) {
@@ -78,7 +78,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                 <!-- Filter Bulan -->
                 <div class="col-md-4 col-4">
                     <select class="form-select filter-select" id="filterBulan" onchange="loadPajakList(1)">
-                        <option value="0">-- Semua Bulan --</option>
+                        <option value="0">Semua Bulan</option>
                         <option value="1">Januari</option>
                         <option value="2">Februari</option>
                         <option value="3">Maret</option>
