@@ -187,9 +187,9 @@ $companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
                 <tr>
                     <th style="width: 35px;">No</th>
                     <th style="width: 180px;">PERIODE (BULAN / TAHUN)</th>
-                    <th style="width: 180px;" class="text-end">NILAI PPN KELUARAN</th>
                     <th>KETERANGAN</th>
                     <th style="width: 160px;">DIINPUT OLEH</th>
+                    <th style="width: 180px;" class="text-end">NILAI PPN KELUARAN</th>
                 </tr>
             </thead>
             <tbody id="printTableBody">
@@ -201,9 +201,8 @@ $companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
             </tbody>
             <tfoot>
                 <tr class="fw-bold text-dark">
-                    <td colspan="2" class="text-end py-2 pe-3 text-uppercase">Grand Total:</td>
+                    <td colspan="4" class="text-end py-2 pe-3 text-uppercase">Grand Total:</td>
                     <td class="text-end font-monospace py-2" id="printGrandPpn">0</td>
-                    <td colspan="2"></td>
                 </tr>
             </tfoot>
         </table>
@@ -263,9 +262,9 @@ function renderPrintRows(rows, summary) {
             <td>
                 <div class="fw-bold text-dark font-monospace">${escapeHtml(r.nama_bulan)} ${escapeHtml(r.tahun)}</div>
             </td>
-            <td class="text-end font-monospace fw-bold text-dark">${formatAngka(r.ppn_keluaran)}</td>
             <td>${escapeHtml(r.keterangan || '-')}</td>
             <td>${escapeHtml(r.nama_karyawan || 'Finance System')}</td>
+            <td class="text-end font-monospace fw-bold text-dark">${formatAngka(r.ppn_keluaran)}</td>
         </tr>`;
     });
 

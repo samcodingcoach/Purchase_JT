@@ -100,9 +100,9 @@ require_once __DIR__ . '/../../components/navbar.php';
                         <tr class="text-muted small text-uppercase align-middle">
                             <th class="ps-3 py-2 align-middle text-center" style="width: 50px;">No</th>
                             <th class="py-2 align-middle" style="min-width: 180px;">Periode</th>
-                            <th class="py-2 align-middle text-end" style="min-width: 180px;">Nilai PPN Keluaran</th>
-                            <th class="py-2 align-middle" style="min-width: 220px;">Keterangan</th>
+                            <th class="py-2 align-middle" style="min-width: 240px;">Keterangan</th>
                             <th class="py-2 align-middle" style="min-width: 160px;">Diinput Oleh</th>
+                            <th class="py-2 align-middle text-end" style="min-width: 180px;">Nilai PPN Keluaran</th>
                             <th class="pe-3 py-2 align-middle text-center" style="width: 60px;">Aksi</th>
                         </tr>
                     </thead>
@@ -115,9 +115,9 @@ require_once __DIR__ . '/../../components/navbar.php';
                     </tbody>
                     <tfoot class="table-light fw-bold" id="pajakTableFoot" style="display: none;">
                         <tr class="align-middle">
-                            <td colspan="2" class="ps-3 py-2 text-end text-uppercase">Grand Total:</td>
+                            <td colspan="4" class="ps-3 py-2 text-end text-uppercase">Grand Total:</td>
                             <td class="py-2 text-end text-primary font-monospace fs-6" id="footTotalPpn">0</td>
-                            <td colspan="3" class="pe-3 py-2"></td>
+                            <td class="pe-3 py-2"></td>
                         </tr>
                     </tfoot>
                 </table>
@@ -301,14 +301,14 @@ async function loadPajakReport(page = 1) {
                     <td class="py-2">
                         <div class="fw-bold text-dark">${escapeHtml(periode)}</div>
                     </td>
-                    <td class="py-2 text-end fw-bold text-primary font-monospace fs-6">
-                        ${nilai}
-                    </td>
                     <td class="py-2">
                         <div class="text-secondary small text-truncate" style="max-width: 260px;" title="${escapeHtml(ket)}">${escapeHtml(ket)}</div>
                     </td>
                     <td class="py-2">
                         <span class="text-dark fw-semibold small">${escapeHtml(penginput)}</span>
+                    </td>
+                    <td class="py-2 text-end fw-bold text-primary font-monospace fs-6">
+                        ${nilai}
                     </td>
                     <td class="pe-3 py-2 text-center">
                         <button type="button" class="btn btn-sm btn-outline-info p-0 d-inline-flex align-items-center justify-content-center text-dark" title="Lihat Rincian" onclick="showRincian(${idx})" style="width: 28px; height: 28px;">
