@@ -73,12 +73,77 @@ if ($method === 'GET') {
         sendJson(true, 'Data pajak keluaran ditemukan.', $data);
     }
 
+    $action = trim($_GET['action'] ?? '');
+
+    // MODE REKAPITULASI TAHUNAN PER BULAN (12 BULAN)
+    if ($action === 'rekapitulasi') {
+        $tahun = isset($_GET['tahun']) && is_numeric($_GET['tahun']) ? trim($_GET['tahun']) : date('Y');
+
+        $stmtRekap = $conn->prepare("SELECT 
+                                        pk.tahun,
+                                        pk.bulan,
+                                        COUNT(pk.id_pajak_keluaran) as jumlah_record,
+                                        SUM(pk.ppn_keluaran) as total_ppn_keluaran,
+                                        GROUP_CONCAT(pk.keterangan SEPARATOR '; ') as keterangan_gabung
+                                     FROM pajak_keluaran pk
+                                     WHERE pk.tahun = ?
+                                     GROUP BY pk.tahun, pk.bulan
+                                     ORDER BY CAST(pk.bulan AS UNSIGNED) ASC");
+        $stmtRekap->bind_param("s", $tahun);
+        $stmtRekap->execute();
+        $resRekap = $stmtRekap->get_result();
+
+        $rekapMap = [];
+        while ($r = $resRekap->fetch_assoc()) {
+            $bInt = (int)$r['bulan'];
+            $rekapMap[$bInt] = [
+                'jumlah_record' => (int)$r['jumlah_record'],
+                'total_ppn_keluaran' => (float)$r['total_ppn_keluaran'],
+                'keterangan' => $r['keterangan_gabung']
+            ];
+        }
+        $stmtRekap->close();
+
+        $rows = [];
+        $grandTotalPpn = 0;
+        $grandTotalRecord = 0;
+
+        for ($m = 1; $m <= 12; $m++) {
+            $mPad = str_pad((string)$m, 2, '0', STR_PAD_LEFT);
+            $namaBln = $namaBulanIndo[$mPad] ?? "Bulan $m";
+            $dataBln = $rekapMap[$m] ?? ['jumlah_record' => 0, 'total_ppn_keluaran' => 0, 'keterangan' => ''];
+
+            $grandTotalPpn += $dataBln['total_ppn_keluaran'];
+            $grandTotalRecord += $dataBln['jumlah_record'];
+
+            $rows[] = [
+                'tahun' => (int)$tahun,
+                'bulan' => $m,
+                'bulan_formatted' => $mPad,
+                'nama_bulan' => $namaBln,
+                'jumlah_record' => $dataBln['jumlah_record'],
+                'total_ppn_keluaran' => $dataBln['total_ppn_keluaran'],
+                'keterangan' => $dataBln['keterangan']
+            ];
+        }
+
+        sendJson(true, "Rekapitulasi Pajak Keluaran Tahun {$tahun} berhasil dimuat.", [
+            'tahun' => (int)$tahun,
+            'rows' => $rows,
+            'grand_totals' => [
+                'total_record' => $grandTotalRecord,
+                'grand_total_ppn_keluaran' => $grandTotalPpn
+            ]
+        ]);
+    }
+
     // List & Summary
     $tahun = trim($_GET['tahun'] ?? '');
     $bulan = trim($_GET['bulan'] ?? '');
     $q = trim($_GET['q'] ?? '');
     $page = max(1, intval($_GET['page'] ?? 1));
     $limit = max(5, min(100, intval($_GET['limit'] ?? 15)));
+    $isAll = isset($_GET['all']) && (int)$_GET['all'] === 1;
     $offset = ($page - 1) * $limit;
 
     $where = ["1=1"];
@@ -134,16 +199,22 @@ if ($method === 'GET') {
                 LEFT JOIN karyawan k ON pk.id_karyawan = k.id_karyawan
                 LEFT JOIN jabatan j ON k.id_jabatan = j.id_jabatan
                 WHERE $whereClause
-                ORDER BY pk.tahun DESC, CAST(pk.bulan AS UNSIGNED) DESC, pk.id_pajak_keluaran DESC
-                LIMIT ? OFFSET ?";
+                ORDER BY pk.tahun DESC, CAST(pk.bulan AS UNSIGNED) DESC, pk.id_pajak_keluaran DESC";
     
     $fetchParams = $params;
-    $fetchTypes = $types . "ii";
-    $fetchParams[] = $limit;
-    $fetchParams[] = $offset;
+    $fetchTypes = $types;
+
+    if (!$isAll) {
+        $sqlRows .= " LIMIT ? OFFSET ?";
+        $fetchParams[] = $limit;
+        $fetchParams[] = $offset;
+        $fetchTypes .= "ii";
+    }
 
     $stmtRows = $conn->prepare($sqlRows);
-    $stmtRows->bind_param($fetchTypes, ...$fetchParams);
+    if (!empty($fetchParams)) {
+        $stmtRows->bind_param($fetchTypes, ...$fetchParams);
+    }
     $stmtRows->execute();
     $resRows = $stmtRows->get_result();
 

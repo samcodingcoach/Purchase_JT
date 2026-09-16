@@ -261,6 +261,9 @@ if ($method === 'POST') {
     if (empty($nomorFakturVendor)) {
         sendJson(false, 'Nomor Faktur Vendor wajib diisi.', null, 422);
     }
+    if (($ratePajak > 0 || $nominalPajak > 0) && empty($nomorFakturPajak)) {
+        sendJson(false, 'Transaksi memiliki PPN. No. Seri e-Faktur Pajak wajib diisi.', null, 422);
+    }
 
     // Cek apakah RCV sudah pernah dibuatkan Faktur PO aktif sebelumnya
     $stmtCheck = $conn->prepare("SELECT id_faktur, nomor_faktur FROM faktur_po WHERE id_rcv = ? AND status != 'BATAL' LIMIT 1");
@@ -470,6 +473,9 @@ if ($method === 'PUT') {
 
     if (empty($nomorFakturVendor)) {
         sendJson(false, 'Nomor Faktur Vendor wajib diisi.', null, 422);
+    }
+    if (($ratePajak > 0 || $nominalPajak > 0) && empty($nomorFakturPajak)) {
+        sendJson(false, 'Transaksi memiliki PPN. No. Seri e-Faktur Pajak wajib diisi.', null, 422);
     }
 
     $tanggalJatuhTempo = date('Y-m-d', strtotime("$tanggalFaktur + $top days"));

@@ -267,7 +267,9 @@ textarea.form-control {
                                         <input type="date" class="form-control form-control-sm" id="tanggalFaktur" name="tanggal_faktur" value="<?= date('Y-m-d') ?>" onchange="calculateDueDate(); fetchNextFakturNumber();" required>
                                     </div>
                                     <div class="col-sm-6">
-                                        <label class="form-label small fw-semibold text-dark">No. Seri e-Faktur Pajak</label>
+                                        <label class="form-label small fw-semibold text-dark" id="labelNomorFakturPajak">
+                                            No. Seri e-Faktur Pajak <span id="reqAsteriskPajak" class="text-danger" style="display: none;">*</span>
+                                        </label>
                                         <input type="text" class="form-control form-control-sm font-monospace" id="nomorFakturPajak" name="nomor_faktur_pajak" placeholder="Contoh: 010.000-26.12345678">
                                     </div>
                                     <div class="col-sm-6">
@@ -734,8 +736,11 @@ function apply3WayDataToForm(d) {
     // Tab 4 Retur Alert
     renderReturAlert(d.retur_doc);
 
-    // Bottom Summary Financials
-    calculateFinancials();
+    // Validasi Nomor e-Faktur Pajak wajib jika ada PPN
+    const asterisk = document.getElementById('reqAsteriskPajak');
+    if (asterisk) {
+        asterisk.style.display = (ratePajak > 0) ? 'inline' : 'none';
+    }
 }
 
 function clearRcvSelection(e) {
@@ -963,6 +968,12 @@ function calculateFinancials() {
     document.getElementById('displayNominalPpnbm').textContent = formatRupiah(nominalPpnbm);
     document.getElementById('displayNominalPajak').textContent = formatRupiah(nominalPajak);
     document.getElementById('displayTotalTagihan').textContent = formatRupiah(grandTotal);
+
+    // Update indikator wajib isi No. Seri e-Faktur Pajak jika ada PPN
+    const asterisk = document.getElementById('reqAsteriskPajak');
+    if (asterisk) {
+        asterisk.style.display = (nominalPajak > 0 || ratePajak > 0) ? 'inline' : 'none';
+    }
 }
 
 function goToTab(tabId) {
@@ -1031,6 +1042,15 @@ async function submitFaktur(statusDokumen) {
     const dpp = Math.round(rawDpp);
     const nominalPpnbm = (ratePpnbm > 0) ? Math.round(rawDpp * (ratePpnbm / 100)) : 0;
     const nominalPajak = (ratePajak > 0) ? Math.round(rawDpp * (ratePajak / 100)) : 0;
+
+    // Validasi Wajib: Jika ada PPN (nominalPajak > 0 atau ratePajak > 0), No. Seri e-Faktur Pajak wajib diisi
+    const nomorFakturPajak = document.getElementById('nomorFakturPajak').value.trim();
+    if ((nominalPajak > 0 || ratePajak > 0) && !nomorFakturPajak) {
+        showToast('Transaksi memiliki PPN. Mohon isi No. Seri e-Faktur Pajak pada Tab 3.', 'warning');
+        goToTab('tab-tagihan');
+        document.getElementById('nomorFakturPajak').focus();
+        return;
+    }
 
     let grandTotal = 0;
     if (divisor > 1.0) {
