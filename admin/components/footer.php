@@ -213,27 +213,31 @@ $fullLocation = trim($companyAddress . ($companyCity ? ', ' . $companyCity : '')
     </div>
 </div>
 
-<!-- Modal Verifikasi Password Dokumen Terproteksi -->
-<div class="modal fade" id="modalVerifyDokumenPassword" tabindex="-1" aria-labelledby="modalVerifyDokumenPasswordLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
-        <div class="modal-content border-0 shadow-lg rounded-3">
-            <div class="modal-header bg-dark text-white py-2 px-3">
-                <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-shield-lock-fill text-warning fs-5"></i>
-                    <h6 class="modal-title fw-bold mb-0" id="modalVerifyDokumenPasswordLabel">Dokumen Terproteksi</h6>
-                </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+<!-- Modal Verifikasi Password Dokumen Terproteksi (Sederhana) -->
+<div class="modal fade" id="modalVerifyDokumenPassword" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
+        <div class="modal-content border-0 shadow rounded-3">
+            <div class="modal-header py-2 px-3 border-bottom">
+                <h6 class="modal-title fw-bold text-dark mb-0">
+                     Dokumen Terproteksi
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="formVerifyDokumenPassword" onsubmit="submitVerifyDokumenPassword(event)">
                 <input type="hidden" id="verifyDokumenId" value="">
+                <input type="hidden" id="verifyDokumenCallerKey" value="DEFAULT">
                 <div class="modal-body p-3">
-                    <p class="small text-muted mb-2">Berkas ini dilindungi password. Silakan masukkan password untuk membuka:</p>
-                    <input type="password" class="form-control form-control-sm font-monospace text-center fw-bold" id="verifyDokumenPasswordInput" placeholder="Masukkan Password" required autocomplete="off">
+                    <label class="form-label small text-muted mb-2">Masukkan Password / PIN untuk membuka:</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-key"></i></span>
+                        <input type="password" class="form-control border-start-0 border-end-0 font-monospace text-center fw-bold" id="verifyDokumenPasswordInput" placeholder="Password Dokumen" required autocomplete="off" autofocus>
+                        
+                    </div>
                 </div>
-                <div class="modal-footer bg-light py-2 px-3 d-flex justify-content-end gap-2">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+                <div class="modal-footer py-2 px-3 bg-light border-0 d-flex justify-content-end gap-2">
+                    
                     <button type="submit" class="btn btn-primary btn-sm fw-semibold" id="btnSubmitVerifyPassword">
-                        <i class="bi bi-unlock me-1"></i> Buka File
+                        Buka File
                     </button>
                 </div>
             </form>
@@ -931,8 +935,13 @@ async function submitUploadDokumen(e) {
             const modal = bootstrap.Modal.getInstance(modalEl);
             if (modal) modal.hide();
 
-            // Refresh table lampiran
+            // Refresh table lampiran modal / tab
             loadDokumenAttachments(nomorDok, tipeDok, callerKey);
+
+            // Refresh halaman index dokumen jika sedang di halaman Arsip Dokumen
+            if (typeof loadTableDokumen === 'function') {
+                loadTableDokumen(typeof currentPage !== 'undefined' ? currentPage : 1);
+            }
         } else {
             showToast(json.message || 'Gagal mengunggah lampiran.', 'danger');
         }
@@ -1029,12 +1038,19 @@ async function loadDokumenAttachments(nomorDokumen, tipeDokumen = '', callerKey 
     }
 }
 
-function handleOpenDokumen(idDokumen, isProtected, fileUrl, externalUrl, callerKey) {
+function handleOpenDokumen(idDokumen, isProtected, fileUrl, externalUrl, callerKey = 'DEFAULT') {
     if (isProtected) {
         document.getElementById('formVerifyDokumenPassword').reset();
         document.getElementById('verifyDokumenId').value = idDokumen;
-        const modal = new bootstrap.Modal(document.getElementById('modalVerifyDokumenPassword'));
+        document.getElementById('verifyDokumenCallerKey').value = callerKey;
+        
+        const modalEl = document.getElementById('modalVerifyDokumenPassword');
+        let modal = bootstrap.Modal.getInstance(modalEl);
+        if (!modal) modal = new bootstrap.Modal(modalEl);
         modal.show();
+        setTimeout(() => {
+            document.getElementById('verifyDokumenPasswordInput')?.focus();
+        }, 300);
     } else {
         // Langsung buka atau unduh
         const targetUrl = fileUrl || externalUrl;
@@ -1048,6 +1064,9 @@ function handleOpenDokumen(idDokumen, isProtected, fileUrl, externalUrl, callerK
             }).then(() => {
                 const params = currentLoadedDokumenParams[callerKey];
                 if (params) loadDokumenAttachments(params.nomor, params.tipe, callerKey);
+                if (typeof loadTableDokumen === 'function') {
+                    loadTableDokumen(typeof currentPage !== 'undefined' ? currentPage : 1);
+                }
             });
         }
     }
@@ -1056,9 +1075,13 @@ function handleOpenDokumen(idDokumen, isProtected, fileUrl, externalUrl, callerK
 async function submitVerifyDokumenPassword(e) {
     e.preventDefault();
     const idDokumen = document.getElementById('verifyDokumenId').value;
+    const callerKey = document.getElementById('verifyDokumenCallerKey').value || 'DEFAULT';
     const password = document.getElementById('verifyDokumenPasswordInput').value;
     const btn = document.getElementById('btnSubmitVerifyPassword');
+    const originalText = btn.innerHTML;
+    
     btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Memverifikasi...';
 
     try {
         const res = await fetch(`${BASE_URL}/api/dokumen/index.php?action=verify_download`, {
@@ -1074,13 +1097,22 @@ async function submitVerifyDokumenPassword(e) {
             if (modal) modal.hide();
 
             window.open(json.data.url, '_blank');
+
+            // Refresh counter
+            const params = currentLoadedDokumenParams[callerKey];
+            if (params) loadDokumenAttachments(params.nomor, params.tipe, callerKey);
+            if (typeof loadTableDokumen === 'function') {
+                loadTableDokumen(typeof currentPage !== 'undefined' ? currentPage : 1);
+            }
         } else {
-            showToast(json.message || 'Password salah.', 'danger');
+            showToast(json.message || 'Password / PIN yang dimasukkan salah.', 'danger');
+            document.getElementById('verifyDokumenPasswordInput')?.focus();
         }
     } catch (err) {
         showToast('Gagal memverifikasi password dokumen.', 'danger');
     } finally {
         btn.disabled = false;
+        btn.innerHTML = originalText;
     }
 }
 

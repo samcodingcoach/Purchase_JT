@@ -327,6 +327,15 @@ if ($method === 'DELETE' || ($method === 'POST' && $action === 'delete')) {
         sendJson(false, 'Dokumen tidak ditemukan.', null, 404);
     }
 
+    // Hak akses: hanya uploader (atau role Admin) yang berhak menghapus dokumen
+    $currentIdKaryawan = intval($user['id_karyawan'] ?? 0);
+    $docOwnerId = intval($doc['id_karyawan'] ?? 0);
+    $userRole = strtoupper($user['role'] ?? $user['nama_role'] ?? '');
+
+    if ($currentIdKaryawan !== $docOwnerId && !in_array($userRole, ['ADMIN', 'SUPERADMIN', 'DEVELOPER'])) {
+        sendJson(false, 'Anda tidak memiliki hak akses untuk menghapus dokumen ini. Dokumen hanya dapat dihapus oleh pengunggah.', null, 403);
+    }
+
     // Hapus file fisik jika ada
     if (!empty($doc['file'])) {
         $filePath = __DIR__ . '/../../uploads/dokumen/' . $doc['file'];
