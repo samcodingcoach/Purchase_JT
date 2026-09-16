@@ -32,14 +32,16 @@ if ($idPo) {
                             FROM purchase_order po
                             LEFT JOIN vendor v ON po.id_vendor = v.id_vendor
                             LEFT JOIN site s ON po.id_site = s.id_site
-                            WHERE po.id_po = ? AND po.status = 'DIPROSES VENDOR' LIMIT 1");
+                            WHERE po.id_po = ? AND po.status = 'DIPROSES VENDOR' 
+                              AND NOT EXISTS (SELECT 1 FROM receiving_order ro WHERE ro.id_po = po.id_po)
+                            LIMIT 1");
     $stmt->bind_param("i", $idPo);
     $stmt->execute();
     $po = $stmt->get_result()->fetch_assoc();
     $stmt->close();
 
     if (!$po) {
-        jsonResponse(false, 'Purchase Order tidak ditemukan atau belum berstatus DIPROSES VENDOR.', null, 404);
+        jsonResponse(false, 'Purchase Order tidak ditemukan, belum berstatus DIPROSES VENDOR, atau sudah pernah dibuatkan penerimaan barang.', null, 404);
     }
 
     // Ambil detail item barang (HANYA QTY & NAMA, TANPA HARGA)
@@ -63,7 +65,7 @@ if ($idPo) {
     jsonResponse(true, 'Data Purchase Order siap terima berhasil dimuat.', $po);
 }
 
-// 2. DAFTAR SELURUH PO YANG SEDANG DIPROSES VENDOR
+// 2. DAFTAR SELURUH PO YANG SEDANG DIPROSES VENDOR (YANG BELUM DITERIMA)
 $stmtList = $conn->prepare("SELECT po.id_po, po.nomor_po, po.tanggal_po, po.status, po.prioritas,
                                    po.pengiriman, po.tanggal_pengiriman,
                                    v.id_vendor, v.nama_perusahaan as nama_vendor,
@@ -74,6 +76,7 @@ $stmtList = $conn->prepare("SELECT po.id_po, po.nomor_po, po.tanggal_po, po.stat
                             LEFT JOIN vendor v ON po.id_vendor = v.id_vendor
                             LEFT JOIN site s ON po.id_site = s.id_site
                             WHERE po.status = 'DIPROSES VENDOR'
+                              AND NOT EXISTS (SELECT 1 FROM receiving_order ro WHERE ro.id_po = po.id_po)
                             ORDER BY po.id_po DESC");
 $stmtList->execute();
 $list = $stmtList->get_result()->fetch_all(MYSQLI_ASSOC);

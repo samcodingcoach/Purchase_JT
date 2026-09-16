@@ -14,35 +14,7 @@ $user = requireAuth([ROLE_PURCHASING, ROLE_ADMIN, ROLE_MANAGER]);
 $pageTitle = 'Buat Faktur PO';
 $pageHeading = 'Formulir Faktur Pembelian';
 
-// Ambil Dokumen Penerimaan RCV yang siap difakturkan:
-// 1. Penerimaan kondisi lengkap/baik (status = 1) ATAU
-// 2. Penerimaan yang memiliki barang cacat tapi Retur PO sudah disetujui / selesai (Potong Tagihan / Tukar Unit)
-// 3. Belum pernah dibuatkan Faktur PO aktif
-$rcvOptions = [];
-$qRcv = "SELECT r.id_rcv, r.nomor_rcv, r.nomor_sj, r.tanggal_diterima, r.tanggal_rcv,
-                po.id_po, po.nomor_po, po.tanggal_po, po.term_of_payment,
-                v.id_vendor, v.kode_vendor, v.nama_perusahaan AS nama_vendor,
-                s.id_site, s.nama_site
-         FROM receiving_order r
-         JOIN purchase_order po ON r.id_po = po.id_po
-         JOIN vendor v ON po.id_vendor = v.id_vendor
-         JOIN site s ON po.id_site = s.id_site
-         WHERE (
-             r.status = 1 
-             OR EXISTS (
-                 SELECT 1 FROM retur_po rp 
-                 WHERE rp.id_rcv = r.id_rcv AND rp.status IN ('DISETUJUI VENDOR', 'DITERIMA')
-             )
-         )
-           AND NOT EXISTS (SELECT 1 FROM faktur_po fp WHERE fp.id_rcv = r.id_rcv AND fp.status != 'BATAL')
-         ORDER BY r.tanggal_diterima ASC, r.id_rcv ASC";
-$resRcv = $conn->query($qRcv);
-if ($resRcv) {
-    while ($row = $resRcv->fetch_assoc()) {
-        $rcvOptions[] = $row;
-    }
-}
-
+// Include Layout Components
 require_once __DIR__ . '/../../components/header.php';
 require_once __DIR__ . '/../../components/sidebar.php';
 require_once __DIR__ . '/../../components/navbar.php';
@@ -154,6 +126,17 @@ textarea.form-control {
                             <div class="col-lg-6">
                                 <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Pilih Dokumen Penerimaan Barang</h6>
                                 
+                                <!-- Nomor Faktur Sistem (Readonly & Dinamis) -->
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold text-dark">Nomor Faktur (Sistem) <span class="text-danger">*</span></label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="text" class="form-control font-monospace fw-bold text-primary bg-light" id="inputNomorFaktur" readonly required placeholder="Memuat nomor Faktur...">
+                                        <button type="button" class="btn btn-outline-secondary" onclick="fetchNextFakturNumber()" title="Generate Ulang Nomor">
+                                            <i class="bi bi-arrow-clockwise"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
                                 <div class="mb-3 position-relative" id="rcvSearchableWrapper">
                                     <label class="form-label small fw-semibold text-dark">
                                         Dokumen Penerimaan (RCV) <span class="text-danger">*</span>
@@ -172,9 +155,7 @@ textarea.form-control {
                                         </div>
                                     </div>
 
-                                    <div class="form-text small text-muted mt-1">
-                                        <i class="bi bi-info-circle me-1"></i>Hanya menampilkan dokumen RCV yang sudah selesai dan belum pernah diterbitkan faktur PO.
-                                    </div>
+                                    
 
                                     <!-- Searchable Dropdown Menu -->
                                     <div class="rcv-dropdown-menu shadow-lg border rounded-3 p-2 bg-white" id="rcvDropdownMenu" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 1050;">
@@ -190,7 +171,7 @@ textarea.form-control {
 
                                 <div class="mb-3">
                                     <label class="form-label small fw-semibold text-dark">No. Surat Jalan Vendor (RCV)</label>
-                                    <input type="text" class="form-control form-control-sm font-monospace bg-light" id="displayNoSj" placeholder="Pilih RCV terlebih dahulu" readonly>
+                                    <input type="text" class="form-control form-control-sm font-monospace bg-light" id="displayNoSj"  readonly>
                                 </div>
                             </div>
 
@@ -200,15 +181,15 @@ textarea.form-control {
                                 <div class="row g-3">
                                     <div class="col-12">
                                         <label class="form-label small fw-semibold text-dark">No. Purchase Order (PO)</label>
-                                        <input type="text" class="form-control form-control-sm font-monospace bg-light fw-bold text-primary" id="displayNoPo" placeholder="Pilih RCV terlebih dahulu" readonly>
+                                        <input type="text" class="form-control form-control-sm font-monospace bg-light fw-bold text-primary" id="displayNoPo"  readonly>
                                     </div>
                                     <div class="col-sm-6">
                                         <label class="form-label small fw-semibold text-dark">Tanggal Penerimaan di Gudang</label>
-                                        <input type="text" class="form-control form-control-sm bg-light" id="displayTglDiterima" placeholder="Pilih RCV terlebih dahulu" readonly>
+                                        <input type="text" class="form-control form-control-sm bg-light" id="displayTglDiterima"  readonly>
                                     </div>
                                     <div class="col-sm-6">
                                         <label class="form-label small fw-semibold text-dark">Lokasi Site / Gudang</label>
-                                        <input type="text" class="form-control form-control-sm bg-light" id="displayNamaSite" placeholder="Pilih RCV terlebih dahulu" readonly>
+                                        <input type="text" class="form-control form-control-sm bg-light" id="displayNamaSite"  readonly>
                                     </div>
                                 </div>
                             </div>
@@ -256,7 +237,7 @@ textarea.form-control {
                             <div class="col-12">
                                 <label class="form-label small fw-semibold text-dark">Atas Nama Rekening</label>
                                 <input type="text" class="form-control fw-semibold" id="atasNamaRekening" name="atas_nama_rekening" placeholder="Nama Pemilik Rekening sesuai Invoice">
-                                <div class="form-text small text-muted">Data rekening otomatis dimuat dari master vendor, namun dapat disesuaikan jika tertulis nomor rekening khusus pada lembar invoice vendor.</div>
+                                
                             </div>
                         </div>
 
@@ -283,7 +264,7 @@ textarea.form-control {
                                     </div>
                                     <div class="col-sm-6">
                                         <label class="form-label small fw-semibold text-dark">Tanggal Invoice Vendor <span class="text-danger">*</span></label>
-                                        <input type="date" class="form-control form-control-sm" id="tanggalFaktur" name="tanggal_faktur" value="<?= date('Y-m-d') ?>" onchange="calculateDueDate()" required>
+                                        <input type="date" class="form-control form-control-sm" id="tanggalFaktur" name="tanggal_faktur" value="<?= date('Y-m-d') ?>" onchange="calculateDueDate(); fetchNextFakturNumber();" required>
                                     </div>
                                     <div class="col-sm-6">
                                         <label class="form-label small fw-semibold text-dark">No. Seri e-Faktur Pajak</label>
@@ -388,10 +369,10 @@ textarea.form-control {
 
                     <!-- TAB 5: CATATAN FAKTUR -->
                     <div class="tab-pane fade" id="tab-catatan" role="tabpanel">
-                        <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Catatan &amp; Instruksi Khusus Faktur</h6>
+                        
                         <div class="mb-3">
                             <label class="form-label small fw-semibold text-dark">Catatan Faktur Pembelian (Internal &amp; Pelunasan)</label>
-                            <textarea class="form-control" id="keteranganFaktur" name="keterangan" rows="6" placeholder="Tambahkan catatan terkait verifikasi tagihan vendor, kesepakatan diskon khusus, jadwal pembayaran, atau instruksi transfer rekening bank..."></textarea>
+                            <textarea class="form-control" id="keteranganFaktur" name="keterangan" rows="6" ></textarea>
                         </div>
 
                         <div class="mt-4 pt-3 border-top d-flex justify-content-start">
@@ -431,7 +412,7 @@ textarea.form-control {
                                 <span class="text-muted">Diskon Tambahan Faktur:</span>
                                 <div class="input-group input-group-sm" style="max-width: 170px;">
                                     <span class="input-group-text">Rp</span>
-                                    <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace" id="inputDiskon" value="0" oninput="calculateFinancials()">
+                                    <input type="text" class="form-control form-control-sm text-end font-monospace" id="inputDiskon" value="0" oninput="formatRupiahInputVal(this); calculateFinancials();">
                                 </div>
                             </div>
                             <div class="d-flex justify-content-between align-items-center mb-2 small pt-2 border-top">
@@ -448,15 +429,12 @@ textarea.form-control {
                                 <span class="font-monospace fw-semibold text-warning-emphasis" id="displayNominalPpnbm">Rp 0</span>
                             </div>
 
-                            <!-- ROW PPN -->
+                            <!-- ROW PPN (FIXED / SESUAI PO) -->
                             <div class="d-flex justify-content-between align-items-center mb-2 small">
                                 <div class="d-flex align-items-center gap-2">
                                     <span class="text-muted">Tarif PPN:</span>
-                                    <select class="form-select form-select-sm py-0" id="selectRatePajak" style="width: 80px;" onchange="calculateFinancials()">
-                                        <option value="0">0%</option>
-                                        <option value="11">11%</option>
-                                        <option value="12">12%</option>
-                                    </select>
+                                    <input type="hidden" id="selectRatePajak" value="0">
+                                    <span class="badge bg-light text-dark border font-monospace fw-bold px-2 py-1" id="displayRatePajak">0%</span>
                                     <span id="badgePajakInclusive" class="badge bg-info-subtle text-info-emphasis border border-info-subtle" style="font-size:0.68rem; display:none;">Termasuk PPN</span>
                                 </div>
                                 <span class="font-monospace fw-semibold" id="displayNominalPajak">Rp 0</span>
@@ -466,7 +444,7 @@ textarea.form-control {
                                 <span class="text-muted">Biaya Lain-lain / Ongkir:</span>
                                 <div class="input-group input-group-sm" style="max-width: 170px;">
                                     <span class="input-group-text">Rp</span>
-                                    <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace" id="inputBiayaLain" value="0" oninput="calculateFinancials()">
+                                    <input type="text" class="form-control form-control-sm text-end font-monospace" id="inputBiayaLain" value="0" oninput="formatRupiahInputVal(this); calculateFinancials();">
                                 </div>
                             </div>
 
@@ -485,7 +463,7 @@ textarea.form-control {
                         <i class="bi bi-save me-1"></i> Simpan Draft
                     </button>
                     <button type="button" class="btn btn-primary btn-sm px-4 shadow-sm fw-semibold" id="btnSaveFaktur" onclick="submitFaktur('BELUM DIBAYAR')">
-                        <i class="bi bi-check2-circle me-1"></i> Terbitkan Faktur (Simpan)
+                        <i class="bi bi-check2-circle me-1"></i> Terbitkan Faktur
                     </button>
                 </div>
             </div>
@@ -494,11 +472,12 @@ textarea.form-control {
 </div>
 
 <script>
-const rawRcvData = <?= json_encode($rcvOptions, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+let rawRcvData = [];
 let active3WayData = null;
 
-document.addEventListener('DOMContentLoaded', () => {
-    populateRcvDropdownOptions(rawRcvData);
+document.addEventListener('DOMContentLoaded', async () => {
+    await fetchNextFakturNumber();
+    await loadRcvReadyList();
     calculateDueDate();
 
     // Tutup dropdown RCV & Bank jika klik di luar
@@ -628,6 +607,30 @@ function populateRcvDropdownOptions(items) {
     container.innerHTML = html;
 }
 
+async function fetchNextFakturNumber() {
+    const tgl = document.getElementById('tanggalFaktur') ? document.getElementById('tanggalFaktur').value : '';
+    const res = await apiRequest(`/api/faktur_po/get_next_number.php?tanggal=${encodeURIComponent(tgl || '')}`);
+    if (res && res.success && res.data && res.data.nomor_faktur) {
+        document.getElementById('inputNomorFaktur').value = res.data.nomor_faktur;
+    }
+}
+
+async function loadRcvReadyList() {
+    try {
+        const res = await apiRequest('/api/faktur_po/lookup_po_rcv.php');
+        if (res && res.success && Array.isArray(res.data)) {
+            rawRcvData = res.data;
+            populateRcvDropdownOptions(rawRcvData);
+        } else {
+            rawRcvData = [];
+            populateRcvDropdownOptions([]);
+        }
+    } catch (e) {
+        rawRcvData = [];
+        populateRcvDropdownOptions([]);
+    }
+}
+
 function filterRcvList() {
     const query = document.getElementById('rcvSearchInput').value.toLowerCase().trim();
     if (!query) {
@@ -699,10 +702,15 @@ function apply3WayDataToForm(d) {
     
     // Auto sync PPN dan PPnBM dari PO
     const ratePpnbm = parseInt(d.rate_ppnbm || 0);
+    let lockedRatePajak = 0;
     if (d.rate_pajak !== undefined && d.rate_pajak !== null) {
-        document.getElementById('selectRatePajak').value = d.rate_pajak;
+        lockedRatePajak = parseInt(d.rate_pajak) || 0;
     } else {
-        document.getElementById('selectRatePajak').value = (ratePpnbm > 0) ? 12 : 11;
+        lockedRatePajak = (ratePpnbm > 0) ? 12 : 11;
+    }
+    document.getElementById('selectRatePajak').value = lockedRatePajak;
+    if (document.getElementById('displayRatePajak')) {
+        document.getElementById('displayRatePajak').textContent = `${lockedRatePajak}%`;
     }
     
     // Status Inklusif
@@ -750,6 +758,13 @@ function clearRcvSelection(e) {
     if (document.getElementById('namaBank')) document.getElementById('namaBank').value = '';
     if (document.getElementById('nomorRekening')) document.getElementById('nomorRekening').value = '';
     if (document.getElementById('atasNamaRekening')) document.getElementById('atasNamaRekening').value = '';
+
+    document.getElementById('selectRatePajak').value = '0';
+    if (document.getElementById('displayRatePajak')) {
+        document.getElementById('displayRatePajak').textContent = '0%';
+    }
+    const badgeInclusive = document.getElementById('badgePajakInclusive');
+    if (badgeInclusive) badgeInclusive.style.display = 'none';
 
     active3WayData = null;
     document.getElementById('matchingItemsBody').innerHTML = `
@@ -867,6 +882,22 @@ function calculateDueDate() {
     display.value = `${dd}/${mm}/${yyyy} (${top} Hari)`;
 }
 
+function parseInputCurrency(val) {
+    if (typeof val === 'number') return val;
+    if (!val) return 0;
+    const cleaned = String(val).replace(/\D/g, '');
+    return parseFloat(cleaned) || 0;
+}
+
+function formatRupiahInputVal(input) {
+    const raw = (input.value || '').replace(/\D/g, '');
+    if (!raw) {
+        input.value = '0';
+        return;
+    }
+    input.value = new Intl.NumberFormat('id-ID').format(parseInt(raw, 10));
+}
+
 function calculateFinancials() {
     if (!active3WayData) {
         document.getElementById('displaySubtotalPo').textContent = 'Rp 0';
@@ -884,8 +915,8 @@ function calculateFinancials() {
     const subPo = parseFloat(active3WayData.subtotal_po) || 0;
     const subRcv = parseFloat(active3WayData.subtotal_diterima) || 0;
     const nilaiRetur = parseFloat(active3WayData.nilai_retur) || 0;
-    const diskon = parseFloat(document.getElementById('inputDiskon').value) || 0;
-    const biayaLain = parseFloat(document.getElementById('inputBiayaLain').value) || 0;
+    const diskon = parseInputCurrency(document.getElementById('inputDiskon').value);
+    const biayaLain = parseInputCurrency(document.getElementById('inputBiayaLain').value);
     const ratePajak = parseInt(document.getElementById('selectRatePajak').value) || 0;
     const ratePpnbm = parseInt(active3WayData.rate_ppnbm) || 0;
     const isTermasukPajak = (parseInt(active3WayData.total_termasuk_pajak) === 1);
@@ -901,9 +932,10 @@ function calculateFinancials() {
         divisor += (ratePajak / 100);
     }
 
-    const dpp = Math.round(dasarSetelahDiskon / divisor);
-    const nominalPpnbm = (ratePpnbm > 0) ? Math.round(dpp * (ratePpnbm / 100)) : 0;
-    const nominalPajak = (ratePajak > 0) ? Math.round(dpp * (ratePajak / 100)) : 0;
+    const rawDpp = dasarSetelahDiskon / divisor;
+    const dpp = Math.round(rawDpp);
+    const nominalPpnbm = (ratePpnbm > 0) ? Math.round(rawDpp * (ratePpnbm / 100)) : 0;
+    const nominalPajak = (ratePajak > 0) ? Math.round(rawDpp * (ratePajak / 100)) : 0;
 
     let grandTotal = 0;
     if (divisor > 1.0) {
@@ -975,8 +1007,8 @@ async function submitFaktur(statusDokumen) {
         return;
     }
 
-    const diskon = parseFloat(document.getElementById('inputDiskon').value) || 0;
-    const biayaLain = parseFloat(document.getElementById('inputBiayaLain').value) || 0;
+    const diskon = parseInputCurrency(document.getElementById('inputDiskon').value);
+    const biayaLain = parseInputCurrency(document.getElementById('inputBiayaLain').value);
     const ratePajak = parseInt(document.getElementById('selectRatePajak').value) || 0;
     const ratePpnbm = parseInt(active3WayData.rate_ppnbm) || 0;
     const subRcv = parseFloat(active3WayData.subtotal_diterima) || 0;
@@ -995,9 +1027,10 @@ async function submitFaktur(statusDokumen) {
         divisor += (ratePajak / 100);
     }
 
-    const dpp = Math.round(dasarSetelahDiskon / divisor);
-    const nominalPpnbm = (ratePpnbm > 0) ? Math.round(dpp * (ratePpnbm / 100)) : 0;
-    const nominalPajak = (ratePajak > 0) ? Math.round(dpp * (ratePajak / 100)) : 0;
+    const rawDpp = dasarSetelahDiskon / divisor;
+    const dpp = Math.round(rawDpp);
+    const nominalPpnbm = (ratePpnbm > 0) ? Math.round(rawDpp * (ratePpnbm / 100)) : 0;
+    const nominalPajak = (ratePajak > 0) ? Math.round(rawDpp * (ratePajak / 100)) : 0;
 
     let grandTotal = 0;
     if (divisor > 1.0) {
@@ -1006,7 +1039,9 @@ async function submitFaktur(statusDokumen) {
         grandTotal = dpp + nominalPpnbm + nominalPajak + biayaLain;
     }
 
+    const nomorFakturSistem = (document.getElementById('inputNomorFaktur') ? document.getElementById('inputNomorFaktur').value : '').trim();
     const payload = {
+        nomor_faktur: nomorFakturSistem,
         id_rcv: parseInt(idRcv),
         id_po: parseInt(document.getElementById('hiddenIdPo').value),
         id_vendor: parseInt(document.getElementById('hiddenIdVendor').value),

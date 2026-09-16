@@ -135,7 +135,7 @@ if ($idRcv > 0) {
 // MODE 2: Ambil daftar ringkas Dokumen RCV & PO yang siap dibuatkan Faktur (belum difakturkan)
 $search = trim($_GET['q'] ?? '');
 
-$sqlList = "SELECT r.id_rcv, r.nomor_rcv, r.nomor_sj, r.tanggal_diterima,
+$sqlList = "SELECT r.id_rcv, r.nomor_rcv, r.nomor_sj, r.tanggal_diterima, r.tanggal_rcv,
                    po.id_po, po.nomor_po, po.tanggal_po, po.term_of_payment,
                    v.id_vendor, v.kode_vendor, v.nama_perusahaan AS nama_vendor,
                    s.id_site, s.nama_site
@@ -143,7 +143,13 @@ $sqlList = "SELECT r.id_rcv, r.nomor_rcv, r.nomor_sj, r.tanggal_diterima,
             JOIN purchase_order po ON r.id_po = po.id_po
             JOIN vendor v ON po.id_vendor = v.id_vendor
             JOIN site s ON po.id_site = s.id_site
-            WHERE r.status = 1
+            WHERE (
+                r.status = 1 
+                OR EXISTS (
+                    SELECT 1 FROM retur_po rp 
+                    WHERE rp.id_rcv = r.id_rcv AND rp.status IN ('DISETUJUI VENDOR', 'DITERIMA')
+                )
+            )
               AND NOT EXISTS (SELECT 1 FROM faktur_po fp WHERE fp.id_rcv = r.id_rcv AND fp.status != 'BATAL') ";
 
 $params = [];

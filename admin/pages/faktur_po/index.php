@@ -41,6 +41,13 @@ require_once __DIR__ . '/../../components/navbar.php';
     text-overflow: ellipsis !important;
     white-space: nowrap !important;
     overflow: hidden !important;
+    display: inline-block !important;
+}
+.filter-select option {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
 }
 .filter-item-control {
     display: flex;
@@ -78,7 +85,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                     </div>
                 </div>
                 <!-- Site Filter -->
-                <div style="width: 210px; max-width: 210px;">
+                <div style="width: 270px; max-width: 270px;">
                     <select class="form-select filter-select text-truncate" id="filterSite" onchange="loadFakturList(1)" style="width: 100%; max-width: 100%;" title="Filter Site">
                         <option value="">Semua Site / Gudang</option>
                         <?php foreach ($sites as $s): ?>
@@ -100,7 +107,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                 <!-- Reset Button -->
                 <div>
                     <button type="button" class="btn btn-outline-secondary px-3 shadow-none filter-btn" onclick="resetFilters()" title="Reset Filter">
-                        <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>
                     </button>
                 </div>
             </div>

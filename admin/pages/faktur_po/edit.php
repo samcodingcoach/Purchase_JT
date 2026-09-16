@@ -7,12 +7,8 @@
 
 require_once __DIR__ . '/../../../config/config.php';
 require_once __DIR__ . '/../../../config/session.php';
-require_once __DIR__ . '/../../../config/koneksi.php';
 
 $user = requireAuth([ROLE_PURCHASING, ROLE_ADMIN, ROLE_MANAGER]);
-
-$pageTitle = 'Edit Faktur PO';
-$pageHeading = 'Formulir Edit Faktur Pembelian';
 
 $idFaktur = isset($_GET['id']) ? intval($_GET['id']) : (isset($_GET['id_faktur']) ? intval($_GET['id_faktur']) : 0);
 
@@ -21,52 +17,8 @@ if ($idFaktur <= 0) {
     exit;
 }
 
-// Ambil Detail Faktur PO
-$sql = "SELECT fp.*,
-               po.nomor_po, po.tanggal_po, po.total_termasuk_pajak,
-               rcv.nomor_rcv, rcv.nomor_sj AS nomor_sj_rcv, rcv.tanggal_diterima AS tanggal_rcv_diterima,
-               rp.nomor_po_retur, rp.kompensasi AS retur_kompensasi, rp.total AS retur_total,
-               v.kode_vendor, v.nama_perusahaan AS nama_vendor, v.no_telepon AS telepon_vendor, v.email AS email_vendor,
-               s.nama_site, s.kode_site
-        FROM faktur_po fp
-        JOIN purchase_order po ON fp.id_po = po.id_po
-        JOIN receiving_order rcv ON fp.id_rcv = rcv.id_rcv
-        LEFT JOIN retur_po rp ON (rp.id_rcv = fp.id_rcv OR rp.id_po = fp.id_po)
-        JOIN vendor v ON fp.id_vendor = v.id_vendor
-        JOIN site s ON fp.id_site = s.id_site
-        WHERE fp.id_faktur = ? LIMIT 1";
-
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("i", $idFaktur);
-$stmt->execute();
-$faktur = $stmt->get_result()->fetch_assoc();
-$stmt->close();
-
-if (!$faktur) {
-    header('Location: ' . BASE_URL . '/admin/pages/faktur_po/index.php');
-    exit;
-}
-
-// Cek aturan bisnis: Faktur dengan status SEBAGIAN DIBAYAR, LUNAS, atau BATAL tidak boleh diedit
-$statusUpper = strtoupper((string)$faktur['status']);
-$isLocked = in_array($statusUpper, ['SEBAGIAN DIBAYAR', 'LUNAS', 'BATAL']) || floatval($faktur['terbayar']) > 0;
-
-// Ambil Rincian Barang Faktur
-$sqlD = "SELECT fpd.*, b.kode_barang, b.nama_barang, b.satuan AS satuan_master,
-                kat.nama_kategori, mrk.nama_merk
-         FROM faktur_po_detail fpd
-         JOIN barang b ON fpd.id_barang = b.id_barang
-         LEFT JOIN kategori_barang kat ON b.id_kategori = kat.id_kategori
-         LEFT JOIN merk_barang mrk ON b.id_merk = mrk.id_merk
-         WHERE fpd.id_faktur = ?
-         ORDER BY fpd.id_faktur_detail ASC";
-$stmtD = $conn->prepare($sqlD);
-$stmtD->bind_param("i", $idFaktur);
-$stmtD->execute();
-$items = $stmtD->get_result()->fetch_all(MYSQLI_ASSOC);
-$stmtD->close();
-
-$faktur['items'] = $items;
+$pageTitle = 'Edit Faktur PO';
+$pageHeading = 'Formulir Edit Faktur Pembelian';
 
 require_once __DIR__ . '/../../components/header.php';
 require_once __DIR__ . '/../../components/sidebar.php';
@@ -101,7 +53,7 @@ textarea.form-control {
         <div>
             <h4 class="fw-bold text-dark mb-0">Edit Faktur Purchase Order (PO)</h4>
             <div class="small text-muted mt-1">
-                No. Faktur Sistem: <strong class="font-monospace text-primary"><?= htmlspecialchars($faktur['nomor_faktur']) ?></strong> | Status Saat Ini: <span class="badge bg-secondary"><?= $faktur['status'] ?></span>
+               <span class="badge bg-secondary" id="badgeFakturStatus">-</span>
             </div>
         </div>
         <div class="d-flex gap-2">
@@ -111,22 +63,27 @@ textarea.form-control {
         </div>
     </div>
 
-    <?php if ($isLocked): ?>
-        <div class="alert alert-warning border-0 shadow-sm rounded-3 d-flex align-items-center mb-4 p-3">
-            <i class="bi bi-lock-fill text-warning-emphasis fs-4 me-3"></i>
-            <div>
-                <strong class="d-block text-warning-emphasis">Dokumen Faktur Terkunci (Hanya Baca)</strong>
-                Dokumen faktur ini berstatus <strong><?= $faktur['status'] ?></strong> (atau telah memiliki riwayat pembayaran). Perubahan dokumen faktur tidak diizinkan.
-            </div>
+    <!-- Alert Status Locked -->
+    <div class="alert alert-warning border-0 shadow-sm rounded-3 align-items-center mb-4 p-3" id="alertLockedNotice" style="display: none !important;">
+        <i class="bi bi-lock-fill text-warning-emphasis fs-4 me-3"></i>
+        <div>
+            <strong class="d-block text-warning-emphasis">Dokumen Faktur Terkunci (Hanya Baca)</strong>
+            Dokumen faktur ini berstatus <strong id="lockedStatusText">-</strong> (atau telah memiliki riwayat pembayaran). Perubahan dokumen faktur tidak diizinkan.
         </div>
-    <?php endif; ?>
+    </div>
 
-    <form id="formEditFaktur" onsubmit="event.preventDefault();">
-        <input type="hidden" id="editIdFaktur" name="id_faktur" value="<?= $faktur['id_faktur'] ?>">
-        <input type="hidden" id="selectRcv" name="id_rcv" value="<?= $faktur['id_rcv'] ?>">
-        <input type="hidden" id="hiddenIdPo" name="id_po" value="<?= $faktur['id_po'] ?>">
-        <input type="hidden" id="hiddenIdVendor" name="id_vendor" value="<?= $faktur['id_vendor'] ?>">
-        <input type="hidden" id="hiddenIdSite" name="id_site" value="<?= $faktur['id_site'] ?>">
+    <!-- Alert Loading -->
+    <div id="loadingNotice" class="alert alert-info border-0 shadow-sm d-flex align-items-center gap-2 mb-4">
+        <div class="spinner-border spinner-border-sm text-primary"></div>
+        <span>Memuat data dokumen Faktur PO...</span>
+    </div>
+
+    <form id="formEditFaktur" onsubmit="event.preventDefault();" style="display: none;">
+        <input type="hidden" id="editIdFaktur" name="id_faktur" value="<?= $idFaktur ?>">
+        <input type="hidden" id="selectRcv" name="id_rcv" value="">
+        <input type="hidden" id="hiddenIdPo" name="id_po" value="">
+        <input type="hidden" id="hiddenIdVendor" name="id_vendor" value="">
+        <input type="hidden" id="hiddenIdSite" name="id_site" value="">
 
         <!-- CARD 1: 5 TAB MODULAR -->
         <div class="card border-0 shadow-sm rounded-3 mb-4">
@@ -149,7 +106,7 @@ textarea.form-control {
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link fw-semibold py-3 px-3" id="tab-barang-btn" data-bs-toggle="tab" data-bs-target="#tab-barang" type="button" role="tab">
-                            <i class="bi bi-box-seam me-1 text-primary"></i> 4. Rincian Barang <span class="badge bg-primary ms-1" id="badgeItemCount"><?= count($items) ?> Item</span>
+                            <i class="bi bi-box-seam me-1 text-primary"></i> 4. Rincian Barang <span class="badge bg-primary ms-1" id="badgeItemCount">0 Item</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
@@ -170,11 +127,11 @@ textarea.form-control {
                                 <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Dokumen Penerimaan Barang</h6>
                                 <div class="mb-3">
                                     <label class="form-label small fw-semibold text-dark">Dokumen Penerimaan (RCV)</label>
-                                    <input type="text" class="form-control font-monospace bg-light fw-bold text-primary" value="<?= htmlspecialchars($faktur['nomor_rcv']) ?>" readonly>
+                                    <input type="text" class="form-control font-monospace bg-light fw-bold text-primary" id="displayNomorRcv" readonly>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label small fw-semibold text-dark">No. Surat Jalan Vendor (RCV)</label>
-                                    <input type="text" class="form-control font-monospace bg-light" value="<?= htmlspecialchars($faktur['nomor_sj_rcv'] ?: '-') ?>" readonly>
+                                    <input type="text" class="form-control font-monospace bg-light" id="displayNomorSjRcv" readonly>
                                 </div>
                             </div>
 
@@ -183,15 +140,15 @@ textarea.form-control {
                                 <div class="row g-3">
                                     <div class="col-12">
                                         <label class="form-label small fw-semibold text-dark">No. Purchase Order (PO)</label>
-                                        <input type="text" class="form-control font-monospace bg-light fw-bold text-primary" value="<?= htmlspecialchars($faktur['nomor_po']) ?>" readonly>
+                                        <input type="text" class="form-control font-monospace bg-light fw-bold text-primary" id="displayNomorPo" readonly>
                                     </div>
                                     <div class="col-sm-6">
                                         <label class="form-label small fw-semibold text-dark">Tanggal Penerimaan di Gudang</label>
-                                        <input type="text" class="form-control bg-light" value="<?= date('d/m/Y', strtotime($faktur['tanggal_rcv_diterima'] ?: $faktur['created_at'])) ?>" readonly>
+                                        <input type="text" class="form-control bg-light" id="displayTanggalRcv" readonly>
                                     </div>
                                     <div class="col-sm-6">
                                         <label class="form-label small fw-semibold text-dark">Lokasi Site / Gudang</label>
-                                        <input type="text" class="form-control bg-light" value="<?= htmlspecialchars($faktur['nama_site']) ?>" readonly>
+                                        <input type="text" class="form-control bg-light" id="displayNamaSite" readonly>
                                     </div>
                                 </div>
                             </div>
@@ -211,10 +168,9 @@ textarea.form-control {
                             <div class="col-sm-4 position-relative" id="bankComboboxWrapper">
                                 <label class="form-label small fw-semibold text-dark">Nama Bank / Metode Bayar</label>
                                 <div class="input-group">
-                                    <input type="text" class="form-control font-monospace fw-semibold" id="namaBank" name="nama_bank" value="<?= htmlspecialchars($faktur['nama_bank'] ?: '') ?>" placeholder="Pilih atau ketik bank..." autocomplete="off" onfocus="showBankDropdown()" oninput="filterBankDropdown()" <?= $isLocked ? 'readonly' : '' ?>>
-                                    <button class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split px-3" type="button" onclick="toggleBankDropdown(event)" title="Pilih Bank" <?= $isLocked ? 'disabled' : '' ?>></button>
+                                    <input type="text" class="form-control font-monospace fw-semibold" id="namaBank" name="nama_bank" placeholder="Pilih atau ketik bank..." autocomplete="off" onfocus="showBankDropdown()" oninput="filterBankDropdown()">
+                                    <button class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split px-3" type="button" id="btnToggleBank" onclick="toggleBankDropdown(event)" title="Pilih Bank"></button>
                                 </div>
-                                <?php if (!$isLocked): ?>
                                 <!-- Dropdown List Bank -->
                                 <div class="dropdown-menu shadow-sm w-100 p-1" id="bankDropdownMenu" style="max-height: 220px; overflow-y: auto; display: none; position: absolute; top: calc(100% + 2px); left: 0; z-index: 1050;">
                                     <button type="button" class="dropdown-item py-1 small rounded bank-opt" onclick="selectBank('CASH')">CASH</button>
@@ -232,16 +188,14 @@ textarea.form-control {
                                     <button type="button" class="dropdown-item py-1 small rounded bank-opt" onclick="selectBank('Danamon')">Danamon</button>
                                     <div id="noBankFound" class="text-muted small px-3 py-2 d-none">Tekan Enter atau gunakan nama yang diketik manual.</div>
                                 </div>
-                                <?php endif; ?>
                             </div>
                             <div class="col-sm-8">
                                 <label class="form-label small fw-semibold text-dark">Nomor Rekening</label>
-                                <input type="text" class="form-control font-monospace fw-bold" id="nomorRekening" name="nomor_rekening" value="<?= htmlspecialchars($faktur['nomor_rekening'] ?: '') ?>" placeholder="Nomor Rekening Vendor" <?= $isLocked ? 'readonly' : '' ?>>
+                                <input type="text" class="form-control font-monospace fw-bold" id="nomorRekening" name="nomor_rekening" placeholder="Nomor Rekening Vendor">
                             </div>
                             <div class="col-12">
                                 <label class="form-label small fw-semibold text-dark">Atas Nama Rekening</label>
-                                <input type="text" class="form-control fw-semibold" id="atasNamaRekening" name="atas_nama_rekening" value="<?= htmlspecialchars($faktur['atas_nama_rekening'] ?: '') ?>" placeholder="Nama Pemilik Rekening sesuai Invoice" <?= $isLocked ? 'readonly' : '' ?>>
-                                <div class="form-text small text-muted">Data rekening otomatis dimuat dari master vendor, namun dapat disesuaikan jika tertulis nomor rekening khusus pada lembar invoice vendor.</div>
+                                <input type="text" class="form-control fw-semibold" id="atasNamaRekening" name="atas_nama_rekening" placeholder="Nama Pemilik Rekening sesuai Invoice">
                             </div>
                         </div>
 
@@ -263,28 +217,28 @@ textarea.form-control {
                                 <div class="row g-3">
                                     <div class="col-sm-6">
                                         <label class="form-label small fw-semibold text-dark">Nomor Faktur / Invoice Vendor <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control form-control-sm font-monospace fw-bold text-dark" id="nomorFakturVendor" name="nomor_faktur_vendor" value="<?= htmlspecialchars($faktur['nomor_faktur_vendor'] ?: '') ?>" placeholder="Contoh: INV-2026/08/991" required <?= $isLocked ? 'readonly' : '' ?>>
+                                        <input type="text" class="form-control form-control-sm font-monospace fw-bold text-dark" id="nomorFakturVendor" name="nomor_faktur_vendor" placeholder="Contoh: INV-2026/08/991" required>
                                     </div>
                                     <div class="col-sm-6">
                                         <label class="form-label small fw-semibold text-dark">Tanggal Invoice Vendor <span class="text-danger">*</span></label>
-                                        <input type="date" class="form-control form-control-sm" id="tanggalFaktur" name="tanggal_faktur" value="<?= $faktur['tanggal_faktur_vendor'] ?: date('Y-m-d') ?>" onchange="calculateDueDate()" required <?= $isLocked ? 'readonly' : '' ?>>
+                                        <input type="date" class="form-control form-control-sm" id="tanggalFaktur" name="tanggal_faktur" onchange="calculateDueDate()" required>
                                     </div>
                                     <div class="col-sm-6">
                                         <label class="form-label small fw-semibold text-dark">No. Seri e-Faktur Pajak</label>
-                                        <input type="text" class="form-control form-control-sm font-monospace" id="nomorFakturPajak" name="nomor_faktur_pajak" value="<?= htmlspecialchars($faktur['nomor_faktur_pajak'] ?: '') ?>" placeholder="Contoh: 010.000-26.12345678" <?= $isLocked ? 'readonly' : '' ?>>
+                                        <input type="text" class="form-control form-control-sm font-monospace" id="nomorFakturPajak" name="nomor_faktur_pajak" placeholder="Contoh: 010.000-26.12345678">
                                     </div>
                                     <div class="col-sm-6">
                                         <label class="form-label small fw-semibold text-dark">Tanggal e-Faktur Pajak</label>
-                                        <input type="date" class="form-control form-control-sm" id="tanggalFakturPajak" name="tanggal_faktur_pajak" value="<?= $faktur['tanggal_faktur_pajak'] ?: date('Y-m-d') ?>" <?= $isLocked ? 'readonly' : '' ?>>
+                                        <input type="date" class="form-control form-control-sm" id="tanggalFakturPajak" name="tanggal_faktur_pajak">
                                     </div>
                                     <div class="col-sm-6">
                                         <label class="form-label small fw-semibold text-dark">Tanggal Terima Fisik Tagihan <span class="text-danger">*</span></label>
-                                        <input type="date" class="form-control form-control-sm" id="tanggalTerimaFaktur" name="tanggal_terima_faktur" value="<?= $faktur['tanggal_terima_faktur_vendor'] ?: date('Y-m-d') ?>" required <?= $isLocked ? 'readonly' : '' ?>>
+                                        <input type="date" class="form-control form-control-sm" id="tanggalTerimaFaktur" name="tanggal_terima_faktur" required>
                                     </div>
                                     <div class="col-sm-6">
                                         <label class="form-label small fw-semibold text-dark">Terms of Payment (TOP)</label>
                                         <div class="input-group input-group-sm">
-                                            <input type="number" min="0" class="form-control form-control-sm text-center fw-bold" id="termOfPayment" name="term_of_payment" value="<?= $faktur['term_of_payment'] ?: 30 ?>" oninput="calculateDueDate()" <?= $isLocked ? 'readonly' : '' ?>>
+                                            <input type="number" min="0" class="form-control form-control-sm text-center fw-bold" id="termOfPayment" name="term_of_payment" value="30" oninput="calculateDueDate()">
                                             <span class="input-group-text">Hari</span>
                                         </div>
                                     </div>
@@ -300,19 +254,15 @@ textarea.form-control {
                                 <div class="row g-3">
                                     <div class="col-12">
                                         <label class="form-label small fw-semibold text-dark">Ganti Scan Invoice / Tagihan Vendor</label>
-                                        <input type="file" class="form-control form-control-sm" id="fileFakturVendor" accept="image/*,application/pdf" onchange="handleFileBase64(this, 'hiddenFileVendorBase64')" <?= $isLocked ? 'disabled' : '' ?>>
+                                        <input type="file" class="form-control form-control-sm" id="fileFakturVendor" accept="image/*,application/pdf" onchange="handleFileBase64(this, 'hiddenFileVendorBase64')">
                                         <input type="hidden" id="hiddenFileVendorBase64" name="file_faktur_vendor_base64">
-                                        <?php if (!empty($faktur['file_faktur_vendor'])): ?>
-                                            <div class="form-text small text-primary mt-1"><i class="bi bi-file-earmark-check me-1"></i>Berkas saat ini: <a href="<?= BASE_URL ?>/uploads/faktur/<?= htmlspecialchars($faktur['file_faktur_vendor']) ?>" target="_blank"><?= htmlspecialchars($faktur['file_faktur_vendor']) ?></a></div>
-                                        <?php endif; ?>
+                                        <div id="fileVendorExistingContainer" class="form-text small text-primary mt-1" style="display: none;"></div>
                                     </div>
                                     <div class="col-12">
                                         <label class="form-label small fw-semibold text-dark">Ganti Scan e-Faktur Pajak</label>
-                                        <input type="file" class="form-control form-control-sm" id="fileFakturPajak" accept="image/*,application/pdf" onchange="handleFileBase64(this, 'hiddenFilePajakBase64')" <?= $isLocked ? 'disabled' : '' ?>>
+                                        <input type="file" class="form-control form-control-sm" id="fileFakturPajak" accept="image/*,application/pdf" onchange="handleFileBase64(this, 'hiddenFilePajakBase64')">
                                         <input type="hidden" id="hiddenFilePajakBase64" name="file_faktur_pajak_base64">
-                                        <?php if (!empty($faktur['file_faktur_pajak'])): ?>
-                                            <div class="form-text small text-primary mt-1"><i class="bi bi-file-earmark-check me-1"></i>Berkas saat ini: <a href="<?= BASE_URL ?>/uploads/faktur/<?= htmlspecialchars($faktur['file_faktur_pajak']) ?>" target="_blank"><?= htmlspecialchars($faktur['file_faktur_pajak']) ?></a></div>
-                                        <?php endif; ?>
+                                        <div id="filePajakExistingContainer" class="form-text small text-primary mt-1" style="display: none;"></div>
                                     </div>
                                 </div>
                             </div>
@@ -349,23 +299,11 @@ textarea.form-control {
                                     </tr>
                                 </thead>
                                 <tbody id="matchingItemsBody">
-                                    <?php foreach ($items as $idx => $it): ?>
-                                        <tr>
-                                            <td class="text-center"><?= $idx + 1 ?></td>
-                                            <td class="font-monospace text-center"><?= htmlspecialchars($it['kode_barang'] ?: '-') ?></td>
-                                            <td>
-                                                <strong><?= htmlspecialchars($it['nama_barang']) ?></strong>
-                                                <?php if (!empty($it['nama_kategori'])): ?>
-                                                    <div class="small text-muted" style="font-size:0.75rem;"><?= htmlspecialchars($it['nama_kategori']) ?></div>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td class="text-center font-monospace fw-bold text-success fs-6"><?= (float)$it['qty_tagih'] ?></td>
-                                            <td class="text-center"><?= htmlspecialchars($it['satuan'] ?: 'Unit') ?></td>
-                                            <td class="text-end font-monospace"><?= 'Rp ' . number_format((float)$it['harga_satuan'], 0, ',', '.') ?></td>
-                                            <td class="text-end font-monospace text-muted"><?= (float)$it['diskon_item'] > 0 ? 'Rp ' . number_format((float)$it['diskon_item'], 0, ',', '.') : '-' ?></td>
-                                            <td class="text-end font-monospace fw-bold text-dark"><?= 'Rp ' . number_format((float)$it['subtotal'], 0, ',', '.') ?></td>
-                                        </tr>
-                                    <?php endforeach; ?>
+                                    <tr>
+                                        <td colspan="8" class="text-center py-4 text-muted">
+                                            <div class="spinner-border spinner-border-sm text-primary me-1"></div> Memuat rincian barang...
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -385,7 +323,7 @@ textarea.form-control {
                         <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Catatan &amp; Instruksi Khusus Faktur</h6>
                         <div class="mb-3">
                             <label class="form-label small fw-semibold text-dark">Catatan Faktur Pembelian (Internal &amp; Pelunasan)</label>
-                            <textarea class="form-control" id="keteranganFaktur" name="keterangan" rows="6" placeholder="Tambahkan catatan..." <?= $isLocked ? 'readonly' : '' ?>><?= htmlspecialchars($faktur['keterangan'] ?: '') ?></textarea>
+                            <textarea class="form-control" id="keteranganFaktur" name="keterangan" rows="6" placeholder="Tambahkan catatan..."></textarea>
                         </div>
 
                         <div class="mt-4 pt-3 border-top d-flex justify-content-start">
@@ -411,82 +349,85 @@ textarea.form-control {
                         <div class="card bg-light border-0 rounded-3 p-3">
                             <div class="d-flex justify-content-between align-items-center mb-2 small">
                                 <span class="text-muted">Subtotal Kontrak PO (Ref):</span>
-                                <span class="font-monospace fw-semibold" id="displaySubtotalPo">Rp <?= number_format((float)$faktur['subtotal_po'], 0, ',', '.') ?></span>
+                                <span class="font-monospace fw-semibold" id="displaySubtotalPo">Rp 0</span>
                             </div>
                             <div class="d-flex justify-content-between align-items-center mb-2 small">
                                 <span class="text-dark fw-semibold">Subtotal Barang Diterima (RCV):</span>
-                                <span class="font-monospace fw-bold text-dark" id="displaySubtotalDiterima">Rp <?= number_format((float)$faktur['subtotal_diterima'], 0, ',', '.') ?></span>
+                                <span class="font-monospace fw-bold text-dark" id="displaySubtotalDiterima">Rp 0</span>
                             </div>
-                            <?php if ((float)$faktur['nilai_retur'] > 0): ?>
-                                <div class="d-flex justify-content-between align-items-center mb-2 small text-danger" id="rowNilaiRetur">
-                                    <span>Potongan Retur PO (Credit Note):</span>
-                                    <span class="font-monospace fw-bold" id="displayNilaiRetur">- Rp <?= number_format((float)$faktur['nilai_retur'], 0, ',', '.') ?></span>
-                                </div>
-                            <?php endif; ?>
+                            <div class="d-flex justify-content-between align-items-center mb-2 small text-danger" id="rowNilaiRetur" style="display: none !important;">
+                                <span>Potongan Retur PO (Credit Note):</span>
+                                <span class="font-monospace fw-bold" id="displayNilaiRetur">- Rp 0</span>
+                            </div>
                             <div class="d-flex justify-content-between align-items-center mb-2 small">
                                 <span class="text-muted">Diskon Tambahan Faktur:</span>
                                 <div class="input-group input-group-sm" style="max-width: 170px;">
                                     <span class="input-group-text">Rp</span>
-                                    <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace" id="inputDiskon" value="<?= (float)$faktur['diskon'] ?>" oninput="calculateFinancials()" <?= $isLocked ? 'readonly' : '' ?>>
+                                    <input type="text" class="form-control form-control-sm text-end font-monospace" id="inputDiskon" value="0" oninput="formatRupiahInputVal(this); calculateFinancials();">
                                 </div>
                             </div>
                             <div class="d-flex justify-content-between align-items-center mb-2 small pt-2 border-top">
                                 <span class="fw-bold text-dark">DPP (Dasar Pengenaan Pajak):</span>
-                                <span class="font-monospace fw-bold text-dark fs-6" id="displayDpp">Rp <?= number_format((float)$faktur['dpp'], 0, ',', '.') ?></span>
+                                <span class="font-monospace fw-bold text-dark fs-6" id="displayDpp">Rp 0</span>
                             </div>
+
+                            <!-- ROW PPNBM (JIKA BARANG MEWAH) -->
+                            <div class="d-flex justify-content-between align-items-center mb-2 small" id="rowPpnbm" style="display: none !important;">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="text-muted" id="labelPpnbm">PPnBM (0%):</span>
+                                    <span id="badgePpnbmInclusive" class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle" style="font-size:0.68rem; display:none;">Termasuk PPnBM</span>
+                                </div>
+                                <span class="font-monospace fw-semibold text-warning-emphasis" id="displayNominalPpnbm">Rp 0</span>
+                            </div>
+
+                            <!-- ROW PPN (FIXED / SESUAI PO) -->
                             <div class="d-flex justify-content-between align-items-center mb-2 small">
                                 <div class="d-flex align-items-center gap-2">
                                     <span class="text-muted">Tarif PPN:</span>
-                                    <select class="form-select form-select-sm py-0" id="selectRatePajak" style="width: 80px;" onchange="calculateFinancials()" <?= $isLocked ? 'disabled' : '' ?>>
-                                        <option value="0" <?= ((int)$faktur['rate_pajak'] === 0) ? 'selected' : '' ?>>0%</option>
-                                        <option value="11" <?= ((int)$faktur['rate_pajak'] === 11) ? 'selected' : '' ?>>11%</option>
-                                        <option value="12" <?= ((int)$faktur['rate_pajak'] === 12) ? 'selected' : '' ?>>12%</option>
-                                    </select>
-                                    <?php if (!empty($faktur['total_termasuk_pajak'])): ?>
-                                        <span class="badge bg-info-subtle text-info-emphasis border" style="font-size:0.68rem;">Termasuk Pajak</span>
-                                    <?php endif; ?>
+                                    <input type="hidden" id="selectRatePajak" value="0">
+                                    <span class="badge bg-light text-dark border font-monospace fw-bold px-2 py-1" id="displayRatePajak">0%</span>
+                                    <span id="badgePajakInclusive" class="badge bg-info-subtle text-info-emphasis border border-info-subtle" style="font-size:0.68rem; display:none;">Termasuk PPN</span>
                                 </div>
-                                <span class="font-monospace fw-semibold" id="displayNominalPajak">Rp <?= number_format((float)$faktur['nominal_pajak'], 0, ',', '.') ?></span>
+                                <span class="font-monospace fw-semibold" id="displayNominalPajak">Rp 0</span>
                             </div>
+
                             <div class="d-flex justify-content-between align-items-center mb-3 small">
                                 <span class="text-muted">Biaya Lain-lain / Ongkir:</span>
                                 <div class="input-group input-group-sm" style="max-width: 170px;">
                                     <span class="input-group-text">Rp</span>
-                                    <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace" id="inputBiayaLain" value="<?= (float)$faktur['biaya_lain'] ?>" oninput="calculateFinancials()" <?= $isLocked ? 'readonly' : '' ?>>
+                                    <input type="text" class="form-control form-control-sm text-end font-monospace" id="inputBiayaLain" value="0" oninput="formatRupiahInputVal(this); calculateFinancials();">
                                 </div>
                             </div>
 
                             <!-- GRAND TOTAL -->
                             <div class="d-flex justify-content-between align-items-center pt-3 border-top border-2 border-dark">
                                 <span class="fw-bold text-dark fs-6">TOTAL TAGIHAN:</span>
-                                <span class="font-monospace fw-bold text-primary fs-5" id="displayTotalTagihan">Rp <?= number_format((float)$faktur['total_tagihan'], 0, ',', '.') ?></span>
+                                <span class="font-monospace fw-bold text-primary fs-5" id="displayTotalTagihan">Rp 0</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <?php if (!$isLocked): ?>
-                    <!-- Tombol Aksi Simpan Edit -->
-                    <div class="mt-4 pt-3 border-top d-flex justify-content-end align-items-center flex-wrap gap-2">
-                        <button type="button" class="btn btn-outline-primary btn-sm px-3 shadow-sm fw-semibold" id="btnSaveDraft" onclick="submitEditFaktur('DRAFT')">
-                            Simpan Sebagai Draft
-                        </button>
-                        <button type="button" class="btn btn-primary btn-sm px-4 shadow-sm fw-semibold" id="btnSaveFaktur" onclick="submitEditFaktur('BELUM DIBAYAR')">
-                            Simpan Perubahan Faktur
-                        </button>
-                    </div>
-                <?php endif; ?>
+                <!-- Tombol Aksi Simpan Edit -->
+                <div class="mt-4 pt-3 border-top d-flex justify-content-end align-items-center flex-wrap gap-2" id="actionButtonsContainer">
+                    <button type="button" class="btn btn-outline-primary btn-sm px-3 shadow-sm fw-semibold" id="btnSaveDraft" onclick="submitEditFaktur('DRAFT')">
+                        Simpan Sebagai Draft
+                    </button>
+                    <button type="button" class="btn btn-primary btn-sm px-4 shadow-sm fw-semibold" id="btnSaveFaktur" onclick="submitEditFaktur('BELUM DIBAYAR')">
+                        Simpan Perubahan Faktur
+                    </button>
+                </div>
             </div>
         </div>
     </form>
 </div>
 
 <script>
-const initialFakturData = <?= json_encode($faktur, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+let initialFakturData = null;
+const FAKTUR_ID = <?= $idFaktur ?>;
 
-document.addEventListener('DOMContentLoaded', () => {
-    calculateDueDate();
-    calculateFinancials();
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadFakturDetail();
 
     document.addEventListener('click', (e) => {
         const bankWrapper = document.getElementById('bankComboboxWrapper');
@@ -495,6 +436,173 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+async function loadFakturDetail() {
+    try {
+        const url = `${BASE_URL}/api/faktur_po/index.php?id=${FAKTUR_ID}`;
+        const response = await fetch(url, {
+            headers: {
+                'Accept': 'application/json',
+                'Authorization': typeof API_TOKEN !== 'undefined' ? 'Bearer ' + API_TOKEN : ''
+            },
+            credentials: 'include'
+        });
+        const res = await response.json();
+
+        if (res && res.success && res.data) {
+            initialFakturData = res.data;
+            populateForm(res.data);
+            const notice = document.getElementById('loadingNotice');
+            if (notice) notice.style.setProperty('display', 'none', 'important');
+            const form = document.getElementById('formEditFaktur');
+            if (form) form.style.display = 'block';
+        } else {
+            showToast(res ? res.message : 'Gagal memuat dokumen Faktur PO.', 'danger');
+            document.getElementById('loadingNotice').innerHTML = `<span class="text-danger">${res ? res.message : 'Dokumen Faktur PO tidak ditemukan.'}</span>`;
+        }
+    } catch (e) {
+        console.error('Error loadFakturDetail:', e);
+        showToast('Terjadi kesalahan saat memuat data: ' + e.message, 'danger');
+        document.getElementById('loadingNotice').innerHTML = `<span class="text-danger">Gagal memuat dokumen: ${e.message}</span>`;
+    }
+}
+
+function populateForm(f) {
+    // Status Badge & Lock Check
+    const statusUpper = (f.status || '').toUpperCase();
+    const isLocked = ['SEBAGIAN DIBAYAR', 'LUNAS', 'BATAL'].includes(statusUpper) || (parseFloat(f.terbayar) > 0);
+    
+    document.getElementById('badgeFakturStatus').textContent = f.status || '-';
+    if (isLocked) {
+        const lockNotice = document.getElementById('alertLockedNotice');
+        if (lockNotice) {
+            lockNotice.style.removeProperty('display');
+            lockNotice.classList.add('d-flex');
+        }
+        document.getElementById('lockedStatusText').textContent = f.status;
+        document.getElementById('actionButtonsContainer').style.display = 'none';
+    }
+
+    // Hidden values
+    document.getElementById('selectRcv').value = f.id_rcv || '';
+    document.getElementById('hiddenIdPo').value = f.id_po || '';
+    document.getElementById('hiddenIdVendor').value = f.id_vendor || '';
+    document.getElementById('hiddenIdSite').value = f.id_site || '';
+
+    // Tab 1 Dokumen Asal
+    document.getElementById('displayNomorRcv').value = f.nomor_rcv || '-';
+    document.getElementById('displayNomorSjRcv').value = f.nomor_sj_rcv || f.nomor_sj || '-';
+    document.getElementById('displayNomorPo').value = f.nomor_po || '-';
+    document.getElementById('displayTanggalRcv').value = formatDate(f.tanggal_rcv_diterima || f.created_at);
+    document.getElementById('displayNamaSite').value = f.nama_site || '-';
+
+    // Tab 2 Vendor & Rekening Bank
+    document.getElementById('namaBank').value = f.nama_bank || '';
+    document.getElementById('nomorRekening').value = f.nomor_rekening || '';
+    document.getElementById('atasNamaRekening').value = f.atas_nama_rekening || '';
+
+    // Tab 3 Tagihan & Pajak
+    document.getElementById('nomorFakturVendor').value = f.nomor_faktur_vendor || '';
+    document.getElementById('tanggalFaktur').value = f.tanggal_faktur_vendor || f.tanggal_faktur || '';
+    document.getElementById('nomorFakturPajak').value = f.nomor_faktur_pajak || '';
+    document.getElementById('tanggalFakturPajak').value = f.tanggal_faktur_pajak || '';
+    document.getElementById('tanggalTerimaFaktur').value = f.tanggal_terima_faktur_vendor || f.tanggal_terima_faktur || '';
+    document.getElementById('termOfPayment').value = f.term_of_payment || 0;
+
+    // Files Existing
+    if (f.file_faktur_vendor) {
+        const vendorBox = document.getElementById('fileVendorExistingContainer');
+        vendorBox.innerHTML = `<i class="bi bi-file-earmark-check me-1"></i>Berkas saat ini: <a href="<?= BASE_URL ?>/uploads/faktur/${f.file_faktur_vendor}" target="_blank">${f.file_faktur_vendor}</a>`;
+        vendorBox.style.display = 'block';
+    }
+    if (f.file_faktur_pajak) {
+        const pajakBox = document.getElementById('filePajakExistingContainer');
+        pajakBox.innerHTML = `<i class="bi bi-file-earmark-check me-1"></i>Berkas saat ini: <a href="<?= BASE_URL ?>/uploads/faktur/${f.file_faktur_pajak}" target="_blank">${f.file_faktur_pajak}</a>`;
+        pajakBox.style.display = 'block';
+    }
+
+    // Tab 4 Items Table
+    renderTableItems(f.items || []);
+
+    // Tab 5 Catatan
+    document.getElementById('keteranganFaktur').value = f.keterangan || '';
+
+    // Summary Card Inputs
+    document.getElementById('inputDiskon').value = formatRupiahNumberOnly(f.diskon || 0);
+    document.getElementById('inputBiayaLain').value = formatRupiahNumberOnly(f.biaya_lain || 0);
+
+    const ratePajak = parseInt(f.rate_pajak || 0);
+    document.getElementById('selectRatePajak').value = ratePajak;
+    document.getElementById('displayRatePajak').textContent = `${ratePajak}%`;
+
+    const isTermasukPajak = (parseInt(f.total_termasuk_pajak) === 1);
+    const badgeInclusive = document.getElementById('badgePajakInclusive');
+    if (badgeInclusive) badgeInclusive.style.display = isTermasukPajak ? 'inline-block' : 'none';
+
+    const ratePpnbm = parseInt(f.rate_ppnbm || 0);
+    const isTermasukPpnbm = (parseInt(f.total_termasuk_PPnBM) === 1);
+    const rowPpnbm = document.getElementById('rowPpnbm');
+    const labelPpnbm = document.getElementById('labelPpnbm');
+    const badgePpnbm = document.getElementById('badgePpnbmInclusive');
+    if (ratePpnbm > 0) {
+        if (rowPpnbm) rowPpnbm.style.removeProperty('display');
+        if (labelPpnbm) labelPpnbm.textContent = `PPnBM (${ratePpnbm}%):`;
+        if (badgePpnbm) badgePpnbm.style.display = isTermasukPpnbm ? 'inline-block' : 'none';
+    } else {
+        if (rowPpnbm) rowPpnbm.style.setProperty('display', 'none', 'important');
+    }
+
+    if (isLocked) {
+        ['namaBank', 'nomorRekening', 'atasNamaRekening', 'nomorFakturVendor', 'tanggalFaktur', 
+         'nomorFakturPajak', 'tanggalFakturPajak', 'tanggalTerimaFaktur', 'termOfPayment', 
+         'fileFakturVendor', 'fileFakturPajak', 'keteranganFaktur', 'inputDiskon', 'inputBiayaLain'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.readOnly = true;
+                if (el.type === 'file' || el.tagName === 'BUTTON') el.disabled = true;
+            }
+        });
+        const btnBank = document.getElementById('btnToggleBank');
+        if (btnBank) btnBank.disabled = true;
+    }
+
+    calculateDueDate();
+    calculateFinancials();
+}
+
+function renderTableItems(items) {
+    const tbody = document.getElementById('matchingItemsBody');
+    document.getElementById('badgeItemCount').textContent = `${items.length} Item`;
+
+    if (!items || items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-3 text-muted">Tidak ada rincian barang.</td></tr>';
+        return;
+    }
+
+    let html = '';
+    items.forEach((it, idx) => {
+        const qTagih = parseFloat(it.qty_tagih) || 0;
+        const harga = parseFloat(it.harga_satuan) || 0;
+        const disc = parseFloat(it.diskon_item) || 0;
+        const sub = parseFloat(it.subtotal) || 0;
+
+        html += `
+        <tr>
+            <td class="text-center text-muted">${idx + 1}</td>
+            <td class="font-monospace text-center small fw-semibold text-secondary">${it.kode_barang || '-'}</td>
+            <td>
+                <div class="fw-bold text-dark">${it.nama_barang}</div>
+                ${it.nama_kategori ? `<div class="small text-muted" style="font-size:0.75rem;">${it.nama_kategori}</div>` : ''}
+            </td>
+            <td class="text-center font-monospace fw-bold text-success fs-6">${qTagih}</td>
+            <td class="text-center text-muted small">${it.satuan || it.satuan_master || 'Unit'}</td>
+            <td class="text-end font-monospace">${formatRupiah(harga)}</td>
+            <td class="text-end font-monospace text-muted">${disc > 0 ? formatRupiah(disc) : '-'}</td>
+            <td class="text-end font-monospace fw-bold text-dark">${formatRupiah(sub)}</td>
+        </tr>`;
+    });
+    tbody.innerHTML = html;
+}
 
 function showBankDropdown() {
     const menu = document.getElementById('bankDropdownMenu');
@@ -563,42 +671,87 @@ function calculateDueDate() {
     display.value = `${dd}/${mm}/${yyyy} (${top} Hari)`;
 }
 
+function parseInputCurrency(val) {
+    if (typeof val === 'number') return val;
+    if (!val) return 0;
+    const cleaned = String(val).replace(/\D/g, '');
+    return parseFloat(cleaned) || 0;
+}
+
+function formatRupiahNumberOnly(num) {
+    return new Intl.NumberFormat('id-ID').format(Math.round(parseFloat(num) || 0));
+}
+
+function formatRupiahInputVal(input) {
+    const raw = (input.value || '').replace(/\D/g, '');
+    if (!raw) {
+        input.value = '0';
+        return;
+    }
+    input.value = new Intl.NumberFormat('id-ID').format(parseInt(raw, 10));
+}
+
 function calculateFinancials() {
+    if (!initialFakturData) return;
     const subPo = parseFloat(initialFakturData.subtotal_po) || 0;
     const subRcv = parseFloat(initialFakturData.subtotal_diterima) || 0;
     const nilaiRetur = parseFloat(initialFakturData.nilai_retur) || 0;
-    const diskon = parseFloat(document.getElementById('inputDiskon').value) || 0;
-    const biayaLain = parseFloat(document.getElementById('inputBiayaLain').value) || 0;
+    const diskon = parseInputCurrency(document.getElementById('inputDiskon').value);
+    const biayaLain = parseInputCurrency(document.getElementById('inputBiayaLain').value);
     const ratePajak = parseInt(document.getElementById('selectRatePajak').value) || 0;
+    const ratePpnbm = parseInt(initialFakturData.rate_ppnbm) || 0;
     const isTermasukPajak = (parseInt(initialFakturData.total_termasuk_pajak) === 1);
-
-    let dpp = 0;
-    let nominalPajak = 0;
-    let grandTotal = 0;
+    const isTermasukPpnbm = (parseInt(initialFakturData.total_termasuk_PPnBM) === 1);
 
     const dasarSetelahDiskon = Math.max(0, subRcv - nilaiRetur - diskon);
 
-    if (ratePajak > 0) {
-        if (isTermasukPajak) {
-            dpp = Math.round(dasarSetelahDiskon / (1 + (ratePajak / 100)));
-            nominalPajak = dasarSetelahDiskon - dpp;
-            grandTotal = dasarSetelahDiskon + biayaLain;
-        } else {
-            dpp = dasarSetelahDiskon;
-            nominalPajak = Math.round(dpp * (ratePajak / 100));
-            grandTotal = dpp + nominalPajak + biayaLain;
-        }
+    let divisor = 1.0;
+    if (isTermasukPpnbm && ratePpnbm > 0) {
+        divisor += (ratePpnbm / 100);
+    }
+    if (isTermasukPajak && ratePajak > 0) {
+        divisor += (ratePajak / 100);
+    }
+
+    const rawDpp = dasarSetelahDiskon / divisor;
+    const dpp = Math.round(rawDpp);
+    const nominalPpnbm = (ratePpnbm > 0) ? Math.round(rawDpp * (ratePpnbm / 100)) : 0;
+    const nominalPajak = (ratePajak > 0) ? Math.round(rawDpp * (ratePajak / 100)) : 0;
+
+    let grandTotal = 0;
+    if (divisor > 1.0) {
+        grandTotal = dpp + (ratePpnbm > 0 ? nominalPpnbm : 0) + (ratePajak > 0 ? nominalPajak : 0) + biayaLain;
     } else {
-        dpp = dasarSetelahDiskon;
-        nominalPajak = 0;
-        grandTotal = dpp + biayaLain;
+        grandTotal = dpp + nominalPpnbm + nominalPajak + biayaLain;
+    }
+
+    // Tampilkan / Sembunyikan Baris PPnBM
+    const rowPpnbm = document.getElementById('rowPpnbm');
+    const labelPpnbm = document.getElementById('labelPpnbm');
+    const badgePpnbmInclusive = document.getElementById('badgePpnbmInclusive');
+    const displayPpnbm = document.getElementById('displayNominalPpnbm');
+    if (ratePpnbm > 0) {
+        if (rowPpnbm) rowPpnbm.style.removeProperty('display');
+        if (labelPpnbm) labelPpnbm.textContent = `PPnBM (${ratePpnbm}%):`;
+        if (badgePpnbmInclusive) badgePpnbmInclusive.style.display = isTermasukPpnbm ? 'inline-block' : 'none';
+        if (displayPpnbm) displayPpnbm.textContent = formatRupiah(nominalPpnbm);
+    } else {
+        if (rowPpnbm) rowPpnbm.style.setProperty('display', 'none', 'important');
+    }
+
+    // Tampilkan / Sembunyikan Baris Retur
+    const rowRetur = document.getElementById('rowNilaiRetur');
+    if (rowRetur) {
+        if (nilaiRetur > 0) {
+            rowRetur.style.removeProperty('display');
+            document.getElementById('displayNilaiRetur').textContent = `- ${formatRupiah(nilaiRetur)}`;
+        } else {
+            rowRetur.style.setProperty('display', 'none', 'important');
+        }
     }
 
     document.getElementById('displaySubtotalPo').textContent = formatRupiah(subPo);
     document.getElementById('displaySubtotalDiterima').textContent = formatRupiah(subRcv);
-    if (document.getElementById('displayNilaiRetur')) {
-        document.getElementById('displayNilaiRetur').textContent = `- ${formatRupiah(nilaiRetur)}`;
-    }
     document.getElementById('displayDpp').textContent = formatRupiah(dpp);
     document.getElementById('displayNominalPajak').textContent = formatRupiah(nominalPajak);
     document.getElementById('displayTotalTagihan').textContent = formatRupiah(grandTotal);
@@ -633,34 +786,36 @@ async function submitEditFaktur(statusDokumen) {
         return;
     }
 
-    const diskon = parseFloat(document.getElementById('inputDiskon').value) || 0;
-    const biayaLain = parseFloat(document.getElementById('inputBiayaLain').value) || 0;
+    const diskon = parseInputCurrency(document.getElementById('inputDiskon').value);
+    const biayaLain = parseInputCurrency(document.getElementById('inputBiayaLain').value);
     const ratePajak = parseInt(document.getElementById('selectRatePajak').value) || 0;
+    const ratePpnbm = parseInt(initialFakturData.rate_ppnbm) || 0;
     const subRcv = parseFloat(initialFakturData.subtotal_diterima) || 0;
     const subPo = parseFloat(initialFakturData.subtotal_po) || 0;
     const nilaiRetur = parseFloat(initialFakturData.nilai_retur) || 0;
     const isTermasukPajak = (parseInt(initialFakturData.total_termasuk_pajak) === 1);
-
-    let dpp = 0;
-    let nominalPajak = 0;
-    let grandTotal = 0;
+    const isTermasukPpnbm = (parseInt(initialFakturData.total_termasuk_PPnBM) === 1);
 
     const dasarSetelahDiskon = Math.max(0, subRcv - nilaiRetur - diskon);
 
-    if (ratePajak > 0) {
-        if (isTermasukPajak) {
-            dpp = Math.round(dasarSetelahDiskon / (1 + (ratePajak / 100)));
-            nominalPajak = dasarSetelahDiskon - dpp;
-            grandTotal = dasarSetelahDiskon + biayaLain;
-        } else {
-            dpp = dasarSetelahDiskon;
-            nominalPajak = Math.round(dpp * (ratePajak / 100));
-            grandTotal = dpp + nominalPajak + biayaLain;
-        }
+    let divisor = 1.0;
+    if (isTermasukPpnbm && ratePpnbm > 0) {
+        divisor += (ratePpnbm / 100);
+    }
+    if (isTermasukPajak && ratePajak > 0) {
+        divisor += (ratePajak / 100);
+    }
+
+    const rawDpp = dasarSetelahDiskon / divisor;
+    const dpp = Math.round(rawDpp);
+    const nominalPpnbm = (ratePpnbm > 0) ? Math.round(rawDpp * (ratePpnbm / 100)) : 0;
+    const nominalPajak = (ratePajak > 0) ? Math.round(rawDpp * (ratePajak / 100)) : 0;
+
+    let grandTotal = 0;
+    if (divisor > 1.0) {
+        grandTotal = dpp + (ratePpnbm > 0 ? nominalPpnbm : 0) + (ratePajak > 0 ? nominalPajak : 0) + biayaLain;
     } else {
-        dpp = dasarSetelahDiskon;
-        nominalPajak = 0;
-        grandTotal = dpp + biayaLain;
+        grandTotal = dpp + nominalPpnbm + nominalPajak + biayaLain;
     }
 
     const payload = {
@@ -685,6 +840,8 @@ async function submitEditFaktur(statusDokumen) {
         dpp: dpp,
         rate_pajak: ratePajak,
         nominal_pajak: nominalPajak,
+        rate_ppnbm: ratePpnbm,
+        nominal_ppnbm: nominalPpnbm,
         biaya_lain: biayaLain,
         total_tagihan: grandTotal,
         status: statusDokumen,
@@ -733,6 +890,14 @@ async function submitEditFaktur(statusDokumen) {
         if (btnSave) btnSave.disabled = false;
         if (btnDraft) btnDraft.disabled = false;
     }
+}
+
+function formatDate(dateStr) {
+    if (!dateStr) return '-';
+    const d = new Date(dateStr);
+    if (isNaN(d)) return dateStr;
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    return `${String(d.getDate()).padStart(2, '0')} ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
 function formatRupiah(num) {

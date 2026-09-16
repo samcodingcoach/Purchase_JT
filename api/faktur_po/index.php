@@ -8,6 +8,7 @@
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../config/activity_logger.php';
+require_once __DIR__ . '/../../config/penomoran_helper.php';
 require_once __DIR__ . '/../middleware/auth.php';
 
 $user = apiAuth([ROLE_PURCHASING, ROLE_FINANCE, ROLE_ADMIN, ROLE_MANAGER, ROLE_LOGISTIK]);
@@ -23,8 +24,12 @@ function sendJson($success, $message, $data = null, $code = 200) {
     exit;
 }
 
-function generateNomorFaktur($conn) {
-    $prefix = 'FP-' . date('ym') . '-';
+function generateNomorFaktur($conn, ?string $tanggal = null) {
+    $gen = generateNomorTransaksi($conn, 'FAKTUR PO', $tanggal);
+    if ($gen['success'] && !empty($gen['nomor'])) {
+        return $gen['nomor'];
+    }
+    $prefix = 'FP-' . date('ym', strtotime($tanggal ?? 'now')) . '-';
     $sql = "SELECT nomor_faktur FROM faktur_po WHERE nomor_faktur LIKE '{$prefix}%' ORDER BY id_faktur DESC LIMIT 1";
     $res = $conn->query($sql);
     $lastNum = 0;
@@ -301,7 +306,7 @@ if ($method === 'POST') {
 
     $conn->begin_transaction();
     try {
-        $nomorFaktur = generateNomorFaktur($conn);
+        $nomorFaktur = !empty($input['nomor_faktur']) ? trim($input['nomor_faktur']) : generateNomorFaktur($conn, $tanggalFaktur);
         $sisaTagihan = $totalTagihan;
         $terbayar = 0;
 

@@ -113,6 +113,17 @@ textarea.form-control {
                             <div class="col-lg-6">
                                 <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">Pilih Dokumen Faktur Tagihan</h6>
 
+                                <!-- Nomor Pembayaran Sistem (Readonly & Dinamis) -->
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold text-dark">Nomor / Kode Pembayaran <span class="text-danger">*</span></label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="text" class="form-control font-monospace fw-bold text-primary bg-light" id="inputKodePembayaran" readonly required placeholder="Memuat kode pembayaran...">
+                                        <button type="button" class="btn btn-outline-secondary" onclick="fetchNextPaymentNumber()" title="Generate Ulang Nomor">
+                                            <i class="bi bi-arrow-clockwise"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
                                 <div class="mb-3 position-relative" id="fakturSelectWrapper">
                                     <label class="form-label small fw-semibold text-dark">
                                         Dokumen Faktur PO Belum Lunas <span class="text-danger">*</span>
@@ -261,7 +272,7 @@ textarea.form-control {
 
                                 <div class="mb-3">
                                     <label class="form-label small fw-semibold text-dark">Tanggal Pembayaran <span class="text-danger">*</span></label>
-                                    <input type="date" class="form-control" id="tanggalBayar" name="tanggal_bayar" value="<?= date('Y-m-d') ?>" required onchange="validateDueDateLimit()">
+                                    <input type="date" class="form-control" id="tanggalBayar" name="tanggal_bayar" value="<?= date('Y-m-d') ?>" required onchange="handleTanggalBayarChange()">
                                 </div>
 
                                 <!-- DISKON PEMBAYARAN -->
@@ -471,7 +482,8 @@ let fakturList = [];
 let approverList = [];
 let currentSelectedFaktur = null;
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    await fetchNextPaymentNumber();
     loadLookupData();
 
     document.addEventListener('click', (e) => {
@@ -914,6 +926,24 @@ function validateDueDateLimit() {
     }
 }
 
+async function handleTanggalBayarChange() {
+    validateDueDateLimit();
+    await fetchNextPaymentNumber();
+}
+
+async function fetchNextPaymentNumber() {
+    const tgl = document.getElementById('tanggalBayar') ? document.getElementById('tanggalBayar').value : '';
+    try {
+        const res = await apiRequest(`/api/pembayaran_po/get_next_number.php?tanggal=${encodeURIComponent(tgl || '')}`);
+        if (res && res.success && res.data && res.data.kode_pembayaran) {
+            const inputEl = document.getElementById('inputKodePembayaran');
+            if (inputEl) inputEl.value = res.data.kode_pembayaran;
+        }
+    } catch (e) {
+        console.error('Gagal memuat nomor pembayaran:', e);
+    }
+}
+
 
 
 // -------------------------------------------------------------
@@ -1072,6 +1102,7 @@ async function submitPayment() {
 
     const payload = {
         id_faktur: idFaktur,
+        kode_pembayaran: document.getElementById('inputKodePembayaran') ? document.getElementById('inputKodePembayaran').value.trim() : '',
         jenis_pembayaran: document.getElementById('jenisLunas').checked ? 1 : 0,
         tanggal_bayar: document.getElementById('tanggalBayar').value,
         nominal_pengiriman: nominal,

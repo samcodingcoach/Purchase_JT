@@ -108,6 +108,17 @@ if ($currentPo['status'] === 'DITERIMA') {
     jsonResponse(false, "Purchase Order {$currentPo['nomor_po']} sudah berstatus DITERIMA sebelumnya.", null, 422);
 }
 
+// Cek apakah PO sudah pernah dibuatkan receiving order
+$stmtCheckExisting = $conn->prepare("SELECT id_rcv, nomor_rcv FROM receiving_order WHERE id_po = ? LIMIT 1");
+$stmtCheckExisting->bind_param("i", $idPo);
+$stmtCheckExisting->execute();
+$existingRcv = $stmtCheckExisting->get_result()->fetch_assoc();
+$stmtCheckExisting->close();
+
+if ($existingRcv) {
+    jsonResponse(false, "Purchase Order {$currentPo['nomor_po']} sudah pernah dibuatkan Penerimaan Barang ({$existingRcv['nomor_rcv']}).", null, 422);
+}
+
 $idSite = (int)$currentPo['id_site'];
 $idKaryawan = (int)($currentUser['id_karyawan'] ?? $currentUser['id'] ?? $currentUser['id_users'] ?? 1);
 
@@ -184,6 +195,14 @@ try {
     }
 
     $stmtDetail->close();
+
+    // 7. Update Status Purchase Order menjadi DITERIMA
+    $stmtUpPo = $conn->prepare("UPDATE purchase_order SET status = 'DITERIMA', tanggal_status = NOW() WHERE id_po = ?");
+    $stmtUpPo->bind_param("i", $idPo);
+    if (!$stmtUpPo->execute()) {
+        throw new Exception("Gagal mengupdate status Purchase Order: " . $stmtUpPo->error);
+    }
+    $stmtUpPo->close();
 
     $conn->commit();
 

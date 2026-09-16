@@ -7,6 +7,7 @@
 
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../../config/config.php';
+require_once __DIR__ . '/../../config/penomoran_helper.php';
 require_once __DIR__ . '/../../config/activity_logger.php';
 require_once __DIR__ . '/../middleware/auth.php';
 
@@ -24,7 +25,11 @@ function sendJson($success, $message, $data = null, $code = 200) {
 
 $method = $_SERVER['REQUEST_METHOD'];
 
-function generateKodePembayaran($conn) {
+function generateKodePembayaran($conn, $tanggal = null) {
+    $gen = generateNomorTransaksi($conn, 'PAYMENT PO', $tanggal);
+    if ($gen && !empty($gen['success']) && !empty($gen['nomor'])) {
+        return $gen['nomor'];
+    }
     $prefix = "PAY-" . date('ym') . "-";
     $query = "SELECT kode_pembayaran FROM payment_purchase_detail 
               WHERE kode_pembayaran LIKE '{$prefix}%' 
@@ -386,7 +391,12 @@ if ($method === 'POST') {
         }
 
         // 2. Buat Record Detail Transaksi di payment_purchase_detail
-        $kodePembayaran = generateKodePembayaran($conn);
+        $kodePembayaranInput = trim($input['kode_pembayaran'] ?? '');
+        if (!empty($kodePembayaranInput)) {
+            $kodePembayaran = $kodePembayaranInput;
+        } else {
+            $kodePembayaran = generateKodePembayaran($conn, $tanggalBayar);
+        }
         $idKaryawanInput = $user['id_karyawan'] ?? ($user['id'] ?? 1);
 
         $sqlD = "INSERT INTO payment_purchase_detail (
