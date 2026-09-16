@@ -283,6 +283,41 @@ if ($method === 'POST') {
         sendJson(false, 'Pejabat/Finance yang menyetujui wajib dipilih.', null, 422);
     }
 
+    // Validasi Password Konfirmasi Otorisasi Pembayaran (Seperti Penerbitan PO)
+    $confirmPassword = trim($input['confirm_password'] ?? $input['password'] ?? '');
+    if (!empty($confirmPassword)) {
+        $storedPassword = '';
+        if (!empty($user['id_karyawan'])) {
+            $stmtPw = $conn->prepare("SELECT password FROM karyawan WHERE id_karyawan = ? LIMIT 1");
+            $stmtPw->bind_param("i", $user['id_karyawan']);
+            $stmtPw->execute();
+            $resPw = $stmtPw->get_result()->fetch_assoc();
+            $storedPassword = $resPw['password'] ?? '';
+            $stmtPw->close();
+        } elseif (!empty($user['id_users']) || !empty($user['user_id']) || !empty($user['id'])) {
+            $uId = (int)($user['id_users'] ?? ($user['user_id'] ?? $user['id']));
+            $stmtPw = $conn->prepare("SELECT password FROM users WHERE id_users = ? LIMIT 1");
+            $stmtPw->bind_param("i", $uId);
+            $stmtPw->execute();
+            $resPw = $stmtPw->get_result()->fetch_assoc();
+            $storedPassword = $resPw['password'] ?? '';
+            $stmtPw->close();
+        }
+
+        $isValidPassword = false;
+        if (!empty($storedPassword)) {
+            if (password_verify($confirmPassword, $storedPassword)) {
+                $isValidPassword = true;
+            } elseif (md5($confirmPassword) === $storedPassword || $confirmPassword === $storedPassword) {
+                $isValidPassword = true;
+            }
+        }
+
+        if (!$isValidPassword) {
+            sendJson(false, 'Password otorisasi salah. Pembayaran gagal diproses.', null, 422);
+        }
+    }
+
     // Validasi Tanggal
     if (strlen($tanggalBayar) === 10) {
         $tanggalBayar .= ' ' . date('H:i:s');

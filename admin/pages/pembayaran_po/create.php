@@ -84,7 +84,7 @@ textarea.form-control {
         </div>
     </div>
 
-    <form id="formPayment" onsubmit="event.preventDefault(); submitPayment();">
+    <form id="formPayment" onsubmit="event.preventDefault(); openConfirmPaymentModal();">
         <input type="hidden" id="selectedIdFaktur" name="id_faktur" value="<?= $preselectedIdFaktur ?>" required>
         <input type="hidden" id="hiddenBuktiBase64" name="file_bukti_bayar_base64">
 
@@ -502,12 +502,185 @@ textarea.form-control {
     </form>
 </div>
 
+<!-- =============================================================
+     MODAL VERIFIKASI & KONFIRMASI PEMBAYARAN FAKTUR PO
+     ============================================================= -->
+<div class="modal fade" id="modalVerifyPayment" tabindex="-1" aria-labelledby="modalVerifyPaymentLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-3 overflow-hidden">
+            <!-- Modal Header -->
+            <div class="modal-header bg-primary text-white py-2 px-3">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-shield-check fs-5"></i>
+                    <h5 class="modal-title fs-6 fw-bold mb-0" id="modalVerifyPaymentLabel">
+                        Verifikasi &amp; Konfirmasi Pembayaran Faktur PO
+                    </h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="modal-body p-3 bg-light">
+                
+                <!-- Ringkasan Singkat Pembayaran -->
+                <div class="d-flex flex-wrap align-items-center justify-content-between p-2 px-3 bg-white border rounded-2 mb-2 gap-2">
+                    <div class="d-flex align-items-center gap-3">
+                        <div>
+                            <span class="text-muted" style="font-size: 0.72rem; display: block;">Kode Bayar:</span>
+                            <strong class="text-dark font-monospace small" id="verifyKodePaymentDisplay">-</strong>
+                        </div>
+                        <div class="border-start ps-3">
+                            <span class="text-muted" style="font-size: 0.72rem; display: block;">Faktur PO &amp; Vendor:</span>
+                            <span class="fw-semibold text-dark small" id="verifyFakturVendorDisplay">-</span>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <span class="text-muted" style="font-size: 0.72rem; display: block;">Total Kas Keluar (Transfer + Admin):</span>
+                        <strong class="text-success font-monospace fs-6" id="verifyTotalKasKeluarDisplay">Rp 0</strong>
+                    </div>
+                </div>
+
+                <!-- 6 Checklist Header Bar -->
+                <div class="d-flex justify-content-between align-items-center mb-1 px-1">
+                    <span class="fw-bold text-dark" style="font-size: 0.8rem;">
+                        <i class="bi bi-card-checklist text-primary me-1"></i> Parameter Verifikasi Wajib (6 Poin):
+                    </span>
+                    <button type="button" class="btn btn-link text-decoration-none btn-sm p-0 fw-semibold" style="font-size: 0.75rem;" onclick="toggleCheckAllVerify(true)">
+                        <i class="bi bi-check-all me-1"></i>Centang Semua
+                    </button>
+                </div>
+
+                <!-- 6 CHECKLIST VERIFIKASI (2-KOLOM KOMPAK) -->
+                <div class="row g-2 mb-2">
+                    <!-- 1. Dokumen Faktur & TOP -->
+                    <div class="col-md-6">
+                        <div class="p-2 bg-white border rounded-2 d-flex align-items-center justify-content-between h-100 shadow-xs">
+                            <div class="form-check m-0 d-flex align-items-center gap-2">
+                                <input class="form-check-input verify-check-item m-0" type="checkbox" id="checkVerifyFaktur" onchange="checkVerifyCompleteness()">
+                                <label class="form-check-label small fw-semibold text-dark cursor-pointer" for="checkVerifyFaktur">
+                                    1. Dokumen Faktur &amp; TOP
+                                </label>
+                            </div>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace text-truncate" style="font-size: 0.7rem; max-width: 170px;" id="verifyValFaktur">-</span>
+                        </div>
+                    </div>
+
+                    <!-- 4. Nominal Pembayaran -->
+                    <div class="col-md-6">
+                        <div class="p-2 bg-white border rounded-2 d-flex align-items-center justify-content-between h-100 shadow-xs">
+                            <div class="form-check m-0 d-flex align-items-center gap-2">
+                                <input class="form-check-input verify-check-item m-0" type="checkbox" id="checkVerifyNominal" onchange="checkVerifyCompleteness()">
+                                <label class="form-check-label small fw-semibold text-dark cursor-pointer" for="checkVerifyNominal">
+                                    4. Nominal Transfer Bank
+                                </label>
+                            </div>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle font-monospace" style="font-size: 0.7rem;" id="verifyValNominal">Rp 0</span>
+                        </div>
+                    </div>
+
+                    <!-- 2. Skema & Tanggal Pembayaran -->
+                    <div class="col-md-6">
+                        <div class="p-2 bg-white border rounded-2 d-flex align-items-center justify-content-between h-100 shadow-xs">
+                            <div class="form-check m-0 d-flex align-items-center gap-2">
+                                <input class="form-check-input verify-check-item m-0" type="checkbox" id="checkVerifySkema" onchange="checkVerifyCompleteness()">
+                                <label class="form-check-label small fw-semibold text-dark cursor-pointer" for="checkVerifySkema">
+                                    2. Skema &amp; Tanggal Bayar
+                                </label>
+                            </div>
+                            <span class="badge bg-secondary-subtle text-secondary border font-monospace" style="font-size: 0.7rem;" id="verifyValSkema">1x Bayar</span>
+                        </div>
+                    </div>
+
+                    <!-- 5. Potongan Diskon & Admin -->
+                    <div class="col-md-6">
+                        <div class="p-2 bg-white border rounded-2 d-flex align-items-center justify-content-between h-100 shadow-xs">
+                            <div class="form-check m-0 d-flex align-items-center gap-2">
+                                <input class="form-check-input verify-check-item m-0" type="checkbox" id="checkVerifyDiskonAdmin" onchange="checkVerifyCompleteness()">
+                                <label class="form-check-label small fw-semibold text-dark cursor-pointer" for="checkVerifyDiskonAdmin">
+                                    5. Diskon &amp; Biaya Admin
+                                </label>
+                            </div>
+                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle font-monospace" style="font-size: 0.7rem;" id="verifyValDiskonAdmin">Diskon: Rp 0</span>
+                        </div>
+                    </div>
+
+                    <!-- 3. Rekening Vendor Tujuan -->
+                    <div class="col-md-6">
+                        <div class="p-2 bg-white border rounded-2 d-flex align-items-center justify-content-between h-100 shadow-xs">
+                            <div class="form-check m-0 d-flex align-items-center gap-2">
+                                <input class="form-check-input verify-check-item m-0" type="checkbox" id="checkVerifyRekVendor" onchange="checkVerifyCompleteness()">
+                                <label class="form-check-label small fw-semibold text-dark cursor-pointer" for="checkVerifyRekVendor">
+                                    3. Rekening Vendor Tujuan
+                                </label>
+                            </div>
+                            <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle font-monospace text-truncate" style="font-size: 0.7rem; max-width: 170px;" id="verifyValRekVendor">-</span>
+                        </div>
+                    </div>
+
+                    <!-- 6. Bank Pengirim & Approver -->
+                    <div class="col-md-6">
+                        <div class="p-2 bg-white border rounded-2 d-flex align-items-center justify-content-between h-100 shadow-xs">
+                            <div class="form-check m-0 d-flex align-items-center gap-2">
+                                <input class="form-check-input verify-check-item m-0" type="checkbox" id="checkVerifyBankApprover" onchange="checkVerifyCompleteness()">
+                                <label class="form-check-label small fw-semibold text-dark cursor-pointer" for="checkVerifyBankApprover">
+                                    6. Bank Pengirim &amp; Approver
+                                </label>
+                            </div>
+                            <span class="badge bg-light text-dark border font-monospace text-truncate" style="font-size: 0.7rem; max-width: 170px;" id="verifyValBankApprover">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input Password Otorisasi Kompak -->
+                <div class="p-2 px-3 bg-white border rounded-2 shadow-xs">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <label class="form-label small fw-bold text-dark mb-0" for="inputVerifyPassword">
+                            <i class="bi bi-key-fill text-warning me-1"></i> Password Akun Anda <span class="text-danger">*</span>:
+                        </label>
+                        <div class="input-group input-group-sm" style="max-width: 320px;">
+                            <span class="input-group-text bg-light"><i class="bi bi-lock-fill text-muted"></i></span>
+                            <input type="password" class="form-control" id="inputVerifyPassword" 
+                                   placeholder="Password login akun..." 
+                                   autocomplete="current-password" 
+                                   oninput="this.classList.remove('is-invalid'); checkVerifyCompleteness();" 
+                                   onkeydown="if(event.key === 'Enter') { event.preventDefault(); if(!document.getElementById('btnFinalSubmitPayment').disabled) submitFinalPayment(); }"
+                                   required>
+                            <button class="btn btn-outline-secondary" type="button" onclick="toggleVerifyPasswordVisibility()" title="Lihat/Sembunyikan Password">
+                                <i class="bi bi-eye" id="toggleVerifyEyeIcon"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="invalid-feedback d-block text-danger small mt-1 d-none" id="verifyPasswordErrorText">
+                        <i class="bi bi-exclamation-circle me-1"></i>Password otorisasi salah. Silakan coba lagi.
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="modal-footer bg-white py-2 px-3 border-top d-flex justify-content-between align-items-center">
+                <button type="button" class="btn btn-outline-secondary btn-sm px-3" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i> Batal
+                </button>
+                <button type="button" class="btn btn-primary btn-sm px-3 fw-bold shadow-sm" id="btnFinalSubmitPayment" onclick="submitFinalPayment()" disabled>
+                    <i class="bi bi-check-circle-fill me-1"></i> Konfirmasi &amp; Simpan Pembayaran
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 let fakturList = [];
 let approverList = [];
 let currentSelectedFaktur = null;
+let modalVerifyPaymentInstance = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
+    const modalEl = document.getElementById('modalVerifyPayment');
+    if (modalEl) {
+        modalVerifyPaymentInstance = new bootstrap.Modal(modalEl);
+    }
     await fetchNextPaymentNumber();
     loadLookupData();
 
@@ -1163,9 +1336,9 @@ function handleProofUpload(input) {
 }
 
 // -------------------------------------------------------------
-// SUBMIT PAYMENT
+// MODAL VERIFIKASI & KONFIRMASI PEMBAYARAN (SEPERTI PO)
 // -------------------------------------------------------------
-async function submitPayment() {
+function openConfirmPaymentModal() {
     const idFaktur = parseInt(document.getElementById('selectedIdFaktur').value);
     if (!idFaktur) {
         showToast('Silakan pilih dokumen Faktur PO terlebih dahulu pada Tab 1.', 'warning');
@@ -1186,7 +1359,7 @@ async function submitPayment() {
 
     const bankPengirim = document.getElementById('bankPengirim').value.trim();
     if (!bankPengirim) {
-        showToast('Nama Bank Pengirim wajib diisi pada Tab 3.', 'warning');
+        showToast('Nama Bank Pengirim wajib diisi pada Tab 4.', 'warning');
         goToTab('tab-rekening');
         document.getElementById('bankPengirim').focus();
         return;
@@ -1194,14 +1367,120 @@ async function submitPayment() {
 
     const idApprover = document.getElementById('selectApprover').value;
     if (!idApprover) {
-        showToast('Silakan pilih Pejabat / Finance yang menyetujui transfer secara lisan pada Tab 4.', 'warning');
+        showToast('Silakan pilih Pejabat / Finance yang menyetujui transfer secara lisan pada Tab 5.', 'warning');
         goToTab('tab-approval');
         document.getElementById('selectApprover').focus();
         return;
     }
 
+    const biayaAdmin = parseRawNumber(document.getElementById('biayaAdmin').value);
+    const kodeBayar = document.getElementById('inputKodePembayaran') ? document.getElementById('inputKodePembayaran').value.trim() : 'AUTO';
+    const isLunas = document.getElementById('jenisLunas').checked;
+    const tglBayar = document.getElementById('tanggalBayar').value;
+
+    const approverSelect = document.getElementById('selectApprover');
+    const approverText = approverSelect.options[approverSelect.selectedIndex]?.textContent || '-';
+
+    const norekPengirim = document.getElementById('norekPengirim').value.trim();
+    const bankTujuan = document.getElementById('bankTujuan').value.trim() || 'CASH';
+    const norekTujuan = document.getElementById('norekTujuan').value.trim();
+
+    // 1. Populate Modal Summary
+    document.getElementById('verifyKodePaymentDisplay').textContent = kodeBayar;
+    document.getElementById('verifyFakturVendorDisplay').textContent = currentSelectedFaktur ? `${currentSelectedFaktur.nomor_faktur} (${currentSelectedFaktur.nama_vendor})` : '-';
+    document.getElementById('verifyTotalKasKeluarDisplay').textContent = formatRupiah(nominal + biayaAdmin);
+
+    // 2. Populate 6 Parameter Verification Badges
+    document.getElementById('verifyValFaktur').textContent = currentSelectedFaktur ? `${currentSelectedFaktur.nomor_faktur} (${currentSelectedFaktur.term_of_payment || 0} Hari TOP)` : '-';
+    document.getElementById('verifyValSkema').textContent = `${isLunas ? '1x Bayar (Lunas)' : 'Kredit / Sebagian'} (${formatDate(tglBayar)})`;
+    document.getElementById('verifyValNominal').textContent = formatRupiah(nominal);
+    document.getElementById('verifyValDiskonAdmin').textContent = `Diskon: ${nominalDiskon > 0 ? formatRupiah(nominalDiskon) : '0'} | Admin: ${biayaAdmin > 0 ? formatRupiah(biayaAdmin) : '0'}`;
+    document.getElementById('verifyValRekVendor').textContent = `${bankTujuan} ${norekTujuan ? '- ' + norekTujuan : ''}`;
+    document.getElementById('verifyValBankApprover').textContent = `${bankPengirim} (${approverText.split(' ')[0]})`;
+
+    // 3. Reset Checkboxes & Password
+    document.querySelectorAll('.verify-check-item').forEach(cb => cb.checked = false);
+    const pwInput = document.getElementById('inputVerifyPassword');
+    if (pwInput) {
+        pwInput.value = '';
+        pwInput.classList.remove('is-invalid');
+    }
+    const errText = document.getElementById('verifyPasswordErrorText');
+    if (errText) {
+        errText.classList.add('d-none');
+    }
+    document.getElementById('btnFinalSubmitPayment').disabled = true;
+
+    // 4. Open Modal
+    if (!modalVerifyPaymentInstance) {
+        modalVerifyPaymentInstance = new bootstrap.Modal(document.getElementById('modalVerifyPayment'));
+    }
+    modalVerifyPaymentInstance.show();
+}
+
+function toggleCheckAllVerify(checkAll) {
+    document.querySelectorAll('.verify-check-item').forEach(cb => {
+        cb.checked = checkAll;
+    });
+    checkVerifyCompleteness();
+}
+
+function checkVerifyCompleteness() {
+    const checkboxes = document.querySelectorAll('.verify-check-item');
+    let allChecked = true;
+    checkboxes.forEach(cb => {
+        if (!cb.checked) allChecked = false;
+    });
+
+    const passwordVal = document.getElementById('inputVerifyPassword').value.trim();
+    const hasPassword = passwordVal.length > 0;
+
+    const btn = document.getElementById('btnFinalSubmitPayment');
+    if (btn) {
+        btn.disabled = !(allChecked && hasPassword);
+    }
+}
+
+function toggleVerifyPasswordVisibility() {
+    const input = document.getElementById('inputVerifyPassword');
+    const icon = document.getElementById('toggleVerifyEyeIcon');
+    if (!input || !icon) return;
+
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'bi bi-eye-slash';
+    } else {
+        input.type = 'password';
+        icon.className = 'bi bi-eye';
+    }
+}
+
+async function submitFinalPayment() {
+    const passwordVal = document.getElementById('inputVerifyPassword').value.trim();
+    if (!passwordVal) {
+        showToast('Password otorisasi akun wajib dimasukkan.', 'warning');
+        document.getElementById('inputVerifyPassword').focus();
+        return;
+    }
+
+    const checkboxes = document.querySelectorAll('.verify-check-item');
+    for (let cb of checkboxes) {
+        if (!cb.checked) {
+            showToast('Semua 6 poin parameter checklist wajib diverifikasi dan dicentang.', 'warning');
+            return;
+        }
+    }
+
+    const idFaktur = parseInt(document.getElementById('selectedIdFaktur').value);
+    const nominal = parseRawNumber(document.getElementById('nominalPengiriman').value);
+    const nominalDiskon = parseRawNumber(document.getElementById('nominalDiskon').value);
+    const keteranganDiskon = document.getElementById('keteranganDiskon').value.trim();
+    const bankPengirim = document.getElementById('bankPengirim').value.trim();
+    const idApprover = document.getElementById('selectApprover').value;
+
     const payload = {
         id_faktur: idFaktur,
+        confirm_password: passwordVal,
         kode_pembayaran: document.getElementById('inputKodePembayaran') ? document.getElementById('inputKodePembayaran').value.trim() : '',
         jenis_pembayaran: document.getElementById('jenisLunas').checked ? 1 : 0,
         tanggal_bayar: document.getElementById('tanggalBayar').value,
@@ -1222,9 +1501,9 @@ async function submitPayment() {
         keterangan: document.getElementById('keteranganPayment').value.trim()
     };
 
-    const btn = document.getElementById('btnSubmitPayment');
+    const btn = document.getElementById('btnFinalSubmitPayment');
     btn.disabled = true;
-    btn.textContent = 'Menyimpan...';
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Memverifikasi &amp; Menyimpan Pembayaran...';
 
     try {
         const res = await fetch('<?= BASE_URL ?>/api/pembayaran_po/index.php', {
@@ -1235,19 +1514,33 @@ async function submitPayment() {
         const result = await res.json();
 
         if (result && result.success) {
+            if (modalVerifyPaymentInstance) modalVerifyPaymentInstance.hide();
             showToast(result.message || 'Pembayaran berhasil dicatat!', 'success');
             setTimeout(() => {
                 window.location.href = '<?= BASE_URL ?>/admin/pages/pembayaran_po/index.php';
             }, 1200);
         } else {
-            showToast(result.message || 'Gagal menyimpan transaksi pembayaran.', 'danger');
+            const errorMsg = result ? result.message : 'Gagal menyimpan transaksi pembayaran.';
+            showToast(errorMsg, 'danger');
             btn.disabled = false;
-            btn.textContent = 'Simpan Transaksi Pembayaran';
+            btn.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Konfirmasi &amp; Simpan Pembayaran';
+
+            const pwInput = document.getElementById('inputVerifyPassword');
+            const errText = document.getElementById('verifyPasswordErrorText');
+            if (pwInput) {
+                pwInput.classList.add('is-invalid');
+                pwInput.focus();
+                pwInput.select();
+            }
+            if (errText) {
+                errText.innerHTML = `<i class="bi bi-exclamation-circle me-1"></i>${escapeHtml(errorMsg)}`;
+                errText.classList.remove('d-none');
+            }
         }
     } catch (e) {
         showToast('Terjadi kesalahan jaringan: ' + e.message, 'danger');
         btn.disabled = false;
-        btn.textContent = 'Simpan Transaksi Pembayaran';
+        btn.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Konfirmasi &amp; Simpan Pembayaran';
     }
 }
 
