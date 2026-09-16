@@ -233,8 +233,8 @@ $companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
             <tr>
                 <th style="width: 30px;">NO.</th>
                 <th style="width: 110px;">KODE BAYAR</th>
-                <th style="width: 90px;">TGL BAYAR</th>
-                <th style="width: 100px;">BANK ASAL</th>
+                <th style="width: 90px;">TANGGAL</th>
+                <th style="width: 100px;">BANK PENGIRIM</th>
                 <th style="width: 90px;">NO. REF</th>
                 <th style="width: 110px;" class="text-end">TRANSFER</th>
                 <th style="width: 95px;" class="text-end">DISKON</th>
@@ -309,6 +309,17 @@ const BASE_URL = '<?= BASE_URL ?>';
 
 function formatRupiah(num) {
     return 'Rp ' + (parseFloat(num) || 0).toLocaleString('id-ID');
+}
+
+function formatNumber(num) {
+    return (parseFloat(num) || 0).toLocaleString('id-ID');
+}
+
+function formatNoRef(ref) {
+    if (!ref || ref === '0' || String(ref).trim() === '' || String(ref).trim() === '0') {
+        return '-';
+    }
+    return String(ref).trim();
 }
 
 function escapeHtml(text) {
@@ -407,7 +418,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         document.getElementById('docBankAsal').textContent = pay.bank_pengirim || '-';
         document.getElementById('docNorekAsal').textContent = pay.norek_pengirim || '-';
-        document.getElementById('docNoRef').textContent = pay.no_ref || '-';
+        document.getElementById('docNoRef').textContent = formatNoRef(pay.no_ref);
         document.getElementById('docBiayaAdmin').textContent = formatRupiah(biayaAdmin);
         
         const terbilangStr = terbilangIndo(nominal).trim() + " Rupiah";
@@ -425,15 +436,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (historyList.length === 0) {
             // Jika tidak ada list, render transaksi saat ini
             rowsHtml = `
-                <tr style="background-color: #f2f2f2; font-weight: bold;">
+                <tr>
                     <td class="text-center font-monospace">1</td>
-                    <td class="font-monospace">${escapeHtml(pay.kode_pembayaran)} <span style="font-size: 9.5px;">[SAAT INI]</span></td>
+                    <td class="font-monospace">${escapeHtml(pay.kode_pembayaran)}</td>
                     <td class="text-center font-monospace">${formatTanggalIndo(pay.tanggal_bayar)}</td>
                     <td class="font-monospace">${escapeHtml(pay.bank_pengirim || '-')}</td>
-                    <td class="font-monospace">${escapeHtml(pay.no_ref || '-')}</td>
-                    <td class="text-end font-monospace">${formatRupiah(nominal)}</td>
-                    <td class="text-end font-monospace ${diskon > 0 ? 'text-danger' : ''}">${diskon > 0 ? formatRupiah(diskon) : '-'}</td>
-                    <td class="text-end font-monospace">${formatRupiah(sisaPiutang)}</td>
+                    <td class="font-monospace">${escapeHtml(formatNoRef(pay.no_ref))}</td>
+                    <td class="text-end font-monospace">${formatNumber(nominal)}</td>
+                    <td class="text-end font-monospace ${diskon > 0 ? 'text-danger' : ''}">${diskon > 0 ? formatNumber(diskon) : '-'}</td>
+                    <td class="text-end font-monospace">${formatNumber(sisaPiutang)}</td>
                 </tr>
             `;
             cumulativePaid = nominal;
@@ -447,61 +458,46 @@ document.addEventListener('DOMContentLoaded', async () => {
                 cumulativePaid += hNominal;
                 cumulativeDiskon += hDiskon;
 
-                if (isCurrent) {
-                    rowsHtml += `
-                        <tr style="background-color: #ededed; font-weight: bold; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000;">
-                            <td class="text-center font-monospace">${idx + 1}</td>
-                            <td class="font-monospace">
-                                <strong>${escapeHtml(h.kode_pembayaran)}</strong> 
-                                <span class="d-inline-block px-1 border border-dark rounded" style="font-size: 8.5px; background: #fff;">SAAT INI</span>
-                            </td>
-                            <td class="text-center font-monospace">${formatTanggalIndo(h.tanggal_bayar)}</td>
-                            <td class="font-monospace">${escapeHtml(h.bank_pengirim || '-')}</td>
-                            <td class="font-monospace">${escapeHtml(h.no_ref || '-')}</td>
-                            <td class="text-end font-monospace fs-6"><strong>${formatRupiah(hNominal)}</strong></td>
-                            <td class="text-end font-monospace ${hDiskon > 0 ? 'text-danger' : ''}"><strong>${hDiskon > 0 ? formatRupiah(hDiskon) : '-'}</strong></td>
-                            <td class="text-end font-monospace"><strong>${formatRupiah(hSisa)}</strong></td>
-                        </tr>
-                    `;
-                } else {
-                    rowsHtml += `
-                        <tr>
-                            <td class="text-center font-monospace">${idx + 1}</td>
-                            <td class="font-monospace">${escapeHtml(h.kode_pembayaran)}</td>
-                            <td class="text-center font-monospace">${formatTanggalIndo(h.tanggal_bayar)}</td>
-                            <td class="font-monospace">${escapeHtml(h.bank_pengirim || '-')}</td>
-                            <td class="font-monospace">${escapeHtml(h.no_ref || '-')}</td>
-                            <td class="text-end font-monospace">${formatRupiah(hNominal)}</td>
-                            <td class="text-end font-monospace ${hDiskon > 0 ? 'text-danger' : ''}">${hDiskon > 0 ? formatRupiah(hDiskon) : '-'}</td>
-                            <td class="text-end font-monospace">${formatRupiah(hSisa)}</td>
-                        </tr>
-                    `;
-                }
+                rowsHtml += `
+                    <tr>
+                        <td class="text-center font-monospace">${idx + 1}</td>
+                        <td class="font-monospace">${escapeHtml(h.kode_pembayaran)}</td>
+                        <td class="text-center font-monospace">${formatTanggalIndo(h.tanggal_bayar)}</td>
+                        <td class="font-monospace">${escapeHtml(h.bank_pengirim || '-')}</td>
+                        <td class="font-monospace">${escapeHtml(formatNoRef(h.no_ref))}</td>
+                        <td class="text-end font-monospace">${formatNumber(hNominal)}</td>
+                        <td class="text-end font-monospace ${hDiskon > 0 ? 'text-danger' : ''}">${hDiskon > 0 ? formatNumber(hDiskon) : '-'}</td>
+                        <td class="text-end font-monospace">${formatNumber(hSisa)}</td>
+                    </tr>
+                `;
             });
         }
 
         tbody.innerHTML = rowsHtml;
 
-        // Footer Tabel Rincian Ringkasan
+        // Footer Tabel Rincian Ringkasan (Background Putih kecuali Sisa Tagihan)
         tfoot.innerHTML = `
-            <tr style="border-top: 2px solid #000; font-weight: bold; background: #fafafa;">
+            <tr style="border-top: 2px solid #000; font-weight: bold; background: #ffffff;">
                 <td colspan="5" class="text-end font-monospace">TOTAL NILAI TAGIHAN FAKTUR :</td>
-                <td colspan="3" class="text-end font-monospace">${formatRupiah(totalTagihan)}</td>
+                <td colspan="3" class="text-end font-monospace">${formatNumber(totalTagihan)}</td>
             </tr>
-            <tr style="font-weight: bold; background: #fafafa;">
+            <tr style="font-weight: bold; background: #ffffff;">
                 <td colspan="5" class="text-end font-monospace">TOTAL TERBAYAR S.D. SAAT INI :</td>
-                <td colspan="3" class="text-end font-monospace">${formatRupiah(totalTerbayarFaktur || (cumulativePaid + cumulativeDiskon))}</td>
+                <td colspan="3" class="text-end font-monospace">${formatNumber(totalTerbayarFaktur || (cumulativePaid + cumulativeDiskon))}</td>
             </tr>
-            <tr style="border-top: 1px solid #333; font-weight: bold; background: #f0f0f0;">
+            <tr style="border-top: 1.5px solid #000; font-weight: bold; background: #d9d9d9;">
                 <td colspan="5" class="text-end font-monospace">SISA TAGIHAN / HUTANG FAKTUR :</td>
-                <td colspan="3" class="text-end font-monospace fs-6">${formatRupiah(sisaPiutang)}</td>
+                <td colspan="3" class="text-end font-monospace fs-6">${formatNumber(sisaPiutang)}</td>
             </tr>
         `;
 
         // Catatan Transaksi
-        if (pay.keterangan && pay.keterangan.trim() !== '') {
+        const ketClean = (pay.keterangan && pay.keterangan !== '0' && String(pay.keterangan).trim() !== '0' && String(pay.keterangan).trim() !== '') ? String(pay.keterangan).trim() : '';
+        if (ketClean !== '') {
             document.getElementById('docCatatanContainer').classList.remove('d-none');
-            document.getElementById('docCatatanTransaksi').innerHTML = escapeHtml(pay.keterangan).replace(/\n/g, '<br>');
+            document.getElementById('docCatatanTransaksi').innerHTML = escapeHtml(ketClean).replace(/\n/g, '<br>');
+        } else {
+            document.getElementById('docCatatanContainer').classList.add('d-none');
         }
 
         // Signatures (Nama, Jabatan & Divisi Dinamis)

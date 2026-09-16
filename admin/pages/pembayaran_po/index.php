@@ -116,7 +116,7 @@ require_once __DIR__ . '/../../components/navbar.php';
         </div>
         <div class="d-flex gap-2">
             <a href="<?= BASE_URL ?>/admin/pages/pembayaran_po/create.php" class="btn btn-primary btn-sm px-3 shadow-sm" style="height: 38px; display: inline-flex; align-items: center;">
-                <i class="bi bi-plus-lg me-1"></i> Catat Pembayaran Baru
+                <i class="bi bi-plus-lg me-1"></i> Pembayaran Baru
             </a>
             <button type="button" class="btn btn-outline-secondary btn-sm px-3 shadow-sm" onclick="loadPaymentList(1)" style="height: 38px; display: inline-flex; align-items: center;">
                 <i class="bi bi-arrow-clockwise me-1"></i> Refresh Data
@@ -172,7 +172,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                     <i class="bi bi-wallet2"></i>
                 </div>
                 <div class="stat-details">
-                    <div class="stat-label text-danger">Sisa Hutang Faktur</div>
+                    <div class="stat-label text-danger">Hutang Faktur</div>
                     <div class="stat-value text-danger" id="metricTotalHutang">Rp 0</div>
                 </div>
             </div>

@@ -35,7 +35,8 @@ require_once __DIR__ . '/../../components/navbar.php';
 .input-group-sm > .form-control,
 .input-group-sm > .btn,
 .input-group-sm > .input-group-text,
-.custom-select-trigger {
+.custom-select-trigger,
+.faktur-custom-select {
     height: 38px !important;
     min-height: 38px !important;
     font-size: 0.875rem !important;
@@ -46,12 +47,27 @@ textarea.form-control {
     min-height: 100px !important;
 }
 
-.faktur-opt-item {
-    transition: background-color 0.15s ease;
+.faktur-custom-select {
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.faktur-custom-select:hover {
+    border-color: #0d6efd !important;
+    background-color: #f8fafc !important;
+}
+.transition-chevron {
+    transition: transform 0.2s ease;
+}
+.faktur-option-item {
+    transition: background-color 0.15s ease, transform 0.1s ease;
+    border-radius: 6px;
     cursor: pointer !important;
 }
-.faktur-opt-item:hover {
-    background-color: #f1f5f9 !important;
+.faktur-option-item:hover {
+    background-color: #e9ecef !important;
+}
+.faktur-option-item:hover strong.text-primary {
+    color: #0a58ca !important;
+    text-decoration: underline;
 }
 </style>
 
@@ -59,7 +75,7 @@ textarea.form-control {
     <!-- HEADER -->
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
         <div>
-            <h4 class="fw-bold text-dark mb-0">Catat Pembayaran Faktur PO</h4>
+            <h4 class="fw-bold text-dark mb-0">Pembayaran Faktur PO</h4>
         </div>
         <div class="d-flex gap-2">
             <a href="<?= BASE_URL ?>/admin/pages/pembayaran_po/index.php" class="btn btn-outline-secondary btn-sm px-3 shadow-sm" style="height: 38px; display: inline-flex; align-items: center;">
@@ -129,26 +145,26 @@ textarea.form-control {
                                         Dokumen Faktur PO Belum Lunas <span class="text-danger">*</span>
                                     </label>
 
-                                    <!-- Trigger Display Box -->
-                                    <div class="custom-select-trigger d-flex align-items-center justify-content-between p-2 px-3 border rounded-3 bg-white cursor-pointer shadow-sm" id="fakturTriggerBox" onclick="toggleFakturDropdown(event)" style="cursor: pointer;">
+                                    <!-- Trigger Search Box (Searchable UI) -->
+                                    <div class="faktur-custom-select d-flex align-items-center justify-content-between p-2 px-3 border rounded-3 bg-white cursor-pointer shadow-sm" id="fakturTriggerBox" onclick="toggleFakturDropdown(event)" style="cursor: pointer;">
                                         <div id="fakturSelectedDisplay" class="text-truncate me-2">
-                                            <span class="text-muted">Cari Faktur PO (No. Faktur, Vendor, Invoice)...</span>
+                                            <span class="text-muted"><i class="bi bi-search me-2 text-primary"></i>Pilih Dokumen Faktur Belum Lunas (No. Faktur, Vendor, Inv)...</span>
                                         </div>
                                         <div class="d-flex align-items-center gap-1">
                                             <button type="button" class="btn btn-sm btn-link text-danger p-0 me-1" id="fakturClearBtn" onclick="clearFakturSelection(event)" style="display: none;" title="Hapus Pilihan">
-                                                Hapus
+                                                <i class="bi bi-x-circle-fill fs-6"></i>
                                             </button>
-                                            <span class="text-muted small">&#9662;</span>
+                                            <i class="bi bi-chevron-down text-muted small transition-chevron" id="fakturChevronIcon"></i>
                                         </div>
                                     </div>
 
-                                    <!-- Dropdown Menu -->
+                                    <!-- Searchable Dropdown Menu -->
                                     <div class="faktur-dropdown-menu shadow-lg border rounded-3 p-2 bg-white" id="fakturDropdownMenu" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 1050;">
                                         <div class="input-group input-group-sm mb-2">
-                                            <span class="input-group-text bg-light text-muted">Cari</span>
-                                            <input type="text" class="form-control form-control-sm" id="fakturSearchInput" placeholder="Ketik No. Faktur, Vendor, atau No. Invoice..." autocomplete="off" oninput="filterFakturList()">
+                                            <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                                            <input type="text" class="form-control form-control-sm border-start-0" id="fakturSearchInput" placeholder="Ketik No. Faktur, Vendor, atau No. Invoice..." autocomplete="off" oninput="filterFakturList()">
                                         </div>
-                                        <div class="overflow-auto" id="fakturOptionsContainer" style="max-height: 250px;">
+                                        <div class="overflow-auto" id="fakturOptionsContainer" style="max-height: 260px;">
                                             <!-- Populated dynamically by JS -->
                                         </div>
                                     </div>
@@ -303,11 +319,20 @@ textarea.form-control {
                                 </div>
 
                                 <div class="mb-3">
-                                    <label class="form-label small fw-semibold text-dark">Biaya Admin Bank</label>
+                                    <label class="form-label small fw-semibold text-dark">Jenis Transfer &amp; Biaya Admin</label>
                                     <div class="input-group">
+                                        <select class="form-select" id="selectJenisTransfer" onchange="handleSelectJenisTransfer(this)" style="max-width: 55%;">
+                                            <option value="0" data-fee="0" selected>Sesama Bank - Gratis (Rp 0)</option>
+                                            <option value="2500" data-fee="2500">BI-FAST - Rp 2.500</option>
+                                            <option value="6500" data-fee="6500">Transfer Online (RTO) - Rp 6.500</option>
+                                            <option value="2900" data-fee="2900">Kliring (SKNBI) - Rp 2.900</option>
+                                            <option value="25000" data-fee="25000">RTGS - Rp 25.000</option>
+                                            <option value="custom" data-fee="">Lainnya / Manual</option>
+                                        </select>
                                         <span class="input-group-text font-monospace">Rp</span>
-                                        <input type="text" class="form-control text-end font-monospace" id="biayaAdmin" value="0" placeholder="0" oninput="handleBiayaAdminInput(this)">
+                                        <input type="text" class="form-control text-end font-monospace fw-semibold" id="biayaAdmin" value="0" placeholder="0" oninput="handleBiayaAdminInput(this)">
                                     </div>
+                                    
                                 </div>
 
                                 <!-- KARTU ESTIMASI & RINGKASAN TAGIHAN -->
@@ -489,7 +514,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.addEventListener('click', (e) => {
         const fakturWrapper = document.getElementById('fakturSelectWrapper');
         if (fakturWrapper && !fakturWrapper.contains(e.target)) {
-            hideFakturDropdown();
+            closeFakturDropdown();
         }
     });
 });
@@ -604,42 +629,61 @@ function renderApproverOptions(approvers) {
 function toggleFakturDropdown(e) {
     if (e) e.stopPropagation();
     const menu = document.getElementById('fakturDropdownMenu');
-    if (menu.style.display === 'block') {
-        hideFakturDropdown();
+    if (menu && menu.style.display === 'block') {
+        closeFakturDropdown();
     } else {
-        showFakturDropdown();
+        openFakturDropdown();
     }
 }
 
-function showFakturDropdown() {
-    document.getElementById('fakturDropdownMenu').style.display = 'block';
-    document.getElementById('fakturSearchInput').focus();
+function openFakturDropdown() {
+    const menu = document.getElementById('fakturDropdownMenu');
+    const chevron = document.getElementById('fakturChevronIcon');
+    if (menu) menu.style.display = 'block';
+    if (chevron) chevron.style.transform = 'rotate(180deg)';
+    setTimeout(() => {
+        const searchInput = document.getElementById('fakturSearchInput');
+        if (searchInput) {
+            searchInput.value = '';
+            filterFakturList();
+            searchInput.focus();
+        }
+    }, 50);
 }
 
-function hideFakturDropdown() {
-    document.getElementById('fakturDropdownMenu').style.display = 'none';
+function closeFakturDropdown() {
+    const menu = document.getElementById('fakturDropdownMenu');
+    const chevron = document.getElementById('fakturChevronIcon');
+    if (menu) menu.style.display = 'none';
+    if (chevron) chevron.style.transform = 'rotate(0deg)';
 }
 
 function renderFakturOptions(list) {
     const container = document.getElementById('fakturOptionsContainer');
+    if (!container) return;
     if (!list || list.length === 0) {
-        container.innerHTML = '<div class="text-muted small p-3 text-center">Tidak ada faktur belum lunas.</div>';
+        container.innerHTML = '<div class="p-3 text-center text-muted small">Tidak ada dokumen Faktur PO yang cocok.</div>';
         return;
     }
 
     let html = '';
     list.forEach(f => {
         const sisaTagihan = parseFloat(f.sisa_tagihan) || 0;
+        const tglDisplay = formatDate(f.tanggal_jatuh_tempo);
         html += `
-        <div class="faktur-opt-item p-2 px-3 border-bottom rounded-2" onclick="selectFaktur(${f.id_faktur})">
-            <div class="d-flex justify-content-between align-items-center mb-1">
-                <strong class="font-monospace text-primary">${f.nomor_faktur}</strong>
-                <span class="badge bg-danger-subtle text-danger border font-monospace">Sisa: ${formatRupiah(sisaTagihan)}</span>
+        <div class="faktur-option-item p-2 border-bottom" 
+             style="cursor: pointer;"
+             onclick="selectFaktur(${f.id_faktur})">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                    <strong class="text-primary font-monospace small">${escapeHtml(f.nomor_faktur)}</strong>
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-1 py-0" style="font-size: 0.65rem;">Sisa: ${formatRupiah(sisaTagihan)}</span>
+                </div>
+                <span class="badge bg-light text-secondary border px-2 py-1 small fw-normal font-monospace">${tglDisplay}</span>
             </div>
-            <div class="small fw-semibold text-dark">${f.nama_vendor}</div>
-            <div class="small text-muted d-flex justify-content-between">
-                <span>Inv: ${f.nomor_faktur_vendor || '-'} | PO: ${f.nomor_po}</span>
-                <span class="text-danger">Tempo: ${formatDate(f.tanggal_jatuh_tempo)}</span>
+            <div class="d-flex justify-content-between align-items-center mt-1">
+                <div class="small text-dark fw-semibold">${escapeHtml(f.nama_vendor)}</div>
+                <div class="small text-muted font-monospace" style="font-size: 0.76rem;">Inv: ${escapeHtml(f.nomor_faktur_vendor || '-')} | PO: ${escapeHtml(f.nomor_po)}</div>
             </div>
         </div>`;
     });
@@ -658,7 +702,7 @@ function filterFakturList() {
 }
 
 async function selectFaktur(idFaktur) {
-    hideFakturDropdown();
+    closeFakturDropdown();
     document.getElementById('selectedIdFaktur').value = idFaktur;
 
     try {
@@ -788,7 +832,7 @@ function clearFakturSelection(e) {
     if (e) e.stopPropagation();
     currentSelectedFaktur = null;
     document.getElementById('selectedIdFaktur').value = '';
-    document.getElementById('fakturSelectedDisplay').innerHTML = '<span class="text-muted">Cari Faktur PO (No. Faktur, Vendor, Invoice)...</span>';
+    document.getElementById('fakturSelectedDisplay').innerHTML = '<span class="text-muted"><i class="bi bi-search me-2 text-primary"></i>Pilih Dokumen Faktur Belum Lunas (No. Faktur, Vendor, Inv)...</span>';
     document.getElementById('fakturClearBtn').style.display = 'none';
     
     document.getElementById('dispNomorFaktur').textContent = '-';
@@ -808,6 +852,13 @@ function clearFakturSelection(e) {
     document.getElementById('nominalDiskon').value = '';
     document.getElementById('keteranganDiskon').value = '';
     document.getElementById('nominalPengiriman').value = '';
+    
+    if (document.getElementById('selectJenisTransfer')) {
+        document.getElementById('selectJenisTransfer').value = '0';
+    }
+    if (document.getElementById('infoJenisTransfer')) {
+        document.getElementById('infoJenisTransfer').textContent = TRANSFER_TYPES_INFO['0'] || '';
+    }
     document.getElementById('biayaAdmin').value = '0';
     document.getElementById('displaySisaSesudah').textContent = 'Rp 0';
     if (document.getElementById('calcTagihanAwal')) document.getElementById('calcTagihanAwal').textContent = 'Rp 0';
@@ -850,9 +901,58 @@ function handleDiskonInput(input) {
     calculateRemainingBalance();
 }
 
+const TRANSFER_TYPES_INFO = {
+    '0': 'Sesama Bank: Bebas biaya admin (Gratis) • Real-time (Seketika)',
+    '2500': 'BI-FAST: Rp 2.500 • Real-time (Seketika) • Batas s/d Rp 250 Juta / transaksi',
+    '6500': 'Transfer Online (RTO): Rp 6.500 • Real-time (Seketika) • Batas Rp 50 Juta - Rp 100 Juta / hari',
+    '2900': 'Kliring (SKNBI): Rp 2.900 • 2 - 4 Jam (Hari Kerja) • Batas s/d Rp 1 Miliar / hari',
+    '25000': 'RTGS: Rp 25.000 • Hari yang sama (Hari Kerja) • Di atas Rp 100 Juta (Tanpa limit atas)',
+    'custom': 'Lainnya / Manual: Nominal biaya admin diisi manual sesuai kebijakan bank pengirim.'
+};
+
+function handleSelectJenisTransfer(sel) {
+    const val = sel.value;
+    const fee = sel.options[sel.selectedIndex].getAttribute('data-fee');
+    const adminInput = document.getElementById('biayaAdmin');
+    const infoEl = document.getElementById('infoJenisTransfer');
+    
+    if (val !== 'custom' && fee !== null && fee !== '') {
+        const numFee = parseInt(fee, 10) || 0;
+        adminInput.value = numFee > 0 ? numFee.toLocaleString('id-ID') : '0';
+    }
+    
+    if (infoEl) {
+        infoEl.textContent = TRANSFER_TYPES_INFO[val] || '';
+    }
+    
+    calculateRemainingBalance();
+}
+
 function handleBiayaAdminInput(input) {
     let raw = parseRawNumber(input.value);
     input.value = raw > 0 ? raw.toLocaleString('id-ID') : '0';
+    
+    // Sinkronkan pilihan dropdown dengan nominal yang diketik
+    const sel = document.getElementById('selectJenisTransfer');
+    const infoEl = document.getElementById('infoJenisTransfer');
+    if (sel) {
+        let matched = false;
+        for (let i = 0; i < sel.options.length; i++) {
+            const optVal = sel.options[i].value;
+            const optFee = sel.options[i].getAttribute('data-fee');
+            if (optVal !== 'custom' && optFee !== null && optFee !== '' && parseInt(optFee, 10) === raw) {
+                sel.selectedIndex = i;
+                matched = true;
+                if (infoEl) infoEl.textContent = TRANSFER_TYPES_INFO[optVal] || '';
+                break;
+            }
+        }
+        if (!matched) {
+            sel.value = 'custom';
+            if (infoEl) infoEl.textContent = TRANSFER_TYPES_INFO['custom'] || '';
+        }
+    }
+    
     calculateRemainingBalance();
 }
 
@@ -1162,6 +1262,16 @@ function formatDate(dateStr) {
 function formatRupiah(num) {
     const n = parseFloat(num) || 0;
     return 'Rp ' + n.toLocaleString('id-ID');
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 </script>
 

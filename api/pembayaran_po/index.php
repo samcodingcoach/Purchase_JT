@@ -407,7 +407,7 @@ if ($method === 'POST') {
                  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmtD = $conn->prepare($sqlD);
         $stmtD->bind_param(
-            "issiisssddsddssdsss",
+            "issiisssddsdssdssss",
             $idPembayaran, $kodePembayaran, $tanggalBayar, $idKaryawanInput, $idKaryawanApproved,
             $bankPengirim, $norekPengirim, $anPengirim, $nominalPengiriman, $nominalDiskon, $keteranganDiskon,
             $biayaAdmin, $noRef, $fileBuktiBayar, $sisaPiutangBaru, $keterangan,
