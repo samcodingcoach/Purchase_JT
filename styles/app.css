@@ -622,6 +622,12 @@ body {
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+.form-control-sm, .form-select-sm, .input-group-sm > .form-control, .input-group-sm > .btn {
+  padding: 0.35rem 0.65rem;
+  font-size: 0.85rem;
+  min-height: 38px;
+}
+
 .form-control:focus, .form-select:focus {
   border-color: var(--jt-accent);
   box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);

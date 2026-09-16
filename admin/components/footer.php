@@ -72,6 +72,175 @@ $fullLocation = trim($companyAddress . ($companyCity ? ', ' . $companyCity : '')
     </div>
 </div>
 
+<!-- Modal Upload Lampiran Dokumen Universal (Desain Tab Standar) -->
+<div class="modal fade" id="modalUploadDokumen" tabindex="-1" aria-labelledby="modalUploadDokumenLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 650px;">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <!-- MODAL HEADER DENGAN NAV TABS -->
+            <div class="modal-header bg-white pt-3 pb-0 px-4 border-bottom flex-column align-items-stretch">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="modal-title fw-bold text-dark mb-0" id="modalUploadDokumenLabel">
+                        Unggah Lampiran Dokumen
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <!-- Nav Tabs Sesuai Fungsi -->
+                <ul class="nav nav-tabs border-bottom-0" id="uploadDokumenTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active fw-bold text-dark small py-2 px-3" id="doc-tab-info" data-bs-toggle="tab" data-bs-target="#doc-pane-info" type="button" role="tab">
+                            <i class="bi bi-file-earmark-text me-1 text-primary"></i> 1. Info Transaksi &amp; Dokumen
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold text-dark small py-2 px-3" id="doc-tab-file" data-bs-toggle="tab" data-bs-target="#doc-pane-file" type="button" role="tab">
+                            <i class="bi bi-cloud-arrow-up me-1 text-primary"></i> 2. Berkas &amp; Proteksi
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+            <form id="formUploadDokumen" onsubmit="submitUploadDokumen(event)">
+                <input type="hidden" id="uploadDokumenCallerKey" value="">
+
+                <!-- MODAL BODY DENGAN TAB CONTENT -->
+                <div class="modal-body p-4">
+                    <div class="tab-content" id="uploadDokumenTabContent">
+                        
+                        <!-- TAB 1: INFORMASI TRANSAKSI & DOKUMEN -->
+                        <div class="tab-pane fade show active" id="doc-pane-info" role="tabpanel">
+                            <div class="p-3 bg-light rounded-3 border mb-3">
+                                <div class="row g-3">
+                                    <div class="col-md-6 col-12">
+                                        <label class="form-label small fw-bold text-dark d-block">Tipe Transaksi <span class="text-danger">*</span></label>
+                                        <select class="form-select form-select-sm" id="uploadDokumenTipe" name="tipe_dokumen" required onchange="fetchRecentTransaksiDokumen()">
+                                            <option value="REQUEST">REQUEST ORDER</option>
+                                            <option value="PURCHASE" selected>PURCHASE ORDER</option>
+                                            <option value="RECEIVING">RECEIVING (PENERIMAAN)</option>
+                                            <option value="RETUR PO">RETUR PO</option>
+                                            <option value="FAKTUR PO">FAKTUR PO</option>
+                                            <option value="PAYMENT PO">PAYMENT PO (PEMBAYARAN)</option>
+                                            <option value="MUTASI BARANG">MUTASI BARANG</option>
+                                            <option value="ADJUSTMENT STOK">ADJUSTMENT STOK</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 col-12 position-relative">
+                                        <label class="form-label small fw-bold text-dark d-block">Nomor Transaksi <span class="text-danger">*</span></label>
+                                        <div class="input-group input-group-sm">
+                                            <input type="text" class="form-control form-control-sm" id="uploadDokumenNomor" name="nomor_dokumen" placeholder="Pilih Nomor Transaksi" autocomplete="off" required onfocus="showRecentDokumenDropdown()" oninput="filterRecentDokumenDropdown(this.value)">
+                                            <button class="btn btn-outline-secondary d-flex align-items-center justify-content-center px-2" type="button" onclick="toggleRecentDokumenDropdown(event)" title="Pilih Transaksi Terakhir">
+                                                <i class="bi bi-chevron-down" style="font-size: 0.75rem;"></i>
+                                            </button>
+                                        </div>
+                                        <!-- Dropdown Menu Searchable -->
+                                        <div id="dropdownRecentTransaksiList" class="position-absolute start-0 end-0 bg-white border rounded-3 shadow-lg p-1 mt-1 d-none" style="z-index: 1060; max-height: 220px; overflow-y: auto; margin-left: 12px; margin-right: 12px;">
+                                            <!-- Items dynamically injected -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="p-3 bg-light rounded-3 border">
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold text-dark">Nama / Label Dokumen <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control form-control-sm" id="uploadDokumenNama" name="nama_dokumen" placeholder="Contoh: Surat Jalan Vendor, Invoice Asli, Bukti QC, Nota Pembelian" required>
+                                </div>
+                                <div class="mb-0">
+                                    <label class="form-label small fw-bold text-dark">Tanggal Dokumen</label>
+                                    <input type="date" class="form-control form-control-sm" id="uploadDokumenTanggal" name="tanggal_dokumen" value="<?= date('Y-m-d') ?>">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TAB 2: SUMBER BERKAS & PROTEKSI PASSWORD -->
+                        <div class="tab-pane fade" id="doc-pane-file" role="tabpanel">
+                            <!-- Tab Pilihan Sumber File: Upload Fisik vs Google Drive / Cloud URL -->
+                            <div class="p-3 bg-light rounded-3 border mb-3">
+                                <div class="btn-group w-100 btn-group-sm mb-3" role="group">
+                                    <input type="radio" class="btn-check" name="source_type" id="sourceUploadFile" value="FILE" checked onchange="toggleAttachmentSourceType()">
+                                    <label class="btn btn-outline-primary fw-semibold" for="sourceUploadFile">
+                                        <i class="bi bi-file-earmark-arrow-up me-1"></i> Upload File Server (Internal)
+                                    </label>
+                                    
+                                    <input type="radio" class="btn-check" name="source_type" id="sourceExternalUrl" value="URL" onchange="toggleAttachmentSourceType()">
+                                    <label class="btn btn-outline-primary fw-semibold" for="sourceExternalUrl">
+                                        <i class="bi bi-google me-1"></i> Link Google Drive / Cloud
+                                    </label>
+                                </div>
+
+                                <!-- Panel File Fisik -->
+                                <div id="panelSourceFile">
+                                    <label class="form-label small fw-bold text-dark">Pilih File dari Komputer / HP</label>
+                                    <input type="file" class="form-control form-control-sm" id="uploadDokumenFileInput" name="file" accept=".pdf,.jpg,.jpeg">
+                                    <div class="form-text small text-muted" style="font-size: 0.75rem;">
+                                        Format didukung: PDF dan JPG (Maks. 5MB).
+                                    </div>
+                                </div>
+
+                                <!-- Panel Link Eksternal -->
+                                <div id="panelSourceUrl" class="d-none">
+                                    <label class="form-label small fw-bold text-dark">Tautan Google Drive / Cloud Storage</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white"><i class="bi bi-link-45deg"></i></span>
+                                        <input type="url" class="form-control" id="uploadDokumenUrlInput" name="external_url" placeholder="https://drive.google.com/file/d/...">
+                                    </div>
+                                    
+                                </div>
+                            </div>
+
+                            <!-- Password Open (Opsional untuk Dokumen Rahasia) -->
+                            <div class="p-3 bg-light rounded-3 border">
+                                <label class="form-label small fw-bold text-dark">Password Buka File (Opsional)</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-white"><i class="bi bi-shield-lock"></i></span>
+                                    <input type="password" class="form-control font-monospace" id="uploadDokumenPassword" name="password_open" placeholder="Kosongkan jika dokumen bersifat publik/umum...">
+                                </div>
+                                
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- MODAL FOOTER DENGAN TOMBOL SIMPAN -->
+                <div class="modal-footer bg-light py-2 px-4 d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary btn-sm px-4 fw-semibold shadow-sm" id="btnSubmitUploadDokumen">
+                        <i class="bi bi-cloud-upload me-1"></i> Simpan Lampiran
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Verifikasi Password Dokumen Terproteksi -->
+<div class="modal fade" id="modalVerifyDokumenPassword" tabindex="-1" aria-labelledby="modalVerifyDokumenPasswordLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <div class="modal-header bg-dark text-white py-2 px-3">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-shield-lock-fill text-warning fs-5"></i>
+                    <h6 class="modal-title fw-bold mb-0" id="modalVerifyDokumenPasswordLabel">Dokumen Terproteksi</h6>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formVerifyDokumenPassword" onsubmit="submitVerifyDokumenPassword(event)">
+                <input type="hidden" id="verifyDokumenId" value="">
+                <div class="modal-body p-3">
+                    <p class="small text-muted mb-2">Berkas ini dilindungi password. Silakan masukkan password untuk membuka:</p>
+                    <input type="password" class="form-control form-control-sm font-monospace text-center fw-bold" id="verifyDokumenPasswordInput" placeholder="Masukkan Password" required autocomplete="off">
+                </div>
+                <div class="modal-footer bg-light py-2 px-3 d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary btn-sm fw-semibold" id="btnSubmitVerifyPassword">
+                        <i class="bi bi-unlock me-1"></i> Buka File
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Bootstrap 5 JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
@@ -551,6 +720,395 @@ async function apiRequest(endpoint, options = {}, payload = null) {
         console.error('API Request Error:', error);
         showToast('Terjadi kesalahan koneksi ke server.', 'error');
         return { success: false, message: 'Kesalahan koneksi ke server.' };
+    }
+}
+
+// =============================================================
+// UNIVERSAL DOKUMEN / ATTACHMENT HANDLERS (SEMUA ROLE & MODUL)
+// =============================================================
+let currentLoadedDokumenParams = {};
+
+function toggleAttachmentSourceType() {
+    const isFile = document.getElementById('sourceUploadFile').checked;
+    const panelFile = document.getElementById('panelSourceFile');
+    const panelUrl = document.getElementById('panelSourceUrl');
+    const fileInput = document.getElementById('uploadDokumenFileInput');
+    const urlInput = document.getElementById('uploadDokumenUrlInput');
+
+    if (isFile) {
+        panelFile.classList.remove('d-none');
+        panelUrl.classList.add('d-none');
+        fileInput.required = true;
+        urlInput.required = false;
+        urlInput.value = '';
+    } else {
+        panelFile.classList.add('d-none');
+        panelUrl.classList.remove('d-none');
+        fileInput.required = false;
+        urlInput.required = true;
+        fileInput.value = '';
+    }
+}
+
+function openModalUploadDokumen(tipeDokumen, callerKey = 'DEFAULT') {
+    let nomorDokumen = '';
+    
+    // Auto-detect nomor dokumen dari halaman/modal aktif jika ada
+    const possibleIds = [
+        'nomorPo', 'inputNomorPo', 'detailNomorPo',
+        'nomorRo', 'inputNomorRo', 'detailNomorRo',
+        'nomorRcv', 'inputNomorRcv', 'detailNomorRcv',
+        'nomorFaktur', 'inputNomorFaktur', 'detailNomorFaktur',
+        'nomorPembayaran', 'inputNomorPembayaran', 'detailNomorPembayaran',
+        'nomorMutasi', 'inputNomorMutasi', 'detailNomorMutasi',
+        'nomorAdjustment', 'inputNomorAdjustment', 'headerNomorAdj',
+        'nomorRetur', 'inputNomorRetur', 'detailNomorRetur'
+    ];
+
+    for (const id of possibleIds) {
+        const el = document.getElementById(id);
+        if (el) {
+            const val = (el.value !== undefined ? el.value : el.innerText || '').trim();
+            if (val && val !== '-' && val !== '[Otomatis]' && val !== 'PO-XXXX-XXXX' && val !== 'RO-XXXX-XXXX' && val !== 'RCV-XXXX-XXXX') {
+                nomorDokumen = val;
+                break;
+            }
+        }
+    }
+
+    // Reset Form
+    document.getElementById('formUploadDokumen').reset();
+    document.getElementById('uploadDokumenTipe').value = tipeDokumen || 'PURCHASE';
+    document.getElementById('uploadDokumenNomor').value = nomorDokumen || '';
+    document.getElementById('uploadDokumenCallerKey').value = callerKey;
+
+    // Reset to Tab 1
+    const firstTabBtn = document.getElementById('doc-tab-info');
+    if (firstTabBtn) {
+        bootstrap.Tab.getInstance(firstTabBtn)?.show() || new bootstrap.Tab(firstTabBtn).show();
+    }
+
+    // Load 10 transaksi terakhir
+    fetchRecentTransaksiDokumen(nomorDokumen);
+
+    const modalEl = document.getElementById('modalUploadDokumen');
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+}
+
+let cachedRecentTransaksiList = [];
+
+async function fetchRecentTransaksiDokumen(selectedNomor = '') {
+    const tipeSelect = document.getElementById('uploadDokumenTipe');
+    const inputNomor = document.getElementById('uploadDokumenNomor');
+    if (!tipeSelect) return;
+
+    const tipe = tipeSelect.value || 'PURCHASE';
+    cachedRecentTransaksiList = [];
+
+    try {
+        const res = await fetch(`${BASE_URL}/api/dokumen/index.php?action=get_recent_transactions&tipe=${encodeURIComponent(tipe)}`);
+        const json = await res.json();
+        
+        if (json.success && json.data && json.data.items) {
+            cachedRecentTransaksiList = json.data.items.map(item => item.nomor).filter(Boolean);
+        }
+
+        renderRecentDokumenDropdown(cachedRecentTransaksiList);
+
+        if (selectedNomor) {
+            inputNomor.value = selectedNomor;
+        }
+    } catch (e) {
+        console.error('Error fetching recent transactions:', e);
+    }
+}
+
+function renderRecentDokumenDropdown(list) {
+    const dropdown = document.getElementById('dropdownRecentTransaksiList');
+    if (!dropdown) return;
+
+    if (!list || list.length === 0) {
+        dropdown.innerHTML = '<div class="text-muted small p-2 text-center fst-italic">Tidak ada riwayat transaksi ditemukan</div>';
+        return;
+    }
+
+    let html = '';
+    list.forEach(nomor => {
+        html += `<a href="javascript:void(0)" class="dropdown-item py-1 px-2 rounded-2 small text-dark d-flex justify-content-between align-items-center" onclick="selectRecentDokumenNomor('${escapeHtml(nomor)}')">
+                    <span>${escapeHtml(nomor)}</span>
+                    <i class="bi bi-arrow-return-left text-muted" style="font-size: 0.75rem;"></i>
+                 </a>`;
+    });
+    dropdown.innerHTML = html;
+}
+
+function showRecentDokumenDropdown() {
+    const dropdown = document.getElementById('dropdownRecentTransaksiList');
+    const inputVal = (document.getElementById('uploadDokumenNomor')?.value || '').trim();
+    if (!dropdown) return;
+    
+    filterRecentDokumenDropdown(inputVal);
+    dropdown.classList.remove('d-none');
+}
+
+function hideRecentDokumenDropdown() {
+    const dropdown = document.getElementById('dropdownRecentTransaksiList');
+    if (dropdown) {
+        dropdown.classList.add('d-none');
+    }
+}
+
+function toggleRecentDokumenDropdown(e) {
+    if (e) e.stopPropagation();
+    const dropdown = document.getElementById('dropdownRecentTransaksiList');
+    const input = document.getElementById('uploadDokumenNomor');
+    if (!dropdown) return;
+
+    if (dropdown.classList.contains('d-none')) {
+        showRecentDokumenDropdown();
+        if (input) input.focus();
+    } else {
+        hideRecentDokumenDropdown();
+    }
+}
+
+function filterRecentDokumenDropdown(keyword) {
+    const kw = (keyword || '').toLowerCase().trim();
+    if (!kw) {
+        renderRecentDokumenDropdown(cachedRecentTransaksiList);
+    } else {
+        const filtered = cachedRecentTransaksiList.filter(nomor => nomor.toLowerCase().includes(kw));
+        renderRecentDokumenDropdown(filtered);
+    }
+    const dropdown = document.getElementById('dropdownRecentTransaksiList');
+    if (dropdown && dropdown.classList.contains('d-none')) {
+        dropdown.classList.remove('d-none');
+    }
+}
+
+function selectRecentDokumenNomor(nomor) {
+    const input = document.getElementById('uploadDokumenNomor');
+    if (input) {
+        input.value = nomor;
+    }
+    hideRecentDokumenDropdown();
+}
+
+// Tutup dropdown jika klik di luar area
+document.addEventListener('click', function(e) {
+    const dropdown = document.getElementById('dropdownRecentTransaksiList');
+    const input = document.getElementById('uploadDokumenNomor');
+    const btn = e.target.closest('button[onclick*="toggleRecentDokumenDropdown"]');
+    if (dropdown && !dropdown.contains(e.target) && e.target !== input && !btn) {
+        hideRecentDokumenDropdown();
+    }
+});
+
+async function submitUploadDokumen(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btnSubmitUploadDokumen');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Mengunggah...';
+
+    const form = document.getElementById('formUploadDokumen');
+    const formData = new FormData(form);
+    const callerKey = document.getElementById('uploadDokumenCallerKey').value || 'DEFAULT';
+    const nomorDok = document.getElementById('uploadDokumenNomor').value;
+    const tipeDok = document.getElementById('uploadDokumenTipe').value;
+
+    try {
+        const res = await fetch(`${BASE_URL}/api/dokumen/index.php?action=upload`, {
+            method: 'POST',
+            body: formData
+        });
+        const json = await res.json();
+
+        if (json.success) {
+            showToast(json.message || 'Lampiran berhasil diunggah!', 'success');
+            const modalEl = document.getElementById('modalUploadDokumen');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+
+            // Refresh table lampiran
+            loadDokumenAttachments(nomorDok, tipeDok, callerKey);
+        } else {
+            showToast(json.message || 'Gagal mengunggah lampiran.', 'danger');
+        }
+    } catch (err) {
+        console.error('Error upload dokumen:', err);
+        showToast('Terjadi kesalahan saat mengunggah dokumen.', 'danger');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+async function loadDokumenAttachments(nomorDokumen, tipeDokumen = '', callerKey = 'DEFAULT') {
+    if (!nomorDokumen) return;
+
+    currentLoadedDokumenParams[callerKey] = { nomor: nomorDokumen, tipe: tipeDokumen };
+
+    const tbody = document.getElementById(`tbodyDokumenList_${callerKey}`);
+    const badge = document.getElementById(`badgeTotalLampiran_${callerKey}`);
+    if (!tbody) return;
+
+    tbody.innerHTML = `<tr><td colspan="7" class="text-center py-3 text-muted small"><span class="spinner-border spinner-border-sm me-1"></span> Memuat lampiran...</td></tr>`;
+
+    try {
+        let url = `${BASE_URL}/api/dokumen/index.php?action=list&nomor_dokumen=${encodeURIComponent(nomorDokumen)}`;
+        if (tipeDokumen) url += `&tipe_dokumen=${encodeURIComponent(tipeDokumen)}`;
+
+        const res = await fetch(url);
+        const json = await res.json();
+
+        if (json.success && json.data && json.data.items) {
+            const items = json.data.items;
+            if (badge) badge.innerText = items.length;
+
+            if (items.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-3 text-muted small"><i class="bi bi-folder2-open d-block fs-4 mb-1 opacity-50"></i>Belum ada berkas lampiran untuk dokumen ini.</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            items.forEach((item, idx) => {
+                let badgeExt = '';
+                let isExt = !item.file && item.external_url;
+                if (isExt) {
+                    badgeExt = `<span class="badge bg-warning-subtle text-warning-emphasis border"><i class="bi bi-google me-1"></i>Google Drive</span>`;
+                } else {
+                    const ext = (item.file_ext || '').toUpperCase();
+                    let color = 'secondary';
+                    if (ext === 'PDF') color = 'danger';
+                    else if (['JPG','JPEG','PNG','WEBP'].includes(ext)) color = 'primary';
+                    else if (['XLS','XLSX'].includes(ext)) color = 'success';
+                    else if (['DOC','DOCX'].includes(ext)) color = 'info';
+                    else if (['ZIP','RAR'].includes(ext)) color = 'dark';
+                    badgeExt = `<span class="badge bg-${color}-subtle text-${color} border font-monospace">${ext || 'FILE'}</span>`;
+                }
+
+                const lockBadge = item.is_protected ? `<span class="badge bg-danger-subtle text-danger ms-1" title="Dilindungi Password"><i class="bi bi-lock-fill"></i></span>` : '';
+
+                html += `
+                    <tr>
+                        <td class="text-center">${idx + 1}</td>
+                        <td>
+                            <div class="fw-bold text-dark">${escapeHtml(item.nama_dokumen || '-')} ${lockBadge}</div>
+                            <div class="small text-muted font-monospace" style="font-size: 0.72rem;">${escapeHtml(item.nomor_dokumen || '')}</div>
+                        </td>
+                        <td>${badgeExt}</td>
+                        <td class="small font-monospace">${item.tanggal_dokumen || '-'}</td>
+                        <td>
+                            <div class="small fw-semibold text-dark">${escapeHtml(item.nama_karyawan || 'Internal / Sistem')}</div>
+                            <div class="text-muted" style="font-size: 0.7rem;">${escapeHtml(item.nama_jabatan || '')}</div>
+                        </td>
+                        <td class="text-center font-monospace small">${item.unduh || 0}x</td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="handleOpenDokumen(${item.id_dokumen}, ${item.is_protected ? 'true' : 'false'}, '${item.file_url ? item.file_url.replace(/'/g, "\\'") : ''}', '${item.external_url ? item.external_url.replace(/'/g, "\\'") : ''}', '${callerKey}')" title="Buka / Download">
+                                    <i class="bi ${isExt ? 'bi-box-arrow-up-right' : 'bi-download'}"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteDokumenAttachment(${item.id_dokumen}, '${escapeHtml(item.nama_dokumen || '')}', '${callerKey}')" title="Hapus Lampiran">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        } else {
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center py-3 text-danger small">Gagal memuat lampiran.</td></tr>`;
+        }
+    } catch (e) {
+        console.error('Error load dokumen:', e);
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-3 text-danger small">Terjadi kesalahan saat memuat berkas.</td></tr>`;
+    }
+}
+
+function handleOpenDokumen(idDokumen, isProtected, fileUrl, externalUrl, callerKey) {
+    if (isProtected) {
+        document.getElementById('formVerifyDokumenPassword').reset();
+        document.getElementById('verifyDokumenId').value = idDokumen;
+        const modal = new bootstrap.Modal(document.getElementById('modalVerifyDokumenPassword'));
+        modal.show();
+    } else {
+        // Langsung buka atau unduh
+        const targetUrl = fileUrl || externalUrl;
+        if (targetUrl) {
+            window.open(targetUrl, '_blank');
+            // Trigger background increment
+            fetch(`${BASE_URL}/api/dokumen/index.php?action=verify_download`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id_dokumen: idDokumen, password: '' })
+            }).then(() => {
+                const params = currentLoadedDokumenParams[callerKey];
+                if (params) loadDokumenAttachments(params.nomor, params.tipe, callerKey);
+            });
+        }
+    }
+}
+
+async function submitVerifyDokumenPassword(e) {
+    e.preventDefault();
+    const idDokumen = document.getElementById('verifyDokumenId').value;
+    const password = document.getElementById('verifyDokumenPasswordInput').value;
+    const btn = document.getElementById('btnSubmitVerifyPassword');
+    btn.disabled = true;
+
+    try {
+        const res = await fetch(`${BASE_URL}/api/dokumen/index.php?action=verify_download`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id_dokumen: parseInt(idDokumen), password: password })
+        });
+        const json = await res.json();
+
+        if (json.success && json.data && json.data.url) {
+            const modalEl = document.getElementById('modalVerifyDokumenPassword');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+
+            window.open(json.data.url, '_blank');
+        } else {
+            showToast(json.message || 'Password salah.', 'danger');
+        }
+    } catch (err) {
+        showToast('Gagal memverifikasi password dokumen.', 'danger');
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+async function deleteDokumenAttachment(idDokumen, namaDokumen, callerKey) {
+    if (!confirm(`Apakah Anda yakin ingin menghapus berkas lampiran "${namaDokumen}"?`)) {
+        return;
+    }
+
+    try {
+        const res = await fetch(`${BASE_URL}/api/dokumen/index.php?action=delete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id_dokumen: parseInt(idDokumen) })
+        });
+        const json = await res.json();
+
+        if (json.success) {
+            showToast(json.message || 'Lampiran berhasil dihapus.', 'success');
+            const params = currentLoadedDokumenParams[callerKey];
+            if (params) {
+                loadDokumenAttachments(params.nomor, params.tipe, callerKey);
+            }
+        } else {
+            showToast(json.message || 'Gagal menghapus lampiran.', 'danger');
+        }
+    } catch (e) {
+        console.error('Error delete dokumen:', e);
+        showToast('Terjadi kesalahan saat menghapus lampiran.', 'danger');
     }
 }
 
