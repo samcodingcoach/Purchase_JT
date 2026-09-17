@@ -41,17 +41,18 @@ function encodeId($id): string {
 
 /**
  * Dekripsi string hash URL menjadi integer ID asli
- * Kompatibel dengan plain integer ID (backward compatibility)
- * Contoh: 'a1b2c3d4...' -> 6, atau '6' -> 6
+ * Keamanan Ketat: Memblokir penembakan plain integer ID manual (misal ?id=8)
+ * Hanya menerima hash yang valid yang di-generate melalui encodeId()
+ * Contoh: 'MWRHU3lxZk5aSnZnOFE9PQ' atau 'SlRfOA' -> 8
  */
 function decodeId($encoded): int {
     if ($encoded === null || $encoded === '') {
         return 0;
     }
 
-    // Jika sudah berupa angka biasa murni (plain ID), tetap izinkan
-    if (is_numeric($encoded) && (int)$encoded > 0) {
-        return (int)$encoded;
+    // Blok jika berupa angka murni tanpa hash (mencegah penembakan URL langsung)
+    if (is_numeric($encoded)) {
+        return 0;
     }
 
     $secretKey = JT_HASH_KEY;

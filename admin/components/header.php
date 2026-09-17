@@ -52,7 +52,8 @@ $companyName = $companyProfile['nama'] ?? 'PT Jaya Teknis';
 
         function decodeId(str) {
             if (!str) return 0;
-            if (!isNaN(str) && parseInt(str, 10) > 0) return parseInt(str, 10);
+            // Blok jika berupa angka murni tanpa hash (mencegah penembakan URL langsung)
+            if (!isNaN(str) && /^\d+$/.test(str.trim())) return 0;
             try {
                 let b64 = str.replace(/-/g, '+').replace(/_/g, '/');
                 while (b64.length % 4) b64 += '=';
