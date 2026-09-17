@@ -198,7 +198,10 @@ if ($method === 'POST') {
     
     $email = trim($input['email'] ?? '');
     $noHp = trim($input['no_handphone'] ?? '');
-    $password = trim($input['password'] ?? '123456');
+    $password = trim($input['password'] ?? '');
+    if (empty($password)) {
+        $password = '123456';
+    }
     $statusKaryawan = isset($input['status_karyawan']) && $input['status_karyawan'] !== '' ? (int)$input['status_karyawan'] : 2;
     $loginWeb = isset($input['login_web']) ? (int)$input['login_web'] : 1;
     $aktif = isset($input['aktif']) ? (int)$input['aktif'] : 1;
@@ -217,18 +220,14 @@ if ($method === 'POST') {
 
     $stmt = $conn->prepare("INSERT INTO karyawan (kode_karyawan, nama_karyawan, id_divisi, id_jabatan, id_site, tempat_lahir, tanggal_lahir, jenis_kelamin, tanggal_bergabung, aktif, email, no_handphone, password, status_karyawan, login_web) 
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("ssiiississsii", $kodeKaryawan, $namaKaryawan, $idDivisi, $idJabatan, $idSite, $tempatLahir, $tanggalLahir, $jenisKelamin, $aktif, $email, $noHp, $passHash, $statusKaryawan, $loginWeb);
+    $stmt->bind_param("ssiiissiisssii", $kodeKaryawan, $namaKaryawan, $idDivisi, $idJabatan, $idSite, $tempatLahir, $tanggalLahir, $jenisKelamin, $aktif, $email, $noHp, $passHash, $statusKaryawan, $loginWeb);
     
     if ($stmt->execute()) {
         $newId = $conn->insert_id;
         $stmt->close();
 
-        if (!empty($email) && $loginWeb) {
-            $stmtU = $conn->prepare("INSERT IGNORE INTO users (nama_users, email, password, aktif) VALUES (?, ?, ?, ?)");
-            $stmtU->bind_param("sssi", $namaKaryawan, $email, $passHash, $aktif);
-            $stmtU->execute();
-            $stmtU->close();
-        }
+        // Karyawan akan login melalui tabel karyawan (login.php akan mengecek field login_web), 
+        // sehingga tidak perlu lagi di-insert ke tabel users (karena tabel users khusus Super Admin).
 
         jsonResponse(true, 'Karyawan berhasil ditambahkan.', ['id_karyawan' => $newId], 201);
     } else {
@@ -265,17 +264,17 @@ if ($method === 'PUT') {
                             tempat_lahir = ?, tanggal_lahir = ?, jenis_kelamin = ?, email = ?, 
                             no_handphone = ?, status_karyawan = ?, login_web = ?, aktif = ? 
                             WHERE id_karyawan = ?");
-    $stmt->bind_param("ssiiississsiii", $kodeKaryawan, $namaKaryawan, $idDivisi, $idJabatan, $idSite, $tempatLahir, $tanggalLahir, $jenisKelamin, $email, $noHp, $statusKaryawan, $loginWeb, $aktif, $idKaryawan);
+    $stmt->bind_param("ssiiississiiii", $kodeKaryawan, $namaKaryawan, $idDivisi, $idJabatan, $idSite, $tempatLahir, $tanggalLahir, $jenisKelamin, $email, $noHp, $statusKaryawan, $loginWeb, $aktif, $idKaryawan);
     
     if ($stmt->execute()) {
         $stmt->close();
         
         if (!empty($input['password'])) {
             $newPassHash = password_hash(trim($input['password']), PASSWORD_DEFAULT);
-            $upU = $conn->prepare("UPDATE users SET password = ? WHERE email = ?");
-            $upU->bind_param("ss", $newPassHash, $email);
-            $upU->execute();
-            $upU->close();
+            $upK = $conn->prepare("UPDATE karyawan SET password = ? WHERE id_karyawan = ?");
+            $upK->bind_param("si", $newPassHash, $idKaryawan);
+            $upK->execute();
+            $upK->close();
         }
 
         jsonResponse(true, 'Data karyawan berhasil diperbarui.', ['id_karyawan' => $idKaryawan], 200);
