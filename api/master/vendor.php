@@ -39,6 +39,16 @@ if ($method === 'GET') {
         }
     }
 
+    $statusParam = $_GET['status'] ?? $_GET['aktif'] ?? null;
+    if ($statusParam !== null && $statusParam !== '') {
+        $statusUpper = strtoupper(trim((string)$statusParam));
+        if ($statusUpper === 'AKTIF' || $statusUpper === '1') {
+            $whereSql .= " AND aktif = 1";
+        } elseif ($statusUpper === 'NONAKTIF' || $statusUpper === '0') {
+            $whereSql .= " AND aktif = 0";
+        }
+    }
+
     $countSql = "SELECT COUNT(*) as total FROM vendor" . $whereSql;
     $stmtCount = $conn->prepare($countSql);
     if (!empty($params)) {

@@ -24,6 +24,34 @@ require_once __DIR__ . '/../../components/sidebar.php';
 require_once __DIR__ . '/../../components/navbar.php';
 ?>
 
+<style>
+.ro-vendor-search-wrapper {
+    position: relative;
+}
+.ro-vendor-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border: 1px solid #b6d4fe;
+    border-radius: 0.375rem;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.18);
+    z-index: 1060 !important;
+    max-height: 240px;
+    overflow-y: auto;
+}
+.ro-vendor-dropdown-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f1f3f5;
+    transition: background 0.15s ease-in-out;
+}
+.ro-vendor-dropdown-item:hover {
+    background-color: #f0f7ff;
+}
+</style>
+
 <div class="container-fluid px-0 pb-5">
     
     <!-- HEADER HALAMAN BERSIH -->
@@ -91,11 +119,21 @@ require_once __DIR__ . '/../../components/navbar.php';
                                 </div>
 
                                 <div class="col-md-6">
-                                    <label class="form-label small fw-bold">Vendor</label>
-                                    <input type="hidden" id="inputVendorId" name="id_vendor" required>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-light"><i class="bi bi-building"></i></span>
-                                        <input type="text" class="form-control bg-light fw-bold text-dark" id="displayVendorName" readonly placeholder="Memuat vendor dari RO...">
+                                    <label class="form-label small fw-bold">Vendor <span class="text-danger">*</span></label>
+                                    <div class="ro-vendor-search-wrapper position-relative" id="roVendorSearchWrapper">
+                                        <input type="hidden" id="inputVendorId" name="id_vendor" required>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white"><i class="bi bi-building"></i></span>
+                                            <input type="text" class="form-control" id="displayVendorName" placeholder="Cari / pilih vendor rekanan..." autocomplete="off" onfocus="openRoVendorDropdown()" onclick="openRoVendorDropdown()" oninput="debounceRoVendorSearch()">
+                                            <button type="button" class="btn btn-outline-secondary" onclick="clearRoVendorSelection()" title="Hapus / Ganti Vendor">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        </div>
+                                        <div class="ro-vendor-dropdown d-none" id="roVendorDropdown">
+                                            <div id="roVendorDropdownList">
+                                                <div class="p-2 text-center text-muted small">Memuat vendor...</div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -351,20 +389,18 @@ require_once __DIR__ . '/../../components/navbar.php';
                 <div class="card-footer bg-light p-3 border-top d-flex justify-content-end align-items-center flex-wrap gap-2" id="poFooterActions">
                     <!-- Tombol Tolak -->
                     <button type="button" class="btn btn-outline-danger btn-sm px-3 fw-semibold" id="btnRejectPo" onclick="openRejectModal()">
-                        <i class="bi bi-x-circle me-1"></i> Tolak (Tidak Disetujui)
+                        <i class="bi bi-x-circle me-1"></i> Tidak Disetujui
                     </button>
                     <!-- Tombol Simpan sebagai Draft -->
                     <button type="button" class="btn btn-warning btn-sm px-3 fw-semibold text-dark shadow-sm" id="btnSaveDraftPo" onclick="handleSaveDraftPo()">
-                        <i class="bi bi-file-earmark-diff me-1"></i> Simpan sebagai Draft
+                        <i class="bi bi-file-earmark-diff me-1"></i> Simpan Draft
                     </button>
                     <!-- Tombol Setujui & Terbitkan PO -->
                     <button type="submit" id="btnSubmitPo" class="btn btn-success btn-sm px-4 fw-bold shadow-sm">
-                        <i class="bi bi-check2-circle me-1"></i> Setujui &amp; Terbitkan Purchase Order
+                        <i class="bi bi-check2-circle me-1"></i> Setujui &amp; Terbitkan
                     </button>
                     <!-- Tombol Print Request Order yang Sudah Disetujui (Muncul saat RO sudah terbit PO / selesai) -->
-                    <button type="button" class="btn btn-primary btn-sm px-4 fw-bold shadow-sm d-none" id="btnPrintApprovedRo" onclick="printApprovedRo()">
-                        <i class="bi bi-printer-fill me-1"></i> Print Request Order (Disetujui)
-                    </button>
+                    
                 </div>
 
             </div>
@@ -590,8 +626,129 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await Promise.all([
         fetchNextPoNumber(),
+        loadAllVendors(),
         loadRoDetails()
     ]);
+});
+
+// -------------------------------------------------------------
+// VENDOR SELECTION & SEARCH LOGIC
+// -------------------------------------------------------------
+let allVendorListCache = [];
+let vendorSearchTimer = null;
+
+async function loadAllVendors() {
+    try {
+        const res = await apiRequest('/api/master/vendor.php?status=AKTIF&limit=100');
+        if (res && res.success) {
+            const rawList = res.data?.items || res.data || [];
+            allVendorListCache = Array.isArray(rawList) ? rawList.map(v => ({
+                id: v.id_vendor || v.id,
+                nama: v.nama_perusahaan || v.nama || '',
+                kode: v.kode_vendor || v.kode || '',
+                kontak_person: v.kontak_person || '',
+                telepon: v.no_telepon || v.telepon || '',
+                top_hari: (typeof v.term_of_payment !== 'undefined') ? v.term_of_payment : (v.top_hari || 0)
+            })) : [];
+            
+            allVendorListCache.sort((a, b) => a.nama.localeCompare(b.nama));
+        } else {
+            allVendorListCache = [];
+        }
+    } catch (e) {
+        console.error('Error loading vendors:', e);
+        allVendorListCache = [];
+    }
+}
+
+function openRoVendorDropdown() {
+    const isLocked = document.getElementById('displayVendorName').disabled;
+    if (isLocked) return;
+
+    const dropdown = document.getElementById('roVendorDropdown');
+    if (!dropdown) return;
+    dropdown.classList.remove('d-none');
+    filterRoVendors();
+}
+
+function closeRoVendorDropdown() {
+    const dropdown = document.getElementById('roVendorDropdown');
+    if (dropdown) dropdown.classList.add('d-none');
+}
+
+function debounceRoVendorSearch() {
+    clearTimeout(vendorSearchTimer);
+    vendorSearchTimer = setTimeout(() => {
+        filterRoVendors();
+    }, 200);
+}
+
+function filterRoVendors() {
+    const searchInput = document.getElementById('displayVendorName');
+    const term = (searchInput ? searchInput.value : '').toLowerCase().trim();
+    const listContainer = document.getElementById('roVendorDropdownList');
+    if (!listContainer) return;
+
+    let filtered = allVendorListCache;
+    if (term) {
+        filtered = allVendorListCache.filter(v => {
+            const nama = (v.nama || '').toLowerCase();
+            const kode = (v.kode || '').toLowerCase();
+            const kontak = (v.kontak_person || '').toLowerCase();
+            return nama.includes(term) || kode.includes(term) || kontak.includes(term);
+        });
+    }
+
+    if (filtered.length === 0) {
+        listContainer.innerHTML = `
+            <div class="p-3 text-center text-muted small">
+                <i class="bi bi-building-slash text-secondary me-1"></i> Tidak ada vendor yang cocok
+            </div>
+        `;
+        return;
+    }
+
+    listContainer.innerHTML = filtered.map(v => `
+        <div class="ro-vendor-dropdown-item" onclick="selectRoVendor(${v.id}, '${escapeHtml(v.nama || '')}', '${escapeHtml(v.kode || '')}', '${escapeHtml(v.top_hari || '0')}')">
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="fw-bold text-dark">${escapeHtml(v.nama || '-')}</span>
+                <span class="badge bg-secondary font-monospace">${escapeHtml(v.kode || '-')}</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+function selectRoVendor(id, nama, kode, topHari) {
+    document.getElementById('inputVendorId').value = id || '';
+    document.getElementById('displayVendorName').value = kode ? `${nama} (${kode})` : nama;
+    
+    // Update TOP mengambil vendor.term_of_payment
+    const topInput = document.getElementById('inputTop');
+    if (topInput) {
+        topInput.value = parseInt(topHari) || 0;
+        if (typeof updateTopKeterangan === 'function') {
+            updateTopKeterangan(topInput.value);
+        }
+    }
+    
+    closeRoVendorDropdown();
+}
+
+function clearRoVendorSelection() {
+    const isLocked = document.getElementById('displayVendorName').disabled;
+    if (isLocked) return;
+
+    document.getElementById('inputVendorId').value = '';
+    document.getElementById('displayVendorName').value = '';
+    document.getElementById('displayVendorName').focus();
+    openRoVendorDropdown();
+}
+
+document.addEventListener('click', (e) => {
+    const wrapper = document.getElementById('roVendorSearchWrapper');
+    if (wrapper && !wrapper.contains(e.target)) {
+        closeRoVendorDropdown();
+    }
 });
 
 // -------------------------------------------------------------
@@ -728,12 +885,12 @@ function renderRoData() {
     // 0. Nomor RO (Readonly)
     document.getElementById('displayRoNomor').value = ro.nomor || '-';
 
-    // 1. Vendor (Dari Logistik - Readonly)
+    // 1. Vendor (Default dari RO atau dipilih bebas)
     document.getElementById('inputVendorId').value = ro.id_vendor || '';
     if (ro.nama_vendor) {
         document.getElementById('displayVendorName').value = `${ro.nama_vendor} (${ro.kode_vendor || 'VND'})`;
     } else {
-        document.getElementById('displayVendorName').value = 'Belum ditentukan oleh Logistik';
+        document.getElementById('displayVendorName').value = '';
     }
 
     // 2. Prioritas PO (Readonly)
@@ -1426,7 +1583,8 @@ function formatRupiah(amount) {
 }
 
 function escapeHtml(text) {
-    if (!text) return '';
+    if (text === null || text === undefined) return '';
+    const str = String(text);
     const map = {
         '&': '&amp;',
         '<': '&lt;',
@@ -1434,7 +1592,7 @@ function escapeHtml(text) {
         '"': '&quot;',
         "'": '&#039;'
     };
-    return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+    return str.replace(/[&<>"']/g, function(m) { return map[m]; });
 }
 
 // -------------------------------------------------------------

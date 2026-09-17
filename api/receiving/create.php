@@ -195,8 +195,8 @@ try {
     $stmtDetail->close();
 
     // 7. Update Status Purchase Order menjadi DITERIMA
-    $stmtUpPo = $conn->prepare("UPDATE purchase_order SET status = 'DITERIMA', tanggal_status = NOW() WHERE id_po = ?");
-    $stmtUpPo->bind_param("i", $idPo);
+    $stmtUpPo = $conn->prepare("UPDATE purchase_order SET status = 'DITERIMA', tanggal_status = NOW(), id_receiving = ? WHERE id_po = ?");
+    $stmtUpPo->bind_param("ii", $idRcv, $idPo);
     if (!$stmtUpPo->execute()) {
         throw new Exception("Gagal mengupdate status Purchase Order: " . $stmtUpPo->error);
     }

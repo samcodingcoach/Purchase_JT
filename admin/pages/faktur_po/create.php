@@ -739,8 +739,11 @@ function apply3WayDataToForm(d) {
     // Validasi Nomor e-Faktur Pajak wajib jika ada PPN
     const asterisk = document.getElementById('reqAsteriskPajak');
     if (asterisk) {
-        asterisk.style.display = (ratePajak > 0) ? 'inline' : 'none';
+        asterisk.style.display = (lockedRatePajak > 0) ? 'inline' : 'none';
     }
+    
+    // Update Ringkasan Finansial Tagihan
+    calculateFinancials();
 }
 
 function clearRcvSelection(e) {
