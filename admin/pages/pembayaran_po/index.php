@@ -191,7 +191,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                 </div>
 
                 <div class="col-md-3">
-                    <select class="form-select" id="filterJenis" onchange="applyFilter()">
+                    <select class="form-select text-truncate" style="padding-right: 2.5rem;" id="filterJenis" onchange="applyFilter()">
                         <option value="">Semua Skema Pembayaran</option>
                         <option value="1">1x Bayar (Langsung Lunas)</option>
                         <option value="0">Kredit / Sebagian (Termin)</option>

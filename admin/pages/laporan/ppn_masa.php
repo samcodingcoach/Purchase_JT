@@ -88,7 +88,7 @@ require_once __DIR__ . '/../../components/navbar.php';
                         <tr class="text-muted small text-uppercase align-middle">
                             <th class="ps-3 py-2 align-middle text-center" style="width: 50px;">No</th>
                             <th class="py-2 align-middle" style="min-width: 160px;">Masa Pajak</th>
-                            <th class="py-2 align-middle text-end" style="min-width: 170px;">PPN Masukan (PO)</th>
+                            <th class="py-2 align-middle text-end" style="min-width: 170px;">PPN Masukan</th>
                             <th class="py-2 align-middle text-end" style="min-width: 170px;">PPN Keluaran</th>
                             <th class="py-2 align-middle text-end" style="min-width: 180px;">Selisih PPN</th>
                             <th class="pe-3 py-2 align-middle text-center" style="min-width: 160px;">Status PPN</th>

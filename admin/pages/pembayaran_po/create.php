@@ -1520,8 +1520,7 @@ async function submitFinalPayment() {
                 title: 'Pembayaran PO Berhasil Disimpan',
                 subtitle: 'Berhasil Disimpan Dengan Nomor :',
                 nomor: finalKode,
-                redirectUrl: '<?= BASE_URL ?>/admin/pages/pembayaran_po/index.php',
-                delay: 2000
+                redirectUrl: '<?= BASE_URL ?>/admin/pages/pembayaran_po/index.php'
             });
         } else {
             const errorMsg = result ? result.message : 'Gagal menyimpan transaksi pembayaran.';

@@ -429,7 +429,17 @@ if ($method === 'POST') {
         // 2. Buat Record Detail Transaksi di payment_purchase_detail (Atomik & Terkunci)
         $kodePembayaranInput = trim($input['kode_pembayaran'] ?? '');
         if (!empty($kodePembayaranInput)) {
-            $kodePembayaran = $kodePembayaranInput;
+            // Cek apakah sudah ada yang menggunakan kode ini (Race Condition Handling)
+            $stmtCek = $conn->prepare("SELECT id_pembayaran_detail FROM payment_purchase_detail WHERE kode_pembayaran = ? FOR UPDATE");
+            $stmtCek->bind_param("s", $kodePembayaranInput);
+            $stmtCek->execute();
+            if ($stmtCek->get_result()->num_rows > 0) {
+                // Jika sudah dipakai PC lain, generate ulang otomatis
+                $kodePembayaran = generateKodePembayaran($conn, $tanggalBayar, true);
+            } else {
+                $kodePembayaran = $kodePembayaranInput;
+            }
+            $stmtCek->close();
         } else {
             $kodePembayaran = generateKodePembayaran($conn, $tanggalBayar, true);
         }

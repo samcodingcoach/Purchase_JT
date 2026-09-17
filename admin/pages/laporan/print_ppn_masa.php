@@ -185,7 +185,7 @@ $companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
                 <tr>
                     <th style="width: 35px;">No</th>
                     <th style="width: 160px;">MASA PAJAK</th>
-                    <th style="width: 160px;" class="text-end">PPN MASUKAN (PO)</th>
+                    <th style="width: 160px;" class="text-end">PPN MASUKAN</th>
                     <th style="width: 160px;" class="text-end">PPN KELUARAN</th>
                     <th style="width: 170px;" class="text-end">SELISIH PPN</th>
                     <th style="width: 160px;" class="text-center">STATUS PPN</th>
