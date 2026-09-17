@@ -366,10 +366,10 @@ if ($method === 'POST') {
 
     $conn->begin_transaction();
     try {
-        // 1. Ambil / Generate Nomor Retur Transaksi Dinamis Sesuai Format Penomoran
+        // 1. Ambil / Generate Nomor Retur Transaksi Dinamis Resmi Terkunci Sesuai Format Penomoran
         $nomorRetur = trim($post['nomor_po_retur'] ?? '');
         if (empty($nomorRetur)) {
-            $gen = generateNomorTransaksi($conn, 'RETUR PO', $tanggalRetur);
+            $gen = generateNomorTransaksiLocked($conn, 'RETUR PO', $tanggalRetur);
             if ($gen['success'] && !empty($gen['nomor'])) {
                 $nomorRetur = $gen['nomor'];
             } else {

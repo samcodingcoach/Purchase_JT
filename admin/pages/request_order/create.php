@@ -1265,10 +1265,13 @@ async function submitRequestOrder(targetStatus = 'TERKIRIM') {
         }
 
         if (res && res.success) {
-            showToast(res.message || 'Request Order berhasil disimpan!', 'success');
-            setTimeout(() => {
-                window.location.href = '<?= BASE_URL ?>/admin/pages/request_order/index.php';
-            }, 1000);
+            const finalNomor = res.data?.nomor_ro || payload.nomor || '-';
+            showSuccessTransactionModal({
+                title: 'Request Order Berhasil Disimpan',
+                subtitle: 'Berhasil Disimpan Dengan Nomor :',
+                nomor: finalNomor,
+                redirectUrl: '<?= BASE_URL ?>/admin/pages/request_order/index.php'
+            });
         } else {
             showToast(res ? res.message : 'Gagal memproses Request Order.', 'error');
         }

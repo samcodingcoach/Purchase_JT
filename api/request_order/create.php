@@ -131,16 +131,14 @@ if ($hasLuxuryItem && count(array_unique($luxuryRates)) > 1) {
     jsonResponse(false, 'Tarif PPnBM barang dalam satu RO harus sama (tidak boleh berbeda).', null, 422);
 }
 
-// 3. Generate Nomor RO jika kosong (Menggunakan tabel penomoran)
-if (empty($nomorRo)) {
-    $gen = generateNomorTransaksi($conn, 'REQUEST', $tanggalRo);
-    $nomorRo = $gen['success'] ? $gen['nomor'] : ('RO-' . date('ym') . '-0001');
-}
-
 // 4. Mulai Database Transaction
 $conn->begin_transaction();
 
 try {
+    // 3. Generate Nomor RO Resmi (Atomik & Kunci Penomoran untuk Multi-User)
+    $gen = generateNomorTransaksiLocked($conn, 'REQUEST', $tanggalRo);
+    $nomorRo = $gen['success'] ? $gen['nomor'] : ('RO-' . date('ym') . '-0001');
+
     $tanggalStatus = ($status === 'TERKIRIM') ? date('Y-m-d H:i:s') : null;
     $idKaryawanApproved = ($status === 'TERKIRIM' && $currentUser['role'] !== ROLE_MEKANIK) ? ($currentUser['id_karyawan'] ?? null) : null;
 

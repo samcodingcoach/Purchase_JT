@@ -27,16 +27,16 @@ $user = requireAuth([ROLE_ADMIN, ROLE_LOGISTIK, ROLE_MANAGER]);
 $method = $_SERVER['REQUEST_METHOD'];
 
 // Helper function: Generate Next Kode Mutasi sesuai tabel penomoran
-function generateNextKodeMutasi($conn, $tanggal = null) {
+function generateNextKodeMutasi($conn, $tanggal = null, bool $forUpdate = false) {
     if (empty($tanggal) || !strtotime($tanggal)) {
         $tanggal = date('Y-m-d');
     }
-    $gen = generateNomorTransaksi($conn, 'MUTASI BARANG', $tanggal);
+    $gen = generateNomorTransaksi($conn, 'MUTASI BARANG', $tanggal, $forUpdate);
     if ($gen && !empty($gen['success']) && !empty($gen['nomor'])) {
         return $gen['nomor'];
     }
     $prefix = 'DI-' . date('ym', strtotime($tanggal)) . '-';
-    $sql = "SELECT kode_mutasi FROM mutasi_order WHERE kode_mutasi LIKE ? ORDER BY kode_mutasi DESC LIMIT 1";
+    $sql = "SELECT kode_mutasi FROM mutasi_order WHERE kode_mutasi LIKE ? ORDER BY kode_mutasi DESC LIMIT 1" . ($forUpdate ? " FOR UPDATE" : "");
     $stmt = $conn->prepare($sql);
     $likeParam = $prefix . '%';
     $stmt->bind_param('s', $likeParam);
@@ -755,10 +755,7 @@ try {
         }
 
         $tglMutasi = trim($body['tanggal_mutasi'] ?? date('Y-m-d H:i:s'));
-        $kodeMutasi = trim($body['kode_mutasi'] ?? '');
-        if (empty($kodeMutasi)) {
-            $kodeMutasi = generateNextKodeMutasi($conn, $tglMutasi);
-        }
+        $nomorSurat = trim($body['nomor_surat_mutasi'] ?? '');
         $idSiteAsal = (int)($body['id_site_asal'] ?? 0);
         $idSiteTujuan = (int)($body['id_site_tujuan'] ?? 0);
         $idCreator = (int)($user['id_karyawan'] ?? 1);
@@ -792,6 +789,11 @@ try {
 
         $conn->begin_transaction();
         try {
+            $kodeMutasi = trim($body['kode_mutasi'] ?? '');
+            if (empty($kodeMutasi)) {
+                $kodeMutasi = generateNextKodeMutasi($conn, $tglMutasi, true);
+            }
+
             $sqlIns = "
                 INSERT INTO mutasi_order (
                     kode_mutasi,

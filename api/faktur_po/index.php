@@ -24,22 +24,22 @@ function sendJson($success, $message, $data = null, $code = 200) {
     exit;
 }
 
-function generateNomorFaktur($conn, ?string $tanggal = null) {
-    $gen = generateNomorTransaksi($conn, 'FAKTUR PO', $tanggal);
+function generateNomorFaktur($conn, ?string $tanggal = null, bool $forUpdate = false) {
+    $gen = generateNomorTransaksi($conn, 'FAKTUR PO', $tanggal, $forUpdate);
     if ($gen['success'] && !empty($gen['nomor'])) {
         return $gen['nomor'];
     }
-    $prefix = 'FP-' . date('ym', strtotime($tanggal ?? 'now')) . '-';
-    $sql = "SELECT nomor_faktur FROM faktur_po WHERE nomor_faktur LIKE '{$prefix}%' ORDER BY id_faktur DESC LIMIT 1";
+    $prefix = 'FP' . date('y', strtotime($tanggal ?? 'now')) . '/' . date('md', strtotime($tanggal ?? 'now')) . '/';
+    $sql = "SELECT nomor_faktur FROM faktur_po WHERE nomor_faktur LIKE '{$prefix}%' ORDER BY id_faktur DESC LIMIT 1" . ($forUpdate ? " FOR UPDATE" : "");
     $res = $conn->query($sql);
     $lastNum = 0;
     if ($res && $row = $res->fetch_assoc()) {
-        $parts = explode('-', $row['nomor_faktur']);
+        $parts = explode('/', $row['nomor_faktur']);
         if (isset($parts[2])) {
             $lastNum = intval($parts[2]);
         }
     }
-    $newNum = str_pad($lastNum + 1, 4, '0', STR_PAD_LEFT);
+    $newNum = str_pad($lastNum + 1, 3, '0', STR_PAD_LEFT);
     return $prefix . $newNum;
 }
 
@@ -309,7 +309,7 @@ if ($method === 'POST') {
 
     $conn->begin_transaction();
     try {
-        $nomorFaktur = !empty($input['nomor_faktur']) ? trim($input['nomor_faktur']) : generateNomorFaktur($conn, $tanggalFaktur);
+        $nomorFaktur = !empty($input['nomor_faktur']) ? trim($input['nomor_faktur']) : generateNomorFaktur($conn, $tanggalFaktur, true);
         $sisaTagihan = $totalTagihan;
         $terbayar = 0;
 

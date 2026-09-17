@@ -188,18 +188,6 @@ if ($action === 'approve' || $action === 'draft') {
         $tanggalPo = date('Y-m-d');
     }
 
-    // Nomor PO
-    $nomorPo = trim($input['nomor_po'] ?? '');
-    if (empty($nomorPo)) {
-        require_once __DIR__ . '/../../config/penomoran_helper.php';
-        $gen = generateNomorTransaksi($conn, 'PURCHASE', $tanggalPo);
-        if ($gen['success']) {
-            $nomorPo = $isDraft ? ('DRF/' . $gen['nomor']) : $gen['nomor'];
-        } else {
-            jsonResponse(false, 'Gagal membuat nomor Purchase Order otomatis.', null, 500);
-        }
-    }
-
     $idKaryawan = $currentUser['id_karyawan'] ?? $ro['id_karyawan'];
     $idSite = (int)$ro['id_site'];
     $prioritas = in_array(strtoupper($input['prioritas'] ?? $ro['prioritas']), ['NORMAL', 'URGENT']) ? strtoupper($input['prioritas'] ?? $ro['prioritas']) : 'NORMAL';
@@ -251,6 +239,15 @@ if ($action === 'approve' || $action === 'draft') {
     $conn->begin_transaction();
 
     try {
+        // Generate Nomor PO Resmi Terkunci (Atomik untuk Multi-User)
+        require_once __DIR__ . '/../../config/penomoran_helper.php';
+        $gen = generateNomorTransaksiLocked($conn, 'PURCHASE', $tanggalPo);
+        if ($gen['success']) {
+            $nomorPo = $isDraft ? ('DRF/' . $gen['nomor']) : $gen['nomor'];
+        } else {
+            $nomorPo = ($isDraft ? 'DRF/' : '') . 'PO-' . date('ym', strtotime($tanggalPo)) . '-0001';
+        }
+
         // 1. Insert ke purchase_order
         $statusPo = $isDraft ? 'DRAFT' : 'DISETUJUI INTERNAL';
         $stmtPo = $conn->prepare("INSERT INTO purchase_order 

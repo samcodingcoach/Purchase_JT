@@ -34,6 +34,29 @@ $fullLocation = trim($companyAddress . ($companyCity ? ', ' . $companyCity : '')
     </div>
 </div>
 
+<!-- Modal Pop-Up Notifikasi Berhasil Disimpan dengan Nomor Transaksi Resmi -->
+<div class="modal fade" id="modalSuccessTransaction" tabindex="-1" aria-labelledby="modalSuccessTransactionLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+        <div class="modal-content border-0 shadow-lg rounded-3 overflow-hidden">
+            <div class="modal-header bg-white text-dark py-3 px-4 border-bottom">
+                <h5 class="modal-title fs-6 fw-bold mb-0" id="modalSuccessTransactionLabel">
+                    Transaksi Berhasil
+                </h5>
+                <button type="button" class="btn-close" id="btnModalSuccessCloseX" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 text-center bg-white">
+                <h6 class="fw-bold text-dark mb-3" id="modalSuccessTxTitle">Dokumen Berhasil Disimpan!</h6>
+                
+                <div class="p-3 bg-light border border-secondary-subtle rounded-3">
+                    <span class="text-muted small d-block mb-1 font-monospace" style="font-size: 0.75rem;">NOMOR TRANSAKSI:</span>
+                    <span class="fs-5 fw-bold font-monospace text-primary tracking-wide" id="modalSuccessTxNumber">TRX-XXXX-XXXX</span>
+                </div>
+                <p class="text-muted small mb-0 mt-2" style="font-size: 0.8rem;" id="modalSuccessTxNote"></p>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Modal Konfirmasi Logout & Peringatan Tab Workspace Masih Terbuka -->
 <div class="modal fade" id="modalConfirmLogout" tabindex="-1" aria-labelledby="modalConfirmLogoutLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -588,6 +611,60 @@ function showToast(message, type = 'success') {
     
     const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
     toast.show();
+}
+
+// Global Pop-up Modal Berhasil Disimpan dengan Nomor Transaksi
+function showSuccessTransactionModal(options = {}) {
+    const title = options.title || 'Transaksi Berhasil Disimpan!';
+    const subtitle = options.subtitle || 'Berhasil disimpan resmi ke dalam database sistem dengan nomor:';
+    const nomor = options.nomor || '-';
+    const redirectUrl = options.redirectUrl || '';
+    const delay = options.delay !== undefined ? options.delay : 0; // Default 0: Tutup manual
+
+    const modalEl = document.getElementById('modalSuccessTransaction');
+    if (!modalEl) {
+        showToast(`Berhasil Disimpan Dengan Nomor : ${nomor}`, 'success');
+        if (redirectUrl) {
+            setTimeout(() => { window.location.href = redirectUrl; }, 1200);
+        }
+        return;
+    }
+
+    const titleEl = document.getElementById('modalSuccessTxTitle');
+    const numEl = document.getElementById('modalSuccessTxNumber');
+    const noteEl = document.getElementById('modalSuccessTxNote');
+    const closeXBtn = document.getElementById('btnModalSuccessCloseX');
+
+    if (titleEl) titleEl.innerText = title;
+    if (numEl) numEl.innerText = nomor;
+    if (noteEl) {
+        noteEl.innerText = (redirectUrl && delay > 0) ? 'Halaman akan dialihkan dalam beberapa detik...' : '';
+    }
+
+    let modalInstance = bootstrap.Modal.getInstance(modalEl);
+    if (!modalInstance) {
+        modalInstance = new bootstrap.Modal(modalEl, { backdrop: 'static', keyboard: false });
+    }
+    modalInstance.show();
+
+    let redirected = false;
+    const doRedirect = () => {
+        if (!redirected && redirectUrl) {
+            redirected = true;
+            window.location.href = redirectUrl;
+        }
+    };
+
+    if (closeXBtn) {
+        closeXBtn.onclick = () => {
+            modalInstance.hide();
+            doRedirect();
+        };
+    }
+
+    if (redirectUrl && delay > 0) {
+        setTimeout(doRedirect, delay);
+    }
 }
 
 // Global Logout Handler dengan Peringatan Tab Masih Terbuka

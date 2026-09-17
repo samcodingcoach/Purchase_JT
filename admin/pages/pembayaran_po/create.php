@@ -1515,10 +1515,14 @@ async function submitFinalPayment() {
 
         if (result && result.success) {
             if (modalVerifyPaymentInstance) modalVerifyPaymentInstance.hide();
-            showToast(result.message || 'Pembayaran berhasil dicatat!', 'success');
-            setTimeout(() => {
-                window.location.href = '<?= BASE_URL ?>/admin/pages/pembayaran_po/index.php';
-            }, 1200);
+            const finalKode = result.data?.kode_pembayaran || payload.kode_pembayaran || '-';
+            showSuccessTransactionModal({
+                title: 'Pembayaran PO Berhasil Disimpan',
+                subtitle: 'Berhasil Disimpan Dengan Nomor :',
+                nomor: finalKode,
+                redirectUrl: '<?= BASE_URL ?>/admin/pages/pembayaran_po/index.php',
+                delay: 2000
+            });
         } else {
             const errorMsg = result ? result.message : 'Gagal menyimpan transaksi pembayaran.';
             showToast(errorMsg, 'danger');

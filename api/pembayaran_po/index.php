@@ -25,22 +25,23 @@ function sendJson($success, $message, $data = null, $code = 200) {
 
 $method = $_SERVER['REQUEST_METHOD'];
 
-function generateKodePembayaran($conn, $tanggal = null) {
-    $gen = generateNomorTransaksi($conn, 'PAYMENT PO', $tanggal);
+function generateKodePembayaran($conn, $tanggal = null, bool $forUpdate = false) {
+    $gen = generateNomorTransaksi($conn, 'PAYMENT PO', $tanggal, $forUpdate);
     if ($gen && !empty($gen['success']) && !empty($gen['nomor'])) {
         return $gen['nomor'];
     }
-    $prefix = "PAY-" . date('ym') . "-";
+    $prefix = "PF" . date('y', strtotime($tanggal ?? 'now')) . '/' . date('md', strtotime($tanggal ?? 'now')) . '/';
     $query = "SELECT kode_pembayaran FROM payment_purchase_detail 
               WHERE kode_pembayaran LIKE '{$prefix}%' 
-              ORDER BY kode_pembayaran DESC LIMIT 1";
+              ORDER BY id_pembayaran_detail DESC LIMIT 1" . ($forUpdate ? " FOR UPDATE" : "");
     $result = $conn->query($query);
     if ($result && $result->num_rows > 0) {
         $row = $result->fetch_assoc();
-        $lastSeq = (int)substr($row['kode_pembayaran'], -4);
-        $nextSeq = str_pad($lastSeq + 1, 4, '0', STR_PAD_LEFT);
+        $parts = explode('/', $row['kode_pembayaran']);
+        $lastSeq = isset($parts[2]) ? (int)$parts[2] : (int)substr($row['kode_pembayaran'], -3);
+        $nextSeq = str_pad($lastSeq + 1, 3, '0', STR_PAD_LEFT);
     } else {
-        $nextSeq = "0001";
+        $nextSeq = "001";
     }
     return $prefix . $nextSeq;
 }
@@ -425,12 +426,12 @@ if ($method === 'POST') {
             $stmtInsM->close();
         }
 
-        // 2. Buat Record Detail Transaksi di payment_purchase_detail
+        // 2. Buat Record Detail Transaksi di payment_purchase_detail (Atomik & Terkunci)
         $kodePembayaranInput = trim($input['kode_pembayaran'] ?? '');
         if (!empty($kodePembayaranInput)) {
             $kodePembayaran = $kodePembayaranInput;
         } else {
-            $kodePembayaran = generateKodePembayaran($conn, $tanggalBayar);
+            $kodePembayaran = generateKodePembayaran($conn, $tanggalBayar, true);
         }
         $idKaryawanInput = $user['id_karyawan'] ?? ($user['id'] ?? 1);
 

@@ -910,10 +910,14 @@ async function executeSaveAdjustment() {
 
         const result = await res.json();
         if (result.success) {
-            showToast(result.message || 'Transaksi Stock Adjustment berhasil disimpan.', 'success');
-            setTimeout(() => {
-                window.location.href = '<?= BASE_URL ?>/admin/pages/adjustment_stok/index.php';
-            }, 800);
+            const finalNomor = result.data?.nomor_adjustment || payload.nomor_adjustment || '-';
+            showSuccessTransactionModal({
+                title: 'Stock Adjustment Berhasil Disimpan',
+                subtitle: 'Berhasil Disimpan Dengan Nomor :',
+                nomor: finalNomor,
+                redirectUrl: '<?= BASE_URL ?>/admin/pages/adjustment_stok/index.php',
+                delay: 2000
+            });
         } else {
             showToast(result.message || 'Terjadi kesalahan pada server.', 'error');
         }

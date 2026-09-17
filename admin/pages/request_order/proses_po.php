@@ -1269,10 +1269,13 @@ async function submitFinalApprovedPo() {
 
     if (res && res.success) {
         modalVerifyPoInstance.hide();
-        showToast(res.message, 'success');
-        setTimeout(() => {
-            window.location.href = `${BASE_URL}/admin/pages/request_order/index.php`;
-        }, 1500);
+        const finalNomor = res.data?.nomor_po || payload.nomor_po || '-';
+        showSuccessTransactionModal({
+            title: 'Purchase Order Berhasil Diterbitkan',
+            subtitle: 'Berhasil Disimpan Dengan Nomor :',
+            nomor: finalNomor,
+            redirectUrl: `${BASE_URL}/admin/pages/request_order/index.php`
+        });
     } else {
         const errorMsg = res && res.message ? res.message : 'Gagal memproses Purchase Order.';
         showToast(errorMsg, 'error');
@@ -1284,7 +1287,7 @@ async function submitFinalApprovedPo() {
             pwInput.select();
         }
         if (errText) {
-            errText.innerHTML = `<i class="bi bi-exclamation-circle me-1"></i>${escapeHtml(errorMsg)}`;
+            errText.textContent = errorMsg;
             errText.classList.remove('d-none');
         }
     }
@@ -1360,10 +1363,13 @@ async function handleSaveDraftPo() {
     btn.innerHTML = '<i class="bi bi-file-earmark-diff me-1"></i> Simpan sebagai Draft';
 
     if (res && res.success) {
-        showToast(res.message, 'success');
-        setTimeout(() => {
-            window.location.href = `${BASE_URL}/admin/pages/request_order/index.php`;
-        }, 1500);
+        const finalNomor = res.data?.nomor_po || payload.nomor_po || '-';
+        showSuccessTransactionModal({
+            title: 'Draft Purchase Order Berhasil Disimpan',
+            subtitle: 'Berhasil Disimpan Dengan Nomor :',
+            nomor: finalNomor,
+            redirectUrl: `${BASE_URL}/admin/pages/request_order/index.php`
+        });
     } else {
         showToast(res ? res.message : 'Gagal menyimpan draft Purchase Order.', 'error');
     }

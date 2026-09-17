@@ -31,7 +31,7 @@ if (!function_exists('generateNomorTransaksi')) {
      *    'message' => string
      * ]
      */
-    function generateNomorTransaksi($conn, string $tipeTransaksi, ?string $dateStr = null): array {
+    function generateNomorTransaksi($conn, string $tipeTransaksi, ?string $dateStr = null, bool $forUpdate = false): array {
         if (!$conn || !($conn instanceof mysqli)) {
             return [
                 'success' => false,
@@ -50,7 +50,8 @@ if (!function_exists('generateNomorTransaksi')) {
         $day = date('d', $timestamp);
 
         // 1. Ambil Pengaturan dari Tabel Penomoran
-        $stmt = $conn->prepare("SELECT * FROM penomoran WHERE tipe_transaksi = ? LIMIT 1");
+        $lockPenomoran = $forUpdate ? " FOR UPDATE" : "";
+        $stmt = $conn->prepare("SELECT * FROM penomoran WHERE tipe_transaksi = ? LIMIT 1 {$lockPenomoran}");
         $stmt->bind_param("s", $tipeTransaksi);
         $stmt->execute();
         $res = $stmt->get_result();
@@ -135,7 +136,11 @@ if (!function_exists('generateNomorTransaksi')) {
         $columnName = $target['column'];
         $pkName = $target['pk'];
 
-        $sql = "SELECT {$columnName} FROM {$tableName} WHERE {$columnName} LIKE ? {$dateFilterSql} ORDER BY {$pkName} DESC LIMIT 200";
+        // Kunci baris penomoran jika berada dalam database transaction ($forUpdate = true)
+        $lockSql = $forUpdate ? " FOR UPDATE" : "";
+
+        // Query sequence tertinggi yang sudah terdaftar di database
+        $sql = "SELECT {$columnName} FROM {$tableName} WHERE {$columnName} LIKE ? {$dateFilterSql} ORDER BY {$pkName} DESC LIMIT 200 {$lockSql}";
         $stmtSeq = $conn->prepare($sql);
         $stmtSeq->bind_param("s", $likePattern);
         $stmtSeq->execute();
@@ -169,5 +174,15 @@ if (!function_exists('generateNomorTransaksi')) {
             'tipe_reset' => $tipeReset,
             'message' => 'Nomor transaksi berhasil di-generate'
         ];
+    }
+}
+
+if (!function_exists('generateNomorTransaksiLocked')) {
+    /**
+     * Khusus dipanggil saat proses SIMPAN transaksi (wajib di dalam $conn->begin_transaction())
+     * Mengunci baris penomoran dan baris transaksi untuk mencegah tabrakan / duplicate key multi-user
+     */
+    function generateNomorTransaksiLocked($conn, string $tipeTransaksi, ?string $dateStr = null): array {
+        return generateNomorTransaksi($conn, $tipeTransaksi, $dateStr, true);
     }
 }

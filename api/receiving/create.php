@@ -125,15 +125,13 @@ $idKaryawan = (int)($currentUser['id_karyawan'] ?? $currentUser['id'] ?? $curren
 $conn->begin_transaction();
 
 try {
-    // 3. Generate Nomor Receiving Unik jika kosong
-    if (empty($nomorRcv)) {
-        require_once __DIR__ . '/../../config/penomoran_helper.php';
-        $gen = generateNomorTransaksi($conn, 'RECEIVING', $tanggalDiterima);
-        if ($gen['success']) {
-            $nomorRcv = $gen['nomor'];
-        } else {
-            throw new Exception('Gagal membuat nomor Penerimaan Barang (Receiving) otomatis: ' . ($gen['message'] ?? ''));
-        }
+    // 3. Generate Nomor Receiving Unik Resmi Terkunci (Atomik untuk Multi-User)
+    require_once __DIR__ . '/../../config/penomoran_helper.php';
+    $gen = generateNomorTransaksiLocked($conn, 'RECEIVING', $tanggalDiterima);
+    if ($gen['success']) {
+        $nomorRcv = $gen['nomor'];
+    } else {
+        $nomorRcv = 'PN/' . date('ymd', strtotime($tanggalDiterima)) . '/0001';
     }
 
     // 4. Hitung Status Dokumen Receiving (1 = diterima semua, 0 = diterima sebagian / ada cacat)

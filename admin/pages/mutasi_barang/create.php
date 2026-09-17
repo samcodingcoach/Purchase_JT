@@ -817,9 +817,14 @@ async function handleSaveMutasi(e) {
         btn.innerHTML = '<i class="bi bi-send-fill me-1"></i> Simpan Transaksi Mutasi';
 
         if (json.success) {
-            sessionStorage.setItem('flash_toast_msg', json.message || 'Data transaksi mutasi barang berhasil dibuat.');
-            sessionStorage.setItem('flash_toast_type', 'success');
-            window.location.href = `<?= BASE_URL ?>/admin/pages/mutasi_barang/index.php`;
+            const finalNomor = json.data?.nomor_surat_mutasi || payload.nomor_surat_mutasi || '-';
+            showSuccessTransactionModal({
+                title: 'Mutasi Barang Berhasil Disimpan',
+                subtitle: 'Berhasil Disimpan Dengan Nomor :',
+                nomor: finalNomor,
+                redirectUrl: `<?= BASE_URL ?>/admin/pages/mutasi_barang/index.php`,
+                delay: 2000
+            });
         } else {
             showToast(json.message || 'Gagal menyimpan transaksi mutasi.', 'error');
         }
