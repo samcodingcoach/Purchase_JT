@@ -503,7 +503,7 @@ function renderTable(items, pagination) {
                             <i class="bi bi-eye-fill"></i>
                         </button>
                         ${canPrint ? `
-                            <a href="<?= BASE_URL ?>/admin/pages/mutasi_barang/print_surat.php?id_mutasi=${item.id_mutasi}" target="_blank" class="btn btn-outline-secondary btn-sm px-2 py-1 shadow-xs" title="Cetak Surat Keterangan Mutasi">
+                            <a href="<?= BASE_URL ?>/admin/pages/mutasi_barang/print_surat.php?id_mutasi=${encodeId(item.id_mutasi)}" target="_blank" class="btn btn-outline-secondary btn-sm px-2 py-1 shadow-xs" title="Cetak Surat Keterangan Mutasi">
                                 <i class="bi bi-printer-fill"></i>
                             </a>
                         ` : ''}

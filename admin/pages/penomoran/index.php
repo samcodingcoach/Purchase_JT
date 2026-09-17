@@ -256,7 +256,7 @@ async function loadPenomoranList(page = 1) {
                     </td>
                     <td class="text-center">
                         <div class="d-inline-flex gap-1">
-                            <a href="<?= BASE_URL ?>/admin/pages/penomoran/edit.php?id=${item.id_nomor}" class="btn btn-outline-warning btn-sm px-2 py-1 shadow-xs text-dark" title="Edit Format Penomoran">
+                            <a href="<?= BASE_URL ?>/admin/pages/penomoran/edit.php?id=${encodeId(item.id_nomor)}" class="btn btn-outline-warning btn-sm px-2 py-1 shadow-xs text-dark" title="Edit Format Penomoran">
                                 <i class="bi bi-pencil-fill"></i>
                             </a>
                             <button type="button" class="btn btn-outline-danger btn-sm px-2 py-1 shadow-xs" title="Hapus Format Penomoran" onclick="confirmDelete(${item.id_nomor}, '${escapeHtml(item.nama_penomoran)}')">

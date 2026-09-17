@@ -10,7 +10,7 @@ require_once __DIR__ . '/../../../config/koneksi.php';
 require_once __DIR__ . '/../../../config/session.php';
 
 $user = requireAuth([ROLE_ADMIN, ROLE_LOGISTIK, ROLE_MEKANIK, ROLE_MANAGER]);
-$id = isset($_GET['id']) && is_numeric($_GET['id']) ? (int)$_GET['id'] : 0;
+$id = isset($_GET['id']) ? decodeId($_GET['id']) : 0;
 $useKop = !isset($_GET['kop']) || (int)$_GET['kop'] === 1;
 
 if ($id <= 0) {
@@ -191,10 +191,10 @@ $isPengurangan = ($header['jenis_adjustment'] === 'PENGURANGAN');
         <div class="d-flex align-items-center gap-2">
             <!-- Switch Kop Surat -->
             <div class="btn-group btn-group-sm me-2" role="group">
-                <a href="?id=<?= $id ?>&kop=1" class="btn <?= $useKop ? 'btn-light fw-bold text-dark' : 'btn-outline-light' ?>">
+                <a href="?id=<?= encodeId($id) ?>&kop=1" class="btn <?= $useKop ? 'btn-light fw-bold text-dark' : 'btn-outline-light' ?>">
                     <i class="bi bi-file-earmark-richtext me-1"></i> Dengan Kop
                 </a>
-                <a href="?id=<?= $id ?>&kop=0" class="btn <?= !$useKop ? 'btn-light fw-bold text-dark' : 'btn-outline-light' ?>">
+                <a href="?id=<?= encodeId($id) ?>&kop=0" class="btn <?= !$useKop ? 'btn-light fw-bold text-dark' : 'btn-outline-light' ?>">
                     <i class="bi bi-file-earmark me-1"></i> Tanpa Kop
                 </a>
             </div>

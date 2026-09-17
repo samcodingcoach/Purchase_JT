@@ -705,14 +705,15 @@ async function loadPoList(page = 1) {
             isEditable = true;
         }
 
+        const encPoId = encodeId(item.id_po);
         const editBtnHtml = isEditable 
-            ? `<a href="${BASE_URL}/admin/pages/purchase_order/edit.php?id=${item.id_po}" class="btn btn-outline-warning btn-sm px-2 py-1 shadow-xs text-dark" title="Edit Purchase Order"><i class="bi bi-pencil-fill"></i></a>`
+            ? `<a href="${BASE_URL}/admin/pages/purchase_order/edit.php?id=${encPoId}" class="btn btn-outline-warning btn-sm px-2 py-1 shadow-xs text-dark" title="Edit Purchase Order"><i class="bi bi-pencil-fill"></i></a>`
             : `<button type="button" class="btn btn-light btn-sm px-2 py-1 text-muted border opacity-50" disabled title="${lockTooltip}"><i class="bi bi-lock-fill"></i></button>`;
 
         let printBtnHtml = '';
         if (['DIPROSES VENDOR', 'DITERIMA', 'SELESAI'].includes(statusUpper)) {
             printBtnHtml = `
-                <a href="${BASE_URL}/admin/pages/purchase_order/print.php?id=${item.id_po}" target="_blank" class="btn btn-outline-primary btn-sm px-2 py-1 shadow-xs" title="Cetak / Download Surat Pesanan Barang (PO)">
+                <a href="${BASE_URL}/admin/pages/purchase_order/print.php?id=${encPoId}" target="_blank" class="btn btn-outline-primary btn-sm px-2 py-1 shadow-xs" title="Cetak / Download Surat Pesanan Barang (PO)">
                     <i class="bi bi-printer-fill"></i>
                 </a>
             `;

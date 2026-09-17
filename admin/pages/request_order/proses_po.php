@@ -13,8 +13,8 @@ $user = requireAuth([ROLE_ADMIN, ROLE_PURCHASING, ROLE_MANAGER]);
 $pageTitle = 'Proses ke Purchase Order';
 $pageHeading = 'Verifikasi & Proses Purchase Order';
 
-$idRequest = isset($_GET['id']) && is_numeric($_GET['id']) ? (int)$_GET['id'] : 0;
-if (!$idRequest) {
+$idRequest = isset($_GET['id']) ? decodeId($_GET['id']) : 0;
+if ($idRequest <= 0) {
     header('Location: ' . BASE_URL . '/admin/pages/request_order/index.php');
     exit;
 }

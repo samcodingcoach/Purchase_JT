@@ -10,7 +10,7 @@ require_once __DIR__ . '/../../../config/session.php';
 
 $user = requireAuth([ROLE_PURCHASING, ROLE_ADMIN, ROLE_MANAGER]);
 
-$idFaktur = isset($_GET['id']) ? intval($_GET['id']) : (isset($_GET['id_faktur']) ? intval($_GET['id_faktur']) : 0);
+$idFaktur = isset($_GET['id']) ? decodeId($_GET['id']) : (isset($_GET['id_faktur']) ? decodeId($_GET['id_faktur']) : 0);
 
 if ($idFaktur <= 0) {
     header('Location: ' . BASE_URL . '/admin/pages/faktur_po/index.php');

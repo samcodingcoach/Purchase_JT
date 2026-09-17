@@ -12,7 +12,7 @@ require_once __DIR__ . '/../../../config/session.php';
 
 // Auth Protection: Khusus Logistik, Manager, dan Admin
 $user = requireAuth([ROLE_ADMIN, ROLE_LOGISTIK, ROLE_MANAGER]);
-$preselectedPoId = isset($_GET['id_po']) && is_numeric($_GET['id_po']) ? (int)$_GET['id_po'] : 0;
+$preselectedPoId = isset($_GET['id_po']) ? decodeId($_GET['id_po']) : (isset($_GET['id']) ? decodeId($_GET['id']) : 0);
 
 $pageTitle = 'Penerimaan Barang Baru (Receiving)';
 $pageHeading = 'Input Penerimaan Barang (SPB Vendor)';

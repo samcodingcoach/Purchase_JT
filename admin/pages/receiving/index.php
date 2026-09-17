@@ -411,10 +411,11 @@ async function loadReceivingList(page = 1) {
             ? `<a href="<?= BASE_URL ?>/uploads/surat_jalan/${encodeURIComponent(item.file_sj)}" target="_blank" class="btn btn-outline-info btn-sm px-2 py-1 shadow-xs" title="Unduh Surat Jalan Vendor (.pdf/.jpg)"><i class="bi bi-paperclip"></i></a>`
             : `<button type="button" class="btn btn-outline-secondary btn-sm px-2 py-1 shadow-xs disabled" title="Tidak ada lampiran surat jalan"><i class="bi bi-paperclip"></i></button>`;
 
+        const encRcvId = encodeId(item.id_rcv);
         // Action: Edit Button (Terkunci jika sudah print)
         const editBtn = isPrinted
             ? `<button type="button" class="btn btn-outline-secondary btn-sm px-2 py-1 shadow-xs disabled" title="Terkunci (Sudah Dicetak)"><i class="bi bi-lock-fill text-muted"></i></button>`
-            : `<a href="<?= BASE_URL ?>/admin/pages/receiving/edit.php?id=${item.id_rcv}" class="btn btn-outline-warning btn-sm px-2 py-1 shadow-xs" title="Edit Penerimaan"><i class="bi bi-pencil"></i></a>`;
+            : `<a href="<?= BASE_URL ?>/admin/pages/receiving/edit.php?id=${encRcvId}" class="btn btn-outline-warning btn-sm px-2 py-1 shadow-xs" title="Edit Penerimaan"><i class="bi bi-pencil"></i></a>`;
 
         rowsHtml += `
             <tr>
@@ -634,7 +635,8 @@ function openPrintModal(idRcv, nomorRcv = '') {
 function executePrint(kop = 1) {
     if (!currentPrintId) return;
     modalPrintOptionInstance.hide();
-    const url = `<?= BASE_URL ?>/admin/pages/receiving/print.php?id=${currentPrintId}&kop=${kop}`;
+    const encId = encodeId(currentPrintId);
+    const url = `<?= BASE_URL ?>/admin/pages/receiving/print.php?id=${encId}&kop=${kop}`;
     window.open(url, '_blank');
 }
 

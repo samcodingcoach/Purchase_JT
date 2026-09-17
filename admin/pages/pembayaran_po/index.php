@@ -383,6 +383,8 @@ function renderPaymentTable(rows, pagination) {
             ? '<span class="badge bg-success-subtle text-success border px-2 py-1"><i class="bi bi-check-circle me-1"></i>1x Lunas</span>'
             : '<span class="badge bg-warning-subtle text-warning-emphasis border px-2 py-1"><i class="bi bi-clock-history me-1"></i>Kredit / Termin</span>';
 
+        const encPayId = encodeId(r.id_pembayaran_detail);
+
         html += `
         <tr>
             <td class="text-center">${no}</td>
@@ -406,10 +408,10 @@ function renderPaymentTable(rows, pagination) {
                     <button type="button" class="btn btn-outline-primary btn-sm px-2 py-1 shadow-xs" onclick="viewPaymentDetail(${r.id_pembayaran_detail})" title="Detail Transaksi">
                         <i class="bi bi-eye-fill"></i>
                     </button>
-                    <a href="<?= BASE_URL ?>/admin/pages/pembayaran_po/edit.php?id=${r.id_pembayaran_detail}" class="btn btn-outline-warning btn-sm px-2 py-1 shadow-xs text-dark" title="Edit Pembayaran">
+                    <a href="<?= BASE_URL ?>/admin/pages/pembayaran_po/edit.php?id=${encPayId}" class="btn btn-outline-warning btn-sm px-2 py-1 shadow-xs text-dark" title="Edit Pembayaran">
                         <i class="bi bi-pencil-fill"></i>
                     </a>
-                    <a href="<?= BASE_URL ?>/admin/pages/pembayaran_po/print.php?id=${r.id_pembayaran_detail}" target="_blank" class="btn btn-outline-secondary btn-sm px-2 py-1 shadow-xs" title="Cetak Bukti Pembayaran">
+                    <a href="<?= BASE_URL ?>/admin/pages/pembayaran_po/print.php?id=${encPayId}" target="_blank" class="btn btn-outline-secondary btn-sm px-2 py-1 shadow-xs" title="Cetak Bukti Pembayaran">
                         <i class="bi bi-printer-fill"></i>
                     </a>
                 </div>

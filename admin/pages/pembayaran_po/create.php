@@ -16,7 +16,7 @@ $pageTitle = 'Catat Pembayaran PO';
 $pageHeading = 'Formulir Pembayaran Faktur Pembelian';
 
 // Ambil parameter id_faktur jika dibuka langsung dari faktur detail
-$preselectedIdFaktur = isset($_GET['id_faktur']) ? intval($_GET['id_faktur']) : 0;
+$preselectedIdFaktur = isset($_GET['id_faktur']) ? decodeId($_GET['id_faktur']) : 0;
 
 require_once __DIR__ . '/../../components/header.php';
 require_once __DIR__ . '/../../components/sidebar.php';

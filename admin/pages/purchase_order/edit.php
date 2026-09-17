@@ -10,7 +10,7 @@ require_once __DIR__ . '/../../../config/session.php';
 
 // Auth Protection: Khusus Purchasing, Manager, dan Admin (Logistik diblokir)
 $user = requireAuth([ROLE_ADMIN, ROLE_PURCHASING, ROLE_MANAGER]);
-$idPo = isset($_GET['id']) && is_numeric($_GET['id']) ? (int)$_GET['id'] : 0;
+$idPo = isset($_GET['id']) ? decodeId($_GET['id']) : 0;
 
 if ($idPo <= 0) {
     header('Location: ' . BASE_URL . '/admin/pages/purchase_order/index.php');

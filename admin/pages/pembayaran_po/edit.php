@@ -14,7 +14,7 @@ $user = requireAuth([ROLE_FINANCE, ROLE_ADMIN, ROLE_MANAGER]);
 $pageTitle = 'Edit Pembayaran PO';
 $pageHeading = 'Perbarui Data Pembayaran Faktur';
 
-$idDetail = isset($_GET['id']) ? intval($_GET['id']) : (isset($_GET['id_detail']) ? intval($_GET['id_detail']) : 0);
+$idDetail = isset($_GET['id']) ? decodeId($_GET['id']) : (isset($_GET['id_detail']) ? decodeId($_GET['id_detail']) : 0);
 if ($idDetail <= 0) {
     header('Location: ' . BASE_URL . '/admin/pages/pembayaran_po/index.php');
     exit;

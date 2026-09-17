@@ -35,6 +35,35 @@ $companyName = $companyProfile['nama'] ?? 'PT Jaya Teknis';
         const BASE_URL = '<?= BASE_URL ?>';
         const API_TOKEN = '<?= $_SESSION['api_token'] ?? '' ?>';
         const CURRENT_USER = <?= json_encode($currentUser) ?>;
+
+        // URL Parameter Obfuscation / Hash Helper (JS Equivalent)
+        function encodeId(id) {
+            if (id === null || id === undefined || id === '' || isNaN(id)) return '';
+            const num = parseInt(id, 10);
+            if (num <= 0) return '';
+            // Obfuscate ID dengan payload b64 safe
+            try {
+                const raw = 'JT_' + num;
+                return btoa(raw).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+            } catch(e) {
+                return String(num);
+            }
+        }
+
+        function decodeId(str) {
+            if (!str) return 0;
+            if (!isNaN(str) && parseInt(str, 10) > 0) return parseInt(str, 10);
+            try {
+                let b64 = str.replace(/-/g, '+').replace(/_/g, '/');
+                while (b64.length % 4) b64 += '=';
+                const decoded = atob(b64);
+                if (decoded.startsWith('JT_')) {
+                    const val = parseInt(decoded.substring(3), 10);
+                    return isNaN(val) ? 0 : val;
+                }
+            } catch(e) {}
+            return 0;
+        }
     </script>
 <body>
 <div id="app-wrapper">

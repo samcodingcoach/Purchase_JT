@@ -517,15 +517,16 @@ function renderTableRows(items, offset) {
 
         // Tombol Proses PO (Khusus Purchasing, Manager, Admin saat DISETUJUI LOGISTIK)
         let btnProsesPo = '';
+        const encRoId = encodeId(ro.id_request);
         if (ro.status === 'DISETUJUI LOGISTIK' && isPurchasingOrAdmin) {
             btnProsesPo = `
-                <a href="${BASE_URL}/admin/pages/request_order/proses_po.php?id=${ro.id_request}" class="btn btn-success btn-sm px-2 py-1 text-white shadow-xs" title="Proses ke Purchase Order (PO)">
+                <a href="${BASE_URL}/admin/pages/request_order/proses_po.php?id=${encRoId}" class="btn btn-success btn-sm px-2 py-1 text-white shadow-xs" title="Proses ke Purchase Order (PO)">
                     <i class="bi bi-cart-check-fill"></i>
                 </a>
             `;
         } else if (ro.status === 'DISETUJUI PURCHASING' && isPurchasingOrAdmin) {
             btnProsesPo = `
-                <a href="${BASE_URL}/admin/pages/request_order/proses_po.php?id=${ro.id_request}" class="btn btn-outline-success btn-sm px-2 py-1" title="Lihat Rincian PO">
+                <a href="${BASE_URL}/admin/pages/request_order/proses_po.php?id=${encRoId}" class="btn btn-outline-success btn-sm px-2 py-1" title="Lihat Rincian PO">
                     <i class="bi bi-file-earmark-check"></i>
                 </a>
             `;
@@ -553,7 +554,7 @@ function renderTableRows(items, offset) {
                             <i class="bi bi-eye-fill"></i>
                         </button>
                         ${canEdit ? `
-                            <a href="${BASE_URL}/admin/pages/request_order/edit.php?id=${ro.id_request}" class="btn btn-outline-warning btn-sm px-2 py-1 shadow-xs text-dark" title="Edit / Tinjau Request Order">
+                            <a href="${BASE_URL}/admin/pages/request_order/edit.php?id=${encRoId}" class="btn btn-outline-warning btn-sm px-2 py-1 shadow-xs text-dark" title="Edit / Tinjau Request Order">
                                 <i class="bi bi-pencil-fill"></i>
                             </a>
                         ` : ''}

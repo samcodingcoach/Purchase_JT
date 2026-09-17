@@ -330,11 +330,13 @@ async function loadAdjustmentList(page = 1) {
                 ktsBadge = `<span class="badge bg-light text-dark border fw-bold">${totalKts.toLocaleString('id-ID')}</span>`;
             }
 
+            const encAdjId = encodeId(row.id_adjustment);
+
             // Print Button (hanya aktif jika APPROVED)
             let printBtn = '';
             if (row.status === 'APPROVED') {
                 printBtn = `
-                    <a href="<?= BASE_URL ?>/admin/pages/adjustment_stok/print.php?id=${row.id_adjustment}" target="_blank" class="btn btn-outline-secondary btn-sm px-2 py-1 shadow-xs" title="Cetak Berita Acara">
+                    <a href="<?= BASE_URL ?>/admin/pages/adjustment_stok/print.php?id=${encAdjId}" target="_blank" class="btn btn-outline-secondary btn-sm px-2 py-1 shadow-xs" title="Cetak Berita Acara">
                         <i class="bi bi-printer-fill"></i>
                     </a>
                 `;
@@ -351,7 +353,7 @@ async function loadAdjustmentList(page = 1) {
             let deleteBtn = '';
             if (row.status === 'DRAFT' || row.status === 'PENDING') {
                 editBtn = `
-                    <a href="<?= BASE_URL ?>/admin/pages/adjustment_stok/edit.php?id=${row.id_adjustment}" class="btn btn-outline-warning btn-sm px-2 py-1 shadow-xs text-dark" title="Edit Data">
+                    <a href="<?= BASE_URL ?>/admin/pages/adjustment_stok/edit.php?id=${encAdjId}" class="btn btn-outline-warning btn-sm px-2 py-1 shadow-xs text-dark" title="Edit Data">
                         <i class="bi bi-pencil-fill"></i>
                     </a>
                 `;

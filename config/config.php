@@ -161,3 +161,6 @@ function getStatusBadge(string $status): array {
             return ['class' => 'bg-secondary', 'label' => $status];
     }
 }
+
+// Security Helper: Obfuscasi / Hash URL Parameters
+require_once __DIR__ . '/security_helper.php';

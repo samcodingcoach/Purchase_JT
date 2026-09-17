@@ -10,7 +10,7 @@ require_once __DIR__ . '/../../../config/koneksi.php';
 require_once __DIR__ . '/../../../config/session.php';
 
 $user = requireAuth([ROLE_ADMIN, ROLE_LOGISTIK, ROLE_MANAGER]);
-$idRcv = isset($_GET['id']) && is_numeric($_GET['id']) ? (int)$_GET['id'] : 0;
+$idRcv = isset($_GET['id']) ? decodeId($_GET['id']) : (isset($_GET['id_rcv']) ? decodeId($_GET['id_rcv']) : 0);
 
 if ($idRcv <= 0) {
     header("Location: " . BASE_URL . "/admin/pages/receiving/index.php");

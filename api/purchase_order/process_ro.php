@@ -410,3 +410,7 @@ if ($action === 'approve' || $action === 'draft') {
 }
 
 jsonResponse(false, 'Aksi tidak dikenali. Gunakan action: approve, draft, reject, atau cancel.', null, 422);
+    }
+}
+
+jsonResponse(false, 'Aksi tidak dikenali. Gunakan action: approve, draft, reject, atau cancel.', null, 422);

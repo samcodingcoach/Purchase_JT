@@ -11,7 +11,7 @@ require_once __DIR__ . '/../../../config/session.php';
 // Auth Protection Khusus ADMIN
 $user = requireAuth([ROLE_ADMIN]);
 
-$idNomor = isset($_GET['id']) && is_numeric($_GET['id']) ? (int)$_GET['id'] : 0;
+$idNomor = isset($_GET['id']) ? decodeId($_GET['id']) : 0;
 if ($idNomor <= 0) {
     header('Location: ' . BASE_URL . '/admin/pages/penomoran/index.php');
     exit;

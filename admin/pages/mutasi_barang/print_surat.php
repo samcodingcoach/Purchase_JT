@@ -12,7 +12,7 @@ require_once __DIR__ . '/../../../config/koneksi.php';
 // Auth Protection
 $user = requireAuth([ROLE_ADMIN, ROLE_LOGISTIK, ROLE_MANAGER, ROLE_PURCHASING]);
 
-$idMutasi = isset($_GET['id_mutasi']) && is_numeric($_GET['id_mutasi']) ? (int)$_GET['id_mutasi'] : (isset($_GET['id']) ? (int)$_GET['id'] : 0);
+$idMutasi = isset($_GET['id_mutasi']) ? decodeId($_GET['id_mutasi']) : (isset($_GET['id']) ? decodeId($_GET['id']) : 0);
 $useKop = !isset($_GET['kop']) || (int)$_GET['kop'] === 1;
 
 // Profil Perusahaan
@@ -53,10 +53,10 @@ $companyLogo = !empty($profile['picture']) ? $profile['picture'] : '';
         <div class="d-flex align-items-center gap-2">
             <!-- Switch Kop Surat -->
             <div class="btn-group btn-group-sm me-2" role="group">
-                <a href="?id_mutasi=<?= $idMutasi ?>&kop=1" class="btn <?= $useKop ? 'btn-light fw-bold text-dark' : 'btn-outline-light' ?>">
+                <a href="?id_mutasi=<?= encodeId($idMutasi) ?>&kop=1" class="btn <?= $useKop ? 'btn-light fw-bold text-dark' : 'btn-outline-light' ?>">
                     <i class="bi bi-file-earmark-richtext me-1"></i> Dengan Kop
                 </a>
-                <a href="?id_mutasi=<?= $idMutasi ?>&kop=0" class="btn <?= !$useKop ? 'btn-light fw-bold text-dark' : 'btn-outline-light' ?>">
+                <a href="?id_mutasi=<?= encodeId($idMutasi) ?>&kop=0" class="btn <?= !$useKop ? 'btn-light fw-bold text-dark' : 'btn-outline-light' ?>">
                     <i class="bi bi-file-earmark me-1"></i> Tanpa Kop
                 </a>
             </div>

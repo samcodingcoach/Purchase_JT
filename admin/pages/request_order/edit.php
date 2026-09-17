@@ -15,7 +15,7 @@ $isLogistik = in_array($user['role'], [ROLE_LOGISTIK, ROLE_ADMIN, ROLE_MANAGER])
 $targetRoleName = $isMekanik ? 'Logistik' : 'Purchasing';
 $btnSubmitLabel = $isMekanik ? 'Perbarui & Kirim ke Logistik' : 'Perbarui & Kirim ke Purchasing';
 
-$idRequest = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$idRequest = isset($_GET['id']) ? decodeId($_GET['id']) : 0;
 if ($idRequest <= 0) {
     header('Location: ' . BASE_URL . '/admin/pages/request_order/index.php');
     exit;
