@@ -257,7 +257,7 @@ require_once __DIR__ . '/components/navbar.php';
 <div class="mb-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="fs-6 fw-bold text-dark mb-0">
-            <i class="bi bi-grid-fill me-2 text-primary"></i>Ringkasan Master Data &amp; Inventaris
+            Ringkasan Master Data &amp; Inventaris
         </h5>
     </div>
     
@@ -335,7 +335,7 @@ require_once __DIR__ . '/components/navbar.php';
 <div class="mb-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="fs-6 fw-bold text-dark mb-0">
-            <i class="bi bi-file-earmark-text-fill me-2 text-primary"></i>Status Permintaan Request Order
+            Status Permintaan Request Order
         </h5>
     </div>
 
@@ -464,7 +464,7 @@ require_once __DIR__ . '/components/navbar.php';
 <div class="card shadow-sm border-0 mb-4">
     <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
         <h5 class="card-title mb-0 fs-6 fw-bold text-dark">
-            <i class="bi bi-clock-history me-1 text-primary"></i> Request Order Terbaru
+             Request Order Terbaru
         </h5>
         <a href="<?= BASE_URL ?>/admin/pages/request_order/index.php" class="btn btn-sm btn-outline-primary fw-semibold">
             Lihat Semua RO &rarr;
@@ -554,7 +554,7 @@ async function loadPendingRoCards() {
         if (!res || !res.success || !Array.isArray(res.data) || res.data.length === 0) {
             grid.innerHTML = `
                 <div class="col-12 text-center py-5 text-muted bg-white rounded-3 border">
-                    <i class="bi bi-check-circle-fill text-success fs-1 d-block mb-2"></i>
+                    
                     <h6 class="fw-bold text-dark mb-1">Semua Request Order Telah Selesai Diterima!</h6>
                     <p class="small text-muted mb-0">Tidak ada Request Order aktif yang belum diproses atau belum diterima.</p>
                 </div>

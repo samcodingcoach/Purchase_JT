@@ -4,7 +4,7 @@
 <div class="mb-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="fs-6 fw-bold text-dark mb-0">
-            <i class="bi bi-cart-check-fill me-2 text-primary"></i>Status Pengadaan &amp; PO
+            Status Pengadaan &amp; Purchase Order
         </h5>
         <a href="<?= BASE_URL ?>/admin/pages/purchase_order/index.php" class="btn btn-sm btn-primary fw-semibold shadow-sm">
             <i class="bi bi-receipt me-1"></i>Kelola PO
@@ -62,7 +62,7 @@
 <div class="card shadow-sm border-0 mb-4">
     <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
         <h5 class="card-title mb-0 fs-6 fw-bold text-dark">
-            <i class="bi bi-clock-history me-1 text-primary"></i> Request Order Terbaru
+            Request Order Terbaru
         </h5>
         <a href="<?= BASE_URL ?>/admin/pages/request_order/index.php" class="btn btn-sm btn-outline-primary fw-semibold">
             Lihat Semua RO &rarr;

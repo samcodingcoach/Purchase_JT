@@ -4,7 +4,7 @@
 <div class="mb-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="fs-6 fw-bold text-dark mb-0">
-            <i class="bi bi-file-earmark-text-fill me-2 text-primary"></i>Status Request Order Saya
+            Status Request Order
         </h5>
         <a href="<?= BASE_URL ?>/admin/pages/request_order/create.php" class="btn btn-sm btn-primary fw-semibold shadow-sm">
             <i class="bi bi-plus-lg me-1"></i>Buat RO Baru
@@ -51,7 +51,7 @@
 <div class="mb-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="fs-6 fw-bold text-dark mb-0">
-            <i class="bi bi-hourglass-split me-2 text-primary"></i>Request Order Aktif (In Progress)
+            Request Order Aktif (In Progress)
         </h5>
         <a href="<?= BASE_URL ?>/admin/pages/request_order/index.php" class="btn btn-sm btn-outline-primary fw-semibold">
             Lihat Semua RO &rarr;
@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!resPending || !resPending.success || !Array.isArray(resPending.data) || resPending.data.length === 0) {
             grid.innerHTML = `
                 <div class="col-12 text-center py-5 text-muted bg-white rounded-3 border">
-                    <i class="bi bi-check-circle-fill text-success fs-1 d-block mb-2"></i>
+                    
                     <h6 class="fw-bold text-dark mb-1">Semua Request Order Telah Selesai Diterima!</h6>
                     <p class="small text-muted mb-0">Tidak ada Request Order aktif yang belum diproses atau belum diterima.</p>
                 </div>

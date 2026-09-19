@@ -4,7 +4,7 @@
 <div class="mb-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="fs-6 fw-bold text-dark mb-0">
-            <i class="bi bi-grid-fill me-2 text-primary"></i>Ringkasan Master Data &amp; Inventaris
+            Ringkasan Master Data &amp; Inventaris
         </h5>
     </div>
     
