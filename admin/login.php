@@ -56,12 +56,18 @@ $companyCity = $companyProfile['kota'] ?? 'Surabaya';
                 <!-- Branding Header -->
                 <div>
                     <div class="brand-header-box">
-                        <div class="brand-icon-bubble">
-                            <i class="bi bi-shield-check"></i>
-                        </div>
+                        <?php if (!empty($companyProfile['picture'])): ?>
+                            <div class="brand-icon-bubble" style="background: white; border: none; overflow: hidden; padding: 4px;">
+                                <img src="<?= BASE_URL ?>/<?= htmlspecialchars($companyProfile['picture']) ?>" alt="Logo" style="width: 100%; height: 100%; object-fit: contain;">
+                            </div>
+                        <?php else: ?>
+                            <div class="brand-icon-bubble">
+                                <i class="bi bi-shield-check"></i>
+                            </div>
+                        <?php endif; ?>
                         <div>
                             <h4 class="fw-bold mb-0 text-white tracking-tight"><?= htmlspecialchars($companyName) ?></h4>
-                            <span class="text-white-50 small fw-medium">Purchase &amp; Operational Management System</span>
+                            <span class="text-white-50 small fw-medium">Purchase Management System</span>
                         </div>
                     </div>
 
@@ -86,8 +92,11 @@ $companyCity = $companyProfile['kota'] ?? 'Surabaya';
                 </div>
 
                 <!-- Footer Kolom Kiri -->
-                <div class="pt-3 border-top border-white border-opacity-10 mt-3 text-center text-white-50 small" style="font-size: 0.75rem;">
+                <div class="pt-3 border-top border-white border-opacity-10 mt-3 d-flex justify-content-between align-items-center text-white-50 small" style="font-size: 0.75rem;">
                     <span>&copy; <?= date('Y') ?> <?= htmlspecialchars($companyName) ?></span>
+                    <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#modalFlowchart" style="font-size: 0.7rem;">
+                        <i class="bi bi-diagram-3 me-1"></i> Lihat Alur Sistem
+                    </button>
                 </div>
             </div>
 
@@ -176,6 +185,35 @@ $companyCity = $companyProfile['kota'] ?? 'Surabaya';
             </div>
             <div class="modal-footer bg-light py-2 px-3">
                 <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- =============================================================
+     MODAL FLOWCHART SISTEM
+     ============================================================= -->
+<div class="modal fade" id="modalFlowchart" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content bg-dark text-white border-0 shadow-lg">
+            <div class="modal-header border-bottom border-secondary py-3">
+                <h5 class="modal-title fs-6 fw-bold">
+                    <i class="bi bi-diagram-3-fill me-2 text-info"></i>Alur Sistem (Flowchart)
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0 position-relative overflow-hidden bg-black" id="flowchartContainer" style="height: 75vh; cursor: grab;">
+                <!-- Toolbar Zoom -->
+                <div class="position-absolute top-0 end-0 m-3 z-3 bg-dark rounded p-1 bg-opacity-75 shadow">
+                    <button class="btn btn-sm btn-outline-light border-0" onclick="zoomFlowchart(0.2)" title="Zoom In"><i class="bi bi-zoom-in"></i></button>
+                    <button class="btn btn-sm btn-outline-light border-0" onclick="zoomFlowchart(-0.2)" title="Zoom Out"><i class="bi bi-zoom-out"></i></button>
+                    <button class="btn btn-sm btn-outline-light border-0" onclick="resetZoomFlowchart()" title="Reset"><i class="bi bi-arrow-counterclockwise"></i></button>
+                </div>
+                <!-- Image -->
+                <img src="<?= BASE_URL ?>/images/uploads/company/Flowchart.png" id="flowchartImage" class="img-fluid" style="transform-origin: center; transition: transform 0.1s ease; pointer-events: none; width: 100%; height: 100%; object-fit: contain;">
+            </div>
+            <div class="modal-footer bg-dark border-top border-secondary py-1 px-3 d-flex justify-content-center">
+                <span class="small text-muted"><i class="bi bi-info-circle me-1"></i> Scroll untuk zoom, klik & tahan untuk menggeser.</span>
             </div>
         </div>
     </div>
@@ -348,6 +386,77 @@ function setDemoAccount(username, pass) {
 
 function handleResetPasswordClick() {
     // Digantikan dengan Bootstrap Modal (data-bs-toggle)
+}
+
+// -------------------------------------------------------------
+// FLOWCHART PAN & ZOOM LOGIC
+// -------------------------------------------------------------
+let flowchartScale = 1;
+let isDraggingFlowchart = false;
+let startX, startY;
+let translateX = 0, translateY = 0;
+
+const flowchartContainer = document.getElementById('flowchartContainer');
+const flowchartImage = document.getElementById('flowchartImage');
+
+function updateFlowchartTransform() {
+    if (!flowchartImage) return;
+    flowchartImage.style.transform = `translate(${translateX}px, ${translateY}px) scale(${flowchartScale})`;
+}
+
+function zoomFlowchart(delta) {
+    flowchartScale += delta;
+    if (flowchartScale < 0.2) flowchartScale = 0.2;
+    if (flowchartScale > 5) flowchartScale = 5;
+    updateFlowchartTransform();
+}
+
+function resetZoomFlowchart() {
+    flowchartScale = 1;
+    translateX = 0;
+    translateY = 0;
+    updateFlowchartTransform();
+}
+
+if (flowchartContainer) {
+    flowchartContainer.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -0.1 : 0.1;
+        zoomFlowchart(delta);
+    });
+
+    flowchartContainer.addEventListener('mousedown', (e) => {
+        isDraggingFlowchart = true;
+        flowchartContainer.style.cursor = 'grabbing';
+        startX = e.clientX - translateX;
+        startY = e.clientY - translateY;
+    });
+
+    flowchartContainer.addEventListener('mousemove', (e) => {
+        if (!isDraggingFlowchart) return;
+        e.preventDefault();
+        translateX = e.clientX - startX;
+        translateY = e.clientY - startY;
+        updateFlowchartTransform();
+    });
+
+    flowchartContainer.addEventListener('mouseup', () => {
+        isDraggingFlowchart = false;
+        flowchartContainer.style.cursor = 'grab';
+    });
+
+    flowchartContainer.addEventListener('mouseleave', () => {
+        isDraggingFlowchart = false;
+        flowchartContainer.style.cursor = 'grab';
+    });
+    
+    // Reset saat modal ditutup
+    const modalFlowchart = document.getElementById('modalFlowchart');
+    if (modalFlowchart) {
+        modalFlowchart.addEventListener('hidden.bs.modal', () => {
+            resetZoomFlowchart();
+        });
+    }
 }
 
 async function handleLoginSubmit(event) {
