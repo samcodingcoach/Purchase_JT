@@ -222,6 +222,37 @@ if ($method === 'DELETE') {
         jsonResponse(false, 'ID vendor tidak valid.', null, 422);
     }
 
+    // --- Pengecekan Relasi Database ---
+    $relations = [
+        ['table' => 'request_order', 'col' => 'id_vendor', 'label' => 'Request Order'],
+        ['table' => 'purchase_order', 'col' => 'id_vendor', 'label' => 'Purchase Order'],
+        ['table' => 'faktur_po', 'col' => 'id_vendor', 'label' => 'Faktur PO'],
+        ['table' => 'retur_po', 'col' => 'id_vendor', 'label' => 'Retur PO'],
+        ['table' => 'barang_hargavendor', 'col' => 'id_vendor', 'label' => 'Master Harga Barang Vendor']
+    ];
+    
+    $inUse = [];
+    foreach ($relations as $rel) {
+        $q = "SELECT COUNT(*) as count FROM {$rel['table']} WHERE {$rel['col']} = ?";
+        $stmtRel = $conn->prepare($q);
+        if ($stmtRel) {
+            $stmtRel->bind_param("i", $idVendor);
+            $stmtRel->execute();
+            $count = $stmtRel->get_result()->fetch_assoc()['count'] ?? 0;
+            $stmtRel->close();
+            
+            if ($count > 0) {
+                $inUse[] = $count . " data " . $rel['label'];
+            }
+        }
+    }
+    
+    if (count($inUse) > 0) {
+        $msg = "Gagal menghapus! Vendor ini sedang digunakan pada: " . implode(", ", $inUse) . ".";
+        jsonResponse(false, $msg, null, 409); // 409 Conflict
+    }
+    // -----------------------------------
+
     $stmt = $conn->prepare("DELETE FROM vendor WHERE id_vendor = ?");
     $stmt->bind_param("i", $idVendor);
     
@@ -230,7 +261,7 @@ if ($method === 'DELETE') {
         jsonResponse(true, 'Vendor berhasil dihapus.', null, 200);
     } else {
         $stmt->close();
-        jsonResponse(false, 'Gagal menghapus vendor. Data mungkin terkait dengan master barang atau transaksi RO.', null, 500);
+        jsonResponse(false, 'Gagal menghapus vendor. Terjadi kesalahan pada server.', null, 500);
     }
 }
 

@@ -152,6 +152,28 @@ if ($method === 'DELETE') {
         jsonResponse(false, 'ID kategori tidak valid.', null, 422);
     }
 
+    // --- Pengecekan Relasi Database ---
+    $q = "SELECT COUNT(*) as count FROM barang WHERE id_kategori = ?";
+    $stmtRel = $conn->prepare($q);
+    $inUse = false;
+    $count = 0;
+    if ($stmtRel) {
+        $stmtRel->bind_param("i", $idKategori);
+        $stmtRel->execute();
+        $count = $stmtRel->get_result()->fetch_assoc()['count'] ?? 0;
+        $stmtRel->close();
+        
+        if ($count > 0) {
+            $inUse = true;
+        }
+    }
+    
+    if ($inUse) {
+        $msg = "Gagal menghapus! Kategori ini sedang digunakan pada $count Master Barang.";
+        jsonResponse(false, $msg, null, 409);
+    }
+    // -----------------------------------
+
     $stmt = $conn->prepare("DELETE FROM kategori_barang WHERE id_kategori = ?");
     $stmt->bind_param("i", $idKategori);
     
@@ -160,7 +182,7 @@ if ($method === 'DELETE') {
         jsonResponse(true, 'Kategori berhasil dihapus.', null, 200);
     } else {
         $stmt->close();
-        jsonResponse(false, 'Gagal menghapus kategori. Data mungkin terkait dengan master barang.', null, 500);
+        jsonResponse(false, 'Gagal menghapus kategori. Terjadi kesalahan server.', null, 500);
     }
 }
 

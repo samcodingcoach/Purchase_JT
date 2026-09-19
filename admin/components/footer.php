@@ -268,11 +268,87 @@ $fullLocation = trim($companyAddress . ($companyCity ? ', ' . $companyCity : '')
     </div>
 </div>
 
+<!-- Modal Konfirmasi Hapus Data (Relasional) -->
+<div class="modal fade" id="modalGlobalDelete" tabindex="-1" aria-labelledby="modalGlobalDeleteLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-danger text-white py-3">
+                <h5 class="modal-title fs-6 fw-bold" id="modalGlobalDeleteLabel">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i> Konfirmasi Penghapusan
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="mb-3 text-dark" id="modalGlobalDeleteMessage">Apakah Anda yakin ingin menghapus data ini?</p>
+                <div class="alert alert-warning border-warning-subtle small mb-3">
+                    <i class="bi bi-info-circle-fill me-1"></i> Data yang dihapus tidak dapat dikembalikan.
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small fw-bold text-dark mb-1">
+                        Ketik <strong class="text-danger font-monospace" id="modalGlobalDeleteExpectedText"></strong> untuk melanjutkan:
+                    </label>
+                    <input type="text" class="form-control text-center font-monospace" id="modalGlobalDeleteInput" autocomplete="off" placeholder="Ketik di sini...">
+                </div>
+            </div>
+            <div class="modal-footer bg-light py-2 px-3 d-flex justify-content-between">
+                <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-danger btn-sm px-4 fw-semibold" id="btnGlobalDeleteConfirm" disabled>
+                    <i class="bi bi-trash-fill me-1"></i> Hapus Data
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Bootstrap 5 JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
 <!-- Global Application Script -->
 <script>
+let globalDeleteCallback = null;
+let globalDeleteExpectedCode = '';
+
+function showDeleteConfirm(message, expectedCode, onConfirm) {
+    globalDeleteExpectedCode = expectedCode.trim();
+    globalDeleteCallback = onConfirm;
+
+    document.getElementById('modalGlobalDeleteMessage').innerHTML = message;
+    document.getElementById('modalGlobalDeleteExpectedText').textContent = expectedCode;
+    
+    const input = document.getElementById('modalGlobalDeleteInput');
+    const btn = document.getElementById('btnGlobalDeleteConfirm');
+    
+    input.value = '';
+    btn.disabled = true;
+
+    input.oninput = function() {
+        if (this.value.trim() === globalDeleteExpectedCode) {
+            btn.disabled = false;
+            btn.classList.remove('btn-danger');
+            btn.classList.add('btn-danger', 'shadow');
+        } else {
+            btn.disabled = true;
+            btn.classList.remove('shadow');
+        }
+    };
+
+    btn.onclick = function() {
+        if (typeof globalDeleteCallback === 'function') {
+            globalDeleteCallback();
+        }
+        const modal = bootstrap.Modal.getInstance(document.getElementById('modalGlobalDelete'));
+        if (modal) modal.hide();
+    };
+
+    let modal = bootstrap.Modal.getInstance(document.getElementById('modalGlobalDelete'));
+    if (!modal) {
+        modal = new bootstrap.Modal(document.getElementById('modalGlobalDelete'), { backdrop: 'static' });
+    }
+    modal.show();
+
+    setTimeout(() => input.focus(), 500);
+}
+
 // Global Utility: Escape HTML Safe
 function escapeHtml(text) {
     if (text === null || text === undefined) return '';

@@ -151,6 +151,28 @@ if ($method === 'DELETE') {
         jsonResponse(false, 'ID merk tidak valid.', null, 422);
     }
 
+    // --- Pengecekan Relasi Database ---
+    $q = "SELECT COUNT(*) as count FROM barang WHERE id_merk = ?";
+    $stmtRel = $conn->prepare($q);
+    $inUse = false;
+    $count = 0;
+    if ($stmtRel) {
+        $stmtRel->bind_param("i", $idMerk);
+        $stmtRel->execute();
+        $count = $stmtRel->get_result()->fetch_assoc()['count'] ?? 0;
+        $stmtRel->close();
+        
+        if ($count > 0) {
+            $inUse = true;
+        }
+    }
+    
+    if ($inUse) {
+        $msg = "Gagal menghapus! Merk ini sedang digunakan pada $count Master Barang.";
+        jsonResponse(false, $msg, null, 409);
+    }
+    // -----------------------------------
+
     $stmt = $conn->prepare("DELETE FROM merk_barang WHERE id_merk = ?");
     $stmt->bind_param("i", $idMerk);
     
@@ -159,7 +181,7 @@ if ($method === 'DELETE') {
         jsonResponse(true, 'Merk berhasil dihapus.', null, 200);
     } else {
         $stmt->close();
-        jsonResponse(false, 'Gagal menghapus merk. Data mungkin terkait dengan master barang.', null, 500);
+        jsonResponse(false, 'Gagal menghapus merk. Terjadi kesalahan server.', null, 500);
     }
 }
 

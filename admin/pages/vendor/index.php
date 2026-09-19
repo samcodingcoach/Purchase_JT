@@ -465,7 +465,7 @@ async function loadVendor() {
                             <button class="btn btn-outline-warning btn-sm px-2 py-1 shadow-xs text-dark" onclick="openEditVendorModal(${idx})" title="Edit Data">
                                 <i class="bi bi-pencil-fill"></i>
                             </button>
-                            <button class="btn btn-outline-danger btn-sm px-2 py-1 shadow-xs" onclick="deleteVendor(${item.id_vendor}, '${item.nama_perusahaan.replace(/'/g, "\\'")}')" title="Hapus">
+                            <button class="btn btn-outline-danger btn-sm px-2 py-1 shadow-xs" onclick="deleteVendor(${item.id_vendor}, '${item.kode_vendor}', '${item.nama_perusahaan.replace(/'/g, "\\'")}')" title="Hapus">
                                 <i class="bi bi-x-octagon-fill"></i>
                             </button>
                         </div>
@@ -624,20 +624,24 @@ async function handleSaveVendor(e) {
     }
 }
 
-async function deleteVendor(id, name) {
-    if (!confirm(`Apakah Anda yakin ingin menghapus vendor "${name}"?`)) return;
-    
-    const res = await apiRequest('/api/master/vendor.php', {
-        method: 'POST',
-        body: JSON.stringify({ id_vendor: id, _method: 'DELETE' })
-    });
-    
-    if (res && res.success) {
-        showToast('Vendor berhasil dihapus.', 'success');
-        loadVendor();
-    } else {
-        showToast(res.message || 'Gagal menghapus vendor.', 'error');
-    }
+async function deleteVendor(id, kode, name) {
+    showDeleteConfirm(
+        `Apakah Anda yakin ingin menghapus vendor <strong>${escapeHtml(kode)} - ${escapeHtml(name)}</strong>?<br>Data yang dihapus tidak dapat dikembalikan.`,
+        kode,
+        async function() {
+            const res = await apiRequest('/api/master/vendor.php', {
+                method: 'POST',
+                body: JSON.stringify({ id_vendor: id, _method: 'DELETE' })
+            });
+            
+            if (res && res.success) {
+                showToast('Vendor berhasil dihapus.', 'success');
+                loadVendor();
+            } else {
+                showToast(res.message || 'Gagal menghapus vendor.', 'error');
+            }
+        }
+    );
 }
 
 function showVendorDetail(idx) {

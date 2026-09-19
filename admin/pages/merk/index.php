@@ -163,7 +163,7 @@ async function loadMerk() {
                             <button class="btn btn-outline-warning btn-sm px-2 py-1 shadow-xs text-dark" onclick="openEditMerkModal(${idx})" title="Edit Data">
                                 <i class="bi bi-pencil-fill"></i>
                             </button>
-                            <button class="btn btn-outline-danger btn-sm px-2 py-1 shadow-xs" onclick="deleteMerk(${item.id_merk}, '${item.nama_merk.replace(/'/g, "\\'")}')" title="Hapus">
+                            <button class="btn btn-outline-danger btn-sm px-2 py-1 shadow-xs" onclick="deleteMerk(${item.id_merk}, '${item.kode_merk}', '${item.nama_merk.replace(/'/g, "\\'")}')" title="Hapus">
                                 <i class="bi bi-x-octagon-fill"></i>
                             </button>
                         </div>
@@ -269,20 +269,24 @@ async function handleSaveMerk(e) {
     }
 }
 
-async function deleteMerk(id, name) {
-    if (!confirm(`Apakah Anda yakin ingin menghapus merk "${name}"?`)) return;
-    
-    const res = await apiRequest('/api/master/merk.php', {
-        method: 'POST',
-        body: JSON.stringify({ id_merk: id, _method: 'DELETE' })
-    });
-    
-    if (res && res.success) {
-        showToast('Merk berhasil dihapus.', 'success');
-        loadMerk();
-    } else {
-        showToast(res.message || 'Gagal menghapus merk.', 'error');
-    }
+async function deleteMerk(id, kode, name) {
+    showDeleteConfirm(
+        `Apakah Anda yakin ingin menghapus merk <strong>${escapeHtml(kode)} - ${escapeHtml(name)}</strong>?<br>Data yang dihapus tidak dapat dikembalikan.`,
+        kode,
+        async function() {
+            const res = await apiRequest('/api/master/merk.php', {
+                method: 'POST',
+                body: JSON.stringify({ id_merk: id, _method: 'DELETE' })
+            });
+            
+            if (res && res.success) {
+                showToast('Merk berhasil dihapus.', 'success');
+                loadMerk();
+            } else {
+                showToast(res.message || 'Gagal menghapus merk.', 'error');
+            }
+        }
+    );
 }
 
 document.addEventListener('DOMContentLoaded', loadMerk);

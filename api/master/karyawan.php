@@ -294,6 +294,37 @@ if ($method === 'DELETE') {
         jsonResponse(false, 'ID karyawan tidak valid.', null, 422);
     }
 
+    // --- Pengecekan Relasi Database ---
+    $relations = [
+        ['table' => 'request_order', 'col' => 'id_karyawan_request', 'label' => 'Request Order (Peminta)'],
+        ['table' => 'purchase_order', 'col' => 'id_karyawan_po', 'label' => 'Purchase Order (Purchasing)'],
+        ['table' => 'users', 'col' => 'id_karyawan', 'label' => 'Akun Pengguna Sistem'],
+        ['table' => 'receiving_order', 'col' => 'id_karyawan_terima', 'label' => 'Penerimaan Barang'],
+        ['table' => 'site', 'col' => 'id_karyawan_headof', 'label' => 'Kepala Site / Bengkel']
+    ];
+    
+    $inUse = [];
+    foreach ($relations as $rel) {
+        $q = "SELECT COUNT(*) as count FROM {$rel['table']} WHERE {$rel['col']} = ?";
+        $stmtRel = $conn->prepare($q);
+        if ($stmtRel) {
+            $stmtRel->bind_param("i", $idKaryawan);
+            $stmtRel->execute();
+            $count = $stmtRel->get_result()->fetch_assoc()['count'] ?? 0;
+            $stmtRel->close();
+            
+            if ($count > 0) {
+                $inUse[] = $count . " data " . $rel['label'];
+            }
+        }
+    }
+    
+    if (count($inUse) > 0) {
+        $msg = "Gagal menghapus! Karyawan ini sedang digunakan pada: " . implode(", ", $inUse) . ".";
+        jsonResponse(false, $msg, null, 409); // 409 Conflict
+    }
+    // -----------------------------------
+
     $stmt = $conn->prepare("DELETE FROM karyawan WHERE id_karyawan = ?");
     $stmt->bind_param("i", $idKaryawan);
     
@@ -302,7 +333,7 @@ if ($method === 'DELETE') {
         jsonResponse(true, 'Karyawan berhasil dihapus.', null, 200);
     } else {
         $stmt->close();
-        jsonResponse(false, 'Gagal menghapus karyawan. Data mungkin terkait dengan transaksi RO.', null, 500);
+        jsonResponse(false, 'Gagal menghapus karyawan. Terjadi kesalahan server.', null, 500);
     }
 }
 

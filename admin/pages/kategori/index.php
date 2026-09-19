@@ -163,7 +163,7 @@ async function loadKategori() {
                             <button class="btn btn-outline-warning btn-sm px-2 py-1 shadow-xs text-dark" onclick="openEditKategoriModal(${idx})" title="Edit Data">
                                 <i class="bi bi-pencil-fill"></i>
                             </button>
-                            <button class="btn btn-outline-danger btn-sm px-2 py-1 shadow-xs" onclick="deleteKategori(${item.id_kategori}, '${item.nama_kategori.replace(/'/g, "\\'")}')" title="Hapus">
+                            <button class="btn btn-outline-danger btn-sm px-2 py-1 shadow-xs" onclick="deleteKategori(${item.id_kategori}, '${item.kode_kategori}', '${item.nama_kategori.replace(/'/g, "\\'")}')" title="Hapus">
                                 <i class="bi bi-x-octagon-fill"></i>
                             </button>
                         </div>
@@ -269,20 +269,24 @@ async function handleSaveKategori(e) {
     }
 }
 
-async function deleteKategori(id, name) {
-    if (!confirm(`Apakah Anda yakin ingin menghapus kategori "${name}"?`)) return;
-    
-    const res = await apiRequest('/api/master/kategori.php', {
-        method: 'POST',
-        body: JSON.stringify({ id_kategori: id, _method: 'DELETE' })
-    });
-    
-    if (res && res.success) {
-        showToast('Kategori berhasil dihapus.', 'success');
-        loadKategori();
-    } else {
-        showToast(res.message || 'Gagal menghapus kategori.', 'error');
-    }
+async function deleteKategori(id, kode, name) {
+    showDeleteConfirm(
+        `Apakah Anda yakin ingin menghapus kategori <strong>${escapeHtml(kode)} - ${escapeHtml(name)}</strong>?<br>Data yang dihapus tidak dapat dikembalikan.`,
+        kode,
+        async function() {
+            const res = await apiRequest('/api/master/kategori.php', {
+                method: 'POST',
+                body: JSON.stringify({ id_kategori: id, _method: 'DELETE' })
+            });
+            
+            if (res && res.success) {
+                showToast('Kategori berhasil dihapus.', 'success');
+                loadKategori();
+            } else {
+                showToast(res.message || 'Gagal menghapus kategori.', 'error');
+            }
+        }
+    );
 }
 
 document.addEventListener('DOMContentLoaded', loadKategori);

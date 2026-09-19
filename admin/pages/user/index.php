@@ -484,7 +484,7 @@ async function loadKaryawan() {
                             <button class="btn btn-outline-warning btn-sm px-2 py-1 shadow-xs text-dark" onclick="openEditKaryawanModal(${idx})" title="Edit Data">
                                 <i class="bi bi-pencil-fill"></i>
                             </button>
-                            <button class="btn btn-outline-danger btn-sm px-2 py-1 shadow-xs" onclick="deleteKaryawan(${item.id_karyawan}, '${item.nama_karyawan.replace(/'/g, "\\'")}')" title="Hapus">
+                            <button class="btn btn-outline-danger btn-sm px-2 py-1 shadow-xs" onclick="deleteKaryawan(${item.id_karyawan}, '${item.kode_karyawan}', '${item.nama_karyawan.replace(/'/g, "\\'")}')" title="Hapus">
                                 <i class="bi bi-x-octagon-fill"></i>
                             </button>
                         </div>
@@ -662,20 +662,24 @@ async function handleSaveKaryawan(e) {
     }
 }
 
-async function deleteKaryawan(id, name) {
-    if (!confirm(`Apakah Anda yakin ingin menghapus karyawan "${name}"?`)) return;
-    
-    const res = await apiRequest('/api/master/karyawan.php', {
-        method: 'POST',
-        body: JSON.stringify({ id_karyawan: id, _method: 'DELETE' })
-    });
-    
-    if (res && res.success) {
-        showToast('Karyawan berhasil dihapus.', 'success');
-        loadKaryawan();
-    } else {
-        showToast(res.message || 'Gagal menghapus karyawan.', 'error');
-    }
+async function deleteKaryawan(id, kode, name) {
+    showDeleteConfirm(
+        `Apakah Anda yakin ingin menghapus karyawan <strong>${escapeHtml(kode)} - ${escapeHtml(name)}</strong>?<br>Data yang dihapus tidak dapat dikembalikan.`,
+        kode,
+        async function() {
+            const res = await apiRequest('/api/master/karyawan.php', {
+                method: 'POST',
+                body: JSON.stringify({ id_karyawan: id, _method: 'DELETE' })
+            });
+            
+            if (res && res.success) {
+                showToast('Karyawan berhasil dihapus.', 'success');
+                loadKaryawan();
+            } else {
+                showToast(res.message || 'Gagal menghapus karyawan.', 'error');
+            }
+        }
+    );
 }
 
 function showKaryawanDetail(idx) {

@@ -432,6 +432,37 @@ if ($method === 'DELETE') {
         jsonResponse(false, 'ID barang tidak valid.', null, 422);
     }
 
+    // --- Pengecekan Relasi Database ---
+    $relations = [
+        ['table' => 'request_order_detail', 'col' => 'id_barang', 'label' => 'Detail Request Order'],
+        ['table' => 'purchase_order_detail', 'col' => 'id_barang', 'label' => 'Detail Purchase Order'],
+        ['table' => 'receiving_order_detail', 'col' => 'id_barang', 'label' => 'Detail Penerimaan Barang'],
+        ['table' => 'mutasi_order_detail', 'col' => 'id_barang', 'label' => 'Detail Mutasi Barang'],
+        ['table' => 'adjustment_stok_detail', 'col' => 'id_barang', 'label' => 'Detail Adjustment Stok']
+    ];
+    
+    $inUse = [];
+    foreach ($relations as $rel) {
+        $q = "SELECT COUNT(*) as count FROM {$rel['table']} WHERE {$rel['col']} = ?";
+        $stmtRel = $conn->prepare($q);
+        if ($stmtRel) {
+            $stmtRel->bind_param("i", $idBarang);
+            $stmtRel->execute();
+            $count = $stmtRel->get_result()->fetch_assoc()['count'] ?? 0;
+            $stmtRel->close();
+            
+            if ($count > 0) {
+                $inUse[] = $count . " data " . $rel['label'];
+            }
+        }
+    }
+    
+    if (count($inUse) > 0) {
+        $msg = "Gagal menghapus! Barang ini sedang digunakan pada transaksi: " . implode(", ", $inUse) . ".";
+        jsonResponse(false, $msg, null, 409); // 409 Conflict
+    }
+    // -----------------------------------
+
     // Ambil path foto untuk dihapus dari server
     $chkOld = $conn->query("SELECT foto1, foto2 FROM barang WHERE id_barang = $idBarang");
     if ($chkOld && $rowOld = $chkOld->fetch_assoc()) {
