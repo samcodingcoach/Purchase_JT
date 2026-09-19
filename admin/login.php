@@ -17,76 +17,7 @@ $companyName = $companyProfile['nama'] ?? 'PT Jaya Teknis';
 $companyAddress = $companyProfile['alamat'] ?? 'Bengkel Las & Bubut Kapal';
 $companyCity = $companyProfile['kota'] ?? 'Surabaya';
 
-// Ambil akun demo role cepat secara dinamis dari database (tabel users & karyawan)
-$demoRoles = [
-    'admin'      => ['label' => 'Admin', 'email' => 'admin', 'password' => 'admin123', 'name' => 'Administrator'],
-    'mekanik'    => ['label' => 'Mekanik', 'email' => 'mekanik@jayateknis.com', 'password' => 'admin123', 'name' => 'Mekanik'],
-    'logistik'   => ['label' => 'Logistik', 'email' => 'logistik@jayateknis.com', 'password' => 'admin123', 'name' => 'Logistik'],
-    'purchasing' => ['label' => 'Purchasing', 'email' => 'purchasing@jayateknis.com', 'password' => 'admin123', 'name' => 'Purchasing'],
-    'finance'    => ['label' => 'Finance', 'email' => 'finance@jayateknis.com', 'password' => 'admin123', 'name' => 'Finance'],
-    'manager'    => ['label' => 'Manager', 'email' => 'manager@jayateknis.com', 'password' => 'admin123', 'name' => 'Manager'],
-];
 
-try {
-    // 1. Cek Admin dari users table
-    $qUser = $conn->query("SELECT id_users, nama_users, email FROM users WHERE aktif = 1 ORDER BY id_users ASC LIMIT 1");
-    if ($qUser && $u = $qUser->fetch_assoc()) {
-        $demoRoles['admin']['email'] = !empty($u['email']) ? $u['email'] : 'admin';
-        $demoRoles['admin']['name'] = $u['nama_users'] ?? 'Administrator';
-    }
-
-    // 2. Cek Akun Dinamis dari tabel Karyawan
-    $sqlK = "SELECT k.id_karyawan, k.kode_karyawan, k.nama_karyawan, k.email, 
-                    k.id_jabatan, j.nama_jabatan, j.level as level_jabatan, 
-                    k.id_divisi, d.nama_divisi 
-             FROM karyawan k 
-             LEFT JOIN jabatan j ON k.id_jabatan = j.id_jabatan 
-             LEFT JOIN divisi d ON k.id_divisi = d.id_divisi 
-             WHERE k.aktif = 1 AND k.login_web = 1 AND k.email IS NOT NULL AND k.email != '' 
-             ORDER BY k.id_karyawan ASC";
-    $qK = $conn->query($sqlK);
-    if ($qK) {
-        $foundFinance = false;
-        while ($row = $qK->fetch_assoc()) {
-            $idDiv = !empty($row['id_divisi']) ? (int)$row['id_divisi'] : null;
-            $idJ = !empty($row['id_jabatan']) ? (int)$row['id_jabatan'] : null;
-            $divisiLower = strtolower($row['nama_divisi'] ?? '');
-            $jabatanLower = strtolower($row['nama_jabatan'] ?? '');
-            $emailLower = strtolower($row['email'] ?? '');
-            $lvl = isset($row['level_jabatan']) ? (int)$row['level_jabatan'] : null;
-            $emailK = $row['email'];
-            $namaK = $row['nama_karyawan'];
-
-            if ($idDiv === 4 || $idJ === 3 || strpos($divisiLower, 'mekanik') !== false || strpos($jabatanLower, 'mekanik') !== false || strpos($emailLower, 'mekanik') !== false) {
-                $demoRoles['mekanik']['email'] = $emailK;
-                $demoRoles['mekanik']['name'] = $namaK;
-            } elseif ($idDiv === 2 || $idJ === 2 || strpos($divisiLower, 'logistik') !== false || strpos($jabatanLower, 'logistik') !== false || strpos($emailLower, 'logistik') !== false) {
-                $demoRoles['logistik']['email'] = $emailK;
-                $demoRoles['logistik']['name'] = $namaK;
-            } elseif ($idDiv === 3 || $idJ === 5 || strpos($divisiLower, 'purchasing') !== false || strpos($jabatanLower, 'purchasing') !== false || strpos($emailLower, 'purchasing') !== false) {
-                $demoRoles['purchasing']['email'] = $emailK;
-                $demoRoles['purchasing']['name'] = $namaK;
-            } elseif ($idDiv === 6 || $idJ === 6 || $idJ === 7 || strpos($divisiLower, 'finance') !== false || strpos($jabatanLower, 'finance') !== false || strpos($emailLower, 'finance') !== false) {
-                if (!$foundFinance || $lvl !== 1) {
-                    $demoRoles['finance']['email'] = $emailK;
-                    $demoRoles['finance']['name'] = $namaK;
-                    $foundFinance = true;
-                }
-            } elseif ($idDiv === 5 || $idJ === 1 || strpos($divisiLower, 'admin') !== false || strpos($divisiLower, 'it') !== false || strpos($jabatanLower, 'admin') !== false || strpos($emailLower, 'admin') !== false) {
-                if (empty($demoRoles['admin']['email']) || $demoRoles['admin']['email'] === 'admin') {
-                    $demoRoles['admin']['email'] = $emailK;
-                    $demoRoles['admin']['name'] = $namaK;
-                }
-            } elseif ($idDiv === 1 || $idJ === 4 || $lvl === 1 || strpos($divisiLower, 'manajemen') !== false || strpos($jabatanLower, 'manager') !== false || strpos($jabatanLower, 'direktur') !== false) {
-                $identifier = (!empty($demoRoles['admin']['email']) && $demoRoles['admin']['email'] === $emailK && !empty($row['kode_karyawan'])) 
-                              ? $row['kode_karyawan'] 
-                              : $emailK;
-                $demoRoles['manager']['email'] = $identifier;
-                $demoRoles['manager']['name'] = $namaK;
-            }
-        }
-    }
-} catch (\Throwable $e) {}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -103,316 +34,7 @@ try {
     <!-- Custom Theme Styles -->
     <link rel="stylesheet" href="<?= BASE_URL ?>/styles/app.css">
     <link rel="stylesheet" href="<?= BASE_URL ?>/styles/responsive.css">
-
-    <style>
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #0b1c2e;
-        }
-
-        .login-wrapper {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: radial-gradient(circle at 10% 20%, #0e2945 0%, #071320 90%);
-            padding: 2rem 1rem;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .login-bg-shapes {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            pointer-events: none;
-            overflow: hidden;
-            z-index: 1;
-        }
-
-        .login-shape-1 {
-            position: absolute;
-            width: 600px;
-            height: 600px;
-            background: radial-gradient(circle, rgba(2, 132, 199, 0.18) 0%, rgba(2, 132, 199, 0) 70%);
-            top: -150px;
-            right: -150px;
-            border-radius: 50%;
-        }
-
-        .login-shape-2 {
-            position: absolute;
-            width: 500px;
-            height: 500px;
-            background: radial-gradient(circle, rgba(30, 82, 136, 0.25) 0%, rgba(30, 82, 136, 0) 70%);
-            bottom: -120px;
-            left: -120px;
-            border-radius: 50%;
-        }
-
-        /* 2-Column Split Container */
-        .login-card-container {
-            position: relative;
-            z-index: 10;
-            width: 100%;
-            max-width: 1060px;
-            background: #ffffff;
-            border-radius: 24px;
-            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.1);
-            overflow: hidden;
-        }
-
-        /* Left Column: Pengumuman & Branding */
-        .login-left-pane {
-            background: linear-gradient(155deg, #091e34 0%, #0e2c4d 50%, #153e6b 100%);
-            color: #ffffff;
-            padding: 2.75rem 2.25rem;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            position: relative;
-            border-right: 1px solid rgba(255, 255, 255, 0.08);
-            min-width: 0;
-            overflow-x: hidden;
-        }
-
-        .brand-header-box {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 1.75rem;
-            min-width: 0;
-        }
-
-        .brand-icon-bubble {
-            width: 48px;
-            height: 48px;
-            background: rgba(56, 189, 248, 0.15);
-            border: 1px solid rgba(56, 189, 248, 0.35);
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            color: #38bdf8;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-            flex-shrink: 0;
-        }
-
-        .announcement-feed-wrapper {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            min-width: 0;
-        }
-
-        .announcement-scroll-area {
-            max-height: 380px;
-            overflow-y: auto;
-            overflow-x: hidden;
-            padding-right: 6px;
-            min-width: 0;
-        }
-
-        /* Custom Scrollbar */
-        .announcement-scroll-area::-webkit-scrollbar {
-            width: 5px;
-        }
-        .announcement-scroll-area::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 4px;
-        }
-        .announcement-scroll-area::-webkit-scrollbar-thumb {
-            background: rgba(56, 189, 248, 0.3);
-            border-radius: 4px;
-        }
-        .announcement-scroll-area::-webkit-scrollbar-thumb:hover {
-            background: rgba(56, 189, 248, 0.5);
-        }
-
-        .announcement-card-item {
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 14px;
-            padding: 1rem 1.15rem;
-            margin-bottom: 0.85rem;
-            transition: all 0.25s ease;
-            cursor: pointer;
-            backdrop-filter: blur(8px);
-            min-width: 0;
-            word-wrap: break-word;
-        }
-
-        .announcement-card-item:hover {
-            background: rgba(255, 255, 255, 0.12);
-            border-color: rgba(56, 189, 248, 0.5);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-        }
-
-        .announcement-tag {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.2rem 0.6rem;
-            font-size: 0.7rem;
-            font-weight: 600;
-            border-radius: 20px;
-            background: rgba(56, 189, 248, 0.12);
-            color: #7dd3fc;
-            border: 1px solid rgba(56, 189, 248, 0.28);
-            max-width: 170px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .pulse-indicator {
-            width: 8px;
-            height: 8px;
-            background-color: #38bdf8;
-            border-radius: 50%;
-            display: inline-block;
-            box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7);
-            animation: pulse-ring 1.8s infinite cubic-bezier(0.66, 0, 0, 1);
-        }
-
-        @keyframes pulse-ring {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(56, 189, 248, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
-        }
-
-        /* Right Column: Form Login */
-        .login-right-pane {
-            background: #ffffff;
-            padding: 3.5rem 3rem;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        .form-group-custom {
-            margin-bottom: 1.35rem;
-        }
-
-        .input-icon-wrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .input-icon-wrapper .form-control {
-            height: 50px;
-            padding-left: 2.85rem;
-            padding-right: 2.85rem;
-            font-size: 0.94rem;
-            border-radius: 12px;
-            border: 1.5px solid #cbd5e1;
-            background-color: #ffffff;
-            transition: all 0.2s ease;
-        }
-
-        .input-icon-wrapper .form-control:focus {
-            border-color: #0284c7;
-            background-color: #ffffff;
-            box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.15);
-        }
-
-        .input-icon-wrapper .input-icon {
-            position: absolute;
-            left: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 1.15rem;
-            color: #94a3b8;
-            pointer-events: none;
-            transition: color 0.2s ease;
-            z-index: 5;
-        }
-
-        .input-icon-wrapper:focus-within .input-icon {
-            color: #0284c7;
-        }
-
-        .btn-toggle-eye {
-            position: absolute;
-            right: 0.85rem;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            color: #94a3b8;
-            font-size: 1.15rem;
-            cursor: pointer;
-            padding: 0.25rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 5;
-            transition: color 0.2s ease;
-        }
-
-        .btn-toggle-eye:hover {
-            color: #0284c7;
-        }
-
-        .btn-login-submit {
-            height: 50px;
-            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
-            border: none;
-            border-radius: 12px;
-            font-weight: 700;
-            letter-spacing: 0.3px;
-            font-size: 0.96rem;
-            color: #ffffff;
-            box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
-            transition: all 0.25s ease;
-        }
-
-        .btn-login-submit:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 18px rgba(2, 132, 199, 0.45);
-            background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
-            color: #ffffff;
-        }
-
-        .demo-roles-container {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 14px;
-            padding: 0.85rem 1rem;
-            margin-top: 1.5rem;
-        }
-
-        .role-btn-chip {
-            background: #ffffff;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            padding: 0.35rem 0.65rem;
-            font-size: 0.78rem;
-            font-weight: 600;
-            color: #334155;
-            transition: all 0.15s ease;
-            cursor: pointer;
-        }
-
-        .role-btn-chip:hover {
-            background: #e0f2fe;
-            border-color: #0284c7;
-            color: #0369a1;
-        }
-
-        @media (max-width: 991.98px) {
-            .login-left-pane {
-                padding: 2.25rem 2rem;
-            }
-            .login-right-pane {
-                padding: 2.5rem 2rem;
-            }
-            .announcement-scroll-area {
-                max-height: 250px;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="<?= BASE_URL ?>/styles/login.css">
 </head>
 <body>
 
@@ -526,15 +148,8 @@ try {
                     <div class="text-center text-muted small mb-2 fw-bold" style="font-size: 0.72rem;">
                         UJI COBA ROLE CEPAT:
                     </div>
-                    <div class="d-flex flex-wrap gap-1 justify-content-center">
-                        <?php foreach ($demoRoles as $key => $demo): ?>
-                            <button type="button" 
-                                    class="role-btn-chip" 
-                                    title="<?= htmlspecialchars($demo['name'] . ' (' . $demo['email'] . ')') ?>"
-                                    onclick="setDemoAccount('<?= htmlspecialchars($demo['email'], ENT_QUOTES) ?>', '<?= htmlspecialchars($demo['password'], ENT_QUOTES) ?>')">
-                                <?= htmlspecialchars($demo['label']) ?>
-                            </button>
-                        <?php endforeach; ?>
+                    <div class="d-flex flex-wrap gap-1 justify-content-center" id="demoRolesContainer">
+                        <span class="spinner-border spinner-border-sm text-muted" role="status" aria-hidden="true"></span>
                     </div>
                 </div>
 
@@ -577,7 +192,38 @@ let loginAnnouncementModalInstance = null;
 document.addEventListener('DOMContentLoaded', () => {
     loginAnnouncementModalInstance = new bootstrap.Modal(document.getElementById('modalLoginAnnouncementDetail'));
     loadPublicAnnouncements();
+    loadDemoRoles();
 });
+
+// -------------------------------------------------------------
+// LOAD DEMO ROLES (API)
+// -------------------------------------------------------------
+async function loadDemoRoles() {
+    const container = document.getElementById('demoRolesContainer');
+    try {
+        const response = await fetch(BASE_URL + '/api/auth/demo-roles.php');
+        const res = await response.json();
+        
+        if (res && res.success && res.data) {
+            let html = '';
+            res.data.forEach(demo => {
+                html += `
+                    <button type="button" 
+                            class="role-btn-chip" 
+                            title="${escapeHtml(demo.name)} (${escapeHtml(demo.email)})"
+                            onclick="setDemoAccount('${escapeHtml(demo.email)}', '${escapeHtml(demo.password)}')">
+                        ${escapeHtml(demo.label)}
+                    </button>
+                `;
+            });
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = '<span class="text-muted small">Gagal memuat roles</span>';
+        }
+    } catch (e) {
+        container.innerHTML = '<span class="text-muted small">Gagal memuat roles</span>';
+    }
+}
 
 // -------------------------------------------------------------
 // LOAD PUBLIC ANNOUNCEMENTS (KOLOM KIRI)
