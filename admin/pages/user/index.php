@@ -37,10 +37,10 @@ require_once __DIR__ . '/../../components/navbar.php';
                 <tr>
                     <th style="width: 50px;">No</th>
                     <th>Kode</th>
-                    <th>Nama Karyawan</th>
+                    <th>Nama</th>
                     <th>Divisi</th>
                     <th>Jabatan</th>
-                    <th>Status Kerja</th>
+                    <th>Status Karyawan</th>
                     <th>Status</th>
                     <th class="text-center" style="width: 150px;">Aksi</th>
                 </tr>

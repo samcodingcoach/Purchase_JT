@@ -216,7 +216,7 @@ $fullLocation = trim($companyAddress . ($companyCity ? ', ' . $companyCity : '')
                                 <label class="form-label small fw-bold text-dark">Password Buka File (Opsional)</label>
                                 <div class="input-group input-group-sm">
                                     <span class="input-group-text bg-white"><i class="bi bi-shield-lock"></i></span>
-                                    <input type="password" class="form-control font-monospace" id="uploadDokumenPassword" name="password_open" placeholder="Kosongkan jika dokumen bersifat publik/umum...">
+                                    <input type="password" class="form-control font-monospace" id="uploadDokumenPassword" name="password_open" autocomplete="new-password" placeholder="Kosongkan jika dokumen bersifat publik/umum...">
                                 </div>
                                 
                             </div>

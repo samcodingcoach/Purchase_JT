@@ -1,6 +1,6 @@
 <?php
 /**
- * Core SMTP Mailer Service - PT Jaya Teknis
+ * Core SMTP Mailer Service - ' . getCompanyProfile()['nama'] . '
  * Path: config/mailer.php
  * Standalone Engine: PHPMailer 7.1.1 (Native / No Composer Required)
  */
@@ -8,6 +8,7 @@
 require_once __DIR__ . '/phpmailer/Exception.php';
 require_once __DIR__ . '/phpmailer/PHPMailer.php';
 require_once __DIR__ . '/phpmailer/SMTP.php';
+require_once __DIR__ . '/config.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
@@ -54,7 +55,7 @@ if (!function_exists('sendSmtpEmail')) {
 
         // Tentukan From Email & From Name resmi
         $fromEmail = 'info@jayateknis.com';
-        $fromName = 'PT Jaya Teknis System';
+        $fromName = '' . getCompanyProfile()['nama'] . ' System';
 
         // Jika Brevo atau relay provider yang memerlukan verified sender
         if (strpos($host, 'brevo.com') !== false || strpos($user, '@smtp-brevo.com') !== false) {
@@ -139,7 +140,7 @@ if (!function_exists('renderOtpEmailTemplate')) {
                             <!-- Header Brand -->
                             <tr>
                                 <td align="center" style="background: linear-gradient(135deg, #0f2744 0%, #1e5288 100%); padding: 32px 20px; color: #ffffff;">
-                                    <h1 style="margin: 0; font-size: 22px; font-weight: 700; letter-spacing: 0.5px;">PT JAYA TEKNIS</h1>
+                                    <h1 style="margin: 0; font-size: 22px; font-weight: 700; letter-spacing: 0.5px;">' . strtoupper(getCompanyProfile()['nama']) . '</h1>
                                     <p style="margin: 6px 0 0 0; font-size: 13px; opacity: 0.85;">Web-Based Purchasing &amp; Logistics System</p>
                                 </td>
                             </tr>
@@ -149,7 +150,7 @@ if (!function_exists('renderOtpEmailTemplate')) {
                                 <td style="padding: 35px 30px; color: #1e293b;">
                                     <h2 style="margin: 0 0 12px 0; font-size: 18px; color: #0f2744; font-weight: 600;">Halo, ' . htmlspecialchars($nama) . '!</h2>
                                     <p style="margin: 0 0 20px 0; font-size: 14px; line-height: 1.6; color: #475569;">
-                                        Kami menerima permintaan perubahan kata sandi untuk akun Anda pada sistem <strong>PT Jaya Teknis</strong>. Gunakan kode verifikasi (OTP) berikut untuk menyelesaikan proses:
+                                        Kami menerima permintaan perubahan kata sandi untuk akun Anda pada sistem <strong>' . getCompanyProfile()['nama'] . '</strong>. Gunakan kode verifikasi (OTP) berikut untuk menyelesaikan proses:
                                     </p>
 
                                     <!-- OTP Code Box -->
@@ -176,7 +177,7 @@ if (!function_exists('renderOtpEmailTemplate')) {
                             <!-- Footer -->
                             <tr>
                                 <td style="background-color: #f8fafc; padding: 20px 30px; text-align: center; border-top: 1px solid #f1f5f9; font-size: 12px; color: #94a3b8;">
-                                    &copy; ' . date('Y') . ' PT Jaya Teknis. Seluruh hak cipta dilindungi undang-undang.<br>
+                                    &copy; ' . date('Y') . ' ' . getCompanyProfile()['nama'] . '. Seluruh hak cipta dilindungi undang-undang.<br>
                                     Pesan ini dikirim otomatis oleh sistem keamanan. Mohon tidak membalas email ini.
                                 </td>
                             </tr>
@@ -380,7 +381,7 @@ if (!function_exists('renderNewRoEmailTemplate')) {
                             <!-- Header Brand -->
                             <tr>
                                 <td align="center" style="background: linear-gradient(135deg, #0f2744 0%, #1e5288 100%); padding: 28px 20px; color: #ffffff;">
-                                    <h1 style="margin: 0; font-size: 20px; font-weight: 700; letter-spacing: 0.5px;">PT JAYA TEKNIS</h1>
+                                    <h1 style="margin: 0; font-size: 20px; font-weight: 700; letter-spacing: 0.5px;">' . strtoupper(getCompanyProfile()['nama']) . '</h1>
                                     <p style="margin: 4px 0 0 0; font-size: 12px; opacity: 0.85;">Notifikasi Sistem Pengadaan &amp; Logistik</p>
                                 </td>
                             </tr>
@@ -474,8 +475,8 @@ if (!function_exists('renderNewRoEmailTemplate')) {
                             <!-- Footer -->
                             <tr>
                                 <td style="background-color: #f8fafc; padding: 18px 24px; text-align: center; border-top: 1px solid #f1f5f9; font-size: 11px; color: #94a3b8;">
-                                    &copy; ' . date('Y') . ' PT Jaya Teknis. Seluruh hak cipta dilindungi undang-undang.<br>
-                                    Pemberitahuan otomatis dari Sistem Pengadaan &amp; Pembelian PT Jaya Teknis.
+                                    &copy; ' . date('Y') . ' ' . getCompanyProfile()['nama'] . '. Seluruh hak cipta dilindungi undang-undang.<br>
+                                    Pemberitahuan otomatis dari Sistem Pengadaan &amp; Pembelian ' . getCompanyProfile()['nama'] . '.
                                 </td>
                             </tr>
                         </table>
@@ -587,7 +588,7 @@ if (!function_exists('renderRoStatusEmailTemplate')) {
                             <!-- Header Brand -->
                             <tr>
                                 <td align="center" style="background: linear-gradient(135deg, #0f2744 0%, #1e5288 100%); padding: 28px 20px; color: #ffffff;">
-                                    <h1 style="margin: 0; font-size: 20px; font-weight: 700; letter-spacing: 0.5px;">PT JAYA TEKNIS</h1>
+                                    <h1 style="margin: 0; font-size: 20px; font-weight: 700; letter-spacing: 0.5px;">' . strtoupper(getCompanyProfile()['nama']) . '</h1>
                                     <p style="margin: 4px 0 0 0; font-size: 12px; opacity: 0.85;">Pembaruan Status Request Order</p>
                                 </td>
                             </tr>
@@ -638,8 +639,8 @@ if (!function_exists('renderRoStatusEmailTemplate')) {
                             <!-- Footer -->
                             <tr>
                                 <td style="background-color: #f8fafc; padding: 18px 24px; text-align: center; border-top: 1px solid #f1f5f9; font-size: 11px; color: #94a3b8;">
-                                    &copy; ' . date('Y') . ' PT Jaya Teknis. Seluruh hak cipta dilindungi undang-undang.<br>
-                                    Pemberitahuan otomatis dari Sistem Pengadaan &amp; Pembelian PT Jaya Teknis.
+                                    &copy; ' . date('Y') . ' ' . getCompanyProfile()['nama'] . '. Seluruh hak cipta dilindungi undang-undang.<br>
+                                    Pemberitahuan otomatis dari Sistem Pengadaan &amp; Pembelian ' . getCompanyProfile()['nama'] . '.
                                 </td>
                             </tr>
                         </table>
@@ -800,7 +801,7 @@ if (!function_exists('renderRoApprovedForPurchasingTemplate')) {
                             <!-- Header Brand -->
                             <tr>
                                 <td align="center" style="background: linear-gradient(135deg, #0f2744 0%, #1e5288 100%); padding: 28px 20px; color: #ffffff;">
-                                    <h1 style="margin: 0; font-size: 20px; font-weight: 700; letter-spacing: 0.5px;">PT JAYA TEKNIS</h1>
+                                    <h1 style="margin: 0; font-size: 20px; font-weight: 700; letter-spacing: 0.5px;">' . strtoupper(getCompanyProfile()['nama']) . '</h1>
                                     <p style="margin: 4px 0 0 0; font-size: 12px; opacity: 0.85;">Pemberitahuan Purchasing &amp; Pengadaan</p>
                                 </td>
                             </tr>
@@ -883,8 +884,8 @@ if (!function_exists('renderRoApprovedForPurchasingTemplate')) {
                             <!-- Footer -->
                             <tr>
                                 <td style="background-color: #f8fafc; padding: 18px 24px; text-align: center; border-top: 1px solid #f1f5f9; font-size: 11px; color: #94a3b8;">
-                                    &copy; ' . date('Y') . ' PT Jaya Teknis. Seluruh hak cipta dilindungi undang-undang.<br>
-                                    Pemberitahuan otomatis dari Sistem Pengadaan &amp; Pembelian PT Jaya Teknis.
+                                    &copy; ' . date('Y') . ' ' . getCompanyProfile()['nama'] . '. Seluruh hak cipta dilindungi undang-undang.<br>
+                                    Pemberitahuan otomatis dari Sistem Pengadaan &amp; Pembelian ' . getCompanyProfile()['nama'] . '.
                                 </td>
                             </tr>
                         </table>
@@ -1052,7 +1053,8 @@ if (!function_exists('sendRoStatusNotification')) {
 
             if ($statusUpper === 'DISETUJUI PURCHASING') {
                 $poInfo = !empty($roData['nomor_po']) ? " (PO: {$roData['nomor_po']})" : "";
-                $subject = "[PO TERBIT] Request Order Telah Disetujui Purchasing: {$roData['nomor']}{$poInfo}";
+                $poNum = !empty($roData['nomor_po']) ? $roData['nomor_po'] : '-';
+                $subject = "[PO: {$poNum}] - " . getCompanyProfile()['nama'];
             } elseif ($statusUpper === 'TIDAK DISETUJUI PURCHASING') {
                 $subject = "[DITOLAK PURCHASING] Request Order Tidak Disetujui: {$roData['nomor']}";
             } elseif ($statusUpper === 'DISETUJUI LOGISTIK') {
@@ -1260,7 +1262,7 @@ if (!function_exists('renderDueBillsReminderEmailTemplate')) {
                             <!-- Header Brand -->
                             <tr>
                                 <td align="center" style="background: linear-gradient(135deg, #0f2744 0%, #1e5288 100%); padding: 28px 20px; color: #ffffff;">
-                                    <h1 style="margin: 0; font-size: 20px; font-weight: 700; letter-spacing: 0.5px;">PT JAYA TEKNIS</h1>
+                                    <h1 style="margin: 0; font-size: 20px; font-weight: 700; letter-spacing: 0.5px;">' . strtoupper(getCompanyProfile()['nama']) . '</h1>
                                     <p style="margin: 4px 0 0 0; font-size: 12px; opacity: 0.85;">Pemberitahuan Jadwal Arus Kas &amp; Pembayaran Vendor</p>
                                 </td>
                             </tr>
@@ -1352,8 +1354,8 @@ if (!function_exists('renderDueBillsReminderEmailTemplate')) {
                             <!-- Footer -->
                             <tr>
                                 <td style="background-color: #f8fafc; padding: 18px 24px; text-align: center; border-top: 1px solid #f1f5f9; font-size: 11px; color: #94a3b8;">
-                                    &copy; ' . date('Y') . ' PT Jaya Teknis. Seluruh hak cipta dilindungi undang-undang.<br>
-                                    Pemberitahuan otomatis dari Sistem Keuangan &amp; Pembelian PT Jaya Teknis.
+                                    &copy; ' . date('Y') . ' ' . getCompanyProfile()['nama'] . '. Seluruh hak cipta dilindungi undang-undang.<br>
+                                    Pemberitahuan otomatis dari Sistem Keuangan &amp; Pembelian ' . getCompanyProfile()['nama'] . '.
                                 </td>
                             </tr>
                         </table>
@@ -1445,11 +1447,11 @@ if (!function_exists('sendDueBillsReminderNotification')) {
 
         // Subject Dinamis
         if ($countOverdue > 0 && $countMendekati > 0) {
-            $subject = "⚠️ [PENGINGAT KEUANGAN] {$totalCount} Tagihan: {$countOverdue} Overdue & {$countMendekati} Mendekati Tempo (H-{$hDays}) - PT Jaya Teknis";
+            $subject = "⚠️ [PENGINGAT KEUANGAN] {$totalCount} Tagihan: {$countOverdue} Overdue & {$countMendekati} Mendekati Tempo (H-{$hDays}) - " . getCompanyProfile()['nama'];
         } elseif ($countOverdue > 0) {
-            $subject = "🚨 [PERINGATAN OVERDUE] {$countOverdue} Tagihan Vendor Telah Lewat Jatuh Tempo - PT Jaya Teknis";
+            $subject = "🚨 [PERINGATAN OVERDUE] {$countOverdue} Tagihan Vendor Telah Lewat Jatuh Tempo - " . getCompanyProfile()['nama'];
         } else {
-            $subject = "⚠️ [PENGINGAT H-{$hDays}] {$countMendekati} Tagihan Vendor Mendekati Jatuh Tempo - PT Jaya Teknis";
+            $subject = "⚠️ [PENGINGAT H-{$hDays}] {$countMendekati} Tagihan Vendor Mendekati Jatuh Tempo - " . getCompanyProfile()['nama'];
         }
 
         // 4. Kirim Email ke setiap anggota Tim Finance
@@ -1799,8 +1801,8 @@ if (!function_exists('renderBackupOtpEmailTemplate')) {
     function renderBackupOtpEmailTemplate($nama, $otpCode, $action = 'BACKUP', $expiresMinutes = 10) {
         $actionTitle = ($action === 'RESTORE') ? 'Restore Database' : 'Backup Database';
         $actionDesc = ($action === 'RESTORE') 
-            ? 'Permintaan otorisasi pemulihan (RESTORE) data database sistem PT Jaya Teknis.'
-            : 'Permintaan otorisasi pencadangan (BACKUP) data database sistem PT Jaya Teknis.';
+            ? 'Permintaan otorisasi pemulihan (RESTORE) data database sistem ' . getCompanyProfile()['nama'] . '.'
+            : 'Permintaan otorisasi pencadangan (BACKUP) data database sistem ' . getCompanyProfile()['nama'] . '.';
         $actionColor = ($action === 'RESTORE') ? '#dc2626' : '#0f2744';
 
         return "
@@ -1817,7 +1819,7 @@ if (!function_exists('renderBackupOtpEmailTemplate')) {
                         <table border='0' cellpadding='0' cellspacing='0' width='100%' style='max-width: 540px; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;'>
                             <tr>
                                 <td style='background: {$actionColor}; padding: 24px 20px; color: #ffffff; text-align: center;'>
-                                    <h2 style='margin: 0; font-size: 20px; letter-spacing: 0.5px;'>PT JAYA TEKNIS</h2>
+                                    <h2 style='margin: 0; font-size: 20px; letter-spacing: 0.5px;'>' . strtoupper(getCompanyProfile()['nama']) . '</h2>
                                     <p style='margin: 5px 0 0 0; font-size: 12px; opacity: 0.85;'>Verifikasi Keamanan {$actionTitle}</p>
                                 </td>
                             </tr>
@@ -1838,7 +1840,7 @@ if (!function_exists('renderBackupOtpEmailTemplate')) {
                             </tr>
                             <tr>
                                 <td style='background: #f8fafc; padding: 12px 20px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0;'>
-                                    &copy; " . date('Y') . " PT Jaya Teknis System &bull; Keamanan Database
+                                    &copy; " . date('Y') . " ' . getCompanyProfile()['nama'] . ' System &bull; Keamanan Database
                                 </td>
                             </tr>
                         </table>
@@ -1869,14 +1871,14 @@ if (!function_exists('renderBackupFileEmailTemplate')) {
                         <table border='0' cellpadding='0' cellspacing='0' width='100%' style='max-width: 580px; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;'>
                             <tr>
                                 <td style='background: #0f2744; padding: 24px 20px; color: #ffffff; text-align: center;'>
-                                    <h2 style='margin: 0; font-size: 20px; letter-spacing: 0.5px;'>PT JAYA TEKNIS</h2>
+                                    <h2 style='margin: 0; font-size: 20px; letter-spacing: 0.5px;'>' . strtoupper(getCompanyProfile()['nama']) . '</h2>
                                     <p style='margin: 5px 0 0 0; font-size: 12px; opacity: 0.85;'>Arsip Cadangan Database (Backup .SQL)</p>
                                 </td>
                             </tr>
                             <tr>
                                 <td style='padding: 25px 24px; color: #1e293b; font-size: 14px; line-height: 1.6;'>
                                     <p style='margin-top: 0;'>Halo <strong>" . htmlspecialchars($nama) . "</strong>,</p>
-                                    <p>Proses pencadangan database sistem PT Jaya Teknis telah berhasil dieksekusi. Berkas SQL terlampir pada email ini.</p>
+                                    <p>Proses pencadangan database sistem ' . getCompanyProfile()['nama'] . ' telah berhasil dieksekusi. Berkas SQL terlampir pada email ini.</p>
                                     
                                     <table style='width: 100%; font-size: 13px; border-collapse: collapse; margin: 15px 0; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;'>
                                         <tr>
@@ -1902,13 +1904,13 @@ if (!function_exists('renderBackupFileEmailTemplate')) {
                                     </table>
 
                                     <div style='background: #ecfdf5; border-left: 4px solid #10b981; padding: 10px 14px; font-size: 12px; color: #065f46;'>
-                                        <strong>Informasi Keamanan:</strong> Simpan berkas ini di tempat yang aman. Berkas dapat digunakan untuk Quick Restore melalui panel admin PT Jaya Teknis.
+                                        <strong>Informasi Keamanan:</strong> Simpan berkas ini di tempat yang aman. Berkas dapat digunakan untuk Quick Restore melalui panel admin ' . getCompanyProfile()['nama'] . '.
                                     </div>
                                 </td>
                             </tr>
                             <tr>
                                 <td style='background: #f8fafc; padding: 12px 20px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0;'>
-                                    &copy; " . date('Y') . " PT Jaya Teknis System &bull; Database Backup Service
+                                    &copy; " . date('Y') . " ' . getCompanyProfile()['nama'] . ' System &bull; Database Backup Service
                                 </td>
                             </tr>
                         </table>
