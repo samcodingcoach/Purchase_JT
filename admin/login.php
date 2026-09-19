@@ -499,7 +499,7 @@ try {
                         <div class="d-flex justify-content-between align-items-center mb-1">
                             <label class="form-label small fw-semibold text-secondary mb-0">Password</label>
                             <!-- Link Lupa Password -->
-                            <a href="javascript:void(0)" onclick="handleForgotPasswordClick()" class="small text-primary text-decoration-none fw-semibold" style="font-size: 0.8rem;">
+                            <a href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#modalResetPassword" class="small text-primary text-decoration-none fw-semibold" style="font-size: 0.8rem;">
                                 Lupa Password?
                             </a>
                         </div>
@@ -700,8 +700,8 @@ function setDemoAccount(username, pass) {
     document.getElementById('loginAlert').classList.add('d-none');
 }
 
-function handleForgotPasswordClick() {
-    alert('Untuk reset password, silakan hubungi Administrator IT atau gunakan email pemulihan terdaftar.');
+function handleResetPasswordClick() {
+    // Digantikan dengan Bootstrap Modal (data-bs-toggle)
 }
 
 async function handleLoginSubmit(event) {
@@ -777,6 +777,113 @@ function escapeHtml(text) {
         "'": '&#039;'
     };
     return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+}
+</script>
+
+<!-- Modal Reset Password -->
+<div class="modal fade" id="modalResetPassword" tabindex="-1" aria-labelledby="modalResetPasswordLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form id="formResetPassword" onsubmit="handleResetPasswordSubmit(event)">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalResetPasswordLabel">Reset Password Karyawan</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted mb-3">Silakan masukkan Email terdaftar dan Tanggal Lahir Anda. Kami akan mengirimkan password sementara ke email tersebut.</p>
+                    <div class="mb-3">
+                        <label for="resetEmail" class="form-label small fw-semibold">Email Karyawan <span class="text-danger">*</span></label>
+                        <input type="email" class="form-control" id="resetEmail" name="email" required placeholder="Masukkan email terdaftar">
+                    </div>
+                    <div class="mb-3">
+                        <label for="resetTanggalLahir" class="form-label small fw-semibold">Tanggal Lahir <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" id="resetTanggalLahir" name="tanggal_lahir" required>
+                    </div>
+                    <div class="alert alert-danger d-none py-2 small" id="resetAlertBox">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i> <span id="resetAlertText"></span>
+                    </div>
+                    <div class="alert alert-success d-none py-2 small" id="resetSuccessBox">
+                        <i class="bi bi-check-circle-fill me-1"></i> <span id="resetSuccessText"></span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary btn-sm" id="btnResetSubmit">
+                        <span id="btnResetSpinner" class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true"></span>
+                        <span id="btnResetText">Kirim Password</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+async function handleResetPasswordSubmit(event) {
+    event.preventDefault();
+    
+    const email = document.getElementById('resetEmail').value.trim();
+    const tglLahir = document.getElementById('resetTanggalLahir').value.trim();
+    
+    const alertBox = document.getElementById('resetAlertBox');
+    const alertText = document.getElementById('resetAlertText');
+    const successBox = document.getElementById('resetSuccessBox');
+    const successText = document.getElementById('resetSuccessText');
+    
+    const btnSubmit = document.getElementById('btnResetSubmit');
+    const btnSpinner = document.getElementById('btnResetSpinner');
+    const btnText = document.getElementById('btnResetText');
+    
+    alertBox.classList.add('d-none');
+    successBox.classList.add('d-none');
+    
+    if (!email || !tglLahir) {
+        alertText.textContent = 'Harap lengkapi semua isian.';
+        alertBox.classList.remove('d-none');
+        return;
+    }
+    
+    btnSubmit.disabled = true;
+    btnSpinner.classList.remove('d-none');
+    btnText.textContent = 'Memproses...';
+    
+    try {
+        const formData = new FormData();
+        formData.append('email', email);
+        formData.append('tanggal_lahir', tglLahir);
+        
+        const response = await fetch(BASE_URL + '/api/auth/reset_password.php', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            successText.textContent = result.message || 'Password berhasil dikirim ke email Anda.';
+            successBox.classList.remove('d-none');
+            // Bersihkan form
+            document.getElementById('formResetPassword').reset();
+            // Optional: tutup modal setelah beberapa detik
+            setTimeout(() => {
+                const modalEl = document.getElementById('modalResetPassword');
+                const modal = bootstrap.Modal.getInstance(modalEl);
+                if (modal) modal.hide();
+                successBox.classList.add('d-none');
+            }, 3500);
+        } else {
+            alertText.textContent = result.message || 'Gagal mengirim password.';
+            alertBox.classList.remove('d-none');
+        }
+    } catch (error) {
+        alertText.textContent = 'Terjadi kesalahan koneksi jaringan.';
+        alertBox.classList.remove('d-none');
+    } finally {
+        btnSubmit.disabled = false;
+        btnSpinner.classList.add('d-none');
+        btnText.textContent = 'Kirim Password';
+    }
 }
 </script>
 
