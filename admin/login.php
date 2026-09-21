@@ -177,18 +177,18 @@ $companyCity = $companyProfile['kota'] ?? 'Surabaya';
      ============================================================= -->
 <div class="modal fade" id="modalLoginAnnouncementDetail" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-primary text-white py-3">
-                <h5 class="modal-title fs-6 fw-bold">
-                    <i class="bi bi-megaphone-fill me-2"></i>Informasi &amp; Pengumuman
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-white border-bottom py-3 px-4 d-flex align-items-center">
+                <div>
+                    <h5 class="modal-title fs-5 fw-bold mb-0 text-dark">
+                        Pusat Informasi
+                    </h5>
+                    
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-4" id="loginAnnouncementModalBody">
+            <div class="modal-body p-4 bg-white" id="loginAnnouncementModalBody">
                 <!-- Rendered dynamically -->
-            </div>
-            <div class="modal-footer bg-light py-2 px-3">
-                <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">Tutup</button>
             </div>
         </div>
     </div>
@@ -539,21 +539,27 @@ function showLoginAnnouncementDetail(idx) {
         `;
     }
 
+    const targetDivisi = item.is_all_divisi ? 'Semua Divisi' : (item.divisi_names ? escapeHtml(item.divisi_names.join(', ')) : 'Umum');
+
     body.innerHTML = `
+        <div class="border-bottom pb-3 mb-3">
+            <h5 class="fw-bold text-dark mb-3 lh-base">${escapeHtml(item.judul)}</h5>
+            <div class="w-100">
+                <div class="d-flex justify-content-between align-items-start mb-1 gap-2">
+                    <div class="fw-bold text-dark text-truncate" style="font-size: 0.95rem;">${escapeHtml(item.pembuat)}</div>
+                    <div class="small text-muted text-end flex-shrink-0" style="font-size: 0.75rem;">${item.tanggal_format}</div>
+                </div>
+                <div class="d-flex align-items-start gap-2" style="font-size: 0.8rem;">
+                    <span class="text-muted flex-shrink-0">Kepada:</span> 
+                    <span class="text-dark fw-medium text-wrap text-start lh-base">${targetDivisi}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-dark mb-2" style="white-space: pre-wrap; line-height: 1.6; font-size: 0.95rem;">${escapeHtml(item.isi)}</div>
+        
         ${imageHtml}
-        <div class="d-flex justify-content-between align-items-center mb-2">
-            <span class="badge bg-primary-subtle text-primary font-monospace" style="font-size: 0.72rem;">PENGUMUMAN RESMI</span>
-            <span class="small text-muted">${item.tanggal_format}</span>
-        </div>
-        <h5 class="fw-bold text-dark mb-3">${escapeHtml(item.judul)}</h5>
-        <div class="p-3 bg-light rounded-3 text-secondary mb-3" style="white-space: pre-wrap; line-height: 1.6; font-size: 0.92rem;">
-            ${escapeHtml(item.isi)}
-        </div>
         ${fileDownloadHtml}
-        <div class="border-top pt-2 text-muted small d-flex justify-content-between" style="font-size: 0.75rem;">
-            <span>Penerima: <strong>${item.is_all_divisi ? 'Semua Divisi' : (item.divisi_names ? item.divisi_names.join(', ') : 'Umum')}</strong></span>
-            <span>Diterbitkan Oleh: <strong>${escapeHtml(item.pembuat)}</strong></span>
-        </div>
     `;
 
     loginAnnouncementModalInstance.show();
