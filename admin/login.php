@@ -157,13 +157,17 @@ $companyCity = $companyProfile['kota'] ?? 'Surabaya';
                 </form>
 
                 <!-- Quick Demo Account Pills (Dinamis dari Database) -->
-                <div class="demo-roles-container">
+                <div class="demo-roles-container mb-4">
                     <div class="text-center text-muted small mb-2 fw-bold" style="font-size: 0.72rem;">
                         UJI COBA ROLE CEPAT:
                     </div>
                     <div class="d-flex flex-wrap gap-1 justify-content-center" id="demoRolesContainer">
                         <span class="spinner-border spinner-border-sm text-muted" role="status" aria-hidden="true"></span>
                     </div>
+                </div>
+
+                <div class="text-center text-black-50 fst-italic w-100" style="font-size: 0.65rem;">
+                    <i class="bi bi-display"></i> Best view on PC / Tablet (16:9)
                 </div>
 
             </div>
