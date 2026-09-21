@@ -91,12 +91,16 @@ $companyCity = $companyProfile['kota'] ?? 'Surabaya';
                     </div>
                 </div>
 
-                <!-- Footer Kolom Kiri -->
                 <div class="pt-3 border-top border-white border-opacity-10 mt-3 d-flex justify-content-between align-items-center text-white-50 small" style="font-size: 0.75rem;">
                     <span>&copy; <?= date('Y') ?> <?= htmlspecialchars($companyName) ?></span>
-                    <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#modalFlowchart" style="font-size: 0.7rem;">
-                        <i class="bi bi-diagram-3 me-1"></i> Lihat Alur Sistem
-                    </button>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#modalFiturSistem" style="font-size: 0.7rem;">
+                            <i class="bi bi-card-list me-1"></i> Fitur Sistem
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#modalFlowchart" style="font-size: 0.7rem;">
+                            <i class="bi bi-diagram-3 me-1"></i> Lihat Alur Sistem
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -214,6 +218,198 @@ $companyCity = $companyProfile['kota'] ?? 'Surabaya';
             </div>
             <div class="modal-footer bg-dark border-top border-secondary py-1 px-3 d-flex justify-content-center">
                 <span class="small text-muted"><i class="bi bi-info-circle me-1"></i> Scroll untuk zoom, klik & tahan untuk menggeser.</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- =============================================================
+     MODAL FITUR SISTEM (CAROUSEL)
+     ============================================================= -->
+<div class="modal fade" id="modalFiturSistem" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg bg-light">
+            <div class="modal-header bg-white py-3 border-bottom d-flex align-items-center">
+                <div>
+                    <h5 class="modal-title fs-5 fw-bold mb-0 text-dark">Fitur Sistem Terintegrasi</h5>
+                    <small class="text-muted">Terakhir diperbarui: 21 September 2026</small>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <div id="featuresCarousel" class="carousel slide" data-bs-ride="false" data-bs-wrap="false">
+                <div class="carousel-inner p-4 pb-2">
+                    
+                    <!-- Modul 1 -->
+                    <div class="carousel-item active">
+                        <div class="text-center mb-4">
+                            <span class="badge bg-primary mb-2 px-3 py-2 rounded-pill shadow-sm">Modul 01 / 10</span>
+                            <h4 class="fw-bold text-dark">Keamanan & Akses</h4>
+                            <p class="text-muted small">Pemisahan hak akses berbasis peran kerja.</p>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6"><div class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body"><h6 class="fw-bold"><i class="bi bi-person-badge text-primary me-2"></i>Multi-Role Login</h6><p class="small text-muted mb-0">Hak akses berjenjang (Admin s/d Manager).</p></div></div></div>
+                            <div class="col-md-6"><div class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body"><h6 class="fw-bold"><i class="bi bi-shield-lock text-primary me-2"></i>Session Management</h6><p class="small text-muted mb-0">Autentikasi aman dan proteksi sesi ketat.</p></div></div></div>
+                            <div class="col-md-6"><div class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body"><h6 class="fw-bold"><i class="bi bi-lightning text-primary me-2"></i>Quick Demo Login</h6><p class="small text-muted mb-0">Simulasi peran cepat dengan satu klik.</p></div></div></div>
+                            <div class="col-md-6"><div class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body"><h6 class="fw-bold"><i class="bi bi-speedometer2 text-primary me-2"></i>Role Dashboard</h6><p class="small text-muted mb-0">Tampilan otomatis menyesuaikan tugas.</p></div></div></div>
+                        </div>
+                    </div>
+
+                    <!-- Modul 2 -->
+                    <div class="carousel-item">
+                        <div class="text-center mb-4">
+                            <span class="badge mb-2 px-3 py-2 rounded-pill shadow-sm" style="background-color: #6610f2; color: white;">Modul 02 / 10</span>
+                            <h4 class="fw-bold text-dark">Pengaturan Perusahaan</h4>
+                            <p class="text-muted small">Konfigurasi entitas, divisi, dan jabatan struktural.</p>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6"><div class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body"><h6 class="fw-bold"><i class="bi bi-building text-indigo me-2" style="color: #6610f2;"></i>Profil Identitas</h6><p class="small text-muted mb-0">Pengaturan legalitas, NPWP & Zona Waktu.</p></div></div></div>
+                            <div class="col-md-6"><div class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body"><h6 class="fw-bold"><i class="bi bi-diagram-2 text-indigo me-2" style="color: #6610f2;"></i>Divisi & Jabatan</h6><p class="small text-muted mb-0">Hierarki kuat penentu wewenang approval.</p></div></div></div>
+                            <div class="col-md-6"><div class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body"><h6 class="fw-bold"><i class="bi bi-geo-alt text-indigo me-2" style="color: #6610f2;"></i>Master Site</h6><p class="small text-muted mb-0">Pemetaan lokasi proyek & gudang pusat.</p></div></div></div>
+                            <div class="col-md-6"><div class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body"><h6 class="fw-bold"><i class="bi bi-person-lines-fill text-indigo me-2" style="color: #6610f2;"></i>Akun Karyawan</h6><p class="small text-muted mb-0">Pengelolaan akses web tiap individu.</p></div></div></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Modul 3 -->
+                    <div class="carousel-item">
+                        <div class="text-center mb-4">
+                            <span class="badge bg-info mb-2 px-3 py-2 rounded-pill shadow-sm text-dark">Modul 03 / 10</span>
+                            <h4 class="fw-bold text-dark">Master Data Inventory</h4>
+                            <p class="text-muted small">Sentralisasi katalog barang dan rekap pemasok.</p>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6"><div class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body"><h6 class="fw-bold"><i class="bi bi-tags text-info me-2"></i>Kategori & Merk</h6><p class="small text-muted mb-0">Klasifikasi spesifik jenis material suku cadang.</p></div></div></div>
+                            <div class="col-md-6"><div class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body"><h6 class="fw-bold"><i class="bi bi-box-seam text-info me-2"></i>Master Barang</h6><p class="small text-muted mb-0">Database inventory & limit stok minimum gudang.</p></div></div></div>
+                            <div class="col-md-6"><div class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body"><h6 class="fw-bold"><i class="bi bi-truck text-info me-2"></i>Database Vendor</h6><p class="small text-muted mb-0">Profil lengkap supplier & rekening bank.</p></div></div></div>
+                            <div class="col-md-6"><div class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body"><h6 class="fw-bold"><i class="bi bi-bank text-info me-2"></i>Rekening Internal</h6><p class="small text-muted mb-0">Sumber dana pembayaran kas keluar.</p></div></div></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Modul 4 -->
+                    <div class="carousel-item">
+                        <div class="text-center mb-4">
+                            <span class="badge bg-warning text-dark mb-2 px-3 py-2 rounded-pill shadow-sm">Modul 04 / 10</span>
+                            <h4 class="fw-bold text-dark">Request Order (RO)</h4>
+                            <p class="text-muted small">Alur permintaan material / kebutuhan dari lapangan.</p>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6"><div class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body"><h6 class="fw-bold"><i class="bi bi-pen text-warning me-2"></i>Pembuatan RO</h6><p class="small text-muted mb-0">Inisiasi permintaan pengadaan dari mekanik.</p></div></div></div>
+                            <div class="col-md-6"><div class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body"><h6 class="fw-bold"><i class="bi bi-file-earmark-text text-warning me-2"></i>Sistem Draft</h6><p class="small text-muted mb-0">Simpan revisi sebelum finalisasi/pengajuan.</p></div></div></div>
+                            <div class="col-md-6"><div class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body"><h6 class="fw-bold"><i class="bi bi-search text-warning me-2"></i>Cek Logistik</h6><p class="small text-muted mb-0">Pemeriksaan silang stok fisik vs beli baru.</p></div></div></div>
+                            <div class="col-md-6"><div class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body"><h6 class="fw-bold"><i class="bi bi-check-circle text-warning me-2"></i>Approval Manager</h6><p class="small text-muted mb-0">Gatekeeper persetujuan RO oleh pimpinan.</p></div></div></div>
+                        </div>
+                    </div>
+
+                    <!-- Modul 5 -->
+                    <div class="carousel-item">
+                        <div class="text-center mb-4">
+                            <span class="badge bg-success mb-2 px-3 py-2 rounded-pill shadow-sm">Modul 05 / 10</span>
+                            <h4 class="fw-bold text-dark">Purchase Order (PO)</h4>
+                            <p class="text-muted small">Pembuatan pesanan komersial ke pihak ketiga (Vendor).</p>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6"><div class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body"><h6 class="fw-bold"><i class="bi bi-link-45deg text-success me-2"></i>Integrasi RO ke PO</h6><p class="small text-muted mb-0">Auto-pull data berdasar RO Approved.</p></div></div></div>
+                            <div class="col-md-6"><div class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body"><h6 class="fw-bold"><i class="bi bi-calculator text-success me-2"></i>Kalkulasi Instan</h6><p class="small text-muted mb-0">Perhitungan pajak, diskon & ongkir otomatis.</p></div></div></div>
+                            <div class="col-md-6"><div class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body"><h6 class="fw-bold"><i class="bi bi-ui-checks text-success me-2"></i>Validasi Bertingkat</h6><p class="small text-muted mb-0">Persetujuan ganda (Purchasing & Finance).</p></div></div></div>
+                            <div class="col-md-6"><div class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body"><h6 class="fw-bold"><i class="bi bi-file-pdf text-success me-2"></i>Cetak & Ekspor</h6><p class="small text-muted mb-0">Surat Pesanan PDF siap kirim ke supplier.</p></div></div></div>
+                        </div>
+                    </div>
+
+                    <!-- Modul 6 -->
+                    <div class="carousel-item">
+                        <div class="text-center mb-4">
+                            <span class="badge bg-danger mb-2 px-3 py-2 rounded-pill shadow-sm">Modul 06 / 10</span>
+                            <h4 class="fw-bold text-dark">Penerimaan & Retur</h4>
+                            <p class="text-muted small">Logistik fisik dan Quality Control penerimaan gudang.</p>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6"><div class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body"><h6 class="fw-bold"><i class="bi bi-box-arrow-in-down text-danger me-2"></i>Terima Barang (Receiving)</h6><p class="small text-muted mb-0">Kroscek fisik dengan Surat Jalan Vendor.</p></div></div></div>
+                            <div class="col-md-6"><div class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body"><h6 class="fw-bold"><i class="bi bi-graph-up-arrow text-danger me-2"></i>Auto Update Stok</h6><p class="small text-muted mb-0">Stok bertambah otomatis secara real-time.</p></div></div></div>
+                            <div class="col-md-6"><div class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body"><h6 class="fw-bold"><i class="bi bi-pie-chart text-danger me-2"></i>Penerimaan Parsial</h6><p class="small text-muted mb-0">Mendukung barang datang bertahap/dicicil.</p></div></div></div>
+                            <div class="col-md-6"><div class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body"><h6 class="fw-bold"><i class="bi bi-arrow-counterclockwise text-danger me-2"></i>Sistem Retur</h6><p class="small text-muted mb-0">Pengembalian barang rusak & koreksi hutang.</p></div></div></div>
+                        </div>
+                    </div>
+
+                    <!-- Modul 7 -->
+                    <div class="carousel-item">
+                        <div class="text-center mb-4">
+                            <span class="badge bg-secondary mb-2 px-3 py-2 rounded-pill shadow-sm">Modul 07 / 10</span>
+                            <h4 class="fw-bold text-dark">Keuangan (Finance)</h4>
+                            <p class="text-muted small">Pencatatan akuntansi dan kontrol kas pembayaran.</p>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6"><div class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body"><h6 class="fw-bold"><i class="bi bi-journal-text text-secondary me-2"></i>Accrual Basis</h6><p class="small text-muted mb-0">Hutang timbul akurat saat barang tiba.</p></div></div></div>
+                            <div class="col-md-6"><div class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body"><h6 class="fw-bold"><i class="bi bi-wallet2 text-secondary me-2"></i>Eksekusi Pembayaran</h6><p class="small text-muted mb-0">Tentukan sumber rekening transfer.</p></div></div></div>
+                            <div class="col-md-6"><div class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body"><h6 class="fw-bold"><i class="bi bi-cash-stack text-secondary me-2"></i>Cicilan Parsial</h6><p class="small text-muted mb-0">Mendukung pelunasan hutang secara bertahap.</p></div></div></div>
+                            <div class="col-md-6"><div class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body"><h6 class="fw-bold"><i class="bi bi-check2-all text-secondary me-2"></i>Validasi Transfer</h6><p class="small text-muted mb-0">Bukti bayar terekam & approval Finance.</p></div></div></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Modul 8 -->
+                    <div class="carousel-item">
+                        <div class="text-center mb-4">
+                            <span class="badge bg-dark mb-2 px-3 py-2 rounded-pill shadow-sm">Modul 08 / 10</span>
+                            <h4 class="fw-bold text-dark">Laporan & Analitik</h4>
+                            <p class="text-muted small">Rekapitulasi data pendukung keputusan manajemen.</p>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6"><div class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body"><h6 class="fw-bold"><i class="bi bi-bar-chart text-dark me-2"></i>Inventory Report</h6><p class="small text-muted mb-0">Posisi stok & mutasi barang in/out.</p></div></div></div>
+                            <div class="col-md-6"><div class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body"><h6 class="fw-bold"><i class="bi bi-graph-up text-dark me-2"></i>Purchasing Report</h6><p class="small text-muted mb-0">Histori belanja & statistik PO vendor.</p></div></div></div>
+                            <div class="col-md-6"><div class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body"><h6 class="fw-bold"><i class="bi bi-cash text-dark me-2"></i>Finance Report</h6><p class="small text-muted mb-0">Daftar saldo hutang (AP) & kas keluar.</p></div></div></div>
+                            <div class="col-md-6"><div class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body"><h6 class="fw-bold"><i class="bi bi-file-earmark-excel text-dark me-2"></i>Data Export</h6><p class="small text-muted mb-0">Ekspor cepat ke format Excel / PDF.</p></div></div></div>
+                        </div>
+                    </div>
+
+                    <!-- Modul 9 -->
+                    <div class="carousel-item">
+                        <div class="text-center mb-4">
+                            <span class="badge mb-2 px-3 py-2 rounded-pill shadow-sm text-dark" style="background-color: #0dcaf0;">Modul 09 / 10</span>
+                            <h4 class="fw-bold text-dark">Informasi Publik</h4>
+                            <p class="text-muted small">Papan pengumuman & broadcast internal perusahaan.</p>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6"><div class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body"><h6 class="fw-bold"><i class="bi bi-megaphone text-info me-2"></i>Pengumuman Publik</h6><p class="small text-muted mb-0">Informasi global tampil di halaman awal login.</p></div></div></div>
+                            <div class="col-md-6"><div class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body"><h6 class="fw-bold"><i class="bi bi-bullseye text-info me-2"></i>Target Spesifik</h6><p class="small text-muted mb-0">Pengumuman dashboard khusus per-divisi.</p></div></div></div>
+                        </div>
+                    </div>
+
+                    <!-- Modul 10 -->
+                    <div class="carousel-item">
+                        <div class="text-center mb-4">
+                            <span class="badge bg-danger text-white mb-2 px-3 py-2 rounded-pill shadow-sm">Modul 10 / 10</span>
+                            <h4 class="fw-bold text-dark">Proteksi Tambahan</h4>
+                            <p class="text-muted small">Keamanan data tingkat lanjut & fail-safe preventions.</p>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6"><div class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body"><h6 class="fw-bold"><i class="bi bi-lock-fill text-danger me-2"></i>Anti-Hapus Relasi</h6><p class="small text-muted mb-0">Data transaksi aktif terproteksi dari Delete.</p></div></div></div>
+                            <div class="col-md-6"><div class="card h-100 border-0 shadow-sm rounded-4"><div class="card-body"><h6 class="fw-bold"><i class="bi bi-key text-danger me-2"></i>Validasi Kode Unik</h6><p class="small text-muted mb-0">Hapus master data butuh konfirmasi ketik.</p></div></div></div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            
+            <div class="modal-footer bg-white py-3 px-4 d-flex justify-content-between align-items-center border-top">
+                <button class="btn btn-outline-secondary btn-sm px-4 rounded-pill" type="button" data-bs-target="#featuresCarousel" data-bs-slide="prev">
+                    <i class="bi bi-chevron-left me-1"></i> Sebelumnya
+                </button>
+                
+                <div class="carousel-indicators position-static m-0" style="gap: 6px;">
+                    <button type="button" data-bs-target="#featuresCarousel" data-bs-slide-to="0" class="active bg-secondary" style="width: 8px; height: 8px; border-radius: 50%;" aria-current="true"></button>
+                    <button type="button" data-bs-target="#featuresCarousel" data-bs-slide-to="1" class="bg-secondary" style="width: 8px; height: 8px; border-radius: 50%;"></button>
+                    <button type="button" data-bs-target="#featuresCarousel" data-bs-slide-to="2" class="bg-secondary" style="width: 8px; height: 8px; border-radius: 50%;"></button>
+                    <button type="button" data-bs-target="#featuresCarousel" data-bs-slide-to="3" class="bg-secondary" style="width: 8px; height: 8px; border-radius: 50%;"></button>
+                    <button type="button" data-bs-target="#featuresCarousel" data-bs-slide-to="4" class="bg-secondary" style="width: 8px; height: 8px; border-radius: 50%;"></button>
+                    <button type="button" data-bs-target="#featuresCarousel" data-bs-slide-to="5" class="bg-secondary" style="width: 8px; height: 8px; border-radius: 50%;"></button>
+                    <button type="button" data-bs-target="#featuresCarousel" data-bs-slide-to="6" class="bg-secondary" style="width: 8px; height: 8px; border-radius: 50%;"></button>
+                    <button type="button" data-bs-target="#featuresCarousel" data-bs-slide-to="7" class="bg-secondary" style="width: 8px; height: 8px; border-radius: 50%;"></button>
+                    <button type="button" data-bs-target="#featuresCarousel" data-bs-slide-to="8" class="bg-secondary" style="width: 8px; height: 8px; border-radius: 50%;"></button>
+                    <button type="button" data-bs-target="#featuresCarousel" data-bs-slide-to="9" class="bg-secondary" style="width: 8px; height: 8px; border-radius: 50%;"></button>
+                </div>
+                
+                <button class="btn btn-primary btn-sm px-4 rounded-pill shadow-sm" type="button" data-bs-target="#featuresCarousel" data-bs-slide="next">
+                    Selanjutnya <i class="bi bi-chevron-right ms-1"></i>
+                </button>
             </div>
         </div>
     </div>
